@@ -44,15 +44,17 @@ async function findByCpf(env: Env, cpf: string) {
 
 async function findByCode(env: Env, code: string) {
   const normalized = code.trim().toUpperCase();
+  const rawCodeLower = code.trim().toLowerCase();
+  
   const queries = [
-    "SELECT * FROM documents WHERE type = ? AND codigo_validacao = ? AND status != 'cancelado' LIMIT 1",
-    "SELECT * FROM documents WHERE type = ? AND codigo_qr = ? AND status != 'cancelado' LIMIT 1",
-    "SELECT * FROM documents WHERE type = ? AND id = ? AND status != 'cancelado' LIMIT 1",
+    { sql: "SELECT * FROM documents WHERE type = ? AND codigo_validacao = ? AND status != 'cancelado' LIMIT 1", bind: normalized },
+    { sql: "SELECT * FROM documents WHERE type = ? AND codigo_qr = ? AND status != 'cancelado' LIMIT 1", bind: normalized },
+    { sql: "SELECT * FROM documents WHERE type = ? AND id = ? AND status != 'cancelado' LIMIT 1", bind: rawCodeLower },
   ];
 
   for (const query of queries) {
     try {
-      const row = await env.DB.prepare(query).bind("cnh", normalized).first<any>();
+      const row = await env.DB.prepare(query.sql).bind("cnh", query.bind).first<any>();
       if (row) return parseRecord(row);
     } catch {}
   }

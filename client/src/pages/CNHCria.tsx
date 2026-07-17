@@ -79,6 +79,13 @@ export default function CNHCria() {
   const [codigoQR, setCodigoQR] = useState("");
   const [importText, setImportText] = useState("");
 
+  const [editId, setEditId] = useState<string | null>(null);
+  const [origemTabela, setOrigemTabela] = useState<string | null>(null);
+  const [fotoScale, setFotoScale] = useState(1.0);
+  const [fotoOffsetX, setFotoOffsetX] = useState(0);
+  const [fotoOffsetY, setFotoOffsetY] = useState(0);
+  const [assScale, setAssScale] = useState(1.0);
+
   const [data, setData] = useState<CNHDocumentProps>({
     nome: "", cpf: "", rg: "", orgaoEmissor: "", ufRG: "",
     sexo: "", nacionalidade: "BRASILEIRA", dataNascimento: "",
@@ -89,6 +96,55 @@ export default function CNHCria() {
     senhaApp: "", observacoes: "", fotoUrl: "", assinaturaUrl: "",
     codigoQR: "PREVIEW", blurred: true,
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("edit_id");
+    const orig = params.get("origem_tabela");
+    if (id) {
+      setEditId(id);
+      if (orig) setOrigemTabela(orig);
+      setLoading(true);
+      fetch(`/api/documents/${id}`, { credentials: "include" })
+        .then(res => res.json())
+        .then(result => {
+          if (result.success && result.data) {
+            const doc = result.data;
+            let docData: any = {};
+            try {
+              docData = typeof doc.data === "string" ? JSON.parse(doc.data) : (doc.data || {});
+            } catch {
+              docData = {};
+            }
+            const mergedData = {
+              ...docData,
+              nome: doc.nome || docData.nome || "",
+              cpf: doc.cpf || docData.cpf || "",
+              categoria: doc.categoria || docData.categoria || "",
+              codigoQR: doc.codigo_qr || doc.codigo_validacao || doc.id || "PREVIEW",
+              blurred: false,
+            };
+            setData(mergedData);
+            setCodigoQR(doc.codigo_qr || doc.codigo_validacao || doc.id);
+            setSaved(true);
+
+            if (docData.fotoScale !== undefined) setFotoScale(docData.fotoScale);
+            if (docData.fotoOffsetX !== undefined) setFotoOffsetX(docData.fotoOffsetX);
+            if (docData.fotoOffsetY !== undefined) setFotoOffsetY(docData.fotoOffsetY);
+            if (docData.assScale !== undefined) setAssScale(docData.assScale);
+          } else {
+            toast.error("Documento não encontrado para edição.");
+          }
+        })
+        .catch(() => {
+          toast.error("Erro ao carregar documento para edição.");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, []);
+
 
   // Atualizar campo genérico
   const update = useCallback((field: keyof CNHDocumentProps) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -206,7 +262,14 @@ export default function CNHCria() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ ...data, type: "cnh" }),
+        body: JSON.stringify({
+          ...data,
+          fotoScale,
+          fotoOffsetX,
+          fotoOffsetY,
+          assScale,
+          type: "cnh"
+        }),
       });
       const result = await res.json();
       if (result.success) {
@@ -225,7 +288,105 @@ export default function CNHCria() {
     }
   };
 
+  // ─── Atualizar Documento ───────────────────────────────────────────────────
+  const handleUpdate = async () => {
+    if (!data.nome || !data.cpf) {
+      toast.error("Preencha Nome e CPF obrigatoriamente!");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/documents/${editId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          data: {
+            ...data,
+            fotoScale,
+            fotoOffsetX,
+            fotoOffsetY,
+            assScale
+          }
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        toast.success("Documento atualizado com sucesso!");
+        setData(d => ({ ...d, blurred: false }));
+        setSaved(true);
+      } else {
+        toast.error(result.error || "Erro ao atualizar CNH");
+      }
+    } catch {
+      toast.error("Erro de conexão");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   // ─── Exportar JPEG ─────────────────────────────────────────────────────────
+  // ─── Exportar PDF ──────────────────────────────────────────────────────────
+  const handleExportPdf = async () => {
+    if (!docRef.current) return;
+    setLoading(true);
+    try {
+      await docRef.current.exportAsPdf();
+      toast.success("PDF exportado com sucesso!");
+    } catch {
+      toast.error("Erro ao exportar PDF");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Exportar Frente ────────────────────────────────────────────────────────
+  const handleExportFrente = async () => {
+    if (!docRef.current) return;
+    setLoading(true);
+    try {
+      const blob = await docRef.current.exportCropBlob(0, 0, 2461, 1700);
+      if (!blob) throw new Error("Falha ao gerar frente");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CNH_FRENTE_${data.nome.replace(/\s+/g, "_") || "DOC"}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Frente exportada com sucesso!");
+    } catch {
+      toast.error("Erro ao exportar frente");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Exportar Verso ─────────────────────────────────────────────────────────
+  const handleExportVerso = async () => {
+    if (!docRef.current) return;
+    setLoading(true);
+    try {
+      const blob = await docRef.current.exportCropBlob(0, 1700, 2461, 1796);
+      if (!blob) throw new Error("Falha ao gerar verso");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CNH_VERSO_${data.nome.replace(/\s+/g, "_") || "DOC"}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Verso exportado com sucesso!");
+    } catch {
+      toast.error("Erro ao exportar verso");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleExportJPEG = async () => {
     if (!docRef.current) return;
     setLoading(true);
@@ -664,9 +825,18 @@ export default function CNHCria() {
             <h3>CNH Digital emitida com sucesso!</h3>
             <p>Código: <strong style={{ fontFamily: "monospace" }}>{codigoQR}</strong></p>
             <p>Validação: <strong>docmaster.store/v/{codigoQR}</strong></p>
-            <div className="cnh-result-btns">
-              <button className="cnh-btn-download" onClick={handleExportJPEG} disabled={loading}>
+            <div className="cnh-result-btns" style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              <button className="cnh-btn-download" onClick={handleExportPdf} disabled={loading}>
+                <Download size={14} /> Baixar PDF
+              </button>
+              <button className="cnh-btn-download" onClick={handleExportJPEG} disabled={loading} style={{ background: "#6b7280" }}>
                 <Download size={14} /> Baixar JPEG
+              </button>
+              <button className="cnh-btn-download" onClick={handleExportFrente} disabled={loading} style={{ background: "#0f766e" }}>
+                📷 Download FRENTE
+              </button>
+              <button className="cnh-btn-download" onClick={handleExportVerso} disabled={loading} style={{ background: "#1d4ed8" }}>
+                📷 Download VERSO
               </button>
               <button className="cnh-btn-whatsapp" onClick={handleWhatsApp}>
                 <MessageCircle size={14} /> Enviar via WhatsApp
@@ -866,6 +1036,16 @@ export default function CNHCria() {
                 <span style={{ fontSize: 12, color: "#94a3b8" }}>Prévia Rosto</span>
               )}
             </div>
+            {data.fotoUrl && (
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>Tamanho da Foto: {Math.round(fotoScale * 100)}%</label>
+                <input type="range" min="0.5" max="1.5" step="0.05" value={fotoScale} onChange={(e) => setFotoScale(parseFloat(e.target.value))} style={{ width: "100%" }} />
+                <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>Posição X: {fotoOffsetX}px</label>
+                <input type="range" min="-50" max="50" step="1" value={fotoOffsetX} onChange={(e) => setFotoOffsetX(parseInt(e.target.value))} style={{ width: "100%" }} />
+                <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>Posição Y: {fotoOffsetY}px</label>
+                <input type="range" min="-50" max="50" step="1" value={fotoOffsetY} onChange={(e) => setFotoOffsetY(parseInt(e.target.value))} style={{ width: "100%" }} />
+              </div>
+            )}
           </div>
 
           {/* Assinatura */}
@@ -920,6 +1100,12 @@ export default function CNHCria() {
                 <span style={{ fontSize: 12, color: "#94a3b8" }}>Prévia Assinatura</span>
               )}
             </div>
+            {data.assinaturaUrl && (
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>Tamanho Assinatura: {Math.round(assScale * 100)}%</label>
+                <input type="range" min="0.5" max="2.0" step="0.05" value={assScale} onChange={(e) => setAssScale(parseFloat(e.target.value))} style={{ width: "100%" }} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -947,22 +1133,26 @@ export default function CNHCria() {
           <CNHDocument
             ref={docRef}
             {...data}
+            fotoScale={fotoScale}
+            fotoOffsetX={fotoOffsetX}
+            fotoOffsetY={fotoOffsetY}
+            assScale={assScale}
             codigoQR={saved ? codigoQR : "PREVIEW"}
             blurred={!saved}
           />
         </div>
 
         {/* Botão SALVAR flutuante */}
-        {!saved && (
+        {(!saved || editId) && (
           <button
             className="cnh-floating-save"
-            onClick={handleSave}
-            disabled={loading || saved}
+            onClick={editId ? handleUpdate : handleSave}
+            disabled={loading}
           >
             {loading ? (
-              <><div style={{ width: 16, height: 16, border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> Gerando Documento...</>
+              <><div style={{ width: 16, height: 16, border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> {editId ? "Salvando Alterações..." : "Gerando Documento..."}</>
             ) : (
-              <><Save size={18} /> SALVAR DOCUMENTO</>
+              <><Save size={18} /> {editId ? "SALVAR ALTERAÇÕES" : "SALVAR DOCUMENTO"}</>
             )}
           </button>
         )}

@@ -39,7 +39,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       try {
         const data = typeof doc.data === "string" ? JSON.parse(doc.data as string) : (doc.data || {});
         const docCpf = (data.cpf || "").replace(/\D/g, "");
-        const docSenha = data.senha || data.password || "";
+        const docSenha = data.senhaApp || data.senha || data.password || "";
 
         if (docCpf === cpfNorm && String(docSenha) === String(senha)) {
           matchedDoc = { ...doc, parsedData: data };

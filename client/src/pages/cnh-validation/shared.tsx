@@ -159,7 +159,10 @@ export function useCnhRecord(cpf: string) {
     let active = true;
     setLoading(true);
     setError(null);
-    fetch(`/api/cnh/validate?cpf=${value}`)
+    const searchParams = new URLSearchParams(window.location.search);
+    const orig = searchParams.get("origem_tabela");
+    const origParam = orig ? `&origem_tabela=${orig}` : "";
+    fetch(`/api/cnh/validate?cpf=${value}${origParam}`)
       .then(async (response) => {
         const json = await response.json().catch(() => ({}));
         if (!response.ok || !json?.success) {

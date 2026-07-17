@@ -100,6 +100,7 @@ export default function Dashboard() {
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showModelsModal, setShowModelsModal] = useState(false);
   const [loyaltyData, setLoyaltyData] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Additional states for history management
   const [viewAtestado, setViewAtestado] = useState<DocRecord | null>(null);
@@ -171,8 +172,6 @@ export default function Dashboard() {
     if (hour >= 12 && hour < 18) return "Boa tarde";
     return "Boa noite";
   };
-
-  const [searchTerm, setSearchTerm] = useState("");
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "—";

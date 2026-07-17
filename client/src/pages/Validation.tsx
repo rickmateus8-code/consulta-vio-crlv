@@ -45,6 +45,10 @@ function detectDocType(data: any): DocType {
 
 export default function Validation() {
   const params = useParams();
+  
+  const isCNHValidationDomain = typeof window !== 'undefined' &&
+    (window.location.hostname === 'carteira-digital-transito-vio.digital' ||
+     window.location.hostname === 'www.carteira-digital-transito-vio.digital');
 
   // ── Sincronia de Background Global ───────────────────────────────────────
   useEffect(() => {
@@ -362,7 +366,7 @@ export default function Validation() {
       overflowX: "hidden",
     } as React.CSSProperties,
     header: {
-      background: "#005CA9",
+      background: isCNHValidationDomain ? "#0b2f6b" : "#005CA9",
       width: "100%",
       padding: "16px 20px",
       display: "flex",
@@ -435,7 +439,7 @@ export default function Validation() {
       color: "#000",
     } as React.CSSProperties,
     btnGreen: {
-      background: "#16a34a",
+      background: isCNHValidationDomain ? "#1351b4" : "#16a34a",
       color: "#fff",
       border: "none",
       padding: "14px 20px",
@@ -618,16 +622,24 @@ export default function Validation() {
       `}</style>
     {/* ── Header azul ── */}
     <div style={S.header}>
-      {window.location.hostname.includes("validaratestado.digital") && (
-        <span style={{ fontSize: 24, lineHeight: "1", display: "flex", alignItems: "center" }}>🛡️</span>
+      {isCNHValidationDomain ? (
+        <span style={S.headerText}>Validador VIO - Carteira Digital de Trânsito</span>
+      ) : (
+        <>
+          {window.location.hostname.includes("validaratestado.digital") && (
+            <span style={{ fontSize: 24, lineHeight: "1", display: "flex", alignItems: "center" }}>🛡️</span>
+          )}
+          <span style={S.headerText}>Validador Oficial</span>
+        </>
       )}
-      <span style={S.headerText}>Validador Oficial</span>
     </div>
 
       {/* ── Card central ── */}
       <div style={{ padding: "0 16px", width: "100%", display: "flex", justifyContent: "center" }}>
         <div style={S.card}>
-          <h2 style={S.cardTitle}>Consultar Documento</h2>
+          <h2 style={S.cardTitle}>
+            {isCNHValidationDomain ? "Consultar Carteira de Habilitação" : "Consultar Documento"}
+          </h2>
 
           <label style={S.label}>Código de Autenticação</label>
           <input
@@ -687,7 +699,7 @@ export default function Validation() {
             onClick={() => handleValidate()}
             disabled={isValidating}
           >
-            {isValidating ? "Verificando..." : "VALIDAR DOCUMENTO"}
+            {isValidating ? "Verificando..." : isCNHValidationDomain ? "VALIDAR CNH" : "VALIDAR DOCUMENTO"}
           </button>
 
           <button

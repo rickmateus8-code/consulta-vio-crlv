@@ -96,12 +96,26 @@ function gerarMRZ(user: CNHDocumentProps): string[] {
   ];
 }
 
+function getCrossOrigin(url: string): "" | "anonymous" | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("data:") || url.startsWith("blob:") || url.startsWith("/")) {
+    return undefined;
+  }
+  return "anonymous";
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    const crossOrigin = getCrossOrigin(src);
+    if (crossOrigin) {
+      img.crossOrigin = crossOrigin;
+    }
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = (e) => {
+      console.warn("Erro ao carregar imagem:", src, e);
+      reject(e);
+    };
     img.src = src;
   });
 }
@@ -135,13 +149,15 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
   useImperativeHandle(ref, () => ({
     exportAsBlob: async () => {
+      await renderCanvas();
       const cvs = canvasRef.current;
       if (!cvs) return null;
       return new Promise<Blob | null>((resolve) => {
-        cvs.toBlob((blob) => resolve(blob), "image/jpeg", 0.92);
+        cvs.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
       });
     },
     exportAsPdf: async () => {
+      await renderCanvas();
       const cvs = canvasRef.current;
       if (!cvs) return;
       const { default: jsPDF } = await import("jspdf");
@@ -161,6 +177,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     },
     getCanvas: () => canvasRef.current,
     exportCropBlob: async (x: number, y: number, w: number, h: number) => {
+      await renderCanvas();
       const cvs = canvasRef.current;
       if (!cvs) return null;
       const crop = document.createElement('canvas');
@@ -170,7 +187,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       if (!cctx) return null;
       cctx.drawImage(cvs, x, y, w, h, 0, 0, w, h);
       return new Promise<Blob | null>((resolve) => {
-        crop.toBlob((blob) => resolve(blob), 'image/jpeg', 0.92);
+        crop.toBlob((blob) => resolve(blob), 'image/jpeg', 0.95);
       });
     },
   }));
@@ -395,22 +412,15 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
           ctx.rect(bx, by, bw, bh);
           ctx.clip();
 
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = assImg.width;
-          tempCanvas.height = assImg.height;
-          const tctx = tempCanvas.getContext('2d')!;
-          tctx.fillStyle = '#FFFFFF';
-          tctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-          tctx.drawImage(assImg, 0, 0);
-
           const ratio = Math.min(bw / assImg.width, bh / assImg.height);
           const drawW = assImg.width * ratio;
           const drawH = assImg.height * ratio;
           const drawX = bx + (bw - drawW) / 2;
           const drawY = by + (bh - drawH) / 2;
 
-          ctx.filter = "contrast(5) brightness(0.3) grayscale(1)";
-          ctx.drawImage(tempCanvas, drawX, drawY, drawW, drawH);
+          ctx.globalCompositeOperation = "multiply";
+          ctx.filter = "contrast(2) grayscale(1)";
+          ctx.drawImage(assImg, drawX, drawY, drawW, drawH);
           ctx.restore();
         } catch (e) {
           console.warn("Erro ao carregar assinatura:", e);

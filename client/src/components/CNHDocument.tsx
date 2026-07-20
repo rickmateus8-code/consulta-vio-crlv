@@ -152,8 +152,16 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       await renderCanvas();
       const cvs = canvasRef.current;
       if (!cvs) return null;
+      const whiteCvs = document.createElement("canvas");
+      whiteCvs.width = cvs.width;
+      whiteCvs.height = cvs.height;
+      const wctx = whiteCvs.getContext("2d");
+      if (!wctx) return null;
+      wctx.fillStyle = "#FFFFFF";
+      wctx.fillRect(0, 0, cvs.width, cvs.height);
+      wctx.drawImage(cvs, 0, 0);
       return new Promise<Blob | null>((resolve) => {
-        cvs.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
+        whiteCvs.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
       });
     },
     exportAsPdf: async () => {
@@ -161,18 +169,117 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       const cvs = canvasRef.current;
       if (!cvs) return;
       const { default: jsPDF } = await import("jspdf");
-      // Canvas dimensions in pixels
-      const cw = cvs.width;
-      const ch = cvs.height;
-      // Convert to mm at 96 DPI (1px = 0.2646mm)
-      const pxToMm = 0.2646;
-      const wMm = cw * pxToMm;
-      const hMm = ch * pxToMm;
-      const orientation = wMm > hMm ? "l" : "p";
-      const pdf = new jsPDF({ orientation, unit: "mm", format: [wMm, hMm] });
-      const imgData = cvs.toDataURL("image/jpeg", 0.95);
-      pdf.addImage(imgData, "JPEG", 0, 0, wMm, hMm);
-      const nomeFormatado = (props.nome || "DOCUMENTO").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
+
+      // Criar Canvas A4 em Alta Resolução (1588 x 2246 px - 2x 96 DPI)
+      const a4Cvs = document.createElement("canvas");
+      a4Cvs.width = 1588;
+      a4Cvs.height = 2246;
+      const a4Ctx = a4Cvs.getContext("2d");
+      if (!a4Ctx) return;
+
+      // 1. Fundo Branco Absoluto (#FFFFFF) - Evita qualquer transparência / fundo preto
+      a4Ctx.fillStyle = "#FFFFFF";
+      a4Ctx.fillRect(0, 0, 1588, 2246);
+
+      // 2. Top Header Escuro (Padrão Gov.br / SENATRAN)
+      a4Ctx.fillStyle = "#2c2d2e";
+      a4Ctx.fillRect(0, 0, 1588, 140);
+
+      // Textos do Header
+      a4Ctx.fillStyle = "#FFFFFF";
+      a4Ctx.font = "bold 26px sans-serif";
+      a4Ctx.fillText("REPÚBLICA FEDERATIVA DO BRASIL", 80, 48);
+      a4Ctx.font = "17px sans-serif";
+      a4Ctx.fillText("MINISTÉRIO DA INFRAESTRUTURA", 80, 80);
+      a4Ctx.fillText("SECRETARIA NACIONAL DE TRÂNSITO - SENATRAN", 80, 108);
+
+      // Logo gov.br no topo direito
+      a4Ctx.font = "bold 38px sans-serif";
+      a4Ctx.textAlign = "right";
+      a4Ctx.fillText("gov.br", 1500, 82);
+      a4Ctx.textAlign = "left";
+
+      // 3. Coluna Esquerda: CNH Card (proporção 2461 x 3496 => 0.704)
+      const cardW = 740;
+      const cardH = Math.round(cardW / (cvs.width / cvs.height));
+      const cardX = 70;
+      const cardY = 190;
+      a4Ctx.drawImage(cvs, cardX, cardY, cardW, cardH);
+
+      // 4. Coluna Direita: Caixa de QR-CODE
+      const rightX = 880;
+      const rightY = 190;
+      const rightW = 630;
+      const qrBoxH = 680;
+
+      // Moldura da caixa QR-CODE
+      a4Ctx.strokeStyle = "#b0b0b0";
+      a4Ctx.lineWidth = 2;
+      a4Ctx.strokeRect(rightX, rightY, rightW, qrBoxH);
+
+      // Título "QR-CODE"
+      a4Ctx.font = "bold 24px sans-serif";
+      a4Ctx.fillStyle = "#111111";
+      a4Ctx.fillText("QR-CODE", rightX + 30, rightY + 45);
+
+      // QR Code Imagem
+      try {
+        const codigo = props.codigoQR && props.codigoQR !== "PREVIEW" ? props.codigoQR : (props.id || "PREVIEW");
+        const qrUrl = `https://docmaster.store/v/${codigo}`;
+        const qrDataUrl = await QRCode.toDataURL(qrUrl, {
+          width: 800,
+          margin: 0,
+          errorCorrectionLevel: "M",
+        });
+        const qrImg = await loadImage(qrDataUrl);
+        a4Ctx.drawImage(qrImg, rightX + 75, rightY + 80, 480, 480);
+      } catch (e) {
+        console.warn("Erro ao desenhar QR no PDF:", e);
+      }
+
+      // Textos Legais (Assinador Serpro) abaixo da caixa QR
+      const textY = rightY + qrBoxH + 40;
+      a4Ctx.font = "17px sans-serif";
+      a4Ctx.fillStyle = "#222222";
+
+      const p1 = [
+        "Documento assinado com certificado digital em conformidade",
+        "com a Medida Provisória nº 2200-2/2001. Sua validade poderá",
+        "ser confirmada por meio do programa Assinador Serpro."
+      ];
+      p1.forEach((line, idx) => {
+        a4Ctx.fillText(line, rightX, textY + (idx * 26));
+      });
+
+      const p2 = [
+        "As orientações para instalar o Assinador Serpro e realizar a",
+        "validação do documento digital estão disponíveis em:",
+        "https://www.serpro.gov.br/assinador-digital."
+      ];
+      const p2Y = textY + (p1.length * 26) + 24;
+      p2.forEach((line, idx) => {
+        a4Ctx.fillText(line, rightX, p2Y + (idx * 26));
+      });
+
+      // Logo SERPRO / SENATRAN (canto inferior direito)
+      const logoY = p2Y + (p2.length * 26) + 50;
+      a4Ctx.font = "bold 26px sans-serif";
+      a4Ctx.fillStyle = "#003399";
+      a4Ctx.textAlign = "right";
+      a4Ctx.fillText("SERPRO / SENATRAN", rightX + rightW, logoY);
+      a4Ctx.textAlign = "left";
+
+      // 5. Gerar PDF A4 usando jsPDF
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const imgData = a4Cvs.toDataURL("image/jpeg", 0.95);
+      pdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
+
+      const nomeFormatado = (props.nome || "DOCUMENTO")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "_")
+        .replace(/[^A-Z0-9_]/g, "");
       pdf.save(`CNH_${nomeFormatado}.pdf`);
     },
     getCanvas: () => canvasRef.current,
@@ -185,6 +292,8 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       crop.height = h;
       const cctx = crop.getContext('2d');
       if (!cctx) return null;
+      cctx.fillStyle = "#FFFFFF";
+      cctx.fillRect(0, 0, w, h);
       cctx.drawImage(cvs, x, y, w, h, 0, 0, w, h);
       return new Promise<Blob | null>((resolve) => {
         crop.toBlob((blob) => resolve(blob), 'image/jpeg', 0.95);

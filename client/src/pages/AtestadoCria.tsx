@@ -762,7 +762,9 @@ export default function AtestadoCria() {
     const dias = parseInt(form.afastamento);
     if (!isNaN(dias) && dias >= 1 && dias <= 15) {
       const d = DIAS_EXTENSO[dias];
+      if (!d) return;
       const unidade = dias === 1 ? "dia" : "dias";
+      const novotextoFrase = `Necessita de ${d.num} (${d.ext}) ${unidade} de afastamento de suas atividades laborais para repouso e tratamento de saúde.`;
 
       if (documentType === 'relatorio') {
         // Para relatório médico, o texto é dinâmico apenas pelo sexo
@@ -771,8 +773,20 @@ export default function AtestadoCria() {
           textoAtestado: TEXTO_RELATORIO_TEMPLATE(p.sexo === "MALE" ? "M" : "F")
         }));
       } else if (documentType === 'atestado') {
-        const textoBase = `Atesto para os devidos fins que o(a) paciente acima identificado(a) compareceu a esta unidade de saúde na data de hoje para atendimento médico. Necessita de ${d.num} (${d.ext}) ${unidade} de afastamento de suas atividades laborais para repouso e tratamento de saúde.`;
-        setForm(p => ({ ...p, textoAtestado: textoBase }));
+        setForm(p => {
+          const actualText = p.textoAtestado || "";
+          const regexFrase = /Necessita de [\s\S]*? de afastamento de suas atividades laborais para repouso e tratamento de saúde\.?/gi;
+          const regexGenerica = /Necessita de \d+ \([^)]+\) dia\(s\)? de afastamento/gi;
+
+          if (regexFrase.test(actualText)) {
+            return { ...p, textoAtestado: actualText.replace(regexFrase, novotextoFrase) };
+          } else if (regexGenerica.test(actualText)) {
+            return { ...p, textoAtestado: actualText.replace(regexGenerica, `Necessita de ${d.num} (${d.ext}) ${unidade} de afastamento`) };
+          } else {
+            const textoBase = `Atesto para os devidos fins que o(a) paciente acima identificado(a) compareceu a esta unidade de saúde na data de hoje para atendimento médico. ${novotextoFrase}`;
+            return { ...p, textoAtestado: textoBase };
+          }
+        });
       }
     }
   }, [form.afastamento, documentType]);

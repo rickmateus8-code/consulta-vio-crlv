@@ -11,12 +11,15 @@
  */
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
-import DashboardLayout from "@/components/DashboardLayout";
-import CNHDocument, { type CNHDocumentHandle, type CNHDocumentProps } from "@/components/CNHDocument";
+import { useAuth } from "../contexts/AuthContext";
+import DashboardLayout from "../components/DashboardLayout";
+import CNHDocument, { type CNHDocumentHandle, type CNHDocumentProps } from "../components/CNHDocument";
 import { toast } from "sonner";
+import { getQRCodeCNH } from "@/config.qrcode";
+import { validarCPF, formatarCPF as formatarCPFUtil, formatarRG, displayDateToHtml } from "@/lib/utils";
+import EmissionModal from "@/components/EmissionModal";
 import {
-  ArrowLeft, Save, Download, MessageCircle, Copy, Zap,
+  ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Save, Download, MessageCircle, Copy, Zap,
   Upload, Type, Lock, AlertCircle, Car
 } from "lucide-react";
 
@@ -26,26 +29,26 @@ const UFS = [
   "MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
 ];
 
-const MODELO_TEXTO = `Nome Completo:
-CPF:
-Sexo:
-RG:
-Orgão Emissor:
-UF RG:
+const MODELO_TEXTO = `Nome Completo: 
+CPF: 
+Sexo: 
+RG: 
+Orgão Emissor: 
+UF RG: 
 Nacionalidade: BRASILEIRA
-Data Nascimento:
-Local Nascimento:
-UF Nasc:
-Nome do Pai:
-Nome da Mãe:
-Categoria:
-Tipo:
-Validade:
-Emissão:
-1ª Habilitação:
-Local Emissão:
-UF Emissão:
-Senha App:
+Data Nascimento: 
+Local Nascimento: 
+UF Nasc: 
+Nome do Pai: 
+Nome da Mãe: 
+Categoria: 
+Tipo: 
+Validade: 
+Emissão: 
+1ª Habilitação: 
+Local Emissão: 
+UF Emissão: 
+Senha App: 
 Observações: `;
 
 const ESTILOS_ASS = [
@@ -68,9 +71,11 @@ function formatarCPFInput(v: string): string {
   return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
 }
 
+const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
 // ─── Componente ──────────────────────────────────────────────────────────────
 export default function CNHCria() {
-  const { user } = useAuth();
+  const { user, updateBalance } = useAuth();
   const [, setLocation] = useLocation();
   const docRef = useRef<CNHDocumentHandle>(null);
 
@@ -78,24 +83,19 @@ export default function CNHCria() {
   const [saved, setSaved] = useState(false);
   const [codigoQR, setCodigoQR] = useState("");
   const [importText, setImportText] = useState("");
-
-  const [editId, setEditId] = useState<string | null>(null);
-  const [origemTabela, setOrigemTabela] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isApplyingAI, setIsApplyingAI] = useState(false);
+  const [documentPrice, setDocumentPrice] = useState(0);
   const [fotoScale, setFotoScale] = useState(1.0);
   const [fotoOffsetX, setFotoOffsetX] = useState(0);
   const [fotoOffsetY, setFotoOffsetY] = useState(0);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [origemTabela, setOrigemTabela] = useState<string | null>(null);
   const [assScale, setAssScale] = useState(1.0);
-
-  const [data, setData] = useState<CNHDocumentProps>({
-    nome: "", cpf: "", rg: "", orgaoEmissor: "", ufRG: "",
-    sexo: "", nacionalidade: "BRASILEIRA", dataNascimento: "",
-    localNascimento: "", ufNascimento: "", nomePai: "", nomeMae: "",
-    categoria: "", tipo: "Definitiva", registro: "", espelho: "",
-    validade: "", validadeCNH2: "", dataEmissao: "", primeiraHabilitacao: "",
-    localEmissao: "", ufEmissao: "", assDigital1: "", assDigital2: "",
-    senhaApp: "", observacoes: "", fotoUrl: "", assinaturaUrl: "",
-    codigoQR: "PREVIEW", blurred: true,
-  });
+  const [assOffsetX, setAssOffsetX] = useState(0);
+  const [assOffsetY, setAssOffsetY] = useState(0);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -132,6 +132,8 @@ export default function CNHCria() {
             if (docData.fotoOffsetX !== undefined) setFotoOffsetX(docData.fotoOffsetX);
             if (docData.fotoOffsetY !== undefined) setFotoOffsetY(docData.fotoOffsetY);
             if (docData.assScale !== undefined) setAssScale(docData.assScale);
+            if (docData.assOffsetX !== undefined) setAssOffsetX(docData.assOffsetX);
+            if (docData.assOffsetY !== undefined) setAssOffsetY(docData.assOffsetY);
           } else {
             toast.error("Documento não encontrado para edição.");
           }
@@ -145,13 +147,43 @@ export default function CNHCria() {
     }
   }, []);
 
+  const [data, setData] = useState<CNHDocumentProps>({
+    nome: "", cpf: "", rg: "", orgaoEmissor: "", ufRG: "",
+    sexo: "", nacionalidade: "BRASILEIRA", dataNascimento: "",
+    localNascimento: "", ufNascimento: "", nomePai: "", nomeMae: "",
+    categoria: "", tipo: "Definitiva", registro: "", espelho: "",
+    validade: "", validadeCNH2: "", dataEmissao: "", primeiraHabilitacao: "",
+    localEmissao: "", ufEmissao: "", assDigital1: "", assDigital2: "",
+    senhaApp: "", observacoes: "", fotoUrl: "", assinaturaUrl: "",
+    codigoQR: "PREVIEW", blurred: true,
+  });
 
   // Atualizar campo genérico
   const update = useCallback((field: keyof CNHDocumentProps) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let val = e.target.value;
     if (field === "cpf") val = formatarCPFInput(val);
+    if (field === "rg") val = val.replace(/\./g, ""); // RG sem pontos, apenas números
     setData(d => ({ ...d, [field]: val }));
   }, []);
+
+  const changeFotoScale = (delta: number) => {
+    setFotoScale((prev) => clamp(Number((prev + delta).toFixed(2)), 0.5, 1.8));
+  };
+  const changeFotoOffsetX = (delta: number) => {
+    setFotoOffsetX((prev) => clamp(prev + delta, -80, 80));
+  };
+  const changeFotoOffsetY = (delta: number) => {
+    setFotoOffsetY((prev) => clamp(prev + delta, -80, 80));
+  };
+  const changeAssScale = (delta: number) => {
+    setAssScale((prev) => clamp(Number((prev + delta).toFixed(2)), 0.5, 2.5));
+  };
+  const changeAssOffsetX = (delta: number) => {
+    setAssOffsetX((prev) => clamp(prev + delta, -80, 80));
+  };
+  const changeAssOffsetY = (delta: number) => {
+    setAssOffsetY((prev) => clamp(prev + delta, -40, 40));
+  };
 
   // ─── AUTO Generators ──────────────────────────────────────────────────────
   const handleAutoRegistro = () => setData(d => ({ ...d, registro: gerarNumero(11) }));
@@ -175,48 +207,187 @@ export default function CNHCria() {
       const m = importText.match(regex);
       return m ? m[1].trim() : "";
     };
+    // Converter datas DD/MM/YYYY para YYYY-MM-DD (formato HTML date input)
+    const convertDate = (val: string): string => {
+      if (!val) return "";
+      const trimmed = val.trim();
+      // Se já está no formato YYYY-MM-DD, retorna direto
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+      // Converte DD/MM/YYYY para YYYY-MM-DD
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+        return displayDateToHtml(trimmed);
+      }
+      return trimmed;
+    };
+
+    // RG: remover pontos, manter apenas números e letras
+    const cleanRG = (val: string): string => val.replace(/\./g, "");
+
+    // Auto-gerar campos automáticos
+    const ufEmissaoVal = get("UF Emiss[aã]o") || data.ufEmissao || "SP";
+    const autoRegistro = get("N[ºo] Registro") || gerarNumero(11);
+    const autoEspelho = get("N[ºo] CNH") || get("Espelho") || gerarNumero(10);
+    const autoAss1 = get("Ass\\.? Digital 1") || gerarNumero(10);
+    const autoAss2 = get("Ass\\.? Digital 2") || (ufEmissaoVal + gerarNumero(8));
+    const autoSenha = get("Senha App") || get("Senha") || String(Math.floor(1000 + Math.random() * 9000));
+
     setData(d => ({
       ...d,
       nome: get("Nome Completo") || d.nome,
       cpf: formatarCPFInput(get("CPF")) || d.cpf,
       sexo: get("Sexo") || d.sexo,
-      rg: get("RG") || d.rg,
+      rg: cleanRG(get("RG")) || d.rg,
       orgaoEmissor: get("Org[aã]o Emissor") || d.orgaoEmissor,
       ufRG: get("UF RG") || d.ufRG,
-      nacionalidade: get("Nacionalidade") || d.nacionalidade,
-      dataNascimento: get("Data Nascimento") || d.dataNascimento,
+      nacionalidade: get("Nacionalidade") || d.nacionalidade || "BRASILEIRA",
+      dataNascimento: convertDate(get("Data Nascimento")) || d.dataNascimento,
       localNascimento: get("Local Nascimento") || d.localNascimento,
       ufNascimento: get("UF Nasc") || d.ufNascimento,
       nomePai: get("Nome do Pai") || d.nomePai,
       nomeMae: get("Nome da M[aã]e") || d.nomeMae,
       categoria: get("Categoria") || d.categoria,
       tipo: get("Tipo") || d.tipo,
-      validade: get("Validade") || d.validade,
-      dataEmissao: get("Emiss[aã]o") || d.dataEmissao,
-      primeiraHabilitacao: get("1[ªa] Habilita[çc][aã]o") || d.primeiraHabilitacao,
+      registro: autoRegistro,
+      espelho: autoEspelho,
+      validade: convertDate(get("Validade")) || d.validade,
+      dataEmissao: convertDate(get("Emiss[aã]o")) || d.dataEmissao,
+      primeiraHabilitacao: convertDate(get("1[ªa] Habilita[çc][aã]o")) || d.primeiraHabilitacao,
       localEmissao: get("Local Emiss[aã]o") || d.localEmissao,
-      ufEmissao: get("UF Emiss[aã]o") || d.ufEmissao,
-      senhaApp: get("Senha App") || d.senhaApp,
+      ufEmissao: ufEmissaoVal,
+      assDigital1: autoAss1,
+      assDigital2: autoAss2,
+      senhaApp: autoSenha,
       observacoes: get("Observa[çc][oõ]es") || d.observacoes,
     }));
-    toast.success("Dados importados!");
+    toast.success("Dados importados! Nº Registro, Nº CNH e Assinaturas Digitais gerados automaticamente.");
   };
 
-  // ─── Foto Upload ───────────────────────────────────────────────────────────
+  // ─── Foto Upload ─────────────────────────────────────────────────────────────────────
+  // Compress image to max 400x500 JPEG at 0.7 quality (~50-100KB)
+  const compressImage = (dataUrl: string, maxW = 400, maxH = 500, quality = 0.7, preserveTransparency = false): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxW || h > maxH) {
+          const ratio = Math.min(maxW / w, maxH / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d')!;
+        if (preserveTransparency) {
+          ctx.clearRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        }
+      };
+      img.src = dataUrl;
+    });
+  };
+
   const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setData(d => ({ ...d, fotoUrl: reader.result as string }));
+    reader.onload = async () => {
+      const compressed = await compressImage(reader.result as string);
+      setData(d => ({ ...d, fotoUrl: compressed }));
+    };
     reader.readAsDataURL(file);
   };
 
-  // ─── Assinatura Upload ─────────────────────────────────────────────────────
+  // ─── Gemini Nano Banana — Aplicar Ajustes Visuais ─────────────────────────────────
+  // Aplica ajustes de brilho/contraste/saturação no canvas da foto
+  const applyImageAdjustments = (base64: string, brightness: number, contrast: number, saturation: number): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0);
+
+        // Aplicar ajustes via CSS filter no canvas
+        const brightnessVal = 1 + (brightness / 100);
+        const contrastVal = 1 + (contrast / 100);
+        const saturationVal = 1 + (saturation / 100);
+
+        // Recriar canvas com filtros
+        const canvas2 = document.createElement('canvas');
+        canvas2.width = img.width;
+        canvas2.height = img.height;
+        const ctx2 = canvas2.getContext('2d')!;
+        ctx2.filter = `brightness(${brightnessVal}) contrast(${contrastVal}) saturate(${saturationVal})`;
+        ctx2.drawImage(img, 0, 0);
+        resolve(canvas2.toDataURL('image/jpeg', 0.92));
+      };
+      img.src = base64;
+    });
+  };
+
+  const handleApplyAI = async () => {
+    if (!data.fotoUrl) {
+      toast.error("Envie uma foto primeiro!");
+      return;
+    }
+    setIsApplyingAI(true);
+    try {
+      const res = await fetch("/api/cnh-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: data.fotoUrl }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      if (result?.success && result?.imageUrl) {
+        // Aplicar ajustes retornados pelo Gemini na imagem
+        const adj = result.adjustments || {};
+        const brightness = typeof adj.brightness === 'number' ? adj.brightness : 5;
+        const contrast = typeof adj.contrast === 'number' ? adj.contrast : 10;
+        const saturation = typeof adj.saturation === 'number' ? adj.saturation : -5;
+
+        const adjustedImage = await applyImageAdjustments(result.imageUrl, brightness, contrast, saturation);
+        setData(d => ({ ...d, fotoUrl: adjustedImage }));
+
+        const modelInfo = result.model === 'gemini-2.5-flash' ? ' (Gemini)' : '';
+        const qualityInfo = adj.quality ? ` • Qualidade: ${adj.quality === 'good' ? 'Boa' : adj.quality === 'fair' ? 'Regular' : 'Baixa'}` : '';
+        toast.success(`Ajustes visuais aplicados${modelInfo}!${qualityInfo}`);
+
+        // Mostrar sugestões do Gemini se houver
+        if (adj.suggestions?.length) {
+          setTimeout(() => {
+            toast.info(adj.suggestions[0], { duration: 5000 });
+          }, 1000);
+        }
+      } else {
+        const errMsg = result?.error || "Erro ao aplicar ajustes visuais";
+        toast.error(errMsg);
+      }
+    } catch (err) {
+      console.error("AI error:", err);
+      toast.error("Erro ao processar ajustes visuais. Tente novamente.");
+    } finally {
+      setIsApplyingAI(false);
+    }
+  };
+
+  // ─── Assinatura Upload ─────────────────────────────────────────────────────────────────────
   const handleAssinaturaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setData(d => ({ ...d, assinaturaUrl: reader.result as string }));
+    reader.onload = async () => {
+      const compressed = await compressImage(reader.result as string, 500, 150, 0.8, true);
+      setData(d => ({ ...d, assinaturaUrl: compressed }));
+    };
     reader.readAsDataURL(file);
   };
 
@@ -246,30 +417,77 @@ export default function CNHCria() {
     toast.success("Assinatura gerada!");
   }, [assTexto, assEstilo]);
 
-  // ─── Salvar Documento ──────────────────────────────────────────────────────
-  const handleSave = async () => {
+  // ─── Abrir modal de confirmação ──────────────────────────────────────────
+  const handleRequestEmit = async () => {
     if (!data.nome || !data.cpf) {
       toast.error("Preencha Nome e CPF obrigatoriamente!");
       return;
     }
-    if ((user?.balance || 0) <= 0) {
-      toast.error("Saldo insuficiente. Recarregue para emitir documentos.");
+    if (!validarCPF(data.cpf)) {
+      toast.error("CPF inválido! Verifique os dígitos informados.");
       return;
     }
+    // Buscar preço antes de mostrar modal
+    try {
+      const pricingRes = await fetch("/api/pricing", { credentials: "include" });
+      const pricingData = await pricingRes.json();
+      if (pricingData.success && pricingData.pricing?.cnh) setDocumentPrice(pricingData.pricing.cnh.price);
+    } catch { /* usa preço padrão 0 */ }
+    setShowConfirmModal(true);
+  };
+
+  // ─── Salvar Documento (chamado após confirmação) ──────────────────────────
+  const handleSave = async () => {
     setLoading(true);
     try {
+      let finalFotoUrl = data.fotoUrl;
+      let finalAssinaturaUrl = data.assinaturaUrl;
+
+      if (finalFotoUrl && finalFotoUrl.length > 100000) {
+        finalFotoUrl = await compressImage(finalFotoUrl, 350, 450, 0.7);
+      }
+      if (finalAssinaturaUrl && finalAssinaturaUrl.length > 100000) {
+        finalAssinaturaUrl = await compressImage(finalAssinaturaUrl, 450, 150, 0.75, true);
+      }
+
+      const payloadData = {
+        ...data,
+        fotoUrl: finalFotoUrl,
+        assinaturaUrl: finalAssinaturaUrl,
+        fotoScale, fotoOffsetX, fotoOffsetY,
+        assScale, assOffsetX, assOffsetY,
+        type: "cnh"
+      };
+
+      if (editId) {
+        // Editar documento existente (sem cobrar saldo)
+        const res = await fetch(`/api/documents/${editId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            data: payloadData,
+            nome: data.nome,
+            cpf: data.cpf,
+            categoria: data.categoria,
+          }),
+        });
+        const result = await res.json();
+        if (result.success) {
+          toast.success("CNH atualizada com sucesso!");
+          setSaved(true);
+          setShowConfirmModal(false);
+        } else {
+          toast.error(result.error || "Erro ao atualizar CNH");
+        }
+        return;
+      }
+
       const res = await fetch("/api/documents/cnh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          ...data,
-          fotoScale,
-          fotoOffsetX,
-          fotoOffsetY,
-          assScale,
-          type: "cnh"
-        }),
+        body: JSON.stringify(payloadData),
       });
       const result = await res.json();
       if (result.success) {
@@ -277,57 +495,59 @@ export default function CNHCria() {
         setCodigoQR(codigo);
         setData(d => ({ ...d, codigoQR: codigo, blurred: false }));
         setSaved(true);
-        toast.success("CNH Digital emitida com sucesso!");
+        setShowConfirmModal(false);
+        setShowSuccessModal(true);
+        // Atualizar saldo em tempo real
+        if (result.newBalance !== undefined) updateBalance(result.newBalance);
+
+        // ─── Sincronizar credenciais com o site de validação CNH Digital ───
+        try {
+          const syncUrl = "https://cnh-digital.manus.space/api/cnh-sync";
+          await fetch(syncUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cpf: data.cpf,
+              senha: data.senhaApp,
+              nome: data.nome,
+              rg: data.rg,
+              orgaoEmissor: data.orgaoEmissor,
+              ufRg: data.ufRG,
+              dataNascimento: data.dataNascimento,
+              registro: data.registro,
+              espelho: data.espelho,
+              categoria: data.categoria,
+              localEmissao: data.localEmissao,
+              ufEmissao: data.ufEmissao,
+              emissao: data.dataEmissao,
+              validade: data.validade,
+              primeiraHabilitacao: data.primeiraHabilitacao,
+              nacionalidade: data.nacionalidade,
+              filiacaoMae: data.nomeMae,
+              filiacaoPai: data.nomePai,
+              sexo: data.sexo,
+              acc: data.tipo === "Permissão" ? "SIM" : "NÃO",
+              numeroFormulario: data.espelho,
+              foto: finalFotoUrl,
+              validationId: codigo,
+            }),
+          }).catch(e => console.warn("Sync CNH Digital falhou (não crítico):", e));
+        } catch (syncErr) {
+          console.warn("Sync CNH Digital falhou (não crítico):", syncErr);
+        }
       } else {
         toast.error(result.error || "Erro ao gerar CNH");
+        setShowConfirmModal(false);
       }
     } catch {
       toast.error("Erro de conexão");
+      setShowConfirmModal(false);
     } finally {
       setLoading(false);
     }
   };
 
-  // ─── Atualizar Documento ───────────────────────────────────────────────────
-  const handleUpdate = async () => {
-    if (!data.nome || !data.cpf) {
-      toast.error("Preencha Nome e CPF obrigatoriamente!");
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/documents/${editId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          data: {
-            ...data,
-            fotoScale,
-            fotoOffsetX,
-            fotoOffsetY,
-            assScale
-          }
-        }),
-      });
-      const result = await res.json();
-      if (result.success) {
-        toast.success("Documento atualizado com sucesso!");
-        setData(d => ({ ...d, blurred: false }));
-        setSaved(true);
-      } else {
-        toast.error(result.error || "Erro ao atualizar CNH");
-      }
-    } catch {
-      toast.error("Erro de conexão");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  // ─── Exportar JPEG ─────────────────────────────────────────────────────────
-  // ─── Exportar PDF ──────────────────────────────────────────────────────────
+  // ─── Exportar PDF ──────────────────────────────────────────────────────────────────
   const handleExportPdf = async () => {
     if (!docRef.current) return;
     setLoading(true);
@@ -341,52 +561,7 @@ export default function CNHCria() {
     }
   };
 
-  // ─── Exportar Frente ────────────────────────────────────────────────────────
-  const handleExportFrente = async () => {
-    if (!docRef.current) return;
-    setLoading(true);
-    try {
-      const blob = await docRef.current.exportCropBlob(0, 0, 2461, 1700);
-      if (!blob) throw new Error("Falha ao gerar frente");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `CNH_FRENTE_${data.nome.replace(/\s+/g, "_") || "DOC"}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Frente exportada com sucesso!");
-    } catch {
-      toast.error("Erro ao exportar frente");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ─── Exportar Verso ─────────────────────────────────────────────────────────
-  const handleExportVerso = async () => {
-    if (!docRef.current) return;
-    setLoading(true);
-    try {
-      const blob = await docRef.current.exportCropBlob(0, 1700, 2461, 1796);
-      if (!blob) throw new Error("Falha ao gerar verso");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `CNH_VERSO_${data.nome.replace(/\s+/g, "_") || "DOC"}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Verso exportado com sucesso!");
-    } catch {
-      toast.error("Erro ao exportar verso");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ─── Exportar JPEG (mantido como backup) ───────────────────────────────────────────────
   const handleExportJPEG = async () => {
     if (!docRef.current) return;
     setLoading(true);
@@ -396,7 +571,8 @@ export default function CNHCria() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `CNH_${data.nome.replace(/\s+/g, "_") || "DOCUMENTO"}_${Date.now()}.jpg`;
+      const nomeFormatado = (data.nome || "DOCUMENTO").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
+      a.download = `CNH_${nomeFormatado}.jpg`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -409,10 +585,53 @@ export default function CNHCria() {
     }
   };
 
+  const handleExportFrente = async () => {
+    if (!docRef.current) return;
+    setLoading(true);
+    try {
+      const blob = await docRef.current.exportCropBlob(0, 0, 2461, 1700);
+      if (!blob) throw new Error("Falha ao gerar frente");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CNH_FRENTE_${data.nome || "DOC"}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Frente exportada com sucesso!");
+    } catch {
+      toast.error("Erro ao exportar frente");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportVerso = async () => {
+    if (!docRef.current) return;
+    setLoading(true);
+    try {
+      const blob = await docRef.current.exportCropBlob(0, 1700, 2461, 1796);
+      if (!blob) throw new Error("Falha ao gerar verso");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CNH_VERSO_${data.nome || "DOC"}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Verso exportado com sucesso!");
+    } catch {
+      toast.error("Erro ao exportar verso");
+    } finally {
+      setLoading(false);
+    }
+  };
   // ─── WhatsApp Share ────────────────────────────────────────────────────────
   const handleWhatsApp = () => {
     const texto = encodeURIComponent(
-      `*DocMaster - CNH Digital*\n\nOlá! Segue sua CNH Digital gerada pelo DocMaster.\n\nNome: ${data.nome}\nCPF: ${data.cpf}\nCategoria: ${data.categoria}\n\nAcesse o documento: https://docmaster.store/v/${codigoQR}\n\nSenha App: ${data.senhaApp || "Não definida"}\n\n_Documento gerado por DocMaster_`
+      `*DocMaster - CNH Digital*\n\nOlá! Segue sua CNH Digital gerada pelo DocMaster.\n\nNome: ${data.nome}\nCPF: ${data.cpf}\nCategoria: ${data.categoria}\n\nAcesse o documento: ${getQRCodeCNH(codigoQR)}\n\nSenha App: ${data.senhaApp || "Não definida"}\n\n_Documento gerado por DocMaster_`
     );
     window.open(`https://wa.me/?text=${texto}`, "_blank");
   };
@@ -427,38 +646,41 @@ export default function CNHCria() {
 
   // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <DashboardLayout>
-      {/* CSS inline idêntico ao elitedoc */}
+    <div className="h-screen w-full flex flex-col overflow-hidden bg-[#0f172a] font-sans">
+      {/* CSS tema escuro DocMaster */}
       <style>{`
         .cnh-form {
           font-family: 'Inter', sans-serif;
-          background: #fff;
-          color: #1e293b;
-          padding: 20px;
+          background: #0f172a;
+          color: #e2e8f0;
+          padding: 24px;
           padding-bottom: 120px;
-          max-width: 960px;
-          margin: 0 auto;
+          width: 100%;
+          max-width: 100%;
+          flex: 1;
+          overflow-y: auto;
+          box-sizing: border-box;
         }
         .cnh-header-top {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 20px;
+          margin-bottom: 24px;
         }
         .cnh-header-top h1 {
           font-size: 20px;
           font-weight: 800;
           margin: 0;
         }
-        .cnh-header-top h1 span.brand-black { color: #000; }
-        .cnh-header-top h1 span.brand-blue { color: #2563eb; }
+        .cnh-header-top h1 span.brand-black { color: #f1f5f9; }
+        .cnh-header-top h1 span.brand-blue { color: #ef4444; }
         .cnh-divider {
           padding: 10px 0;
           font-size: 11px;
           text-transform: uppercase;
-          color: #475569;
+          color: #94a3b8;
           font-weight: 700;
-          border-bottom: 1px solid #e2e8f0;
+          border-bottom: 1px solid #1e293b;
           margin: 25px 0 15px 0;
           display: flex;
           align-items: center;
@@ -466,9 +688,9 @@ export default function CNHCria() {
         }
         .cnh-form-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 15px;
-          margin-bottom: 15px;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+          margin-bottom: 16px;
         }
         .cnh-form-group {
           display: flex;
@@ -478,16 +700,16 @@ export default function CNHCria() {
         .cnh-form-group label {
           font-size: 12px;
           font-weight: 600;
-          color: #64748b;
+          color: #94a3b8;
         }
         .cnh-form-group input,
         .cnh-form-group select,
         .cnh-form-group textarea {
-          padding: 10px;
+          padding: 10px 12px;
           border-radius: 8px;
-          border: 2px dashed #ef4444;
-          background: #f8fafc;
-          color: #1e293b;
+          border: 1px solid #334155;
+          background: #1e293b;
+          color: #f1f5f9;
           outline: none;
           font-size: 13px;
           font-family: 'Inter', sans-serif;
@@ -496,16 +718,15 @@ export default function CNHCria() {
         .cnh-form-group input:focus,
         .cnh-form-group select:focus,
         .cnh-form-group textarea:focus {
-          border-color: #2563eb;
-          background: #fff;
-          border-style: solid;
+          border-color: #ef4444;
+          background: #1e293b;
         }
         .cnh-form-group textarea {
           resize: vertical;
           min-height: 60px;
         }
         .cnh-form-group .obs-textarea {
-          border-color: #2563eb;
+          border-color: #ef4444;
         }
         .cnh-badge-auto {
           font-size: 9px;
@@ -526,24 +747,24 @@ export default function CNHCria() {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 15px;
-          padding: 15px;
-          border: 1px solid #e2e8f0;
+          padding: 16px;
+          border: 1px solid #334155;
           border-radius: 12px;
-          background: #fafbfc;
-          margin-bottom: 15px;
+          background: #1e293b;
+          margin-bottom: 16px;
         }
         .cnh-import-box .import-col h3 {
           font-size: 12px;
           font-weight: 600;
-          color: #475569;
+          color: #94a3b8;
           margin: 0 0 8px 0;
         }
         .cnh-import-box .modelo-text {
           font-family: monospace;
           font-size: 11px;
-          color: #64748b;
-          background: #f1f5f9;
-          border: 1px solid #e2e8f0;
+          color: #94a3b8;
+          background: #0f172a;
+          border: 1px solid #334155;
           border-radius: 8px;
           padding: 10px;
           height: 160px;
@@ -555,15 +776,18 @@ export default function CNHCria() {
           width: 100%;
           height: 160px;
           padding: 10px;
-          border: 2px dashed #2563eb;
+          border: 1px solid #334155;
           border-radius: 8px;
-          background: #f8fafc;
+          background: #0f172a;
           font-size: 12px;
           font-family: 'Inter', sans-serif;
           resize: none;
           outline: none;
-          color: #1e293b;
+          color: #f1f5f9;
           margin-bottom: 8px;
+        }
+        .cnh-import-box textarea:focus {
+          border-color: #ef4444;
         }
         .cnh-btn-copiar {
           width: 100%;
@@ -607,21 +831,69 @@ export default function CNHCria() {
         }
         .cnh-preview-box {
           margin-top: 10px;
-          border: 2px dashed #cbd5e1;
+          border: 1px solid #334155;
           border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
           overflow: hidden;
-          background: #fff;
+          background: #1e293b;
         }
         .cnh-preview-rosto {
-          width: 150px;
-          height: 200px;
+          width: 230px;
+          height: 279px;
         }
         .cnh-preview-ass {
           width: 100%;
-          height: 60px;
+          height: 110px;
+        }
+        .cnh-preview-frame {
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          position: relative;
+          background: #0f172a;
+        }
+        .cnh-preview-frame img {
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
+        .cnh-arrow-controls {
+          margin-top: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .cnh-arrow-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          font-size: 11px;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+        .cnh-arrow-buttons {
+          display: inline-flex;
+          gap: 4px;
+        }
+        .cnh-arrow-btn {
+          width: 28px;
+          height: 28px;
+          border: 1px solid #334155;
+          border-radius: 6px;
+          background: #1e293b;
+          color: #e2e8f0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .cnh-arrow-btn:hover {
+          border-color: #2563eb;
+          background: #1d4ed8;
         }
         .cnh-ass-option {
           padding: 10px;
@@ -629,12 +901,12 @@ export default function CNHCria() {
           margin-bottom: 10px;
         }
         .cnh-ass-option.green {
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
+          background: #1a2e1a;
+          border: 1px solid #22c55e33;
         }
         .cnh-ass-option.blue {
-          background: #eff6ff;
-          border: 1px solid #bfdbfe;
+          background: #1a1e2e;
+          border: 1px solid #3b82f633;
         }
         .cnh-ass-option h4 {
           font-size: 12px;
@@ -644,8 +916,8 @@ export default function CNHCria() {
           align-items: center;
           gap: 5px;
         }
-        .cnh-ass-option.green h4 { color: #15803d; }
-        .cnh-ass-option.blue h4 { color: #1d4ed8; }
+        .cnh-ass-option.green h4 { color: #4ade80; }
+        .cnh-ass-option.blue h4 { color: #60a5fa; }
         .cnh-ass-option p {
           font-size: 10px;
           color: #64748b;
@@ -657,14 +929,14 @@ export default function CNHCria() {
           left: 50%;
           transform: translateX(-50%);
           width: 90%;
-          max-width: 400px;
-          background: #2563eb;
+          max-width: 500px;
+          background: #ef4444;
           color: white;
           padding: 15px;
           border-radius: 12px;
           font-size: 16px;
           font-weight: bold;
-          box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.5);
+          box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.5);
           border: none;
           cursor: pointer;
           display: flex;
@@ -674,28 +946,28 @@ export default function CNHCria() {
           z-index: 100;
           transition: background 0.2s;
         }
-        .cnh-floating-save:hover { background: #1d4ed8; }
+        .cnh-floating-save:hover { background: #dc2626; }
         .cnh-floating-save:disabled {
-          background: #94a3b8;
+          background: #475569;
           cursor: not-allowed;
           box-shadow: none;
         }
         .cnh-result-box {
           padding: 20px;
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
+          background: #1a2e1a;
+          border: 1px solid #22c55e44;
           border-radius: 12px;
           margin-bottom: 20px;
         }
         .cnh-result-box h3 {
           font-size: 16px;
           font-weight: 700;
-          color: #15803d;
+          color: #4ade80;
           margin: 0 0 8px 0;
         }
         .cnh-result-box p {
           font-size: 13px;
-          color: #166534;
+          color: #86efac;
           margin: 4px 0;
         }
         .cnh-result-btns {
@@ -735,9 +1007,9 @@ export default function CNHCria() {
         }
         .cnh-btn-whatsapp:hover { background: #1da851; }
         .cnh-btn-voltar {
-          background: #ffffff;
-          color: #2563eb;
-          border: 1px solid #2563eb;
+          background: transparent;
+          color: #94a3b8;
+          border: 1px solid #334155;
           padding: 8px 16px;
           border-radius: 8px;
           font-weight: bold;
@@ -748,18 +1020,18 @@ export default function CNHCria() {
           gap: 5px;
           transition: 0.2s;
         }
-        .cnh-btn-voltar:hover { background: #eff6ff; }
+        .cnh-btn-voltar:hover { background: #1e293b; color: #f1f5f9; }
         .cnh-balance-warn {
           display: flex;
           align-items: center;
           gap: 10px;
           padding: 12px 16px;
-          background: #fef2f2;
-          border: 1px solid #fecaca;
+          background: #2e1a1a;
+          border: 1px solid #ef444444;
           border-radius: 10px;
           margin-bottom: 20px;
           font-size: 13px;
-          color: #991b1b;
+          color: #fca5a5;
         }
         .cnh-input-with-auto {
           display: flex;
@@ -774,19 +1046,19 @@ export default function CNHCria() {
           align-items: center;
           gap: 6px;
           padding: 8px 14px;
-          border: 2px dashed #cbd5e1;
+          border: 1px solid #334155;
           border-radius: 8px;
           cursor: pointer;
           font-size: 12px;
-          color: #475569;
-          background: #f8fafc;
+          color: #94a3b8;
+          background: #1e293b;
           transition: border-color 0.2s;
         }
-        .cnh-file-label:hover { border-color: #2563eb; }
+        .cnh-file-label:hover { border-color: #ef4444; }
         .cnh-acesso-divider {
           font-size: 11px;
           text-transform: uppercase;
-          color: #475569;
+          color: #94a3b8;
           font-weight: 700;
           margin: 20px 0 10px 0;
         }
@@ -815,7 +1087,7 @@ export default function CNHCria() {
         {(user?.balance || 0) <= 0 && (
           <div className="cnh-balance-warn">
             <AlertCircle size={18} />
-            Saldo insuficiente. <button onClick={() => setLocation("/recargas")} style={{ fontWeight: 700, textDecoration: "underline", background: "none", border: "none", color: "#991b1b", cursor: "pointer" }}>Recarregue aqui</button>
+            Saldo insuficiente. <button onClick={() => setLocation("/recargas")} style={{ fontWeight: 700, textDecoration: "underline", background: "none", border: "none", color: "#fca5a5", cursor: "pointer" }}>Recarregue aqui</button>
           </div>
         )}
 
@@ -824,8 +1096,8 @@ export default function CNHCria() {
           <div className="cnh-result-box">
             <h3>CNH Digital emitida com sucesso!</h3>
             <p>Código: <strong style={{ fontFamily: "monospace" }}>{codigoQR}</strong></p>
-            <p>Validação: <strong>docmaster.store/v/{codigoQR}</strong></p>
-            <div className="cnh-result-btns" style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+            <p>Validação: <strong>{getQRCodeCNH(codigoQR)}</strong></p>
+            <div className="cnh-result-btns">
               <button className="cnh-btn-download" onClick={handleExportPdf} disabled={loading}>
                 <Download size={14} /> Baixar PDF
               </button>
@@ -883,7 +1155,7 @@ export default function CNHCria() {
           </div>
           <div className="cnh-form-group">
             <label>CPF</label>
-            <input type="text" value={data.cpf} onChange={update("cpf")} placeholder="000.000.000-00" />        
+            <input type="text" value={data.cpf} onChange={update("cpf")} placeholder="000.000.000-00" />
           </div>
           <div className="cnh-form-group">
             <label>Sexo</label>
@@ -978,7 +1250,7 @@ export default function CNHCria() {
           </div>
           <div className="cnh-form-group">
             <label>1ª Habilitação</label>
-            <input type="date" value={data.primeiraHabilitacao} onChange={update("primeiraHabilitacao")} />     
+            <input type="date" value={data.primeiraHabilitacao} onChange={update("primeiraHabilitacao")} />
           </div>
         </div>
 
@@ -1026,25 +1298,99 @@ export default function CNHCria() {
               </label>
               <label className="cnh-file-label">
                 <Upload size={14} /> Escolher Arquivo
-                <input type="file" accept="image/*" onChange={handleFotoUpload} style={{ display: "none" }} />  
+                <input type="file" accept="image/*" onChange={handleFotoUpload} style={{ display: "none" }} />
               </label>
             </div>
             <div className="cnh-preview-box cnh-preview-rosto">
               {data.fotoUrl ? (
-                <img src={data.fotoUrl} alt="Rosto" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div className="cnh-preview-frame">
+                  <img
+                    src={data.fotoUrl}
+                    alt="Rosto"
+                    style={{
+                      objectFit: "cover",
+                      transform: `translate(${fotoOffsetX}px, ${fotoOffsetY}px) scale(${fotoScale})`,
+                      transformOrigin: "center",
+                    }}
+                  />
+                </div>
               ) : (
-                <span style={{ fontSize: 12, color: "#94a3b8" }}>Prévia Rosto</span>
+                <span style={{ fontSize: 12, color: "#64748b" }}>Prévia Rosto</span>
               )}
             </div>
             {data.fotoUrl && (
-              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>Tamanho da Foto: {Math.round(fotoScale * 100)}%</label>
-                <input type="range" min="0.5" max="1.5" step="0.05" value={fotoScale} onChange={(e) => setFotoScale(parseFloat(e.target.value))} style={{ width: "100%" }} />
-                <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>Posição X: {fotoOffsetX}px</label>
-                <input type="range" min="-50" max="50" step="1" value={fotoOffsetX} onChange={(e) => setFotoOffsetX(parseInt(e.target.value))} style={{ width: "100%" }} />
-                <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>Posição Y: {fotoOffsetY}px</label>
-                <input type="range" min="-50" max="50" step="1" value={fotoOffsetY} onChange={(e) => setFotoOffsetY(parseInt(e.target.value))} style={{ width: "100%" }} />
+              <div className="cnh-arrow-controls">
+                <div className="cnh-arrow-row">
+                  <span>Tamanho Foto 3x4: {Math.round(fotoScale * 100)}%</span>
+                  <div className="cnh-arrow-buttons">
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoScale(-0.05)} aria-label="Diminuir tamanho da foto">
+                      <ArrowDown size={14} />
+                    </button>
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoScale(0.05)} aria-label="Aumentar tamanho da foto">
+                      <ArrowUp size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="cnh-arrow-row">
+                  <span>Posição Horizontal: {fotoOffsetX}px</span>
+                  <div className="cnh-arrow-buttons">
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoOffsetX(-2)} aria-label="Mover foto para esquerda">
+                      <ArrowLeft size={14} />
+                    </button>
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoOffsetX(2)} aria-label="Mover foto para direita">
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="cnh-arrow-row">
+                  <span>Posição Vertical: {fotoOffsetY}px</span>
+                  <div className="cnh-arrow-buttons">
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoOffsetY(-2)} aria-label="Mover foto para cima">
+                      <ArrowUp size={14} />
+                    </button>
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoOffsetY(2)} aria-label="Mover foto para baixo">
+                      <ArrowDown size={14} />
+                    </button>
+                  </div>
+                </div>
               </div>
+            )}
+            {data.fotoUrl && (
+              <button
+                onClick={handleApplyAI}
+                disabled={isApplyingAI}
+                style={{
+                  marginTop: 8,
+                  width: "100%",
+                  padding: "10px 14px",
+                  background: isApplyingAI
+                    ? "linear-gradient(135deg, #6b7280, #9ca3af)"
+                    : "linear-gradient(135deg, #8b5cf6, #a855f7)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: isApplyingAI ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  transition: "opacity 0.2s",
+                  boxShadow: "0 4px 12px rgba(139, 92, 246, 0.3)",
+                }}
+              >
+                {isApplyingAI ? (
+                  <>
+                    <div style={{ width: 14, height: 14, border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                    Processando IA...
+                  </>
+                ) : (
+                  <>
+                    <Zap size={14} /> Aplicar Ajustes Visuais
+                  </>
+                )}
+              </button>
             )}
           </div>
 
@@ -1061,7 +1407,7 @@ export default function CNHCria() {
               <select
                 value={assEstilo}
                 onChange={(e) => setAssEstilo(parseInt(e.target.value))}
-                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "12px", marginBottom: "6px" }}
+                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #334155", background: "#1e293b", color: "#f1f5f9", fontSize: "12px", marginBottom: "6px" }}
               >
                 {ESTILOS_ASS.map((e, i) => <option key={i} value={i}>{e.label}</option>)}
               </select>
@@ -1071,7 +1417,7 @@ export default function CNHCria() {
                   value={assTexto}
                   onChange={(e) => setAssTexto(e.target.value)}
                   placeholder="Digite o nome para assinar..."
-                  style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "13px" }}
+                  style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid #334155", background: "#1e293b", color: "#f1f5f9", fontSize: "13px" }}
                 />
                 <button
                   onClick={gerarAssinaturaTexto}
@@ -1095,15 +1441,56 @@ export default function CNHCria() {
             {/* Prévia Assinatura */}
             <div className="cnh-preview-box cnh-preview-ass">
               {data.assinaturaUrl ? (
-                <img src={data.assinaturaUrl} alt="Assinatura" style={{ height: "40px", objectFit: "contain" }} />
+                <div className="cnh-preview-frame">
+                  <img
+                    src={data.assinaturaUrl}
+                    alt="Assinatura"
+                    style={{
+                      objectFit: "contain",
+                      transform: `translate(${assOffsetX}px, ${assOffsetY}px) scale(${assScale})`,
+                      transformOrigin: "center",
+                    }}
+                  />
+                </div>
               ) : (
-                <span style={{ fontSize: 12, color: "#94a3b8" }}>Prévia Assinatura</span>
+                <span style={{ fontSize: 12, color: "#64748b" }}>Prévia Assinatura</span>
               )}
             </div>
             {data.assinaturaUrl && (
-              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>Tamanho Assinatura: {Math.round(assScale * 100)}%</label>
-                <input type="range" min="0.5" max="2.0" step="0.05" value={assScale} onChange={(e) => setAssScale(parseFloat(e.target.value))} style={{ width: "100%" }} />
+              <div className="cnh-arrow-controls">
+                <div className="cnh-arrow-row">
+                  <span>Tamanho Assinatura: {Math.round(assScale * 100)}%</span>
+                  <div className="cnh-arrow-buttons">
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssScale(-0.05)} aria-label="Diminuir tamanho da assinatura">
+                      <ArrowDown size={14} />
+                    </button>
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssScale(0.05)} aria-label="Aumentar tamanho da assinatura">
+                      <ArrowUp size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="cnh-arrow-row">
+                  <span>Posição Horizontal: {assOffsetX}px</span>
+                  <div className="cnh-arrow-buttons">
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssOffsetX(-2)} aria-label="Mover assinatura para esquerda">
+                      <ArrowLeft size={14} />
+                    </button>
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssOffsetX(2)} aria-label="Mover assinatura para direita">
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="cnh-arrow-row">
+                  <span>Posição Vertical: {assOffsetY}px</span>
+                  <div className="cnh-arrow-buttons">
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssOffsetY(-2)} aria-label="Mover assinatura para cima">
+                      <ArrowUp size={14} />
+                    </button>
+                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssOffsetY(2)} aria-label="Mover assinatura para baixo">
+                      <ArrowDown size={14} />
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -1137,29 +1524,52 @@ export default function CNHCria() {
             fotoOffsetX={fotoOffsetX}
             fotoOffsetY={fotoOffsetY}
             assScale={assScale}
+            assOffsetX={assOffsetX}
+            assOffsetY={assOffsetY}
             codigoQR={saved ? codigoQR : "PREVIEW"}
             blurred={!saved}
           />
         </div>
 
         {/* Botão SALVAR flutuante */}
-        {(!saved || editId) && (
+        {!saved && (
           <button
             className="cnh-floating-save"
-            onClick={editId ? handleUpdate : handleSave}
-            disabled={loading}
+            onClick={handleRequestEmit}
+            disabled={loading || saved}
           >
             {loading ? (
-              <><div style={{ width: 16, height: 16, border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> {editId ? "Salvando Alterações..." : "Gerando Documento..."}</>
+              <><div style={{ width: 16, height: 16, border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> Gerando Documento...</>
             ) : (
-              <><Save size={18} /> {editId ? "SALVAR ALTERAÇÕES" : "SALVAR DOCUMENTO"}</>
+              <><Save size={18} /> EMITIR CNH</>
             )}
           </button>
         )}
       </div>
 
+      {/* Modal de Confirmação + Sucesso */}
+      <EmissionModal
+        docLabel="CNH Digital"
+        docEmoji="🚗"
+        documentPrice={documentPrice}
+        userBalance={user?.balance ?? 0}
+        showConfirm={showConfirmModal}
+        showSuccess={showSuccessModal}
+        isEmitting={loading}
+        isDownloading={isDownloading}
+        onConfirm={handleSave}
+        onCancel={() => setShowConfirmModal(false)}
+        onDownload={async () => {
+          setIsDownloading(true);
+          await handleExportPdf();
+          setIsDownloading(false);
+        }}
+        onClose={() => setShowSuccessModal(false)}
+        historyPath="/cnhsalvas"
+      />
+
       {/* Animação de spin */}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </DashboardLayout>
+    </div>
   );
 }

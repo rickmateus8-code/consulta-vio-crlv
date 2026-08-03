@@ -68,64 +68,95 @@ function firstNonEmpty(...values: any[]): string {
 }
 
 function normalizeSnoopPayload(result: any) {
+  // Suporta múltiplos formatos de envelope: { data: {...} }, { body: {...} } ou payload direto
   const payload = result?.data || result?.body || result;
   if (!payload || typeof payload !== "object") return null;
 
-  const address = payload.address || payload.endereco || {};
+  // Suporta endereço em múltiplos formatos e estruturas aninhadas
+  const address = payload.address || payload.endereco || payload.addresses?.[0] || {};
+  const relatives = payload.relatives || payload.parentesco || {};
 
-  const nome = firstNonEmpty(payload.nome, payload.name).toUpperCase();
+  const nome = firstNonEmpty(
+    payload.nome,
+    payload.name,
+    payload.nome_completo,
+    payload.full_name
+  ).toUpperCase();
   if (!nome) return null;
 
+  // Cobre todos os aliases conhecidos da API Snoop para Nome da Mãe
   const nomeMae = firstNonEmpty(
     payload.mae,
     payload.nome_mae,
     payload.mother_name,
-    payload.nomeMae
+    payload.nomeMae,
+    payload.mother,
+    payload.mae_completo,
+    payload.nome_mae_completo,
+    relatives.mother,
+    relatives.mae,
+    relatives.nome_mae
   ).toUpperCase();
 
   const endereco = firstNonEmpty(
+    payload.logradouro,
     payload.endereco,
+    address.logradouro,
     address.street,
     address.address,
-    address.logradouro,
-    payload.logradouro
+    address.endereco
   ).toUpperCase();
 
   const numero = firstNonEmpty(
     payload.numero,
-    address.number,
+    payload.number,
     address.numero,
-    payload.number
+    address.number
   ).toUpperCase();
 
   const bairro = firstNonEmpty(
     payload.bairro,
+    address.bairro,
     address.neighborhood,
-    address.bairro
+    address.district
   ).toUpperCase();
 
   const cidade = firstNonEmpty(
     payload.cidade,
+    payload.municipio,
+    address.cidade,
     address.city,
-    address.cidade
+    address.municipio
   ).toUpperCase();
 
   const uf = firstNonEmpty(
     payload.uf,
+    payload.estado,
+    address.uf,
     address.state,
-    address.uf
+    address.estado
   ).toUpperCase();
 
   const cep = firstNonEmpty(
     payload.cep,
+    address.cep,
     address.zip_code,
-    address.cep
+    address.zipcode
   );
 
   return {
     nome,
-    nascimento: normalizeDate(firstNonEmpty(payload.nascimento, payload.birth_date, payload.data_nascimento)),
-    sexo: normalizeSexo(firstNonEmpty(payload.sexo, payload.gender)),
+    nascimento: normalizeDate(firstNonEmpty(
+      payload.nascimento,
+      payload.birth_date,
+      payload.data_nascimento,
+      payload.dt_nascimento
+    )),
+    sexo: normalizeSexo(firstNonEmpty(
+      payload.sexo,
+      payload.gender,
+      payload.genero
+    )),
     nomeMae,
     endereco,
     numero,

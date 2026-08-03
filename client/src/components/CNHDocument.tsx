@@ -6,7 +6,7 @@
  * o layout do elitedoc.store com coordenadas pixel-perfect.
  *
  * Fontes: Ultra (AltraW00-SmallCaps.woff2) + OCR-B (ocrbstd.otf)
- * Exporta como imagem JPEG de alta qualidade.
+ * Exporta como imagem JPEG de alta qualidade com fundo branco garantido.
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import QRCode from "qrcode";
@@ -97,12 +97,26 @@ function gerarMRZ(user: CNHDocumentProps): string[] {
   ];
 }
 
+function getCrossOrigin(url: string): "" | "anonymous" | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("data:") || url.startsWith("blob:") || url.startsWith("/")) {
+    return undefined;
+  }
+  return "anonymous";
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    const crossOrigin = getCrossOrigin(src);
+    if (crossOrigin) {
+      img.crossOrigin = crossOrigin;
+    }
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = (e) => {
+      console.warn("Erro ao carregar imagem:", src, e);
+      reject(e);
+    };
     img.src = src;
   });
 }
@@ -139,8 +153,16 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       await renderCanvas();
       const cvs = canvasRef.current;
       if (!cvs) return null;
+      const whiteCvs = document.createElement("canvas");
+      whiteCvs.width = cvs.width;
+      whiteCvs.height = cvs.height;
+      const wctx = whiteCvs.getContext("2d");
+      if (!wctx) return null;
+      wctx.fillStyle = "#FFFFFF";
+      wctx.fillRect(0, 0, cvs.width, cvs.height);
+      wctx.drawImage(cvs, 0, 0);
       return new Promise<Blob | null>((resolve) => {
-        cvs.toBlob((blob) => resolve(blob), "image/jpeg", 0.92);
+        whiteCvs.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
       });
     },
     exportAsPdf: async () => {
@@ -148,18 +170,32 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       const cvs = canvasRef.current;
       if (!cvs) return;
       const { default: jsPDF } = await import("jspdf");
-      // Canvas dimensions in pixels
+
+      const whiteCvs = document.createElement("canvas");
+      whiteCvs.width = cvs.width;
+      whiteCvs.height = cvs.height;
+      const wctx = whiteCvs.getContext("2d");
+      if (!wctx) return;
+      wctx.fillStyle = "#FFFFFF";
+      wctx.fillRect(0, 0, cvs.width, cvs.height);
+      wctx.drawImage(cvs, 0, 0);
+
+      // Dimensions in mm at 96 DPI (1px = 0.2646mm)
       const cw = cvs.width;
       const ch = cvs.height;
-      // Convert to mm at 96 DPI (1px = 0.2646mm)
       const pxToMm = 0.2646;
       const wMm = cw * pxToMm;
       const hMm = ch * pxToMm;
       const orientation = wMm > hMm ? "l" : "p";
       const pdf = new jsPDF({ orientation, unit: "mm", format: [wMm, hMm] });
-      const imgData = cvs.toDataURL("image/jpeg", 0.95);
+      const imgData = whiteCvs.toDataURL("image/jpeg", 0.95);
       pdf.addImage(imgData, "JPEG", 0, 0, wMm, hMm);
-      const nomeFormatado = ((props as any).nome || "DOCUMENTO").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
+      const nomeFormatado = (props.nome || "DOCUMENTO")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "_")
+        .replace(/[^A-Z0-9_]/g, "");
       pdf.save(`CNH_${nomeFormatado}.pdf`);
     },
     getCanvas: () => canvasRef.current,
@@ -172,16 +208,14 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       crop.height = h;
       const cctx = crop.getContext('2d');
       if (!cctx) return null;
+      cctx.fillStyle = "#FFFFFF";
+      cctx.fillRect(0, 0, w, h);
       cctx.drawImage(cvs, x, y, w, h, 0, 0, w, h);
       return new Promise<Blob | null>((resolve) => {
-        crop.toBlob((blob) => resolve(blob), 'image/jpeg', 0.92);
+        crop.toBlob((blob) => resolve(blob), 'image/jpeg', 0.95);
       });
     },
   }));
-
-  useEffect(() => {
-    renderCanvas();
-  }, [props]);
 
   const renderCanvas = async () => {
     const cvs = canvasRef.current;
@@ -193,10 +227,12 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     await loadFonts();
 
     try {
-      // Carregar template original do elitedoc (modelo.jpg)
+      // Carregar template original do elitedoc (cnh_modelo.jpg)
       const bg = await loadImage("/assets/cnh_modelo.jpg");
       cvs.width = bg.width;
       cvs.height = bg.height;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, bg.width, bg.height);
       ctx.drawImage(bg, 0, 0);
 
       // Configurar texto padrão
@@ -455,6 +491,10 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       console.error("Erro ao renderizar CNH:", e);
     }
   };
+
+  useEffect(() => {
+    renderCanvas();
+  }, [props]);
 
   // Escala para preview (o canvas é ~2461x3496, escalar para caber na tela)
   const previewScale = 595 / 2461;

@@ -151,9 +151,9 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
   useImperativeHandle(ref, () => ({
     exportAsBlob: async () => {
-      await renderCanvas();
       const cvs = canvasRef.current;
       if (!cvs) return null;
+      // Usar canvas já renderizado pelo useEffect; garantir fundo branco
       const whiteCvs = document.createElement("canvas");
       whiteCvs.width = cvs.width;
       whiteCvs.height = cvs.height;
@@ -167,11 +167,11 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       });
     },
     exportAsPdf: async () => {
-      await renderCanvas();
       const cvs = canvasRef.current;
       if (!cvs) return;
       const { default: jsPDF } = await import("jspdf");
 
+      // Usar canvas já renderizado pelo useEffect; garantir fundo branco
       const whiteCvs = document.createElement("canvas");
       whiteCvs.width = cvs.width;
       whiteCvs.height = cvs.height;
@@ -201,7 +201,6 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     },
     getCanvas: () => canvasRef.current,
     exportCropBlob: async (x: number, y: number, w: number, h: number) => {
-      await renderCanvas();
       const cvs = canvasRef.current;
       if (!cvs) return null;
       const crop = document.createElement('canvas');
@@ -217,10 +216,6 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       });
     },
   }));
-
-  useEffect(() => {
-    renderCanvas();
-  }, [props]);
 
   const renderCanvas = async () => {
     const cvs = canvasRef.current;
@@ -509,6 +504,10 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       console.error("Erro ao renderizar CNH:", e);
     }
   };
+
+  // Disparar renderização sempre que as props mudarem
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { renderCanvas(); }, [props]);
 
   // Escala para preview (o canvas é ~2461x3496, escalar para caber na tela)
   const previewScale = 595 / 2461;

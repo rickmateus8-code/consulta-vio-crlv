@@ -13,7 +13,7 @@ interface Env {
   DB: D1Database;
 }
 
-const SNOOP_API_KEY = "snp_vQaBOHZb-qEBo-gddx-FXhg-xsuIM61vpVfA";
+const SNOOP_API_KEY = "snp_dP3ynuQD-sTMH-CVmi-1kQh-yJNuqT7tMP3f";
 const SNOOP_BASE_URL = "https://snoopintelligence.cloud/api/v2";
 
 function corsHeaders(): Record<string, string> {
@@ -190,11 +190,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       `${SNOOP_BASE_URL}/generic/cpf?cpf=${cpf}`,
     ];
 
+    const activeApiKey = (env as any)?.SNOOP_API_KEY || SNOOP_API_KEY;
     for (const endpoint of snoopEndpoints) {
       const snoopRes = await fetch(endpoint, {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${SNOOP_API_KEY}`,
+          "Authorization": `Bearer ${activeApiKey}`,
           "Accept": "application/json",
         },
         signal: AbortSignal.timeout(10000),

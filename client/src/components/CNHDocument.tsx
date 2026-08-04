@@ -357,7 +357,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     });
 
     // ═══════════════════════════════════════════════════════════════
-    // FOTO DO CONDUTOR
+    // FOTO DO CONDUTOR (ENQUADRAMENTO ABSOLUTO PROPORÇÃO 3x4 PERFEITA)
     // ═══════════════════════════════════════════════════════════════
     if (props.fotoUrl) {
       try {
@@ -365,32 +365,42 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = props.fotoScale ?? 1.0;
         const offsetX = props.fotoOffsetX ?? 0;
         const offsetY = props.fotoOffsetY ?? 0;
-        const baseBw = 247, baseBh = 300;
+        // Proporção 3x4 exata no documento: 225 x 300px (@300DPI)
+        const baseBw = 225, baseBh = 300;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
         const bx = 305 + Math.round((baseBw - bw) / 2) + offsetX;
         const by = 550 + Math.round((baseBh - bh) / 2) + offsetY;
+
         ctx.save();
         ctx.beginPath();
-        ctx.rect(bx, by, bw, bh);
+        ctx.rect(305, 550, baseBw, baseBh); // Clip exato na janela 3x4
         ctx.clip();
+
+        // Enquadramento Cover (3x4 perfeito sem distorção nem bordas em branco)
         const imgRatio = fotoImg.width / fotoImg.height;
         const boxRatio = bw / bh;
         let drawW: number, drawH: number, drawX: number, drawY: number;
+
         if (imgRatio > boxRatio) {
-          drawH = bh; drawW = bh * imgRatio;
-          drawX = bx - (drawW - bw) / 2; drawY = by;
+          drawH = bh;
+          drawW = bh * imgRatio;
+          drawX = bx - (drawW - bw) / 2;
+          drawY = by;
         } else {
-          drawW = bw; drawH = bw / imgRatio;
-          drawX = bx; drawY = by - (drawH - bh) / 2;
+          drawW = bw;
+          drawH = bw / imgRatio;
+          drawX = bx;
+          drawY = by - (drawH - bh) / 2;
         }
+
         ctx.drawImage(fotoImg, drawX, drawY, drawW, drawH);
         ctx.restore();
-      } catch (e) { console.warn("Erro foto:", e); }
+      } catch (e) { console.warn("Erro foto 3x4:", e); }
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // ASSINATURA DO CONDUTOR
+    // ASSINATURA DO CONDUTOR (PNG TRANSPARENTE SEM FUNDO BRANCO)
     // ═══════════════════════════════════════════════════════════════
     if (props.assinaturaUrl) {
       try {
@@ -403,18 +413,32 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const bh = Math.round(baseBh * scale);
         const bx = 303 + Math.round((baseBw - bw) / 2) + offsetX;
         const by = 870 + Math.round((baseBh - bh) / 2) + offsetY;
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(bx, by, bw, bh);
-        ctx.clip();
 
+        // Processar remoção de fundo claro para garantir PNG 100% transparente
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = assImg.width;
         tempCanvas.height = assImg.height;
         const tctx = tempCanvas.getContext('2d')!;
-        tctx.fillStyle = '#FFFFFF';
-        tctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
         tctx.drawImage(assImg, 0, 0);
+
+        const imgData = tctx.getImageData(0, 0, assImg.width, assImg.height);
+        const dataPixels = imgData.data;
+        for (let i = 0; i < dataPixels.length; i += 4) {
+          const r = dataPixels[i];
+          const g = dataPixels[i + 1];
+          const b = dataPixels[i + 2];
+          // Se for fundo claro (branco/cinza), torna transparente
+          if (r > 180 && g > 180 && b > 180) {
+            dataPixels[i + 3] = 0; // Transparente
+          } else {
+            // Garante traço escuro preto puro
+            dataPixels[i] = 10;
+            dataPixels[i + 1] = 10;
+            dataPixels[i + 2] = 10;
+          }
+        }
+        tctx.putImageData(imgData, 0, 0);
 
         const ratio = Math.min(bw / assImg.width, bh / assImg.height);
         const drawW = assImg.width * ratio;
@@ -422,10 +446,13 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const drawX = bx + (bw - drawW) / 2;
         const drawY = by + (bh - drawH) / 2;
 
-        ctx.filter = "contrast(5) brightness(0.3) grayscale(1)";
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(303, 870, baseBw, baseBh);
+        ctx.clip();
         ctx.drawImage(tempCanvas, drawX, drawY, drawW, drawH);
         ctx.restore();
-      } catch (e) { console.warn("Erro assinatura:", e); }
+      } catch (e) { console.warn("Erro assinatura PNG:", e); }
     }
 
     // ═══════════════════════════════════════════════════════════════

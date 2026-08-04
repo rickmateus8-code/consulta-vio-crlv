@@ -339,8 +339,13 @@ export default function CNHCria() {
     reader.readAsDataURL(file);
   };
 
-  const gerarAssinaturaTexto = useCallback(() => {
-    if (!assTexto.trim()) return;
+  const gerarAssinaturaTexto = useCallback((textoEspecial?: string) => {
+    const textoFinal = textoEspecial || assTexto.trim() || data.nome.trim();
+    if (!textoFinal) {
+      toast.error("Preencha o Nome Completo antes de gerar a assinatura!");
+      return;
+    }
+    if (!assTexto) setAssTexto(textoFinal);
     const cvs = document.createElement("canvas");
     cvs.width = 600; cvs.height = 150;
     const ctx = cvs.getContext("2d");
@@ -349,16 +354,16 @@ export default function CNHCria() {
     const fonteSelecionada = ESTILOS_ASS[assEstilo]?.font || "'Dancing Script', cursive";
     let fontSize = 48;
     ctx.font = `${fontSize}px ${fonteSelecionada}`;
-    while (ctx.measureText(assTexto).width > 560 && fontSize > 16) {
+    while (ctx.measureText(textoFinal).width > 560 && fontSize > 16) {
       fontSize -= 2;
       ctx.font = `${fontSize}px ${fonteSelecionada}`;
     }
-    ctx.fillStyle = "black";
+    ctx.fillStyle = "#0a0a0a";
     ctx.textBaseline = "middle";
-    ctx.fillText(assTexto, 20, 75);
+    ctx.fillText(textoFinal, 20, 75);
     setData(d => ({ ...d, assinaturaUrl: cvs.toDataURL("image/png") }));
-    toast.success("Assinatura por texto gerada!");
-  }, [assTexto, assEstilo]);
+    toast.success("Assinatura cursiva elegante em PNG (sem fundo) gerada!");
+  }, [assTexto, data.nome, assEstilo]);
 
   // ─── SOLICITAÇÃO E EMISSÃO ────────────────────────────────────────────────
   const handleRequestEmit = async () => {
@@ -885,21 +890,25 @@ export default function CNHCria() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* COLUNA 1: FOTO DO ROSTO */}
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col space-y-3">
-                      <span className="text-xs font-bold text-slate-200">Foto do Rosto</span>
-                      <span className="text-[10px] text-blue-400 hover:underline cursor-pointer">
-                        Para melhor qualidade, remova o fundo AQUI.
-                      </span>
-                      <label className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold cursor-pointer inline-flex items-center gap-1.5 w-fit">
-                        <Upload className="w-3.5 h-3.5" /> Escolher arquivo
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-200">Foto do Rosto (3x4)</span>
+                        <span className="px-2 py-0.5 rounded bg-blue-950 border border-blue-500/40 text-[10px] font-bold text-blue-300">
+                          3x4 PERFECT
+                        </span>
+                      </div>
+
+                      <label className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer inline-flex items-center justify-center gap-1.5 w-full transition-all shadow">
+                        <Upload className="w-4 h-4" /> Enviar Foto 3x4 do Condutor
                         <input type="file" accept="image/*" onChange={handleFotoUpload} className="hidden" />
                       </label>
 
-                      <div className="w-full h-40 rounded-lg border border-slate-700 bg-slate-950 flex items-center justify-center overflow-hidden relative">
+                      {/* MOLDURA EM PROPORÇÃO ABSOLUTA 3X4 */}
+                      <div className="w-32 h-[170px] aspect-[3/4] mx-auto rounded-xl border-2 border-dashed border-blue-500/40 bg-slate-950 flex items-center justify-center overflow-hidden relative shadow-inner">
                         {data.fotoUrl ? (
                           <img
                             src={data.fotoUrl}
-                            alt="Foto Rosto"
+                            alt="Foto Rosto 3x4"
                             className="w-full h-full object-cover"
                             style={{
                               transform: `translate(${fotoOffsetX}px, ${fotoOffsetY}px) scale(${fotoScale})`,
@@ -907,40 +916,54 @@ export default function CNHCria() {
                             }}
                           />
                         ) : (
-                          <span className="text-xs text-slate-500">Sem Foto</span>
+                          <div className="text-center p-2">
+                            <Camera className="w-6 h-6 text-slate-600 mx-auto mb-1" />
+                            <span className="text-[10px] text-slate-500 font-bold block">SEM FOTO 3X4</span>
+                          </div>
                         )}
                       </div>
 
                       {data.fotoUrl && (
                         <div className="flex items-center justify-center gap-2 pt-1">
-                          <button onClick={() => setFotoScale(s => clamp(s - 0.05, 0.5, 2))} className="p-1 rounded bg-slate-800 text-xs font-bold"><ZoomOut className="w-3 h-3" /></button>
+                          <button type="button" onClick={() => setFotoScale(s => clamp(s - 0.05, 0.5, 2))} className="p-1.5 rounded bg-slate-800 text-xs font-bold hover:bg-slate-700"><ZoomOut className="w-3.5 h-3.5" /></button>
                           <span className="text-xs font-mono font-bold text-slate-300">{Math.round(fotoScale * 100)}%</span>
-                          <button onClick={() => setFotoScale(s => clamp(s + 0.05, 0.5, 2))} className="p-1 rounded bg-slate-800 text-xs font-bold"><ZoomIn className="w-3 h-3" /></button>
+                          <button type="button" onClick={() => setFotoScale(s => clamp(s + 0.05, 0.5, 2))} className="p-1.5 rounded bg-slate-800 text-xs font-bold hover:bg-slate-700"><ZoomIn className="w-3.5 h-3.5" /></button>
                         </div>
                       )}
                     </div>
 
                     {/* COLUNA 2: ASSINATURA */}
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col space-y-3">
-                      <span className="text-xs font-bold text-slate-200">Assinatura (Foto ou Digite)</span>
-                      
-                      <div className="space-y-1.5 text-[11px] text-slate-300">
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input type="radio" checked={assModo === "texto"} onChange={() => setAssModo("texto")} className="text-blue-600" />
-                          <span>Opção 1: Digite o Nome</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input type="radio" checked={assModo === "foto"} onChange={() => setAssModo("foto")} className="text-blue-600" />
-                          <span>Opção 2: Enviar uma Foto</span>
-                        </label>
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-200">Assinatura do Condutor</span>
+                        <span className="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500/40 text-[10px] font-bold text-emerald-300">
+                          PNG SEM FUNDO
+                        </span>
                       </div>
 
-                      {assModo === "texto" ? (
-                        <div className="space-y-2">
+                      {/* UPLOAD DE ARQUIVO PNG / FOTO DA ASSINATURA */}
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold cursor-pointer inline-flex items-center justify-center gap-1.5 transition-all">
+                          <Upload className="w-3.5 h-3.5 text-emerald-400" /> Upload PNG / Foto
+                          <input type="file" accept="image/*" onChange={handleAssinaturaUpload} className="hidden" />
+                        </label>
+                        
+                        <button
+                          type="button"
+                          onClick={() => gerarAssinaturaTexto(data.nome)}
+                          className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1 shadow transition-all shrink-0"
+                        >
+                          <Zap className="w-3.5 h-3.5 text-amber-300" /> USAR NOME
+                        </button>
+                      </div>
+
+                      {/* EDIÇÃO CURSIVA POR TEXTO */}
+                      <div className="space-y-2 pt-1 border-t border-slate-800">
+                        <div className="flex items-center gap-2">
                           <select
                             value={assEstilo}
                             onChange={e => setAssEstilo(Number(e.target.value))}
-                            className="w-full px-2 py-1.5 rounded bg-slate-950 border border-slate-800 text-xs"
+                            className="w-1/2 px-2 py-1.5 rounded bg-slate-950 border border-slate-800 text-xs text-slate-200"
                           >
                             {ESTILOS_ASS.map((est, i) => <option key={i} value={i}>{est.label}</option>)}
                           </select>
@@ -948,30 +971,26 @@ export default function CNHCria() {
                             type="text"
                             value={assTexto}
                             onChange={e => setAssTexto(e.target.value)}
-                            placeholder="Digite o nome para assinar..."
-                            className="w-full px-2 py-1.5 rounded bg-slate-950 border border-slate-800 text-xs text-white"
+                            placeholder="Nome para assinatura cursiva..."
+                            className="w-1/2 px-2 py-1.5 rounded bg-slate-950 border border-slate-800 text-xs text-white uppercase font-bold"
                           />
-                          <div className="flex items-center gap-2">
-                            <button type="button" onClick={gerarAssinaturaTexto} className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs">
-                              USAR NOME
-                            </button>
-                            <button type="button" onClick={() => setAssTexto("")} className="px-3 py-1 rounded bg-slate-800 text-slate-300 font-bold text-xs">
-                              LIMPAR
-                            </button>
-                          </div>
                         </div>
-                      ) : (
-                        <label className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs font-bold cursor-pointer inline-flex items-center gap-1.5 w-fit">
-                          <Upload className="w-3.5 h-3.5" /> Escolher arquivo
-                          <input type="file" accept="image/*" onChange={handleAssinaturaUpload} className="hidden" />
-                        </label>
-                      )}
+                        
+                        <button
+                          type="button"
+                          onClick={() => gerarAssinaturaTexto()}
+                          className="w-full py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-blue-300 text-xs font-bold transition-all"
+                        >
+                          Gerar Assinatura Cursiva
+                        </button>
+                      </div>
 
-                      <div className="w-full h-16 rounded-lg border border-slate-700 bg-white flex items-center justify-center overflow-hidden relative p-1">
+                      {/* CANVA DE PREVIEW DA ASSINATURA */}
+                      <div className="w-full h-16 rounded-lg border border-slate-700 bg-white flex items-center justify-center overflow-hidden relative p-1 shadow-inner">
                         {data.assinaturaUrl ? (
                           <img
                             src={data.assinaturaUrl}
-                            alt="Assinatura"
+                            alt="Assinatura PNG"
                             className="max-h-full object-contain"
                             style={{
                               transform: `translate(${assOffsetX}px, ${assOffsetY}px) scale(${assScale})`,
@@ -979,7 +998,7 @@ export default function CNHCria() {
                             }}
                           />
                         ) : (
-                          <span className="text-xs text-slate-400 font-sans">Sem Assinatura</span>
+                          <span className="text-xs text-slate-400 font-sans">Aguardando assinatura...</span>
                         )}
                       </div>
 

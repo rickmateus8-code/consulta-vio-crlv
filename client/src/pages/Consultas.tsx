@@ -10,7 +10,7 @@ import {
   Search, X, Loader2, Star, StarOff,
   User, Phone, Mail, MapPin, CreditCard, Camera, Car,
   FileText, Users, Home, Briefcase, Hash, Shield,
-  AlertTriangle, Clock, CheckCircle2, ArrowLeft, LogOut, RefreshCw, Eye, LayoutGrid, History
+  AlertTriangle, Clock, CheckCircle2, ArrowLeft, LogOut, RefreshCw, Eye, LayoutGrid, History, Moon, Sun, ChevronLeft
 } from "lucide-react";
 
 // ─── Formatadores e Máscaras de Entrada ────────────────────────────────────────
@@ -69,11 +69,11 @@ export function evaluateInputValidation(input: string, tabId: string): { status:
 // ─── Sub-Abas Principais de Consulta ──────────────────────────────────────────
 const MAIN_TABS = [
   { id: "cpf", label: "CPF", placeholder: "Ex: 123.456.789-00", emoji: "🪪" },
-  { id: "nome", label: "Nome", placeholder: "Ex: MARIA CAROLINA DA SILVA", emoji: "👤" },
-  { id: "telefone", label: "Telefone", placeholder: "Ex: (11) 99999-9999", emoji: "📞" },
-  { id: "email", label: "Email", placeholder: "Ex: email@exemplo.com", emoji: "✉️" },
   { id: "rg", label: "RG", placeholder: "Ex: 123456789", emoji: "📄" },
   { id: "cep", label: "CEP", placeholder: "Ex: 01234-567", emoji: "📍" },
+  { id: "email", label: "Email", placeholder: "Ex: email@exemplo.com", emoji: "✉️" },
+  { id: "telefone", label: "Telefone", placeholder: "Ex: (11) 99999-9999", emoji: "📞" },
+  { id: "nome", label: "Nome", placeholder: "Ex: MARIA CAROLINA DA SILVA", emoji: "👤" },
   { id: "placa", label: "Placa", placeholder: "Ex: ABC-1234 ou ABC1D23", emoji: "🚗" },
   { id: "parentes", label: "Parentes", placeholder: "Ex: 123.456.789-00", emoji: "👨‍👩‍👧" },
   { id: "score", label: "Score", placeholder: "Ex: 123.456.789-00", emoji: "📊" },
@@ -91,7 +91,7 @@ interface Module {
 }
 
 const MODULES: Module[] = [
-  { id: "cpf", label: "CPF Completo", description: "Dados completos unificados por CPF", emoji: "🔍", category: "basicas", dailyLimit: 1000 },
+  { id: "cpf", label: "Master Buscas Complete", description: "Dados completos unificados por CPF", emoji: "🔍", category: "basicas", dailyLimit: 1000 },
   { id: "nome", label: "Busca por Nome", description: "Busca de pessoas por nome completo ou parcial", emoji: "👤", category: "basicas", dailyLimit: 1000 },
   { id: "telefone", label: "Consulta Telefone", description: "Proprietário de telefone com DDD", emoji: "📞", category: "basicas", dailyLimit: 500 },
   { id: "email", label: "Consulta Email", description: "Dados cadastrais por e-mail", emoji: "✉️", category: "basicas", dailyLimit: 500 },
@@ -120,7 +120,7 @@ export default function Consultas() {
   const [planStatus, setPlanStatus] = useState<any>(null);
   const [planLoading, setPlanLoading] = useState(true);
 
-  // Submenu Interno Principal
+  // Submenu Lateral Esquerdo ("dashboard" | "modulos" | "historico")
   const [viewMode, setViewMode] = useState<"dashboard" | "modulos" | "historico">("dashboard");
 
   // Histórico de Consultas
@@ -282,123 +282,115 @@ export default function Consultas() {
   const usageByModulo = planStatus?.usage_by_modulo || {};
 
   return (
-    <div className="fixed inset-0 z-50 w-full h-screen bg-[#0a0e27] text-white flex flex-col overflow-hidden font-sans select-none">
-      {/* HEADER PRINCIPAL TELA CHEIA */}
-      <header className="px-6 py-4 bg-[#0f172a] border-b border-violet-500/20 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg">
-            <Search className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
-              Master Buscas Complete <span className="text-xs px-2 py-0.5 rounded bg-violet-900/60 text-violet-300 font-normal">v2.0</span>
-            </h1>
-            <p className="text-xs text-slate-400">Plataforma Unificada de Inteligência e Consultas de Dados</p>
-          </div>
-        </div>
-
-        {/* SUBMENU INTERNO DE NAVEGAÇÃO PRINCIPAL */}
-        <div className="hidden md:flex items-center bg-slate-900/90 p-1 rounded-xl border border-violet-500/30">
-          <button
-            onClick={() => setViewMode("dashboard")}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              viewMode === "dashboard" ? "bg-violet-600 text-white shadow-md" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <Search className="w-3.5 h-3.5" /> Dashboard
-          </button>
-          <button
-            onClick={() => setViewMode("modulos")}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              viewMode === "modulos" ? "bg-violet-600 text-white shadow-md" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" /> Módulos
-          </button>
-          <button
-            onClick={() => setViewMode("historico")}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              viewMode === "historico" ? "bg-violet-600 text-white shadow-md" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <History className="w-3.5 h-3.5" /> Histórico
-          </button>
-        </div>
-
-        {/* Botões de Ação Superior */}
-        <div className="flex items-center gap-3">
-          {planIsActive ? (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-violet-950/80 border border-violet-500/30 text-xs">
-              <Clock className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-slate-300">Plano Ativo</span>
+    <div className="fixed inset-0 z-50 w-full h-screen bg-[#070a19] text-white flex overflow-hidden font-sans select-none">
+      {/* ─── SIDEBAR ESQUERDA COMPATÍVEL COM IMAGENS ANEXADAS ─────────────────── */}
+      <aside className="w-64 bg-[#0c0f2a] border-r border-violet-500/20 flex flex-col justify-between p-4 flex-shrink-0">
+        <div className="space-y-6">
+          {/* Logo Topo */}
+          <div className="flex items-center justify-between px-2 pt-2">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                <Search className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-black text-base text-white tracking-tight">Master Buscas</span>
             </div>
-          ) : (
-            <button
-              onClick={() => setShowPlanModal(true)}
-              className="px-4 py-2 rounded-xl font-bold text-xs bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white transition-all shadow-lg flex items-center gap-1.5"
-            >
-              <Shield className="w-3.5 h-3.5" /> Ativar Plano
+            <button className="text-slate-500 hover:text-white text-xs">
+              <ChevronLeft className="w-4 h-4" />
             </button>
-          )}
+          </div>
+
+          {/* Submenu de Navegação Esquerdo */}
+          <nav className="space-y-1 pt-4">
+            <button
+              onClick={() => setViewMode("dashboard")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+                viewMode === "dashboard"
+                  ? "bg-violet-600/90 text-white shadow-lg shadow-violet-600/30 border border-violet-400/40"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span>Dashboard</span>
+            </button>
+
+            <button
+              onClick={() => setViewMode("modulos")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+                viewMode === "modulos"
+                  ? "bg-violet-600/90 text-white shadow-lg shadow-violet-600/30 border border-violet-400/40"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <Search className="w-4 h-4" />
+              <span>Módulos</span>
+            </button>
+
+            <button
+              onClick={() => setViewMode("historico")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+                viewMode === "historico"
+                  ? "bg-violet-600/90 text-white shadow-lg shadow-violet-600/30 border border-violet-400/40"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <History className="w-4 h-4" />
+              <span>Histórico</span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Rodapé da Sidebar: Modo e Sair */}
+        <div className="space-y-3 pt-4 border-t border-violet-500/10">
+          <div className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400 rounded-xl bg-slate-900/50">
+            <Moon className="w-4 h-4 text-violet-400" />
+            <span>Modo Escuro</span>
+          </div>
 
           <button
             onClick={() => setLocation("/dashboard")}
-            className="px-4 py-2 rounded-xl font-bold text-xs bg-violet-900/40 hover:bg-violet-800/60 border border-violet-500/30 text-violet-200 transition-all flex items-center gap-1.5"
+            className="w-full py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white transition-all shadow-lg flex items-center justify-center gap-2"
           >
             <LogOut className="w-3.5 h-3.5" /> Sair ↳
           </button>
         </div>
-      </header>
+      </aside>
 
-      {/* SUBMENU MOBILE */}
-      <div className="md:hidden flex items-center justify-around bg-slate-900 p-2 border-b border-violet-500/20 text-xs font-bold">
-        <button onClick={() => setViewMode("dashboard")} className={viewMode === "dashboard" ? "text-violet-400" : "text-slate-400"}>
-          Dashboard
-        </button>
-        <button onClick={() => setViewMode("modulos")} className={viewMode === "modulos" ? "text-violet-400" : "text-slate-400"}>
-          Módulos
-        </button>
-        <button onClick={() => setViewMode("historico")} className={viewMode === "historico" ? "text-violet-400" : "text-slate-400"}>
-          Histórico
-        </button>
-      </div>
-
-      {/* BODY DE TELA CHEIA */}
-      <main className="flex-1 overflow-y-auto p-6 space-y-8">
+      {/* ─── ÁREA DE CONTEÚDO PRINCIPAL (DIREITA) ──────────────────────────────── */}
+      <main className="flex-1 h-screen overflow-y-auto p-6 space-y-6 bg-[#070a19]">
         <div className="max-w-6xl mx-auto space-y-6">
 
           {/* VISÃO 1: DASHBOARD DE BUSCA UNIFICADA */}
           {(viewMode === "dashboard" || result) && (
             <>
-              {/* BARRA SUPERIOR DE CONSULTA COM ABAS */}
-              <div className="rounded-2xl p-6 bg-slate-900/90 border border-violet-500/30 shadow-2xl space-y-5">
+              {/* CARD DE CABEÇALHO PURPLE (MODELO IMAGEM ANEXADA) */}
+              <div className="rounded-2xl p-6 bg-gradient-to-r from-[#171438] to-[#121430] border border-violet-500/30 shadow-2xl space-y-6">
                 <div className="flex items-center justify-between flex-wrap gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-violet-950 flex items-center justify-center border border-violet-500/30">
-                      <Search className="w-5 h-5 text-violet-400" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-950/80 border border-violet-500/30 flex items-center justify-center shadow-inner">
+                      <Search className="w-6 h-6 text-violet-300" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-white">Master Buscas Complete</h2>
-                      <p className="text-xs text-slate-400">Consulte informações navegando pelas categorias disponíveis para encontrar os dados desejados.</p>
+                      <h2 className="text-xl font-black text-white tracking-tight">Master Buscas Complete</h2>
+                      <p className="text-xs text-slate-400 mt-0.5">Consulte informações navegando pelas categorias disponíveis para encontrar os dados desejados.</p>
                     </div>
                   </div>
 
-                  {/* Contador REAL de consultas (reset 24h) */}
-                  <div className="flex items-center gap-4 px-5 py-2.5 rounded-xl bg-slate-950/80 border border-violet-500/20 text-xs">
-                    <Clock className="w-4 h-4 text-violet-400" />
+                  {/* BANNER DE USO 24H (0 / 1000 | 1000 restantes) */}
+                  <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-[#0d0f26]/90 border border-violet-500/30 text-xs shadow-inner">
+                    <Clock className="w-5 h-5 text-violet-400" />
                     <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Consultas Hoje (24h)</span>
-                      <span className="text-white font-bold text-sm">{usage24h} / 1000</span>
+                      <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">CONSULTAS HOJE</span>
+                      <span className="text-white font-black text-base">{usage24h} / 1000</span>
                     </div>
-                    <div className="h-6 w-px bg-violet-500/20" />
+                    <div className="h-8 w-px bg-violet-500/20" />
                     <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Restantes</span>
-                      <span className="text-emerald-400 font-bold text-sm">{usageRestantes} restantes</span>
+                      <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">RESTANTES</span>
+                      <span className="text-emerald-400 font-black text-base">{usageRestantes} restantes</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Sub-Abas ([CPF] [RG] [CEP] [Email] [Telefone] [Nome] [Placa] [Parentes] [Score] [Fotos]) */}
+                {/* Sub-Abas ([CPF] [RG] [CEP] [Email] [Telefone] [Nome] [Enriquecimento]) */}
                 <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                   {MAIN_TABS.map((tab) => {
                     const isActive = tab.id === activeTabId;
@@ -413,8 +405,8 @@ export default function Consultas() {
                         }}
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${
                           isActive
-                            ? "bg-violet-600 text-white border border-violet-400 shadow-lg shadow-violet-600/30"
-                            : "bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent"
+                            ? "bg-violet-600 text-white border border-violet-300 shadow-lg shadow-violet-600/40"
+                            : "bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-900 border border-violet-500/20"
                         }`}
                       >
                         <span>{tab.emoji}</span>
@@ -424,39 +416,42 @@ export default function Consultas() {
                   })}
                 </div>
 
-                {/* Input Formatado e Indicador Válido/Inválido Real */}
-                <div className="flex gap-3 items-center">
-                  <div className="relative flex-1">
+                {/* Input de Busca com Válido/Inválido + Botões */}
+                <div className="space-y-3">
+                  <div className="relative">
                     <input
                       type="text"
                       placeholder={currentTab.placeholder}
                       value={quickInput}
                       onChange={(e) => handleInputChange(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") handleQuickSearch(); }}
-                      className="w-full px-4 py-3.5 rounded-xl bg-slate-950/80 border border-violet-500/30 text-white text-sm outline-none focus:border-violet-500 transition-all font-mono select-text"
+                      className="w-full px-5 py-4 rounded-xl bg-slate-950/90 border border-violet-500/40 text-white text-sm outline-none focus:border-violet-400 transition-all font-mono select-text shadow-inner"
                     />
                     {validation.status && (
-                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold ${
-                        validation.status === "valid" ? "text-emerald-400" : "text-red-400"
+                      <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold px-2 py-0.5 rounded ${
+                        validation.status === "valid" ? "bg-emerald-950 text-emerald-400 border border-emerald-500/30" : "bg-red-950 text-red-400 border border-red-500/30"
                       }`}>
                         {validation.label}
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => { setQuickInput(""); setResult(null); setError(null); }}
-                    className="px-5 py-3.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-400 text-xs font-bold transition-all"
-                  >
-                    Limpar
-                  </button>
-                  <button
-                    onClick={handleQuickSearch}
-                    disabled={loading}
-                    className="px-6 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    Consultar
-                  </button>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      onClick={() => { setQuickInput(""); setResult(null); setError(null); }}
+                      className="px-5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-400 text-xs font-bold transition-all"
+                    >
+                      Limpar
+                    </button>
+                    <button
+                      onClick={handleQuickSearch}
+                      disabled={loading}
+                      className="px-8 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                      Consultar
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -484,13 +479,13 @@ export default function Consultas() {
           {/* VISÃO 2: GRADE DE MÓDULOS */}
           {viewMode === "modulos" && !result && (
             <div className="space-y-8">
-              <div className="p-4 rounded-xl bg-violet-950/40 border border-violet-500/30 flex items-center justify-between">
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-violet-950/80 to-indigo-950/80 border border-violet-500/30 flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-white">Módulos Disponíveis</h3>
-                  <p className="text-xs text-slate-400">Selecione um módulo abaixo para abrir a pesquisa correspondente.</p>
+                  <h3 className="text-lg font-black text-white">Módulos de Consulta</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Selecione um módulo abaixo para realizar pesquisas direcionadas.</p>
                 </div>
-                <span className="text-xs font-bold text-violet-300 bg-violet-900/60 px-3 py-1 rounded-lg border border-violet-500/40">
-                  {MODULES.length} Módulos
+                <span className="text-xs font-bold text-violet-300 bg-violet-900/80 px-3 py-1.5 rounded-xl border border-violet-500/40">
+                  {MODULES.length} Módulos Disponíveis
                 </span>
               </div>
 
@@ -507,14 +502,14 @@ export default function Consultas() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {catMods.map((mod) => {
                         const modCount = usageByModulo[mod.id] || 0;
                         return (
                           <div
                             key={mod.id}
                             onClick={() => handleSelectModule(mod.id)}
-                            className="group relative p-4 rounded-xl bg-gradient-to-br from-violet-900/60 to-indigo-950/80 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.03] transition-all cursor-pointer shadow-lg min-h-[110px] flex flex-col justify-between"
+                            className="group relative p-5 rounded-2xl bg-gradient-to-br from-violet-900/60 to-indigo-950/80 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.03] transition-all cursor-pointer shadow-xl min-h-[120px] flex flex-col justify-between"
                           >
                             <div className="flex items-start gap-3">
                               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl flex-shrink-0">
@@ -525,8 +520,8 @@ export default function Consultas() {
                                 <p className="text-violet-200 text-[11px] mt-0.5 line-clamp-2">{mod.description}</p>
                               </div>
                             </div>
-                            <div className="pt-2 flex items-center gap-1 text-[10px] text-emerald-400 font-semibold border-t border-white/5">
-                              <CheckCircle2 className="w-3 h-3" />
+                            <div className="pt-3 flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold border-t border-white/5">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
                               {modCount}/{mod.dailyLimit || 500} consultas hoje
                             </div>
                           </div>
@@ -553,7 +548,7 @@ export default function Consultas() {
                 <button
                   onClick={fetchHistory}
                   disabled={historyLoading}
-                  className="px-3 py-1.5 rounded-lg bg-violet-900/40 hover:bg-violet-800 text-violet-200 text-xs font-semibold flex items-center gap-1 transition-all"
+                  className="px-3.5 py-2 rounded-xl bg-violet-900/40 hover:bg-violet-800 text-violet-200 text-xs font-semibold flex items-center gap-1.5 transition-all"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${historyLoading ? 'animate-spin' : ''}`} /> Atualizar
                 </button>

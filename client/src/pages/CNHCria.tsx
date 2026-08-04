@@ -445,9 +445,9 @@ export default function CNHCria() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#060919] text-slate-100 font-sans p-4 sm:p-6 flex flex-col items-center justify-between select-text">
-        {/* CONTAINER CARD CENTRAL COM SOMBRA E GLASSMORPHISM */}
-        <div className="w-full max-w-5xl bg-[#0b1026]/90 border border-blue-500/20 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#060919] text-slate-100 font-sans flex flex-col justify-between select-text min-h-screen w-full">
+        {/* CONTAINER CARD PREENCHENDO 100% DA TELA */}
+        <div className="w-full min-h-screen bg-[#0b1026] border-0 rounded-none shadow-none flex flex-col justify-between flex-1">
           {/* HEADER SUPERIOR DO CARD */}
           <div className="p-4 sm:p-5 border-b border-blue-500/20 bg-slate-950/70 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -475,7 +475,7 @@ export default function CNHCria() {
           </div>
 
           {/* CORPO CENTRAL DO CARD: SIDEBAR + CONTEÚDO DA ETAPA */}
-          <div className="flex flex-col md:flex-row p-6 gap-6 min-h-[460px]">
+          <div className="flex flex-col md:flex-row p-4 sm:p-6 gap-6 flex-1 min-h-[500px]">
             {/* SIDEBAR LATERAL (4 ITENS) */}
             <div className="w-full md:w-56 shrink-0 flex flex-col gap-2.5">
               <button

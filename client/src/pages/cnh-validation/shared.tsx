@@ -194,7 +194,14 @@ export function GovBrHeader() {
     <header className="bg-[#071D41] text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4">
-          <img src="/assets/govbr-logo.png" alt="gov.br" className="h-8 w-auto" />
+          <img
+            src="/assets/govbr-logo.png"
+            onError={(e) => {
+              e.currentTarget.src = "/img/logo.png";
+            }}
+            alt="gov.br"
+            className="h-8 w-auto"
+          />
           <div className="hidden h-6 w-px bg-white/20 sm:block" />
           <span className="hidden text-sm font-medium text-blue-100 sm:inline">Carteira Digital de Trânsito</span>
         </div>

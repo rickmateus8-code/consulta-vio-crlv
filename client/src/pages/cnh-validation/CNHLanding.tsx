@@ -385,7 +385,14 @@ export default function CNHLanding() {
             <div className="capa-area"></div>
             <div className="conteudo-branco">
               <div className="logo-container">
-                <img src="/img/logo_cnh.png" alt="CNH Digital" />
+                <img
+                  src="/img/logo_cnh.png"
+                  onError={(e) => {
+                    e.currentTarget.src = "/assets/govbr-logo.png";
+                  }}
+                  alt="CNH Digital"
+                  style={{ maxWidth: "140px", display: "block", marginBottom: "5px" }}
+                />
               </div>
               <div style={{ width: "100%" }}>
                 <div className="termos-texto">
@@ -405,7 +412,15 @@ export default function CNHLanding() {
         {tela === "login" && (
           <div id="tela-login">
             <div className="header">
-              <img src="/img/logo.png" className="logo-gov-login" alt="gov.br" />
+              <img
+                src="/img/logo.png"
+                onError={(e) => {
+                  e.currentTarget.src = "/assets/govbr-logo.png";
+                }}
+                className="logo-gov-login"
+                alt="gov.br"
+                style={{ width: "100px", height: "auto", display: "block" }}
+              />
             </div>
             <div className="login-card">
               <div className="title">Identifique-se no gov.br</div>

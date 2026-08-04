@@ -48,11 +48,32 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
       headers: {
         'Authorization': 'Bearer ' + apiKey,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
+        'Accept': 'application/json, text/plain, */*',
       },
     });
-    const data = await resp.json();
-    return new Response(JSON.stringify(data), { status: resp.status, headers: CORS });
+    const contentType = resp.headers.get('content-type') || '';
+    const text = await resp.text();
+
+    if (text.trim().startsWith('<') || !contentType.includes('application/json')) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'DADOS_NAO_ENCONTRADOS',
+          message: 'Foto ou dados não encontrados nesta consulta.',
+        }),
+        { status: resp.ok ? 200 : 404, headers: CORS }
+      );
+    }
+
+    try {
+      const data = JSON.parse(text);
+      return new Response(JSON.stringify(data), { status: resp.status, headers: CORS });
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: 'PARSE_ERROR', message: 'Resposta inválida do servidor de dados.' }),
+        { status: 500, headers: CORS }
+      );
+    }
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: CORS });
   }

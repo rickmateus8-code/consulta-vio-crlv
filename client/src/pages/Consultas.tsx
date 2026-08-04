@@ -208,10 +208,12 @@ export default function Consultas() {
     setResult(null);
 
     const val = quickInput.trim();
+    const cleanVal = val.replace(/\D/g, "");
+
     try {
       let data: any;
-      if (activeTabId === "cpf" || activeTabId === "enriquecimento") {
-        data = await SnoopAPI.snoopPerfilCPF(val);
+      if (cleanVal.length === 11 || activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto") {
+        data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
       } else if (activeTabId === "rg") {
         data = await SnoopAPI.snoopRG(val);
       } else if (activeTabId === "cep") {
@@ -222,6 +224,8 @@ export default function Consultas() {
         data = await SnoopAPI.snoopTelefoneFull(val);
       } else if (activeTabId === "nome") {
         data = await SnoopAPI.snoopNome(val);
+      } else {
+        data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
       }
       setResult(data);
     } catch (e: any) {

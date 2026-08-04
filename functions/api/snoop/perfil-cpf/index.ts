@@ -39,12 +39,14 @@ async function snoopGet(endpoint: string, params: Record<string, string>, apiKey
       headers: {
         'Authorization': 'Bearer ' + apiKey,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
+        'Accept': 'application/json, text/plain, */*',
       },
       signal: AbortSignal.timeout(8000),
     });
     if (!resp.ok) return null;
-    return await resp.json();
+    const text = await resp.text();
+    if (text.trim().startsWith('<')) return null;
+    return JSON.parse(text);
   } catch { return null; }
 }
 
@@ -64,29 +66,27 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     return new Response(JSON.stringify({ success: false, error: 'CPF invalido' }), { status: 400, headers: CORS });
   }
 
-  // Todas as requisicoes em paralelo
-  const [cpfData, fotoAll, parentes, vizinhos, score, profissionais, telefones, fotoSP, fotoMA] = await Promise.all([
+  // Todas as requisicoes paralelas para agregacao total do perfil
+  const [cpfData, fotoData, parentes, vizinhos, score, profissionais, telefones, veiculos] = await Promise.all([
     snoopGet('generic/cpf', { cpf }, apiKey),
-    snoopGet('foto-all', { cpf }, apiKey),
+    snoopGet('foto', { cpf }, apiKey),
     snoopGet('parentes', { cpf }, apiKey),
     snoopGet('vizinhos', { cpf }, apiKey),
     snoopGet('score', { cpf }, apiKey),
     snoopGet('profissionais', { cpf }, apiKey),
     snoopGet('telefone/cpf', { cpf }, apiKey),
-    snoopGet('foto-sp', { cpf }, apiKey),
-    snoopGet('foto-ma', { cpf }, apiKey),
+    snoopGet('veiculos-jbr', { cpf }, apiKey),
   ]);
 
   const perfil = {
-    cpf_dados: cpfData?.data ?? cpfData ?? null,
-    fotos: fotoAll?.data ?? fotoAll ?? null,
-    foto_sp: fotoSP?.data ?? fotoSP ?? null,
-    foto_ma: fotoMA?.data ?? fotoMA ?? null,
+    cpf_dados: cpfData?.body ?? cpfData?.data ?? cpfData ?? null,
+    foto: fotoData?.foto || fotoData?.url || (fotoData?.success ? fotoData : null),
     parentes: parentes?.data ?? parentes ?? null,
     vizinhos: vizinhos?.data ?? vizinhos ?? null,
     score: score?.data ?? score ?? null,
     profissionais: profissionais?.data ?? profissionais ?? null,
     telefones: telefones?.data ?? telefones ?? null,
+    veiculos: veiculos?.data ?? veiculos ?? null,
   };
 
   return new Response(JSON.stringify({ success: true, cpf, perfil }), { headers: CORS });

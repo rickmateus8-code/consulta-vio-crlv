@@ -146,6 +146,9 @@ export const snoopVeiculosJBR = (cpf: string) =>
 export const snoopGeo = (cpf: string) =>
   get('geo', { cpf });
 
+export const snoopPerfilCPF = (cpf: string) =>
+  get('perfil-cpf', { cpf });
+
 // ── Planos ───────────────────────────────────────────────────────────────────
 export const getPlanoStatus = () =>
   fetch('/api/consultas-plano', { credentials: 'include' }).then(r => r.json());

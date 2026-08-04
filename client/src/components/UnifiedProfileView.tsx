@@ -72,6 +72,13 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
 
   if (!data) return null;
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   // Se a resposta for uma lista de resultados (ex: busca por nome ou cep)
   const isList = Array.isArray(data) || Array.isArray(data.body) || Array.isArray(data.data);
   const listItems = isList ? (Array.isArray(data) ? data : (data.body || data.data)) : null;
@@ -175,7 +182,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     fotoUrl = fotoObj.foto || fotoObj.url || fotoObj.base64 || null;
   }
 
-  // Telefones (unificando todas as fontes de telefones retornadas)
+  // Telefones
   const telefonesList: any[] = [];
   const rawPhones = [
     ...(Array.isArray(cpfData.phones) ? cpfData.phones : []),
@@ -197,7 +204,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     }
   }
 
-  // Endereços (unificando todas as fontes)
+  // Endereços
   const enderecosList: any[] = [];
   const rawAddresses = [
     ...(Array.isArray(cpfData.all_addresses) ? cpfData.all_addresses : []),
@@ -307,7 +314,7 @@ PROFISISSÃO: ${profissao || 'N/A'}
       </div>
 
       {/* BOX: FOTO E DOCUMENTOS */}
-      <div className="rounded-2xl p-6 bg-slate-900/90 border border-violet-500/30 text-center shadow-xl">
+      <div id="secao-foto" className="rounded-2xl p-6 bg-slate-900/90 border border-violet-500/30 text-center shadow-xl">
         <div className="flex items-center justify-center gap-2 text-violet-300 font-bold text-sm mb-4">
           <User className="w-4 h-4 text-violet-400" />
           <span>Foto e Documentação Oficial</span>
@@ -329,25 +336,26 @@ PROFISISSÃO: ${profissao || 'N/A'}
         </div>
       </div>
 
-      {/* GRID DE RESUMO DE MÉTRICAS */}
+      {/* GRID DE RESUMO DE MÉTRICAS (INTERATIVO COM SCROLL DIRETO) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {[
-          { label: "Endereços", count: enderecosList.length || (enderecoPrincipal !== "Não informado" ? 1 : 0), icon: MapPin },
-          { label: "Telefones", count: telefonesList.length, icon: Phone },
-          { label: "Parentes", count: Array.isArray(parentesData) ? parentesData.length : 0, icon: Users },
-          { label: "Empresas", count: Array.isArray(profissionaisData) ? profissionaisData.length : 0, icon: Building2 },
-          { label: "Veículos", count: Array.isArray(veiculosData) ? veiculosData.length : 0, icon: Car },
-          { label: "CNH", count: cnh ? 1 : 0, icon: Car },
-          { label: "RG", count: rg ? 1 : 0, icon: FileText },
-          { label: "Título Eleitor", count: titulo ? 1 : 0, icon: Award },
-          { label: "PIS / NIS", count: pis ? 1 : 0, icon: Layers },
-          { label: "Score", count: scoreVal ? `${scoreVal} pts` : "N/A", icon: PieChart },
+          { label: "Endereços", count: enderecosList.length || (enderecoPrincipal !== "Não informado" ? 1 : 0), icon: MapPin, targetId: "secao-enderecos" },
+          { label: "Telefones", count: telefonesList.length, icon: Phone, targetId: "secao-telefones" },
+          { label: "Parentes", count: Array.isArray(parentesData) ? parentesData.length : 0, icon: Users, targetId: "secao-parentes" },
+          { label: "Empresas", count: Array.isArray(profissionaisData) ? profissionaisData.length : 0, icon: Building2, targetId: "secao-socioeconomicas" },
+          { label: "Veículos", count: Array.isArray(veiculosData) ? veiculosData.length : 0, icon: Car, targetId: "secao-pessoais" },
+          { label: "CNH", count: cnh ? 1 : 0, icon: Car, targetId: "secao-pessoais" },
+          { label: "RG", count: rg ? 1 : 0, icon: FileText, targetId: "secao-pessoais" },
+          { label: "Título Eleitor", count: titulo ? 1 : 0, icon: Award, targetId: "secao-pessoais" },
+          { label: "PIS / NIS", count: pis ? 1 : 0, icon: Layers, targetId: "secao-pessoais" },
+          { label: "Score", count: scoreVal ? `${scoreVal} pts` : "N/A", icon: PieChart, targetId: "secao-socioeconomicas" },
         ].map((item, idx) => {
           const IconComp = item.icon;
           return (
-            <div
+            <button
               key={idx}
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-800/70 border border-violet-500/20 shadow"
+              onClick={() => scrollToSection(item.targetId)}
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-800/70 hover:bg-violet-950/80 border border-violet-500/20 hover:border-violet-400/60 hover:scale-[1.03] transition-all text-left shadow"
             >
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-violet-900/50 flex items-center justify-center">
@@ -358,13 +366,13 @@ PROFISISSÃO: ${profissao || 'N/A'}
               <span className="text-xs font-black text-violet-400 bg-violet-950/60 px-2 py-0.5 rounded-md border border-violet-500/30">
                 {item.count}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
 
-      {/* SEÇÃO: INFORMAÇÕES PESSOAIS (DESTAQUE ROXO) */}
-      <div className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
+      {/* SEÇÃO: INFORMAÇÕES PESSOAIS */}
+      <div id="secao-pessoais" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
         <div className="px-6 py-3 bg-gradient-to-r from-violet-700 to-indigo-700 font-bold text-white text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <User className="w-4 h-4" />
@@ -429,7 +437,7 @@ PROFISISSÃO: ${profissao || 'N/A'}
       </div>
 
       {/* SEÇÃO: INFORMAÇÕES SOCIOECONÔMICAS */}
-      <div className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
+      <div id="secao-socioeconomicas" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
         <div className="px-6 py-3 bg-gradient-to-r from-purple-700 to-violet-800 font-bold text-white text-sm flex items-center gap-2">
           <CreditCard className="w-4 h-4" />
           <span>Informações Socioeconômicas & Profissão</span>
@@ -461,7 +469,7 @@ PROFISISSÃO: ${profissao || 'N/A'}
       </div>
 
       {/* SEÇÃO: ENDEREÇOS REGISTRADOS */}
-      <div className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
+      <div id="secao-enderecos" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
         <div className="px-6 py-3 bg-slate-800/90 font-bold text-white text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-violet-400" />
@@ -512,7 +520,7 @@ PROFISISSÃO: ${profissao || 'N/A'}
       </div>
 
       {/* SEÇÃO: TELEFONES REGISTRADOS */}
-      <div className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
+      <div id="secao-telefones" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
         <div className="px-6 py-3 bg-slate-800/90 font-bold text-white text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4 text-emerald-400" />
@@ -551,7 +559,7 @@ PROFISISSÃO: ${profissao || 'N/A'}
 
       {/* SEÇÃO: PARENTES VINCULADOS */}
       {Array.isArray(parentesData) && parentesData.length > 0 && (
-        <div className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
+        <div id="secao-parentes" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
           <div className="px-6 py-3 bg-slate-800/90 font-bold text-white text-sm flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-violet-400" />

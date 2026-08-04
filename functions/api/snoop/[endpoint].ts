@@ -67,6 +67,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
 
     try {
       const data = JSON.parse(text);
+      try {
+        await env.DB.prepare('INSERT INTO consultas_logs (user_id, modulo) VALUES (?, ?)').bind(user.id, endpointPath).run();
+      } catch {}
       return new Response(JSON.stringify(data), { status: resp.status, headers: CORS });
     } catch {
       return new Response(

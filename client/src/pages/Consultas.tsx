@@ -13,6 +13,26 @@ import {
   AlertTriangle, Clock, CheckCircle2, ArrowLeft, LogOut, RefreshCw, Eye
 } from "lucide-react";
 
+// ─── Validador Rigoroso de CPF (Módulo 11) ──────────────────────────────────
+export function isValidCPF(cpf: string): boolean {
+  const clean = cpf.replace(/\D/g, "");
+  if (clean.length !== 11 || /^(\d)\1{10}$/.test(clean)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(clean.charAt(i)) * (10 - i);
+  let rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(clean.charAt(9))) return false;
+
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(clean.charAt(i)) * (11 - i);
+  rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(clean.charAt(10))) return false;
+
+  return true;
+}
+
 // ─── Formatadores e Máscaras de Entrada ────────────────────────────────────────
 export function formatCPF(v: string) {
   const digits = v.replace(/\D/g, "").slice(0, 11);
@@ -45,6 +65,46 @@ export function formatPlaca(v: string) {
     return clean.slice(0, 3) + "-" + clean.slice(3);
   }
   return clean;
+}
+
+// Validation status evaluator
+export function evaluateInputValidation(input: string, tabId: string): { status: "valid" | "invalid" | null; label: string } {
+  if (!input.trim()) return { status: null, label: "" };
+  const val = input.trim();
+  const clean = val.replace(/\D/g, "");
+
+  if (tabId === "cpf" || tabId === "parentes" || tabId === "score" || tabId === "foto" || tabId === "enriquecimento") {
+    if (clean.length < 11) return { status: "invalid", label: "Incompleto" };
+    return isValidCPF(clean) ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  }
+
+  if (tabId === "cep") {
+    return clean.length === 8 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  }
+
+  if (tabId === "telefone") {
+    return clean.length >= 10 && clean.length <= 11 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  }
+
+  if (tabId === "placa") {
+    const isPlaca = /^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z0-9]\d{2}$/i.test(val);
+    return isPlaca ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  }
+
+  if (tabId === "email") {
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    return isEmail ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  }
+
+  if (tabId === "rg") {
+    return val.length >= 4 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  }
+
+  if (tabId === "nome") {
+    return val.length >= 3 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  }
+
+  return { status: "valid", label: "Válido" };
 }
 
 // ─── Sub-Abas Principais de Consulta ──────────────────────────────────────────
@@ -109,8 +169,8 @@ export default function Consultas() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Carregar status do plano
-  useEffect(() => {
+  // Carregar status do plano e uso real em 24h
+  const fetchStatus = useCallback(() => {
     getPlanoStatus()
       .then((data) => {
         setPlanStatus(data);
@@ -120,10 +180,13 @@ export default function Consultas() {
       .finally(() => setPlanLoading(false));
   }, [user]);
 
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
   const handlePlanActivated = useCallback(async () => {
-    const data = await getPlanoStatus();
-    setPlanStatus(data);
-  }, []);
+    fetchStatus();
+  }, [fetchStatus]);
 
   // Formatador automático por tipo de aba
   const handleInputChange = (val: string) => {
@@ -150,6 +213,12 @@ export default function Consultas() {
   const handleQuickSearch = async () => {
     if (!quickInput.trim()) {
       toast.error("Digite o valor para consultar.");
+      return;
+    }
+
+    const validation = evaluateInputValidation(quickInput, activeTabId);
+    if (validation.status === "invalid") {
+      toast.error(`Valor inválido para o campo ${activeTabId.toUpperCase()}.`);
       return;
     }
 
@@ -185,6 +254,8 @@ export default function Consultas() {
         data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
       }
       setResult(data);
+      // Atualizar contagem real de uso nas ultimas 24h
+      fetchStatus();
     } catch (e: any) {
       if (e.code === "PLANO_INATIVO") {
         setError("Você precisa de um plano ativo para realizar consultas.");
@@ -205,7 +276,10 @@ export default function Consultas() {
     setError(null);
     setResult(null);
     SnoopAPI.snoopPerfilCPF(cpf)
-      .then((data) => setResult(data))
+      .then((data) => {
+        setResult(data);
+        fetchStatus();
+      })
       .catch((e) => setError(e.message || "Erro ao consultar CPF"))
       .finally(() => setLoading(false));
   };
@@ -221,6 +295,12 @@ export default function Consultas() {
 
   const currentTab = MAIN_TABS.find(t => t.id === activeTabId) || MAIN_TABS[0];
   const planIsActive = (planStatus?.plan?.expires_at && new Date(planStatus.plan.expires_at) > new Date()) || user?.role === "admin";
+  const validation = evaluateInputValidation(quickInput, activeTabId);
+
+  // Contadores reais de uso em 24h retornados do backend
+  const usage24h = planStatus?.usage_24h || 0;
+  const usageRestantes = Math.max(0, 1000 - usage24h);
+  const usageByModulo = planStatus?.usage_by_modulo || {};
 
   return (
     <div className="fixed inset-0 z-50 w-full h-screen bg-[#0a0e27] text-white flex flex-col overflow-hidden font-sans">
@@ -266,9 +346,9 @@ export default function Consultas() {
       {/* BODY DE TELA CHEIA */}
       <main className="flex-1 overflow-y-auto p-6 space-y-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          {/* BARRA SUPERIOR DE CONSULTA COM ABAS (Fidelidade visual do exemplo) */}
+          {/* BARRA SUPERIOR DE CONSULTA COM ABAS */}
           <div className="rounded-2xl p-6 bg-slate-900/90 border border-violet-500/30 shadow-2xl space-y-5">
-            {/* Header + Contador */}
+            {/* Header + Contador Real 24h */}
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-violet-950 flex items-center justify-center border border-violet-500/30">
@@ -280,17 +360,17 @@ export default function Consultas() {
                 </div>
               </div>
 
-              {/* Contador de consultas */}
+              {/* Contador REAL de consultas (reset 24h) */}
               <div className="flex items-center gap-4 px-5 py-2.5 rounded-xl bg-slate-950/80 border border-violet-500/20 text-xs">
                 <Clock className="w-4 h-4 text-violet-400" />
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Consultas Hoje</span>
-                  <span className="text-white font-bold text-sm">25 / 1000</span>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Consultas Hoje (24h)</span>
+                  <span className="text-white font-bold text-sm">{usage24h} / 1000</span>
                 </div>
                 <div className="h-6 w-px bg-violet-500/20" />
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-bold">Restantes</span>
-                  <span className="text-emerald-400 font-bold text-sm">975 restantes</span>
+                  <span className="text-emerald-400 font-bold text-sm">{usageRestantes} restantes</span>
                 </div>
               </div>
             </div>
@@ -321,7 +401,7 @@ export default function Consultas() {
               })}
             </div>
 
-            {/* Input Formatado e Botao de Pesquisa */}
+            {/* Input Formatado e Indicador Válido/Inválido Real */}
             <div className="flex gap-3 items-center">
               <div className="relative flex-1">
                 <input
@@ -332,9 +412,11 @@ export default function Consultas() {
                   onKeyDown={(e) => { if (e.key === "Enter") handleQuickSearch(); }}
                   className="w-full px-4 py-3.5 rounded-xl bg-slate-950/80 border border-violet-500/30 text-white text-sm outline-none focus:border-violet-500 transition-all font-mono"
                 />
-                {quickInput && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400 text-xs font-bold">
-                    Válido
+                {validation.status && (
+                  <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold ${
+                    validation.status === "valid" ? "text-emerald-400" : "text-red-400"
+                  }`}>
+                    {validation.label}
                   </span>
                 )}
               </div>
@@ -374,7 +456,7 @@ export default function Consultas() {
             </div>
           )}
 
-          {/* MÓDULOS POR CATEGORIA (Quando nao ha resultado sendo visto) */}
+          {/* MÓDULOS POR CATEGORIA (Com contagem real por modulo) */}
           {!result && (
             <div className="space-y-8 pt-4">
               {CATEGORIES.map((cat) => {
@@ -391,27 +473,30 @@ export default function Consultas() {
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      {catMods.map((mod) => (
-                        <div
-                          key={mod.id}
-                          onClick={() => handleSelectModule(mod.id)}
-                          className="group relative p-4 rounded-xl bg-gradient-to-br from-violet-900/60 to-indigo-950/80 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.03] transition-all cursor-pointer shadow-lg min-h-[110px] flex flex-col justify-between"
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl flex-shrink-0">
-                              {mod.emoji}
+                      {catMods.map((mod) => {
+                        const modCount = usageByModulo[mod.id] || 0;
+                        return (
+                          <div
+                            key={mod.id}
+                            onClick={() => handleSelectModule(mod.id)}
+                            className="group relative p-4 rounded-xl bg-gradient-to-br from-violet-900/60 to-indigo-950/80 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.03] transition-all cursor-pointer shadow-lg min-h-[110px] flex flex-col justify-between"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl flex-shrink-0">
+                                {mod.emoji}
+                              </div>
+                              <div>
+                                <h3 className="font-black text-white text-xs uppercase tracking-wide">{mod.label}</h3>
+                                <p className="text-violet-200 text-[11px] mt-0.5 line-clamp-2">{mod.description}</p>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="font-black text-white text-xs uppercase tracking-wide">{mod.label}</h3>
-                              <p className="text-violet-200 text-[11px] mt-0.5 line-clamp-2">{mod.description}</p>
+                            <div className="pt-2 flex items-center gap-1 text-[10px] text-emerald-400 font-semibold border-t border-white/5">
+                              <CheckCircle2 className="w-3 h-3" />
+                              {modCount}/{mod.dailyLimit || 500} consultas hoje
                             </div>
                           </div>
-                          <div className="pt-2 flex items-center gap-1 text-[10px] text-emerald-400 font-semibold border-t border-white/5">
-                            <CheckCircle2 className="w-3 h-3" />
-                            0/{mod.dailyLimit || 500} consultas hoje
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );

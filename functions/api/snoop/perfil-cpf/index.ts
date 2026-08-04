@@ -89,6 +89,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     veiculos: veiculos?.data ?? veiculos ?? null,
   };
 
+  try {
+    await env.DB.prepare('INSERT INTO consultas_logs (user_id, modulo) VALUES (?, ?)').bind(user.id, 'cpf').run();
+  } catch {}
+
   return new Response(JSON.stringify({ success: true, cpf, perfil }), { headers: CORS });
 };
 

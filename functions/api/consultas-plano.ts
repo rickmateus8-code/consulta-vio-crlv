@@ -1,4 +1,4 @@
-﻿/**
+/**
  * /api/consultas-plano — Gerencia planos de consulta SnoopIntelligence
  */
 import type { Env } from '../types';
@@ -26,14 +26,40 @@ async function getUserFromSession(request: Request, env: Env): Promise<any | nul
   return session || null;
 }
 
-// GET /api/consultas-plano — retorna status do plano ativo
+// GET /api/consultas-plano — retorna status do plano ativo e uso real das ultimas 24h
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const user = await getUserFromSession(request, env);
   if (!user) return new Response(JSON.stringify({ success: false, error: 'Nao autenticado' }), { status: 401, headers: CORS });
+  
   const plan = await env.DB.prepare(
     'SELECT * FROM consultas_planos WHERE user_id = ? AND expires_at > datetime(\'now\') ORDER BY expires_at DESC LIMIT 1'
   ).bind(user.id).first<any>();
-  return new Response(JSON.stringify({ success: true, plan: plan || null, balance: user.balance }), { headers: CORS });
+
+  let usage24h = 0;
+  let usageByModulo: Record<string, number> = {};
+  try {
+    const usageRes = await env.DB.prepare(
+      'SELECT COUNT(*) as cnt FROM consultas_logs WHERE user_id = ? AND created_at >= datetime(\'now\', \'-24 hours\')'
+    ).bind(user.id).first<any>();
+    usage24h = usageRes?.cnt || 0;
+
+    const modRes = await env.DB.prepare(
+      'SELECT modulo, COUNT(*) as cnt FROM consultas_logs WHERE user_id = ? AND created_at >= datetime(\'now\', \'-24 hours\') GROUP BY modulo'
+    ).bind(user.id).all<any>();
+    if (modRes?.results) {
+      for (const row of modRes.results) {
+        usageByModulo[row.modulo] = row.cnt;
+      }
+    }
+  } catch { usage24h = 0; }
+
+  return new Response(JSON.stringify({
+    success: true,
+    plan: plan || null,
+    balance: user.balance,
+    usage_24h: usage24h,
+    usage_by_modulo: usageByModulo,
+  }), { headers: CORS });
 };
 
 // POST /api/consultas-plano — compra um plano

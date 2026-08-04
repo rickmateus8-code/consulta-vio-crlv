@@ -242,7 +242,8 @@ export default function Consultas() {
       } else if (activeTabId === "telefone") {
         data = await SnoopAPI.snoopTelefoneFull(cleanVal || val);
       } else if (activeTabId === "nome") {
-        data = await SnoopAPI.snoopNome(val);
+        const sanitizedNome = val.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+        data = await SnoopAPI.snoopNome(sanitizedNome);
       } else {
         data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
       }
@@ -302,7 +303,7 @@ export default function Consultas() {
   }, [activeCategoryFilter]);
 
   return (
-    <div className="fixed inset-0 z-50 w-full h-screen bg-[#070a19] text-white flex overflow-hidden font-sans select-none">
+    <div className="fixed inset-0 z-50 w-full h-screen bg-[#070a19] text-white flex overflow-hidden font-sans select-text">
       {/* ─── SIDEBAR ESQUERDA COMPATÍVEL COM IMAGENS ANEXADAS ─────────────────── */}
       <aside className="w-64 bg-[#0c0f2a] border-r border-violet-500/20 flex flex-col justify-between p-4 flex-shrink-0">
         <div className="space-y-6">

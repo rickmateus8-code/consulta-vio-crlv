@@ -1,5 +1,5 @@
 /**
- * /api/snoop/perfil-cpf — Agregação total e ultra-completa de dados por CPF
+ * /api/snoop/perfil-cpf — Agregação total e ultra-completa de dados por CPF com Cache D1
  */
 import type { Env } from '../../../types';
 
@@ -65,6 +65,19 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     return new Response(JSON.stringify({ success: false, error: 'CPF invalido' }), { status: 400, headers: CORS });
   }
 
+  const bypassCache = url.searchParams.get('fresh') === 'true';
+  if (!bypassCache) {
+    try {
+      const cached = await env.DB.prepare(
+        "SELECT payload FROM consultas_cache WHERE key = ? AND datetime(updated_at, '+15 days') > datetime('now')"
+      ).bind(`cpf:${cpf}`).first<any>();
+      if (cached?.payload) {
+        const perfilCached = JSON.parse(cached.payload);
+        return new Response(JSON.stringify({ success: true, cpf, perfil: perfilCached, from_cache: true }), { headers: CORS });
+      }
+    } catch {}
+  }
+
   // Agregação paralela bruta de todas as bases Snoop Intelligence
   const [cpfData, fotoData, fotoCpfData, fotoSPData, fotoMAData, fotoROData, parentes, vizinhos, score, profissionais, telefones, veiculos] = await Promise.all([
     snoopGet('generic/cpf', { cpf }, apiKey),
@@ -83,22 +96,45 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   const rawCpf = cpfData?.body ?? cpfData?.data ?? cpfData ?? {};
 
-  const perfil = {
-    cpf_dados: rawCpf,
-    foto: fotoData || fotoCpfData || rawCpf.foto || null,
-    fotos: {
-      nacional: fotoData || fotoCpfData || rawCpf.foto || null,
-      sp: fotoSPData || rawCpf.foto_sp || null,
-      ma: fotoMAData || rawCpf.foto_ma || null,
-      ro: fotoROData || rawCpf.foto_ro || null,
-    },
-    parentes: parentes?.data ?? parentes ?? rawCpf.parentes ?? null,
-    vizinhos: vizinhos?.data ?? vizinhos ?? rawCpf.vizinhos ?? null,
-    score: score?.data ?? score ?? rawCpf.score ?? null,
-    profissionais: profissionais?.data ?? profissionais ?? rawCpf.profissionais ?? null,
-    telefones: telefones?.data ?? telefones ?? rawCpf.phones ?? rawCpf.telefones ?? null,
-    veiculos: veiculos?.data ?? veiculos ?? rawCpf.vehicles ?? rawCpf.veiculos ?? null,
+  const fontesConsultadas = {
+    receita_federal: !!(rawCpf.name || rawCpf.nome || rawCpf.cpf),
+    foto_nacional: !!(fotoData || fotoCpfData || rawCpf.foto),
+    foto_sp: !!(fotoSPData || rawCpf.foto_sp),
+    foto_ma: !!(fotoMAData || rawCpf.foto_ma),
+    foto_ro: !!(fotoROData || rawCpf.foto_ro),
+    telefones: Array.isArray(telefones?.data || telefones?.body || telefones || rawCpf.phones) && (telefones?.data || telefones?.body || telefones || rawCpf.phones).length > 0,
+    enderecos: Array.isArray(rawCpf.all_addresses || rawCpf.enderecos) && (rawCpf.all_addresses || rawCpf.enderecos).length > 0,
+    parentes: Array.isArray(parentes?.data || parentes?.body || parentes || rawCpf.parentes) && (parentes?.data || parentes?.body || parentes || rawCpf.parentes).length > 0,
+    score: !!(score?.data || score?.body || score || rawCpf.score),
+    veiculos: Array.isArray(veiculos?.data || veiculos?.body || veiculos || rawCpf.vehicles) && (veiculos?.data || veiculos?.body || veiculos || rawCpf.vehicles).length > 0,
   };
+
+  const perfil: any = {
+    cpf_dados: rawCpf,
+    foto: fotoData?.body ?? fotoData?.data ?? fotoData ?? fotoCpfData?.body ?? fotoCpfData?.data ?? fotoCpfData ?? rawCpf.foto ?? null,
+    fotos: {
+      nacional: fotoData?.body ?? fotoData?.data ?? fotoData ?? fotoCpfData?.body ?? fotoCpfData?.data ?? fotoCpfData ?? rawCpf.foto ?? rawCpf.fotos?.nacional ?? null,
+      sp: fotoSPData?.body ?? fotoSPData?.data ?? fotoSPData ?? rawCpf.foto_sp ?? rawCpf.fotos?.sp ?? null,
+      ma: fotoMAData?.body ?? fotoMAData?.data ?? fotoMAData ?? rawCpf.foto_ma ?? rawCpf.fotos?.ma ?? null,
+      ro: fotoROData?.body ?? fotoROData?.data ?? fotoROData ?? rawCpf.foto_ro ?? rawCpf.fotos?.ro ?? null,
+    },
+    parentes: parentes?.data ?? parentes?.body ?? parentes ?? rawCpf.parentes ?? null,
+    vizinhos: vizinhos?.data ?? vizinhos?.body ?? vizinhos ?? rawCpf.vizinhos ?? null,
+    score: score?.data ?? score?.body ?? score ?? rawCpf.score ?? null,
+    profissionais: profissionais?.data ?? profissionais?.body ?? profissionais ?? rawCpf.profissionais ?? null,
+    telefones: telefones?.data ?? telefones?.body ?? telefones ?? rawCpf.phones ?? rawCpf.telefones ?? null,
+    veiculos: veiculos?.data ?? veiculos?.body ?? veiculos ?? rawCpf.vehicles ?? rawCpf.veiculos ?? null,
+    fontes_consultadas: fontesConsultadas,
+  };
+
+  try {
+    await env.DB.prepare(
+      "CREATE TABLE IF NOT EXISTS consultas_cache (key TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT (datetime('now')))"
+    ).run();
+    await env.DB.prepare(
+      "INSERT INTO consultas_cache (key, payload, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET payload = excluded.payload, updated_at = datetime('now')"
+    ).bind(`cpf:${cpf}`, JSON.stringify(perfil)).run();
+  } catch {}
 
   try {
     await env.DB.prepare('INSERT INTO consultas_logs (user_id, modulo) VALUES (?, ?)').bind(user.id, 'cpf').run();

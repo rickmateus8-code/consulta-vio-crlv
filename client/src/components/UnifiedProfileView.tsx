@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   FileText, Download, Share2, Copy, MapPin, Phone, Mail, User,
   Calendar, CreditCard, Shield, Car, Briefcase, Award, CheckCircle2,
-  ExternalLink, Layers, PieChart, Users, AlertCircle, Building2, Check, ArrowLeft, Camera
+  ExternalLink, Layers, PieChart, Users, AlertCircle, Building2, Check, ArrowLeft, Camera, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
+import { exportElementToPDF, generatePDFFilename } from "@/lib/pdfExport";
 
 export function isValidCPF(cpf: string): boolean {
   const clean = cpf.replace(/\D/g, "");
@@ -79,18 +80,49 @@ export function getZodiacSign(birthDateStr: string): string {
 
 export function formatImageUrl(val: any): string | null {
   if (!val) return null;
+
   if (typeof val === "string") {
     const trimmed = val.trim();
+    if (!trimmed) return null;
     if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:image/")) {
       return trimmed;
     }
-    if (trimmed.length > 50 && /^[A-Za-z0-9+/=]+$/.test(trimmed.slice(0, 50))) {
-      return `data:image/jpeg;base64,${trimmed}`;
+    const cleanB64 = trimmed.replace(/\s+/g, "");
+    if (cleanB64.length > 30 && /^[A-Za-z0-9+/=]+$/.test(cleanB64)) {
+      let mime = "jpeg";
+      if (cleanB64.startsWith("iVBORw0KGgo")) mime = "png";
+      else if (cleanB64.startsWith("R0lGOD")) mime = "gif";
+      else if (cleanB64.startsWith("PHN2Zw")) mime = "svg+xml";
+      return `data:image/${mime};base64,${cleanB64}`;
+    }
+    return null;
+  }
+
+  if (Array.isArray(val)) {
+    for (const item of val) {
+      const res = formatImageUrl(item);
+      if (res) return res;
+    }
+    return null;
+  }
+
+  if (typeof val === "object") {
+    const candidates = [
+      val.foto, val.url, val.base64, val.image, val.imagem, val.data, val.body,
+      val.b64, val.photo, val.img, val.pic, val.src, val.content,
+      val.foto_base64, val.base64_foto, val.foto_sp, val.foto_ma, val.foto_ro,
+      val.foto_cnh, val.foto_rg, val.cnh_foto, val.rg_foto, val.nacional,
+      val.sp, val.ma, val.ro
+    ];
+
+    for (const cand of candidates) {
+      if (cand && cand !== val) {
+        const res = formatImageUrl(cand);
+        if (res) return res;
+      }
     }
   }
-  if (typeof val === "object") {
-    return formatImageUrl(val.foto || val.url || val.base64 || val.image || val.data);
-  }
+
   return null;
 }
 
@@ -102,6 +134,8 @@ interface UnifiedProfileViewProps {
 
 export default function UnifiedProfileView({ data, onClose, onSelectPerson }: UnifiedProfileViewProps) {
   const [copied, setCopied] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   if (!data) return null;
 
@@ -109,6 +143,29 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (profileRef.current) {
+      try {
+        setIsExportingPDF(true);
+        toast.info("Gerando PDF em alta qualidade...");
+        await exportElementToPDF(profileRef.current, {
+          filename: generatePDFFilename(nome !== "Não informado" ? nome : (cpf !== "Não informado" ? cpf : "consulta"), "generic"),
+          docType: "generic",
+          multiPage: true,
+          scale: 2,
+        });
+        toast.success("PDF exportado com sucesso!");
+      } catch (err) {
+        console.error("Erro na exportação PDF:", err);
+        window.print();
+      } finally {
+        setIsExportingPDF(false);
+      }
+    } else {
+      window.print();
     }
   };
 
@@ -159,14 +216,16 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
     };
 
     return (
-      <div className="w-full space-y-6 text-slate-800 font-sans select-none bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+      <div ref={profileRef} className="w-full space-y-6 text-slate-800 font-sans select-text bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
         {/* BOTÕES DE AÇÃO MODELO IMAGEM 3 */}
-        <div className="flex justify-end gap-3 pb-2 border-b border-slate-200">
+        <div className="flex justify-end gap-3 pb-2 border-b border-slate-200 no-print">
           <button
-            onClick={() => window.print()}
-            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-all"
+            onClick={handleExportPDF}
+            disabled={isExportingPDF}
+            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-all disabled:opacity-60"
           >
-            <Download className="w-3.5 h-3.5" /> Exportar PDF
+            {isExportingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            {isExportingPDF ? "Gerando PDF..." : "Exportar PDF"}
           </button>
           <button
             onClick={copyVehicleData}
@@ -274,8 +333,8 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
 
   if (isList && listItems && listItems.length > 0 && typeof listItems[0] === "object") {
     return (
-      <div className="w-full space-y-4 text-slate-100 font-sans select-none">
-        <div className="flex items-center justify-between py-2 border-b border-violet-500/20">
+      <div className="w-full space-y-4 text-slate-100 font-sans select-text">
+        <div className="flex items-center justify-between py-2 border-b border-violet-500/20 no-print">
           <span className="text-sm font-bold text-violet-300">
             {listItems.length} registro(s) encontrado(s)
           </span>
@@ -371,20 +430,26 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
   const mosaic = cpfData.mosaic || scoreObj.cd_mosaic || null;
   const profissao = cpfData.occupation || cpfData.occupation_name || cpfData.profissao || null;
 
-  // Coleção de Fotos Nacionais e Estaduais
+  // Coleção de Fotos Nacionais e Estaduais (com inspeção profunda de alias)
   const photoGallery: { label: string; url: string }[] = [];
   
-  const imgNacional = formatImageUrl(fotosDict.nacional || fotoObj || cpfData.foto || cpfData.fotos);
+  const imgNacional = formatImageUrl(fotosDict.nacional || fotoObj || cpfData.foto || cpfData.fotos || cpfData.foto_nacional || root.foto);
   if (imgNacional) photoGallery.push({ label: "Nacional / Base Única", url: imgNacional });
 
-  const imgSP = formatImageUrl(fotosDict.sp);
+  const imgSP = formatImageUrl(fotosDict.sp || cpfData.foto_sp || root.foto_sp);
   if (imgSP) photoGallery.push({ label: "Estado de São Paulo (SP)", url: imgSP });
 
-  const imgMA = formatImageUrl(fotosDict.ma);
+  const imgMA = formatImageUrl(fotosDict.ma || cpfData.foto_ma || root.foto_ma);
   if (imgMA) photoGallery.push({ label: "Estado do Maranhão (MA)", url: imgMA });
 
-  const imgRO = formatImageUrl(fotosDict.ro);
+  const imgRO = formatImageUrl(fotosDict.ro || cpfData.foto_ro || root.foto_ro);
   if (imgRO) photoGallery.push({ label: "Estado de Rondônia (RO)", url: imgRO });
+
+  const imgCNH = formatImageUrl(cpfData.cnh_foto || cpfData.foto_cnh || root.foto_cnh);
+  if (imgCNH && !photoGallery.some(p => p.url === imgCNH)) photoGallery.push({ label: "Base CNH", url: imgCNH });
+
+  const imgRG = formatImageUrl(cpfData.rg_foto || cpfData.foto_rg || root.foto_rg);
+  if (imgRG && !photoGallery.some(p => p.url === imgRG)) photoGallery.push({ label: "Base RG", url: imgRG });
 
   // Telefones
   const telefonesList: any[] = [];
@@ -442,29 +507,73 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
   }
 
   const copyAllData = () => {
-    const text = `
-=== CONSULTA MASTER BUSCAS ===
-NOME: ${nome}
-CPF: ${cpf}
-NASCIMENTO: ${nascimento} (${idadeStr})
-SIGNO: ${signoStr}
-MÃE: ${mae}
-ENDEREÇO: ${enderecoPrincipal}
-CNH: ${cnh || 'N/A'}
-RG: ${rgFormatted || rg || 'N/A'}
-TÍTULO ELEITOR: ${titulo || 'N/A'}
-PIS/NIS: ${pis || 'N/A'}
-RENDA: ${renda || 'N/A'}
-SCORE: ${scoreVal || 'N/A'}
-PROFISISSÃO: ${profissao || 'N/A'}
-`.trim();
+    const lines = [
+      "=== CONSULTA MASTER BUSCAS ===",
+      `NOME: ${nome}`,
+      `CPF: ${cpf}`,
+      `NASCIMENTO: ${nascimento}${idadeStr ? ` (${idadeStr})` : ''}`,
+      `SIGNO: ${signoStr || 'N/A'}`,
+      `SEXO: ${sexo || 'N/A'}`,
+      `MÃE: ${mae}`,
+      `PAI: ${pai || 'N/A'}`,
+      `STATUS RECEITA: ${cpfData.federal_status || "REGULAR"}`,
+      `ENDEREÇO PRINCIPAL: ${enderecoPrincipal}`,
+      `RG: ${rgFormatted || rg || 'N/A'}`,
+      `CNH: ${cnh || 'N/A'}`,
+      `TÍTULO ELEITOR: ${titulo || 'N/A'}`,
+      `PIS/NIS: ${pis || 'N/A'}`,
+      `RENDA: ${renda || 'N/A'}`,
+      `SCORE: ${scoreVal || 'N/A'}`,
+      `PROFISSÃO: ${profissao || 'N/A'}`,
+    ];
+
+    if (telefonesList.length > 0) {
+      lines.push("\n--- TELEFONES ---");
+      telefonesList.forEach((t, i) => {
+        const num = typeof t === "object" ? (t.numero || t.telefone || t.PHONE || "") : String(t);
+        const type = typeof t === "object" && t.tipo ? ` (${t.tipo})` : "";
+        lines.push(`${i + 1}. ${num}${type}`);
+      });
+    }
+
+    if (enderecosList.length > 0) {
+      lines.push("\n--- ENDEREÇOS ---");
+      enderecosList.forEach((a, i) => {
+        let addrStr = "";
+        if (typeof a === "object" && a) {
+          addrStr = [a.type || a.tipologradouro, a.street || a.logradouro, a.number || a.numero, a.neighborhood || a.bairro, a.city || a.cidade, a.state || a.uf, a.zip_code || a.cep].filter(Boolean).join(", ");
+        } else {
+          addrStr = String(a);
+        }
+        lines.push(`${i + 1}. ${addrStr}`);
+      });
+    }
+
+    if (Array.isArray(parentesData) && parentesData.length > 0) {
+      lines.push("\n--- PARENTES VINCULADOS ---");
+      parentesData.slice(0, 15).forEach((p: any, i: number) => {
+        const pNome = p.nome || p.name || p.NOME || "Não informado";
+        const pVinculo = p.vinculo || p.relationship || p.VINCULO || "Parente";
+        const pCpf = p.cpf || p.CPF || "";
+        lines.push(`${i + 1}. ${pNome} [${pVinculo}]${pCpf ? ` - CPF: ${pCpf}` : ''}`);
+      });
+    }
+
+    if (Array.isArray(veiculosData) && veiculosData.length > 0) {
+      lines.push("\n--- VEÍCULOS ---");
+      veiculosData.forEach((v: any, i: number) => {
+        const vPlaca = v.placa || v.PLACA || "";
+        const vMod = v.marca_modelo || v.modelo || v.MARCA_MODELO || "";
+        lines.push(`${i + 1}. ${vPlaca}${vMod ? ` - ${vMod}` : ''}`);
+      });
+    }
+
+    const text = lines.join("\n").trim();
     navigator.clipboard.writeText(text);
     setCopied(true);
-    toast.success("Dados copiados com sucesso!");
+    toast.success("Ficha completa de dados copiada com sucesso!");
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const handlePrintPDF = () => { window.print(); };
 
   const handleShare = () => {
     if (navigator.share) {
@@ -479,9 +588,9 @@ PROFISISSÃO: ${profissao || 'N/A'}
   };
 
   return (
-    <div className="w-full space-y-6 text-slate-100 font-sans select-none">
+    <div ref={profileRef} className="w-full space-y-6 text-slate-100 font-sans select-text">
       {/* BARRA DE AÇÕES RÁPIDAS */}
-      <div className="flex items-center justify-between py-3 border-b border-violet-500/20 flex-wrap gap-2">
+      <div className="flex items-center justify-between py-3 border-b border-violet-500/20 flex-wrap gap-2 no-print">
         <div className="flex items-center gap-2">
           {onClose && (
             <button onClick={onClose} className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all">
@@ -494,11 +603,12 @@ PROFISISSÃO: ${profissao || 'N/A'}
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={handlePrintPDF}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-900/40 hover:bg-violet-800/60 text-violet-200 border border-violet-500/30 text-xs font-semibold transition-all"
+            onClick={handleExportPDF}
+            disabled={isExportingPDF}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-900/40 hover:bg-violet-800/60 text-violet-200 border border-violet-500/30 text-xs font-semibold transition-all disabled:opacity-60"
           >
-            <Download className="w-3.5 h-3.5 text-violet-400" />
-            Exportar PDF
+            {isExportingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" /> : <Download className="w-3.5 h-3.5 text-violet-400" />}
+            {isExportingPDF ? "Exportando..." : "Exportar PDF"}
           </button>
           <button
             onClick={handleShare}
@@ -515,6 +625,36 @@ PROFISISSÃO: ${profissao || 'N/A'}
             {copied ? "Copiado!" : "Copiar Dados"}
           </button>
         </div>
+      </div>
+
+      {/* BARRA DE STATUS DE FONTES CONSULTADAS */}
+      <div className="flex items-center gap-2 flex-wrap text-[11px] p-3 rounded-xl bg-slate-900/80 border border-violet-500/20 no-print">
+        <span className="text-violet-300 font-bold uppercase tracking-wide mr-1 flex items-center gap-1">
+          <Shield className="w-3.5 h-3.5 text-emerald-400" /> Fontes Consultadas:
+        </span>
+        <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${nome !== "Não informado" ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-400"}`}>
+          Receita Federal
+        </span>
+        <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${photoGallery.length > 0 ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-400"}`}>
+          Galeria de Fotos ({photoGallery.length})
+        </span>
+        <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${telefonesList.length > 0 ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-400"}`}>
+          Telefonia ({telefonesList.length})
+        </span>
+        <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${enderecosList.length > 0 ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-400"}`}>
+          Endereços ({enderecosList.length})
+        </span>
+        <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${cnh || rg ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-400"}`}>
+          DETRAN / CNH
+        </span>
+        <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${scoreVal ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-400"}`}>
+          Score / Crédito
+        </span>
+        {data?.from_cache && (
+          <span className="ml-auto px-2 py-0.5 rounded-full bg-violet-950 border border-violet-500/50 text-violet-300 font-bold text-[10px] flex items-center gap-1">
+            ⚡ Entrega Ultra-Rápida (Cache D1)
+          </span>
+        )}
       </div>
 
       {/* BOX: GALERIA DE FOTOS NACIONAIS E DOS ESTADOS */}

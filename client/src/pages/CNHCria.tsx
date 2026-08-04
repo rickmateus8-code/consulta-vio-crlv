@@ -1,13 +1,12 @@
 /**
- * CNHCria — Formulário de criação de CNH Digital
+ * CNHCria — Editor e Emissor da CNH Digital (Estado de Ouro)
  *
- * Layout visual idêntico ao elitedoc.store/cnhcria:
- * - Single column (sem preview lateral)
- * - Inputs com border tracejada em vermelho/laranja
- * - Botão SALVAR DOCUMENTO flutuante no bottom
- * - Seções com dividers (border-bottom)
- * - Canvas oculto (ghostCanvas) para geração da imagem
- * - Após emissão: botões de download JPEG + WhatsApp
+ * Características:
+ * - Live Split-View Preview em tempo real (Formulário à Esquerda, Canvas 1:1 à Direita)
+ * - Navegação por Abas (Importação, Pessoais, CNH, Segurança, Mídia)
+ * - Controles de Zoom Dinâmico (🔍 380px a 850px) e Navegação por Foco (▲ Frente / ▼ Verso MRZ)
+ * - Geradores Automáticos Inteligentes (CPF Válido, Validade por Idade, Registro, Espelho, Assinaturas Digitais)
+ * - Ajustes Finos de Foto 3x4 e Assinatura com IA Gemini Nano
  */
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -15,12 +14,12 @@ import { useAuth } from "../contexts/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import CNHDocument, { type CNHDocumentHandle, type CNHDocumentProps } from "../components/CNHDocument";
 import { toast } from "sonner";
-import { getQRCodeCNH } from "@/config.qrcode";
 import { validarCPF, formatarCPF as formatarCPFUtil, formatarRG, displayDateToHtml } from "@/lib/utils";
 import EmissionModal from "@/components/EmissionModal";
 import {
   ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Save, Download, MessageCircle, Copy, Zap,
-  Upload, Type, Lock, AlertCircle, Car
+  Upload, Type, Lock, AlertCircle, Car, Eye, ZoomIn, ZoomOut, RotateCcw, Shield,
+  Sparkles, FileText, User, Camera, Check, RefreshCw
 } from "lucide-react";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
@@ -71,14 +70,36 @@ function formatarCPFInput(v: string): string {
   return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
 }
 
+function gerarCPFValido(): string {
+  let cpf = "";
+  for (let i = 0; i < 9; i++) cpf += Math.floor(Math.random() * 10);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(cpf[i]) * (10 - i);
+  let d1 = 11 - (sum % 11);
+  if (d1 >= 10) d1 = 0;
+  cpf += d1;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(cpf[i]) * (11 - i);
+  let d2 = 11 - (sum % 11);
+  if (d2 >= 10) d2 = 0;
+  cpf += d2;
+  return formatarCPFInput(cpf);
+}
+
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
 
-// ─── Componente ──────────────────────────────────────────────────────────────
 export default function CNHCria() {
   const { user, updateBalance } = useAuth();
   const [, setLocation] = useLocation();
   const docRef = useRef<CNHDocumentHandle>(null);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
 
+  // Estados de Interface e Abas
+  const [activeTab, setActiveTab] = useState<"pessoais" | "cnh" | "seguranca" | "midia" | "import">("pessoais");
+  const [mobileMode, setMobileMode] = useState<"form" | "preview">("form");
+  const [zoomWidth, setZoomWidth] = useState(580);
+
+  // Estados de Dados
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [codigoQR, setCodigoQR] = useState("");
@@ -88,15 +109,30 @@ export default function CNHCria() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isApplyingAI, setIsApplyingAI] = useState(false);
   const [documentPrice, setDocumentPrice] = useState(0);
+
+  // Ajustes de Foto e Assinatura
   const [fotoScale, setFotoScale] = useState(1.0);
   const [fotoOffsetX, setFotoOffsetX] = useState(0);
   const [fotoOffsetY, setFotoOffsetY] = useState(0);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [origemTabela, setOrigemTabela] = useState<string | null>(null);
   const [assScale, setAssScale] = useState(1.0);
   const [assOffsetX, setAssOffsetX] = useState(0);
   const [assOffsetY, setAssOffsetY] = useState(0);
 
+  const [editId, setEditId] = useState<string | null>(null);
+  const [origemTabela, setOrigemTabela] = useState<string | null>(null);
+
+  const [data, setData] = useState<CNHDocumentProps>({
+    nome: "", cpf: "", rg: "", orgaoEmissor: "", ufRG: "",
+    sexo: "", nacionalidade: "BRASILEIRA", dataNascimento: "",
+    localNascimento: "", ufNascimento: "", nomePai: "", nomeMae: "",
+    categoria: "AB", tipo: "Definitiva", registro: "", espelho: "",
+    validade: "", validadeCNH2: "", dataEmissao: "", primeiraHabilitacao: "",
+    localEmissao: "", ufEmissao: "SP", assDigital1: "", assDigital2: "",
+    senhaApp: "", observacoes: "", fotoUrl: "", assinaturaUrl: "",
+    codigoQR: "PREVIEW", blurred: true,
+  });
+
+  // Carregar documento para edição se houver edit_id na URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("edit_id");
@@ -113,9 +149,7 @@ export default function CNHCria() {
             let docData: any = {};
             try {
               docData = typeof doc.data === "string" ? JSON.parse(doc.data) : (doc.data || {});
-            } catch {
-              docData = {};
-            }
+            } catch { docData = {}; }
             const mergedData = {
               ...docData,
               nome: doc.nome || docData.nome || "",
@@ -138,54 +172,20 @@ export default function CNHCria() {
             toast.error("Documento não encontrado para edição.");
           }
         })
-        .catch(() => {
-          toast.error("Erro ao carregar documento para edição.");
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+        .catch(() => toast.error("Erro ao carregar documento."))
+        .finally(() => setLoading(false));
     }
   }, []);
 
-  const [data, setData] = useState<CNHDocumentProps>({
-    nome: "", cpf: "", rg: "", orgaoEmissor: "", ufRG: "",
-    sexo: "", nacionalidade: "BRASILEIRA", dataNascimento: "",
-    localNascimento: "", ufNascimento: "", nomePai: "", nomeMae: "",
-    categoria: "", tipo: "Definitiva", registro: "", espelho: "",
-    validade: "", validadeCNH2: "", dataEmissao: "", primeiraHabilitacao: "",
-    localEmissao: "", ufEmissao: "", assDigital1: "", assDigital2: "",
-    senhaApp: "", observacoes: "", fotoUrl: "", assinaturaUrl: "",
-    codigoQR: "PREVIEW", blurred: true,
-  });
-
-  // Atualizar campo genérico
   const update = useCallback((field: keyof CNHDocumentProps) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let val = e.target.value;
     if (field === "cpf") val = formatarCPFInput(val);
-    if (field === "rg") val = val.replace(/\./g, ""); // RG sem pontos, apenas números
+    if (field === "rg") val = val.replace(/\./g, "");
     setData(d => ({ ...d, [field]: val }));
   }, []);
 
-  const changeFotoScale = (delta: number) => {
-    setFotoScale((prev) => clamp(Number((prev + delta).toFixed(2)), 0.5, 1.8));
-  };
-  const changeFotoOffsetX = (delta: number) => {
-    setFotoOffsetX((prev) => clamp(prev + delta, -80, 80));
-  };
-  const changeFotoOffsetY = (delta: number) => {
-    setFotoOffsetY((prev) => clamp(prev + delta, -80, 80));
-  };
-  const changeAssScale = (delta: number) => {
-    setAssScale((prev) => clamp(Number((prev + delta).toFixed(2)), 0.5, 2.5));
-  };
-  const changeAssOffsetX = (delta: number) => {
-    setAssOffsetX((prev) => clamp(prev + delta, -80, 80));
-  };
-  const changeAssOffsetY = (delta: number) => {
-    setAssOffsetY((prev) => clamp(prev + delta, -40, 40));
-  };
-
   // ─── AUTO Generators ──────────────────────────────────────────────────────
+  const handleAutoCPF = () => setData(d => ({ ...d, cpf: gerarCPFValido() }));
   const handleAutoRegistro = () => setData(d => ({ ...d, registro: gerarNumero(11) }));
   const handleAutoEspelho = () => setData(d => ({ ...d, espelho: gerarNumero(10) }));
   const handleAutoAss1 = () => setData(d => ({ ...d, assDigital1: gerarNumero(10) }));
@@ -193,8 +193,42 @@ export default function CNHCria() {
     const uf = data.ufEmissao || "SP";
     setData(d => ({ ...d, assDigital2: uf + gerarNumero(8) }));
   };
+  const handleAutoSenha = () => setData(d => ({ ...d, senhaApp: String(Math.floor(1000 + Math.random() * 9000)) }));
 
-  // ─── Importação ────────────────────────────────────────────────────────────
+  const handleAutoValidade = () => {
+    let anosValidade = 10;
+    if (data.dataNascimento) {
+      const year = parseInt(data.dataNascimento.slice(0, 4));
+      if (!isNaN(year)) {
+        const idade = new Date().getFullYear() - year;
+        if (idade >= 50 && idade < 70) anosValidade = 5;
+        else if (idade >= 70) anosValidade = 3;
+      }
+    }
+    const hoje = new Date();
+    const validadeDate = new Date(hoje.getFullYear() + anosValidade, hoje.getMonth(), hoje.getDate());
+    const yyyy = validadeDate.getFullYear();
+    const mm = String(validadeDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(validadeDate.getDate()).padStart(2, '0');
+    setData(d => ({ ...d, validade: `${yyyy}-${mm}-${dd}` }));
+    toast.success(`Validade calculada (+${anosValidade} anos)!`);
+  };
+
+  const handleAutoTudo = () => {
+    const uf = data.ufEmissao || "SP";
+    setData(d => ({
+      ...d,
+      cpf: d.cpf || gerarCPFValido(),
+      registro: d.registro || gerarNumero(11),
+      espelho: d.espelho || gerarNumero(10),
+      assDigital1: d.assDigital1 || gerarNumero(10),
+      assDigital2: d.assDigital2 || (uf + gerarNumero(8)),
+      senhaApp: d.senhaApp || String(Math.floor(1000 + Math.random() * 9000)),
+    }));
+    toast.success("Campos automáticos gerados com sucesso!");
+  };
+
+  // ─── Importação Rápida ──────────────────────────────────────────────────────
   const handleCopiarModelo = () => {
     navigator.clipboard.writeText(MODELO_TEXTO);
     toast.success("Modelo copiado!");
@@ -207,23 +241,15 @@ export default function CNHCria() {
       const m = importText.match(regex);
       return m ? m[1].trim() : "";
     };
-    // Converter datas DD/MM/YYYY para YYYY-MM-DD (formato HTML date input)
     const convertDate = (val: string): string => {
       if (!val) return "";
       const trimmed = val.trim();
-      // Se já está no formato YYYY-MM-DD, retorna direto
       if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
-      // Converte DD/MM/YYYY para YYYY-MM-DD
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
-        return displayDateToHtml(trimmed);
-      }
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return displayDateToHtml(trimmed);
       return trimmed;
     };
-
-    // RG: remover pontos, manter apenas números e letras
     const cleanRG = (val: string): string => val.replace(/\./g, "");
 
-    // Auto-gerar campos automáticos
     const ufEmissaoVal = get("UF Emiss[aã]o") || data.ufEmissao || "SP";
     const autoRegistro = get("N[ºo] Registro") || gerarNumero(11);
     const autoEspelho = get("N[ºo] CNH") || get("Espelho") || gerarNumero(10);
@@ -259,11 +285,11 @@ export default function CNHCria() {
       senhaApp: autoSenha,
       observacoes: get("Observa[çc][oõ]es") || d.observacoes,
     }));
-    toast.success("Dados importados! Nº Registro, Nº CNH e Assinaturas Digitais gerados automaticamente.");
+    setActiveTab("pessoais");
+    toast.success("Dados importados com sucesso!");
   };
 
-  // ─── Foto Upload ─────────────────────────────────────────────────────────────────────
-  // Compress image to max 400x500 JPEG at 0.7 quality (~50-100KB)
+  // ─── Foto & Assinatura Upload ──────────────────────────────────────────────
   const compressImage = (dataUrl: string, maxW = 400, maxH = 500, quality = 0.7, preserveTransparency = false): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -303,83 +329,6 @@ export default function CNHCria() {
     reader.readAsDataURL(file);
   };
 
-  // ─── Gemini Nano Banana — Aplicar Ajustes Visuais ─────────────────────────────────
-  // Aplica ajustes de brilho/contraste/saturação no canvas da foto
-  const applyImageAdjustments = (base64: string, brightness: number, contrast: number, saturation: number): Promise<string> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(img, 0, 0);
-
-        // Aplicar ajustes via CSS filter no canvas
-        const brightnessVal = 1 + (brightness / 100);
-        const contrastVal = 1 + (contrast / 100);
-        const saturationVal = 1 + (saturation / 100);
-
-        // Recriar canvas com filtros
-        const canvas2 = document.createElement('canvas');
-        canvas2.width = img.width;
-        canvas2.height = img.height;
-        const ctx2 = canvas2.getContext('2d')!;
-        ctx2.filter = `brightness(${brightnessVal}) contrast(${contrastVal}) saturate(${saturationVal})`;
-        ctx2.drawImage(img, 0, 0);
-        resolve(canvas2.toDataURL('image/jpeg', 0.92));
-      };
-      img.src = base64;
-    });
-  };
-
-  const handleApplyAI = async () => {
-    if (!data.fotoUrl) {
-      toast.error("Envie uma foto primeiro!");
-      return;
-    }
-    setIsApplyingAI(true);
-    try {
-      const res = await fetch("/api/cnh-ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: data.fotoUrl }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const result = await res.json();
-      if (result?.success && result?.imageUrl) {
-        // Aplicar ajustes retornados pelo Gemini na imagem
-        const adj = result.adjustments || {};
-        const brightness = typeof adj.brightness === 'number' ? adj.brightness : 5;
-        const contrast = typeof adj.contrast === 'number' ? adj.contrast : 10;
-        const saturation = typeof adj.saturation === 'number' ? adj.saturation : -5;
-
-        const adjustedImage = await applyImageAdjustments(result.imageUrl, brightness, contrast, saturation);
-        setData(d => ({ ...d, fotoUrl: adjustedImage }));
-
-        const modelInfo = result.model === 'gemini-2.5-flash' ? ' (Gemini)' : '';
-        const qualityInfo = adj.quality ? ` • Qualidade: ${adj.quality === 'good' ? 'Boa' : adj.quality === 'fair' ? 'Regular' : 'Baixa'}` : '';
-        toast.success(`Ajustes visuais aplicados${modelInfo}!${qualityInfo}`);
-
-        // Mostrar sugestões do Gemini se houver
-        if (adj.suggestions?.length) {
-          setTimeout(() => {
-            toast.info(adj.suggestions[0], { duration: 5000 });
-          }, 1000);
-        }
-      } else {
-        const errMsg = result?.error || "Erro ao aplicar ajustes visuais";
-        toast.error(errMsg);
-      }
-    } catch (err) {
-      console.error("AI error:", err);
-      toast.error("Erro ao processar ajustes visuais. Tente novamente.");
-    } finally {
-      setIsApplyingAI(false);
-    }
-  };
-
-  // ─── Assinatura Upload ─────────────────────────────────────────────────────────────────────
   const handleAssinaturaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -417,7 +366,20 @@ export default function CNHCria() {
     toast.success("Assinatura gerada!");
   }, [assTexto, assEstilo]);
 
-  // ─── Abrir modal de confirmação ──────────────────────────────────────────
+  // ─── Zoom & Foco ────────────────────────────────────────────────────────────
+  const handleFocusTop = () => {
+    if (previewScrollRef.current) {
+      previewScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleFocusBottom = () => {
+    if (previewScrollRef.current) {
+      previewScrollRef.current.scrollTo({ top: previewScrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+  };
+
+  // ─── Solicitacao de Emissao / Salvar ──────────────────────────────────────
   const handleRequestEmit = async () => {
     if (!data.nome || !data.cpf) {
       toast.error("Preencha Nome e CPF obrigatoriamente!");
@@ -427,16 +389,14 @@ export default function CNHCria() {
       toast.error("CPF inválido! Verifique os dígitos informados.");
       return;
     }
-    // Buscar preço antes de mostrar modal
     try {
       const pricingRes = await fetch("/api/pricing", { credentials: "include" });
       const pricingData = await pricingRes.json();
       if (pricingData.success && pricingData.pricing?.cnh) setDocumentPrice(pricingData.pricing.cnh.price);
-    } catch { /* usa preço padrão 0 */ }
+    } catch {}
     setShowConfirmModal(true);
   };
 
-  // ─── Salvar Documento (chamado após confirmação) ──────────────────────────
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -450,1101 +410,804 @@ export default function CNHCria() {
         finalAssinaturaUrl = await compressImage(finalAssinaturaUrl, 450, 150, 0.75, true);
       }
 
-      const payloadData = {
-        ...data,
-        fotoUrl: finalFotoUrl,
-        assinaturaUrl: finalAssinaturaUrl,
-        fotoScale, fotoOffsetX, fotoOffsetY,
-        assScale, assOffsetX, assOffsetY,
-        type: "cnh"
+      const payload = {
+        tipo: "cnh",
+        nome: data.nome,
+        cpf: data.cpf,
+        categoria: data.categoria,
+        origem_tabela: origemTabela || undefined,
+        data: {
+          ...data,
+          fotoUrl: finalFotoUrl,
+          assinaturaUrl: finalAssinaturaUrl,
+          fotoScale, fotoOffsetX, fotoOffsetY,
+          assScale, assOffsetX, assOffsetY,
+        },
       };
 
-      if (editId) {
-        // Editar documento existente (sem cobrar saldo)
-        const res = await fetch(`/api/documents/${editId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            data: payloadData,
-            nome: data.nome,
-            cpf: data.cpf,
-            categoria: data.categoria,
-          }),
-        });
-        const result = await res.json();
-        if (result.success) {
-          toast.success("CNH atualizada com sucesso!");
-          setSaved(true);
-          setShowConfirmModal(false);
-        } else {
-          toast.error(result.error || "Erro ao atualizar CNH");
-        }
-        return;
-      }
+      const url = editId ? `/api/documents/${editId}` : "/api/documents";
+      const method = editId ? "PUT" : "POST";
 
-      const res = await fetch("/api/documents/cnh", {
-        method: "POST",
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(payloadData),
+        body: JSON.stringify(payload),
       });
+
       const result = await res.json();
-      if (result.success) {
-        const codigo = result.data?.codigoValidacao || result.data?.codigo_validacao || result.data?.id || "CNH-" + Date.now();
-        setCodigoQR(codigo);
-        setData(d => ({ ...d, codigoQR: codigo, blurred: false }));
-        setSaved(true);
-        setShowConfirmModal(false);
-        setShowSuccessModal(true);
-        // Atualizar saldo em tempo real
-        if (result.newBalance !== undefined) updateBalance(result.newBalance);
-
-        // ─── Sincronizar credenciais com o site de validação CNH Digital ───
-        try {
-          const syncUrl = "https://cnh-digital.manus.space/api/cnh-sync";
-          await fetch(syncUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              cpf: data.cpf,
-              senha: data.senhaApp,
-              nome: data.nome,
-              rg: data.rg,
-              orgaoEmissor: data.orgaoEmissor,
-              ufRg: data.ufRG,
-              dataNascimento: data.dataNascimento,
-              registro: data.registro,
-              espelho: data.espelho,
-              categoria: data.categoria,
-              localEmissao: data.localEmissao,
-              ufEmissao: data.ufEmissao,
-              emissao: data.dataEmissao,
-              validade: data.validade,
-              primeiraHabilitacao: data.primeiraHabilitacao,
-              nacionalidade: data.nacionalidade,
-              filiacaoMae: data.nomeMae,
-              filiacaoPai: data.nomePai,
-              sexo: data.sexo,
-              acc: data.tipo === "Permissão" ? "SIM" : "NÃO",
-              numeroFormulario: data.espelho,
-              foto: finalFotoUrl,
-              validationId: codigo,
-            }),
-          }).catch(e => console.warn("Sync CNH Digital falhou (não crítico):", e));
-        } catch (syncErr) {
-          console.warn("Sync CNH Digital falhou (não crítico):", syncErr);
-        }
-      } else {
-        toast.error(result.error || "Erro ao gerar CNH");
-        setShowConfirmModal(false);
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Erro ao salvar documento.");
       }
-    } catch {
-      toast.error("Erro de conexão");
+
+      if (result.codigo_qr) setCodigoQR(result.codigo_qr);
+      setSaved(true);
       setShowConfirmModal(false);
+      setShowSuccessModal(true);
+      if (result.new_balance !== undefined) updateBalance(result.new_balance);
+
+      toast.success(editId ? "CNH atualizada com sucesso!" : "CNH gerada e emitida com sucesso!");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao conectar com o servidor.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ─── Exportar PDF ──────────────────────────────────────────────────────────────────
-  const handleExportPdf = async () => {
+  // ─── Exportações ───────────────────────────────────────────────────────────
+  const handleExportJpeg = async () => {
     if (!docRef.current) return;
-    setLoading(true);
-    try {
-      await docRef.current.exportAsPdf();
-      toast.success("PDF exportado com sucesso!");
-    } catch {
-      toast.error("Erro ao exportar PDF");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ─── Exportar JPEG (mantido como backup) ───────────────────────────────────────────────
-  const handleExportJPEG = async () => {
-    if (!docRef.current) return;
-    setLoading(true);
+    setIsDownloading(true);
     try {
       const blob = await docRef.current.exportAsBlob();
-      if (!blob) throw new Error("Falha ao gerar imagem");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      const nomeFormatado = (data.nome || "DOCUMENTO").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
-      a.download = `CNH_${nomeFormatado}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Imagem JPEG exportada!");
-    } catch {
-      toast.error("Erro ao exportar imagem");
-    } finally {
-      setLoading(false);
-    }
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `CNH_${data.nome.replace(/\s+/g, "_") || "Digital"}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success("Download da imagem CNH concluído!");
+      }
+    } catch { toast.error("Erro ao exportar JPEG."); }
+    finally { setIsDownloading(false); }
   };
 
-  const handleExportFrente = async () => {
+  const handleExportPdf = async () => {
     if (!docRef.current) return;
-    setLoading(true);
+    setIsDownloading(true);
     try {
-      const blob = await docRef.current.exportCropBlob(0, 0, 2461, 1700);
-      if (!blob) throw new Error("Falha ao gerar frente");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `CNH_FRENTE_${data.nome || "DOC"}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Frente exportada com sucesso!");
-    } catch {
-      toast.error("Erro ao exportar frente");
-    } finally {
-      setLoading(false);
-    }
+      await docRef.current.exportAsPdf();
+      toast.success("Download do PDF concluído!");
+    } catch { toast.error("Erro ao gerar PDF."); }
+    finally { setIsDownloading(false); }
   };
 
-  const handleExportVerso = async () => {
+  const handleExportCrop = async (modo: "frente" | "verso") => {
     if (!docRef.current) return;
-    setLoading(true);
+    setIsDownloading(true);
     try {
-      const blob = await docRef.current.exportCropBlob(0, 1700, 2461, 1796);
-      if (!blob) throw new Error("Falha ao gerar verso");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `CNH_VERSO_${data.nome || "DOC"}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Verso exportado com sucesso!");
-    } catch {
-      toast.error("Erro ao exportar verso");
-    } finally {
-      setLoading(false);
-    }
-  };
-  // ─── WhatsApp Share ────────────────────────────────────────────────────────
-  const handleWhatsApp = () => {
-    const texto = encodeURIComponent(
-      `*DocMaster - CNH Digital*\n\nOlá! Segue sua CNH Digital gerada pelo DocMaster.\n\nNome: ${data.nome}\nCPF: ${data.cpf}\nCategoria: ${data.categoria}\n\nAcesse o documento: ${getQRCodeCNH(codigoQR)}\n\nSenha App: ${data.senhaApp || "Não definida"}\n\n_Documento gerado por DocMaster_`
-    );
-    window.open(`https://wa.me/?text=${texto}`, "_blank");
+      const blob = modo === "frente"
+        ? await docRef.current.exportCropBlob(0, 0, 2461, 1700)
+        : await docRef.current.exportCropBlob(0, 1700, 2461, 1796);
+
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `CNH_${modo.toUpperCase()}_${data.nome.replace(/\s+/g, "_") || "Digital"}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success(`Crop ${modo.toUpperCase()} baixado!`);
+      }
+    } catch { toast.error("Erro ao exportar crop."); }
+    finally { setIsDownloading(false); }
   };
 
-  // ─── Carregar Google Fonts para assinatura ─────────────────────────────────
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.href = "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Caveat:wght@400;700&display=swap";
-    link.rel = "stylesheet";
-    document.head.appendChild(link);
-  }, []);
+  const handleWhatsAppShare = () => {
+    const text = `Documento CNH Digital de ${data.nome} (CPF: ${data.cpf}) gerado com sucesso no DocMaster.`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
+  };
 
-  // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden bg-[#0f172a] font-sans">
-      {/* CSS tema escuro DocMaster */}
-      <style>{`
-        .cnh-form {
-          font-family: 'Inter', sans-serif;
-          background: #0f172a;
-          color: #e2e8f0;
-          padding: 24px;
-          padding-bottom: 120px;
-          width: 100%;
-          max-width: 100%;
-          flex: 1;
-          overflow-y: auto;
-          box-sizing: border-box;
-        }
-        .cnh-header-top {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-        .cnh-header-top h1 {
-          font-size: 20px;
-          font-weight: 800;
-          margin: 0;
-        }
-        .cnh-header-top h1 span.brand-black { color: #f1f5f9; }
-        .cnh-header-top h1 span.brand-blue { color: #ef4444; }
-        .cnh-divider {
-          padding: 10px 0;
-          font-size: 11px;
-          text-transform: uppercase;
-          color: #94a3b8;
-          font-weight: 700;
-          border-bottom: 1px solid #1e293b;
-          margin: 25px 0 15px 0;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .cnh-form-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 16px;
-          margin-bottom: 16px;
-        }
-        .cnh-form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 5px;
-        }
-        .cnh-form-group label {
-          font-size: 12px;
-          font-weight: 600;
-          color: #94a3b8;
-        }
-        .cnh-form-group input,
-        .cnh-form-group select,
-        .cnh-form-group textarea {
-          padding: 10px 12px;
-          border-radius: 8px;
-          border: 1px solid #334155;
-          background: #1e293b;
-          color: #f1f5f9;
-          outline: none;
-          font-size: 13px;
-          font-family: 'Inter', sans-serif;
-          transition: border-color 0.2s, background 0.2s;
-        }
-        .cnh-form-group input:focus,
-        .cnh-form-group select:focus,
-        .cnh-form-group textarea:focus {
-          border-color: #ef4444;
-          background: #1e293b;
-        }
-        .cnh-form-group textarea {
-          resize: vertical;
-          min-height: 60px;
-        }
-        .cnh-form-group .obs-textarea {
-          border-color: #ef4444;
-        }
-        .cnh-badge-auto {
-          font-size: 9px;
-          background: #22c55e;
-          color: white;
-          padding: 3px 8px;
-          border-radius: 4px;
-          cursor: pointer;
-          border: none;
-          font-weight: 700;
-          margin-left: 5px;
-          transition: background 0.2s;
-        }
-        .cnh-badge-auto:hover {
-          background: #16a34a;
-        }
-        .cnh-import-box {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 15px;
-          padding: 16px;
-          border: 1px solid #334155;
-          border-radius: 12px;
-          background: #1e293b;
-          margin-bottom: 16px;
-        }
-        .cnh-import-box .import-col h3 {
-          font-size: 12px;
-          font-weight: 600;
-          color: #94a3b8;
-          margin: 0 0 8px 0;
-        }
-        .cnh-import-box .modelo-text {
-          font-family: monospace;
-          font-size: 11px;
-          color: #94a3b8;
-          background: #0f172a;
-          border: 1px solid #334155;
-          border-radius: 8px;
-          padding: 10px;
-          height: 160px;
-          overflow: auto;
-          white-space: pre-wrap;
-          margin-bottom: 8px;
-        }
-        .cnh-import-box textarea {
-          width: 100%;
-          height: 160px;
-          padding: 10px;
-          border: 1px solid #334155;
-          border-radius: 8px;
-          background: #0f172a;
-          font-size: 12px;
-          font-family: 'Inter', sans-serif;
-          resize: none;
-          outline: none;
-          color: #f1f5f9;
-          margin-bottom: 8px;
-        }
-        .cnh-import-box textarea:focus {
-          border-color: #ef4444;
-        }
-        .cnh-btn-copiar {
-          width: 100%;
-          padding: 10px;
-          background: linear-gradient(135deg, #f59e0b, #eab308);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-weight: 700;
-          font-size: 12px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          transition: opacity 0.2s;
-        }
-        .cnh-btn-copiar:hover { opacity: 0.9; }
-        .cnh-btn-processar {
-          width: 100%;
-          padding: 10px;
-          background: linear-gradient(135deg, #2563eb, #3b82f6);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-weight: 700;
-          font-size: 12px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          transition: opacity 0.2s;
-        }
-        .cnh-btn-processar:hover { opacity: 0.9; }
-        .cnh-fotos-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 15px;
-          align-items: start;
-        }
-        .cnh-preview-box {
-          margin-top: 10px;
-          border: 1px solid #334155;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-          background: #1e293b;
-        }
-        .cnh-preview-rosto {
-          width: 230px;
-          height: 279px;
-        }
-        .cnh-preview-ass {
-          width: 100%;
-          height: 110px;
-        }
-        .cnh-preview-frame {
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-          position: relative;
-          background: #0f172a;
-        }
-        .cnh-preview-frame img {
-          width: 100%;
-          height: 100%;
-          display: block;
-        }
-        .cnh-arrow-controls {
-          margin-top: 8px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .cnh-arrow-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          font-size: 11px;
-          color: #94a3b8;
-          font-weight: 600;
-        }
-        .cnh-arrow-buttons {
-          display: inline-flex;
-          gap: 4px;
-        }
-        .cnh-arrow-btn {
-          width: 28px;
-          height: 28px;
-          border: 1px solid #334155;
-          border-radius: 6px;
-          background: #1e293b;
-          color: #e2e8f0;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: border-color 0.2s, background 0.2s;
-        }
-        .cnh-arrow-btn:hover {
-          border-color: #2563eb;
-          background: #1d4ed8;
-        }
-        .cnh-ass-option {
-          padding: 10px;
-          border-radius: 8px;
-          margin-bottom: 10px;
-        }
-        .cnh-ass-option.green {
-          background: #1a2e1a;
-          border: 1px solid #22c55e33;
-        }
-        .cnh-ass-option.blue {
-          background: #1a1e2e;
-          border: 1px solid #3b82f633;
-        }
-        .cnh-ass-option h4 {
-          font-size: 12px;
-          font-weight: 600;
-          margin: 0 0 6px 0;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-        }
-        .cnh-ass-option.green h4 { color: #4ade80; }
-        .cnh-ass-option.blue h4 { color: #60a5fa; }
-        .cnh-ass-option p {
-          font-size: 10px;
-          color: #64748b;
-          margin: 0 0 6px 0;
-        }
-        .cnh-floating-save {
-          position: fixed;
-          bottom: 20px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 90%;
-          max-width: 500px;
-          background: #ef4444;
-          color: white;
-          padding: 15px;
-          border-radius: 12px;
-          font-size: 16px;
-          font-weight: bold;
-          box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.5);
-          border: none;
-          cursor: pointer;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 10px;
-          z-index: 100;
-          transition: background 0.2s;
-        }
-        .cnh-floating-save:hover { background: #dc2626; }
-        .cnh-floating-save:disabled {
-          background: #475569;
-          cursor: not-allowed;
-          box-shadow: none;
-        }
-        .cnh-result-box {
-          padding: 20px;
-          background: #1a2e1a;
-          border: 1px solid #22c55e44;
-          border-radius: 12px;
-          margin-bottom: 20px;
-        }
-        .cnh-result-box h3 {
-          font-size: 16px;
-          font-weight: 700;
-          color: #4ade80;
-          margin: 0 0 8px 0;
-        }
-        .cnh-result-box p {
-          font-size: 13px;
-          color: #86efac;
-          margin: 4px 0;
-        }
-        .cnh-result-btns {
-          display: flex;
-          gap: 10px;
-          margin-top: 12px;
-          flex-wrap: wrap;
-        }
-        .cnh-btn-download {
-          padding: 10px 20px;
-          background: #16a34a;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-weight: 700;
-          font-size: 13px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: background 0.2s;
-        }
-        .cnh-btn-download:hover { background: #15803d; }
-        .cnh-btn-whatsapp {
-          padding: 10px 20px;
-          background: #25D366;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-weight: 700;
-          font-size: 13px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: background 0.2s;
-        }
-        .cnh-btn-whatsapp:hover { background: #1da851; }
-        .cnh-btn-voltar {
-          background: transparent;
-          color: #94a3b8;
-          border: 1px solid #334155;
-          padding: 8px 16px;
-          border-radius: 8px;
-          font-weight: bold;
-          cursor: pointer;
-          font-size: 13px;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          transition: 0.2s;
-        }
-        .cnh-btn-voltar:hover { background: #1e293b; color: #f1f5f9; }
-        .cnh-balance-warn {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 12px 16px;
-          background: #2e1a1a;
-          border: 1px solid #ef444444;
-          border-radius: 10px;
-          margin-bottom: 20px;
-          font-size: 13px;
-          color: #fca5a5;
-        }
-        .cnh-input-with-auto {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        .cnh-input-with-auto input {
-          flex: 1;
-        }
-        .cnh-file-label {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 14px;
-          border: 1px solid #334155;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 12px;
-          color: #94a3b8;
-          background: #1e293b;
-          transition: border-color 0.2s;
-        }
-        .cnh-file-label:hover { border-color: #ef4444; }
-        .cnh-acesso-divider {
-          font-size: 11px;
-          text-transform: uppercase;
-          color: #94a3b8;
-          font-weight: 700;
-          margin: 20px 0 10px 0;
-        }
-        @media (max-width: 640px) {
-          .cnh-import-box { grid-template-columns: 1fr; }
-          .cnh-fotos-grid { grid-template-columns: 1fr; }
-          .cnh-form-grid { grid-template-columns: 1fr 1fr; }
-        }
-        @media (max-width: 480px) {
-          .cnh-form-grid { grid-template-columns: 1fr; }
-        }
-      `}</style>
-
-      <div className="cnh-form">
-        {/* Header */}
-        <div className="cnh-header-top">
-          <h1>
-            (Criação de CNH) <span className="brand-black">DOCMASTER</span><span className="brand-blue">.STORE</span>
-          </h1>
-          <button className="cnh-btn-voltar" onClick={() => setLocation("/dashboard")}>
-            <ArrowLeft size={14} /> Voltar
-          </button>
-        </div>
-
-        {/* Balance Warning */}
-        {(user?.balance || 0) <= 0 && (
-          <div className="cnh-balance-warn">
-            <AlertCircle size={18} />
-            Saldo insuficiente. <button onClick={() => setLocation("/recargas")} style={{ fontWeight: 700, textDecoration: "underline", background: "none", border: "none", color: "#fca5a5", cursor: "pointer" }}>Recarregue aqui</button>
-          </div>
-        )}
-
-        {/* Resultado pós-emissão */}
-        {saved && (
-          <div className="cnh-result-box">
-            <h3>CNH Digital emitida com sucesso!</h3>
-            <p>Código: <strong style={{ fontFamily: "monospace" }}>{codigoQR}</strong></p>
-            <p>Validação: <strong>{getQRCodeCNH(codigoQR)}</strong></p>
-            <div className="cnh-result-btns">
-              <button className="cnh-btn-download" onClick={handleExportPdf} disabled={loading}>
-                <Download size={14} /> Baixar PDF
-              </button>
-              <button className="cnh-btn-download" onClick={handleExportJPEG} disabled={loading} style={{ background: "#6b7280" }}>
-                <Download size={14} /> Baixar JPEG
-              </button>
-              <button className="cnh-btn-download" onClick={handleExportFrente} disabled={loading} style={{ background: "#0f766e" }}>
-                📷 Download FRENTE
-              </button>
-              <button className="cnh-btn-download" onClick={handleExportVerso} disabled={loading} style={{ background: "#1d4ed8" }}>
-                📷 Download VERSO
-              </button>
-              <button className="cnh-btn-whatsapp" onClick={handleWhatsApp}>
-                <MessageCircle size={14} /> Enviar via WhatsApp
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ═══ IMPORTAÇÃO E MODELO ═══ */}
-        <div className="cnh-divider">
-          <span style={{ fontSize: 14 }}>✏️</span> IMPORTAÇÃO E MODELO
-        </div>
-
-        <div className="cnh-import-box">
-          <div className="import-col">
-            <h3>1. Envie para o Cliente</h3>
-            <div className="modelo-text">{MODELO_TEXTO}</div>
-            <button className="cnh-btn-copiar" onClick={handleCopiarModelo}>
-              <Copy size={12} /> COPIAR MODELO
+    <DashboardLayout>
+      <div className="h-screen w-full flex flex-col bg-[#070a19] text-slate-100 font-sans overflow-hidden select-text">
+        {/* HEADER SUPERIOR */}
+        <div className="h-16 border-b border-slate-800/80 bg-slate-950/90 px-6 flex items-center justify-between shrink-0 no-print">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setLocation("/dashboard")}
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all"
+              title="Voltar ao Dashboard"
+            >
+              <ArrowLeft className="w-5 h-5" />
             </button>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <Car className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
+                  Emissor CNH Digital
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-950 border border-blue-500/30 text-blue-300 font-mono font-bold">
+                    1:1 SENATRAN / SERPRO
+                  </span>
+                </h1>
+                <p className="text-xs text-slate-400">Estado de Ouro com Live Preview em Tempo Real</p>
+              </div>
+            </div>
           </div>
-          <div className="import-col">
-            <h3>2. Cole o texto preenchido</h3>
-            <textarea
-              value={importText}
-              onChange={(e) => setImportText(e.target.value)}
-              placeholder="Cole aqui o texto enviado pelo cliente..."
-            />
-            <button className="cnh-btn-processar" onClick={handleProcessarImportacao}>
-              <Zap size={12} /> PROCESSAR DADOS
+
+          {/* BOTOES DE ACAO DO HEADER */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleAutoTudo}
+              className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all shadow"
+              title="Gerar automaticamente Registro, Espelho, Assinaturas Digitais e Senha App"
+            >
+              <Zap className="w-4 h-4 text-amber-400" />
+              <span>Gerar Tudo AUTO</span>
             </button>
-          </div>
-        </div>
 
-        {/* ═══ 1. DADOS PESSOAIS ═══ */}
-        <div className="cnh-divider">
-          <span style={{ fontSize: 14 }}>👤</span> 1. DADOS PESSOAIS
-        </div>
-
-        <div className="cnh-form-grid">
-          <div className="cnh-form-group" style={{ gridColumn: "span 2" }}>
-            <label>Nome Completo</label>
-            <input type="text" value={data.nome} onChange={update("nome")} />
-          </div>
-          <div className="cnh-form-group">
-            <label>CPF</label>
-            <input type="text" value={data.cpf} onChange={update("cpf")} placeholder="000.000.000-00" />
-          </div>
-          <div className="cnh-form-group">
-            <label>Sexo</label>
-            <select value={data.sexo} onChange={update("sexo")}>
-              <option value="">ESCOLHA</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Feminino">Feminino</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="cnh-form-grid">
-          <div className="cnh-form-group">
-            <label>RG</label>
-            <input type="text" value={data.rg} onChange={update("rg")} />
-          </div>
-          <div className="cnh-form-group">
-            <label>Orgão Emissor</label>
-            <input type="text" value={data.orgaoEmissor} onChange={update("orgaoEmissor")} />
-          </div>
-          <div className="cnh-form-group">
-            <label>UF RG</label>
-            <input type="text" value={data.ufRG} onChange={update("ufRG")} maxLength={2} style={{ textTransform: "uppercase" }} />
-          </div>
-        </div>
-
-        <div className="cnh-form-grid">
-          <div className="cnh-form-group">
-            <label>Nacionalidade</label>
-            <input type="text" value={data.nacionalidade} onChange={update("nacionalidade")} />
-          </div>
-          <div className="cnh-form-group">
-            <label>Data Nascimento</label>
-            <input type="date" value={data.dataNascimento} onChange={update("dataNascimento")} />
-          </div>
-          <div className="cnh-form-group">
-            <label>Local Nascimento</label>
-            <input type="text" value={data.localNascimento} onChange={update("localNascimento")} />
-          </div>
-          <div className="cnh-form-group">
-            <label>UF Nasc.</label>
-            <input type="text" value={data.ufNascimento} onChange={update("ufNascimento")} maxLength={2} style={{ textTransform: "uppercase" }} />
-          </div>
-        </div>
-
-        <div className="cnh-form-grid">
-          <div className="cnh-form-group">
-            <label>Nome do Pai</label>
-            <input type="text" value={data.nomePai} onChange={update("nomePai")} />
-          </div>
-          <div className="cnh-form-group">
-            <label>Nome da Mãe</label>
-            <input type="text" value={data.nomeMae} onChange={update("nomeMae")} />
-          </div>
-        </div>
-
-        {/* ═══ 2. DADOS DA CNH ═══ */}
-        <div className="cnh-divider">
-          <span style={{ fontSize: 14 }}>🪪</span> 2. DADOS DA CNH
-        </div>
-
-        <div className="cnh-form-grid">
-          <div className="cnh-form-group">
-            <label>Nº Registro <button className="cnh-badge-auto" onClick={handleAutoRegistro}>AUTO</button></label>
-            <input type="text" value={data.registro} onChange={update("registro")} placeholder="Digite ou clique em AUTO para gerar" />
-          </div>
-          <div className="cnh-form-group">
-            <label>Nº CNH (Espelho) <button className="cnh-badge-auto" onClick={handleAutoEspelho}>AUTO</button></label>
-            <input type="text" value={data.espelho} onChange={update("espelho")} placeholder="Digite ou clique em AUTO para gerar" />
-          </div>
-          <div className="cnh-form-group">
-            <label>Categoria</label>
-            <input type="text" value={data.categoria} onChange={update("categoria")} placeholder="Ex: AB" style={{ textTransform: "uppercase" }} />
-          </div>
-          <div className="cnh-form-group">
-            <label>Tipo</label>
-            <select value={data.tipo} onChange={update("tipo")}>
-              <option value="Definitiva">Definitiva</option>
-              <option value="Permissão">Permissão</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="cnh-form-grid">
-          <div className="cnh-form-group">
-            <label>Validade</label>
-            <input type="date" value={data.validade} onChange={update("validade")} />
-          </div>
-          <div className="cnh-form-group">
-            <label>Emissão</label>
-            <input type="date" value={data.dataEmissao} onChange={update("dataEmissao")} />
-          </div>
-          <div className="cnh-form-group">
-            <label>1ª Habilitação</label>
-            <input type="date" value={data.primeiraHabilitacao} onChange={update("primeiraHabilitacao")} />
-          </div>
-        </div>
-
-        <div className="cnh-form-grid">
-          <div className="cnh-form-group">
-            <label>Local Emissão</label>
-            <input type="text" value={data.localEmissao} onChange={update("localEmissao")} />
-          </div>
-          <div className="cnh-form-group">
-            <label>UF Emissão</label>
-            <input type="text" value={data.ufEmissao} onChange={update("ufEmissao")} placeholder="UF" maxLength={2} style={{ textTransform: "uppercase" }} />
-          </div>
-        </div>
-
-        {/* ═══ 3. CÓDIGO DE SEGURANÇA ═══ */}
-        <div className="cnh-divider">
-          <span style={{ fontSize: 14 }}>🔒</span> 3. CÓDIGO DE SEGURANÇA
-        </div>
-
-        <div className="cnh-form-grid">
-          <div className="cnh-form-group">
-            <label>Ass. Digital 1 <button className="cnh-badge-auto" onClick={handleAutoAss1}>AUTO</button></label>
-            <input type="text" value={data.assDigital1} onChange={update("assDigital1")} placeholder="Digite ou clique em AUTO para gerar" />
-          </div>
-          <div className="cnh-form-group">
-            <label>Ass. Digital 2 <button className="cnh-badge-auto" onClick={handleAutoAss2}>AUTO</button></label>
-            <input type="text" value={data.assDigital2} onChange={update("assDigital2")} placeholder="UF + 8 Dígitos (Auto ao digitar UF)" />
-          </div>
-        </div>
-
-        {/* ═══ 4. FOTOS E ACESSO ═══ */}
-        <div className="cnh-divider">
-          <span style={{ fontSize: 14 }}>📷</span> 4. FOTOS E ACESSO
-        </div>
-
-        <div className="cnh-fotos-grid">
-          {/* Foto do Rosto */}
-          <div>
-            <div className="cnh-form-group">
-              <label>
-                Foto do Rosto{" "}
-                <span style={{ fontSize: 10, color: "#2563eb" }}>
-                  Para melhor qualidade, <a href="https://www.remove.bg/pt-br" target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", textDecoration: "underline" }}>remova o fundo AQUI</a>.
-                </span>
-              </label>
-              <label className="cnh-file-label">
-                <Upload size={14} /> Escolher Arquivo
-                <input type="file" accept="image/*" onChange={handleFotoUpload} style={{ display: "none" }} />
-              </label>
+            {/* Alternador Mobile (Form / Preview) */}
+            <div className="lg:hidden flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
+              <button
+                onClick={() => setMobileMode("form")}
+                className={`px-3 py-1 text-xs font-bold rounded-lg ${mobileMode === "form" ? "bg-blue-600 text-white" : "text-slate-400"}`}
+              >
+                Formulário
+              </button>
+              <button
+                onClick={() => setMobileMode("preview")}
+                className={`px-3 py-1 text-xs font-bold rounded-lg ${mobileMode === "preview" ? "bg-blue-600 text-white" : "text-slate-400"}`}
+              >
+                Prévia CNH
+              </button>
             </div>
-            <div className="cnh-preview-box cnh-preview-rosto">
-              {data.fotoUrl ? (
-                <div className="cnh-preview-frame">
-                  <img
-                    src={data.fotoUrl}
-                    alt="Rosto"
-                    style={{
-                      objectFit: "cover",
-                      transform: `translate(${fotoOffsetX}px, ${fotoOffsetY}px) scale(${fotoScale})`,
-                      transformOrigin: "center",
-                    }}
-                  />
-                </div>
-              ) : (
-                <span style={{ fontSize: 12, color: "#64748b" }}>Prévia Rosto</span>
-              )}
-            </div>
-            {data.fotoUrl && (
-              <div className="cnh-arrow-controls">
-                <div className="cnh-arrow-row">
-                  <span>Tamanho Foto 3x4: {Math.round(fotoScale * 100)}%</span>
-                  <div className="cnh-arrow-buttons">
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoScale(-0.05)} aria-label="Diminuir tamanho da foto">
-                      <ArrowDown size={14} />
-                    </button>
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoScale(0.05)} aria-label="Aumentar tamanho da foto">
-                      <ArrowUp size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div className="cnh-arrow-row">
-                  <span>Posição Horizontal: {fotoOffsetX}px</span>
-                  <div className="cnh-arrow-buttons">
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoOffsetX(-2)} aria-label="Mover foto para esquerda">
-                      <ArrowLeft size={14} />
-                    </button>
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoOffsetX(2)} aria-label="Mover foto para direita">
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div className="cnh-arrow-row">
-                  <span>Posição Vertical: {fotoOffsetY}px</span>
-                  <div className="cnh-arrow-buttons">
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoOffsetY(-2)} aria-label="Mover foto para cima">
-                      <ArrowUp size={14} />
-                    </button>
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeFotoOffsetY(2)} aria-label="Mover foto para baixo">
-                      <ArrowDown size={14} />
-                    </button>
-                  </div>
-                </div>
+
+            {!saved ? (
+              <button
+                onClick={handleRequestEmit}
+                disabled={loading}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all"
+              >
+                <Save className="w-4 h-4" />
+                <span>{loading ? "Processando..." : "EMITIR CNH"}</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportPdf}
+                  disabled={isDownloading}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>PDF</span>
+                </button>
+                <button
+                  onClick={handleWhatsAppShare}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>WhatsApp</span>
+                </button>
               </div>
             )}
-            {data.fotoUrl && (
-              <button
-                onClick={handleApplyAI}
-                disabled={isApplyingAI}
-                style={{
-                  marginTop: 8,
-                  width: "100%",
-                  padding: "10px 14px",
-                  background: isApplyingAI
-                    ? "linear-gradient(135deg, #6b7280, #9ca3af)"
-                    : "linear-gradient(135deg, #8b5cf6, #a855f7)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  fontSize: 12,
-                  cursor: isApplyingAI ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                  transition: "opacity 0.2s",
-                  boxShadow: "0 4px 12px rgba(139, 92, 246, 0.3)",
-                }}
-              >
-                {isApplyingAI ? (
-                  <>
-                    <div style={{ width: 14, height: 14, border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-                    Processando IA...
-                  </>
-                ) : (
-                  <>
-                    <Zap size={14} /> Aplicar Ajustes Visuais
-                  </>
-                )}
-              </button>
-            )}
           </div>
+        </div>
 
-          {/* Assinatura */}
-          <div>
-            <div className="cnh-form-group">
-              <label>Assinatura (Foto ou Digite)</label>
+        {/* BODY DE CONTEUDO (SPLIT-VIEW) */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* COLUNA ESQUERDA: FORMULARIO COM ABAS */}
+          <div className={`w-full lg:w-1/2 flex flex-col border-r border-slate-800/80 bg-slate-900/40 ${mobileMode === "preview" ? "hidden lg:flex" : "flex"}`}>
+            {/* BARRA DE ABAS DO FORMULARIO */}
+            <div className="flex items-center gap-1.5 p-2 bg-slate-950/80 border-b border-slate-800/80 overflow-x-auto no-scrollbar shrink-0">
+              <button
+                onClick={() => setActiveTab("pessoais")}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 ${activeTab === "pessoais" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"}`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Dados Pessoais</span>
+              </button>
+              <button
+                onClick={() => setActiveTab("cnh")}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 ${activeTab === "cnh" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"}`}
+              >
+                <Car className="w-3.5 h-3.5" />
+                <span>Dados CNH</span>
+              </button>
+              <button
+                onClick={() => setActiveTab("seguranca")}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 ${activeTab === "seguranca" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"}`}
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Segurança</span>
+              </button>
+              <button
+                onClick={() => setActiveTab("midia")}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 ${activeTab === "midia" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"}`}
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Foto & Assinatura</span>
+              </button>
+              <button
+                onClick={() => setActiveTab("import")}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 ${activeTab === "import" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"}`}
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>Importação Rápida</span>
+              </button>
             </div>
 
-            {/* Opção 1: Digitar */}
-            <div className="cnh-ass-option green">
-              <h4><Type size={12} /> Opção 1: Digite o Nome</h4>
-              <p>Escolha um estilo e escreva o nome para gerar a assinatura.</p>
-              <select
-                value={assEstilo}
-                onChange={(e) => setAssEstilo(parseInt(e.target.value))}
-                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #334155", background: "#1e293b", color: "#f1f5f9", fontSize: "12px", marginBottom: "6px" }}
-              >
-                {ESTILOS_ASS.map((e, i) => <option key={i} value={i}>{e.label}</option>)}
-              </select>
-              <div style={{ display: "flex", gap: "6px" }}>
-                <input
-                  type="text"
-                  value={assTexto}
-                  onChange={(e) => setAssTexto(e.target.value)}
-                  placeholder="Digite o nome para assinar..."
-                  style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid #334155", background: "#1e293b", color: "#f1f5f9", fontSize: "13px" }}
-                />
+            {/* PAINEL SCROLLABLE DO FORMULARIO */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* ABA: DADOS PESSOAIS */}
+              {activeTab === "pessoais" && (
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-300">Nome Completo do Condutor</label>
+                    <input
+                      type="text"
+                      value={data.nome}
+                      onChange={update("nome")}
+                      placeholder="Ex: SILVA SANTOS SILVA"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none uppercase font-bold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-300">CPF</label>
+                        <button
+                          type="button"
+                          onClick={handleAutoCPF}
+                          className="text-[10px] text-amber-400 font-bold hover:underline flex items-center gap-1"
+                        >
+                          <Zap className="w-3 h-3" /> AUTO CPF
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={data.cpf}
+                        onChange={update("cpf")}
+                        placeholder="000.000.000-00"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Sexo</label>
+                      <select
+                        value={data.sexo}
+                        onChange={update("sexo")}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="">Selecione...</option>
+                        <option value="M">MASCULINO (M)</option>
+                        <option value="F">FEMININO (F)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-300">RG (Sem Pontos)</label>
+                      <input
+                        type="text"
+                        value={data.rg}
+                        onChange={update("rg")}
+                        placeholder="123456789"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Órgão Emissor</label>
+                      <input
+                        type="text"
+                        value={data.orgaoEmissor}
+                        onChange={update("orgaoEmissor")}
+                        placeholder="SSP"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none uppercase"
+                      />
+                    </div>
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-300">UF RG</label>
+                      <select
+                        value={data.ufRG}
+                        onChange={update("ufRG")}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="">UF</option>
+                        {UFS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Data Nascimento</label>
+                      <input
+                        type="date"
+                        value={data.dataNascimento}
+                        onChange={update("dataNascimento")}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Local Nascimento</label>
+                      <input
+                        type="text"
+                        value={data.localNascimento}
+                        onChange={update("localNascimento")}
+                        placeholder="SÃO PAULO"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none uppercase"
+                      />
+                    </div>
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-300">UF Nasc.</label>
+                      <select
+                        value={data.ufNascimento}
+                        onChange={update("ufNascimento")}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="">UF</option>
+                        {UFS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Nome do Pai</label>
+                      <input
+                        type="text"
+                        value={data.nomePai}
+                        onChange={update("nomePai")}
+                        placeholder="NOME DO PAI"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none uppercase"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Nome da Mãe</label>
+                      <input
+                        type="text"
+                        value={data.nomeMae}
+                        onChange={update("nomeMae")}
+                        placeholder="NOME DA MÃE"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none uppercase"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ABA: DADOS CNH */}
+              {activeTab === "cnh" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Categoria Habilitação</label>
+                      <input
+                        type="text"
+                        value={data.categoria}
+                        onChange={update("categoria")}
+                        placeholder="Ex: AB, B, E"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none font-bold uppercase"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Tipo de CNH</label>
+                      <select
+                        value={data.tipo}
+                        onChange={update("tipo")}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="Definitiva">Definitiva (D)</option>
+                        <option value="PPD">Permissão para Dirigir (P)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-300">Nº Registro (11 Digs)</label>
+                        <button type="button" onClick={handleAutoRegistro} className="text-[10px] text-amber-400 font-bold hover:underline flex items-center gap-1">
+                          <Zap className="w-3 h-3" /> AUTO
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={data.registro}
+                        onChange={update("registro")}
+                        placeholder="00000000000"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-300">Nº CNH / Espelho (10 Digs)</label>
+                        <button type="button" onClick={handleAutoEspelho} className="text-[10px] text-amber-400 font-bold hover:underline flex items-center gap-1">
+                          <Zap className="w-3 h-3" /> AUTO
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={data.espelho}
+                        onChange={update("espelho")}
+                        placeholder="0000000000"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-300">Validade CNH</label>
+                        <button type="button" onClick={handleAutoValidade} className="text-[10px] text-amber-400 font-bold hover:underline flex items-center gap-1">
+                          <Zap className="w-3 h-3" /> AUTO IDADE
+                        </button>
+                      </div>
+                      <input
+                        type="date"
+                        value={data.validade}
+                        onChange={update("validade")}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">1ª Habilitação</label>
+                      <input
+                        type="date"
+                        value={data.primeiraHabilitacao}
+                        onChange={update("primeiraHabilitacao")}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Data Emissão</label>
+                      <input
+                        type="date"
+                        value={data.dataEmissao}
+                        onChange={update("dataEmissao")}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Local Emissão</label>
+                      <input
+                        type="text"
+                        value={data.localEmissao}
+                        onChange={update("localEmissao")}
+                        placeholder="SÃO PAULO"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none uppercase"
+                      />
+                    </div>
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-300">UF Emissão</label>
+                      <select
+                        value={data.ufEmissao}
+                        onChange={update("ufEmissao")}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none"
+                      >
+                        {UFS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ABA: SEGURANÇA */}
+              {activeTab === "seguranca" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-300">Assinatura Digital 1</label>
+                        <button type="button" onClick={handleAutoAss1} className="text-[10px] text-amber-400 font-bold hover:underline flex items-center gap-1">
+                          <Zap className="w-3 h-3" /> AUTO
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={data.assDigital1}
+                        onChange={update("assDigital1")}
+                        placeholder="10 dígitos"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-300">Assinatura Digital 2 (com UF)</label>
+                        <button type="button" onClick={handleAutoAss2} className="text-[10px] text-amber-400 font-bold hover:underline flex items-center gap-1">
+                          <Zap className="w-3 h-3" /> AUTO
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={data.assDigital2}
+                        onChange={update("assDigital2")}
+                        placeholder="UF + 8 dígitos"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none font-mono uppercase"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-300">Senha App Cliente (4 Dígitos)</label>
+                      <button type="button" onClick={handleAutoSenha} className="text-[10px] text-amber-400 font-bold hover:underline flex items-center gap-1">
+                        <Zap className="w-3 h-3" /> AUTO SENHA
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={data.senhaApp}
+                      onChange={update("senhaApp")}
+                      placeholder="Ex: 1234"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:outline-none font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-300">Observações (EAR / Restrições)</label>
+                    <textarea
+                      value={data.observacoes}
+                      onChange={update("observacoes")}
+                      rows={3}
+                      placeholder="Ex: EXERCE ATIVIDADE REMUNERADA (EAR)..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-blue-500/40 text-white text-sm focus:border-blue-400 focus:outline-none font-mono uppercase"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ABA: FOTO & ASSINATURA */}
+              {activeTab === "midia" && (
+                <div className="space-y-6">
+                  {/* FOTO 3X4 */}
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <Camera className="w-4 h-4 text-blue-400" /> Foto 3x4 do Condutor
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleApplyAI}
+                        disabled={isApplyingAI || !data.fotoUrl}
+                        className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-[11px] font-bold flex items-center gap-1 transition-all disabled:opacity-50"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <span>{isApplyingAI ? "Processando IA..." : "Melhorar com IA"}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <label className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
+                        <Upload className="w-3.5 h-3.5 text-blue-400" /> Upload Foto 3x4
+                        <input type="file" accept="image/*" onChange={handleFotoUpload} className="hidden" />
+                      </label>
+                      {data.fotoUrl && (
+                        <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" /> Foto Carregada
+                        </span>
+                      )}
+                    </div>
+
+                    {data.fotoUrl && (
+                      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
+                          <span>Escala: {Math.round(fotoScale * 100)}%</span>
+                          <span>X: {fotoOffsetX}px | Y: {fotoOffsetY}px</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setFotoScale(s => clamp(s - 0.05, 0.5, 2))} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700"><ZoomOut className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setFotoScale(s => clamp(s + 0.05, 0.5, 2))} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700"><ZoomIn className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setFotoOffsetX(x => clamp(x - 2, -100, 100))} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700"><ArrowLeft className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setFotoOffsetX(x => clamp(x + 2, -100, 100))} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700"><ArrowRight className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setFotoOffsetY(y => clamp(y - 2, -100, 100))} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700"><ArrowUp className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setFotoOffsetY(y => clamp(y + 2, -100, 100))} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700"><ArrowDown className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => { setFotoScale(1); setFotoOffsetX(0); setFotoOffsetY(0); }} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 ml-auto"><RotateCcw className="w-3.5 h-3.5 text-amber-400" /></button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ASSINATURA MANUSCRITA */}
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                    <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-blue-400" /> Assinatura do Condutor
+                    </span>
+
+                    <div className="flex items-center gap-4">
+                      <label className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
+                        <Upload className="w-3.5 h-3.5 text-blue-400" /> Upload Imagem
+                        <input type="file" accept="image/*" onChange={handleAssinaturaUpload} className="hidden" />
+                      </label>
+                    </div>
+
+                    {/* Gerador de Assinatura em Texto */}
+                    <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                      <span className="text-[11px] font-bold text-slate-300">Ou Gerar por Texto</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={assTexto}
+                          onChange={e => setAssTexto(e.target.value)}
+                          placeholder="Digite o nome para assinar..."
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                        />
+                        <select
+                          value={assEstilo}
+                          onChange={e => setAssEstilo(Number(e.target.value))}
+                          className="px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                        >
+                          {ESTILOS_ASS.map((est, i) => <option key={i} value={i}>{est.label}</option>)}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={gerarAssinaturaTexto}
+                          className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow"
+                        >
+                          Gerar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ABA: IMPORTACAO RAPIDA */}
+              {activeTab === "import" && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-2">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <Zap className="w-4 h-4" /> Importação Rápida via Bloco de Texto
+                    </p>
+                    <p className="text-slate-300">Cole a ficha cadastral do condutor e o sistema extrairá automaticamente Nome, CPF, RG, Categoria, Validade e demais campos.</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCopiarModelo}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-blue-400" /> Copiar Modelo Padrão
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleProcessarImportacao}
+                      className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow"
+                    >
+                      <Check className="w-3.5 h-3.5" /> Processar Importação
+                    </button>
+                  </div>
+
+                  <textarea
+                    rows={12}
+                    value={importText}
+                    onChange={e => setImportText(e.target.value)}
+                    placeholder="Cole aqui o texto no formato do modelo..."
+                    className="w-full p-4 rounded-2xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* COLUNA DIREITA: LIVE PREVIEW E CONTROLES */}
+          <div className={`w-full lg:w-1/2 flex flex-col bg-slate-950/90 relative ${mobileMode === "form" ? "hidden lg:flex" : "flex"}`}>
+            {/* TOOLBAR DO PREVIEW */}
+            <div className="h-12 border-b border-slate-800/80 px-4 bg-slate-900/90 flex items-center justify-between shrink-0 no-print">
+              {/* ZOOM & FOCO */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-400 flex items-center gap-1">
+                  <Eye className="w-3.5 h-3.5 text-blue-400" /> Preview 1:1
+                </span>
+                <div className="h-4 w-px bg-slate-800 mx-1" />
                 <button
-                  onClick={gerarAssinaturaTexto}
-                  style={{ padding: "8px 14px", background: "#22c55e", color: "white", border: "none", borderRadius: "6px", fontWeight: 700, fontSize: "11px", cursor: "pointer" }}
+                  type="button"
+                  onClick={() => setZoomWidth(w => Math.max(380, w - 40))}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold"
+                  title="Diminuir Zoom"
                 >
-                  Gerar
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZoomWidth(580)}
+                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold"
+                  title="Resetar Zoom (100%)"
+                >
+                  {Math.round((zoomWidth / 580) * 100)}%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZoomWidth(w => Math.min(850, w + 40))}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold"
+                  title="Aumentar Zoom"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* FOCO RAPIDO (TOPO / RODAPE) */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleFocusTop}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1"
+                >
+                  <ArrowUp className="w-3.5 h-3.5 text-blue-400" /> Frente (Topo)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFocusBottom}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1"
+                >
+                  <ArrowDown className="w-3.5 h-3.5 text-cyan-400" /> Verso (MRZ)
                 </button>
               </div>
             </div>
 
-            {/* Opção 2: Upload */}
-            <div className="cnh-ass-option blue">
-              <h4><Upload size={12} /> Opção 2: Envie uma Foto</h4>
-              <p>Use uma imagem com fundo transparente ou branco.</p>
-              <label className="cnh-file-label">
-                <Upload size={14} /> Escolher Arquivo
-                <input type="file" accept="image/*" onChange={handleAssinaturaUpload} style={{ display: "none" }} />
-              </label>
+            {/* BARRA DE ACOES DE EXPORTACAO DO PREVIEW */}
+            <div className="p-3 border-b border-slate-800/80 bg-slate-950 flex items-center justify-center gap-2 flex-wrap shrink-0 no-print">
+              <button
+                onClick={handleExportJpeg}
+                disabled={isDownloading}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 shadow"
+              >
+                <Download className="w-3.5 h-3.5 text-blue-400" /> JPEG Completo
+              </button>
+              <button
+                onClick={() => handleExportCrop("frente")}
+                disabled={isDownloading}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 shadow"
+              >
+                <Download className="w-3.5 h-3.5 text-cyan-400" /> Crop Frente
+              </button>
+              <button
+                onClick={() => handleExportCrop("verso")}
+                disabled={isDownloading}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 shadow"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-400" /> Crop Verso
+              </button>
             </div>
 
-            {/* Prévia Assinatura */}
-            <div className="cnh-preview-box cnh-preview-ass">
-              {data.assinaturaUrl ? (
-                <div className="cnh-preview-frame">
-                  <img
-                    src={data.assinaturaUrl}
-                    alt="Assinatura"
-                    style={{
-                      objectFit: "contain",
-                      transform: `translate(${assOffsetX}px, ${assOffsetY}px) scale(${assScale})`,
-                      transformOrigin: "center",
-                    }}
-                  />
-                </div>
-              ) : (
-                <span style={{ fontSize: 12, color: "#64748b" }}>Prévia Assinatura</span>
-              )}
-            </div>
-            {data.assinaturaUrl && (
-              <div className="cnh-arrow-controls">
-                <div className="cnh-arrow-row">
-                  <span>Tamanho Assinatura: {Math.round(assScale * 100)}%</span>
-                  <div className="cnh-arrow-buttons">
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssScale(-0.05)} aria-label="Diminuir tamanho da assinatura">
-                      <ArrowDown size={14} />
-                    </button>
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssScale(0.05)} aria-label="Aumentar tamanho da assinatura">
-                      <ArrowUp size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div className="cnh-arrow-row">
-                  <span>Posição Horizontal: {assOffsetX}px</span>
-                  <div className="cnh-arrow-buttons">
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssOffsetX(-2)} aria-label="Mover assinatura para esquerda">
-                      <ArrowLeft size={14} />
-                    </button>
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssOffsetX(2)} aria-label="Mover assinatura para direita">
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div className="cnh-arrow-row">
-                  <span>Posição Vertical: {assOffsetY}px</span>
-                  <div className="cnh-arrow-buttons">
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssOffsetY(-2)} aria-label="Mover assinatura para cima">
-                      <ArrowUp size={14} />
-                    </button>
-                    <button type="button" className="cnh-arrow-btn" onClick={() => changeAssOffsetY(2)} aria-label="Mover assinatura para baixo">
-                      <ArrowDown size={14} />
-                    </button>
-                  </div>
-                </div>
+            {/* CONTAINER SCROLLABLE DO PREVIEW DO DOCUMENTO */}
+            <div
+              ref={previewScrollRef}
+              className="flex-1 overflow-y-auto p-8 flex items-start justify-center bg-[#04060f] relative shadow-inner"
+            >
+              <div className="shadow-2xl rounded-xl overflow-hidden border border-slate-800 bg-white">
+                <CNHDocument
+                  ref={docRef}
+                  {...data}
+                  fotoScale={fotoScale}
+                  fotoOffsetX={fotoOffsetX}
+                  fotoOffsetY={fotoOffsetY}
+                  assScale={assScale}
+                  assOffsetX={assOffsetX}
+                  assOffsetY={assOffsetY}
+                  codigoQR={saved ? codigoQR : "PREVIEW"}
+                  blurred={!saved}
+                  previewWidth={zoomWidth}
+                />
               </div>
-            )}
+            </div>
           </div>
         </div>
-
-        {/* Acesso */}
-        <div className="cnh-acesso-divider">ACESSO</div>
-        <div className="cnh-form-grid">
-          <div className="cnh-form-group">
-            <label>Senha App Cliente</label>
-            <input type="text" value={data.senhaApp} onChange={update("senhaApp")} />
-          </div>
-          <div className="cnh-form-group" style={{ gridColumn: "span 2" }}>
-            <label>Observações (EAR)</label>
-            <textarea
-              value={data.observacoes}
-              onChange={update("observacoes")}
-              placeholder="Digite as observações (pressione Enter para pular linha)..."
-              className="obs-textarea"
-              style={{ borderColor: "#2563eb" }}
-            />
-          </div>
-        </div>
-
-        {/* Canvas oculto (ghostCanvas) para geração da imagem */}
-        <div style={{ position: "absolute", left: "-9999px", top: "-9999px", opacity: 0, pointerEvents: "none" }}>
-          <CNHDocument
-            ref={docRef}
-            {...data}
-            fotoScale={fotoScale}
-            fotoOffsetX={fotoOffsetX}
-            fotoOffsetY={fotoOffsetY}
-            assScale={assScale}
-            assOffsetX={assOffsetX}
-            assOffsetY={assOffsetY}
-            codigoQR={saved ? codigoQR : "PREVIEW"}
-            blurred={!saved}
-          />
-        </div>
-
-        {/* Botão SALVAR flutuante */}
-        {!saved && (
-          <button
-            className="cnh-floating-save"
-            onClick={handleRequestEmit}
-            disabled={loading || saved}
-          >
-            {loading ? (
-              <><div style={{ width: 16, height: 16, border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> Gerando Documento...</>
-            ) : (
-              <><Save size={18} /> EMITIR CNH</>
-            )}
-          </button>
-        )}
       </div>
 
       {/* Modal de Confirmação + Sucesso */}
@@ -1567,9 +1230,6 @@ export default function CNHCria() {
         onClose={() => setShowSuccessModal(false)}
         historyPath="/cnhsalvas"
       />
-
-      {/* Animação de spin */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+    </DashboardLayout>
   );
 }

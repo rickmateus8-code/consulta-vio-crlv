@@ -49,6 +49,7 @@ export interface CNHDocumentProps {
   assOffsetY?: number;
   codigoQR?: string;
   blurred?: boolean;
+  previewWidth?: number;
 }
 
 const NOMES_ESTADOS: Record<string, string> = {
@@ -497,14 +498,15 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
   }, [props]);
 
   // Escala para preview (o canvas é ~2461x3496, escalar para caber na tela)
-  const previewScale = 595 / 2461;
+  const targetW = props.previewWidth || 595;
+  const previewScale = targetW / 2461;
 
   return (
-    <div ref={containerRef} style={{ width: 595, overflow: "hidden" }}>
+    <div ref={containerRef} style={{ width: targetW, overflow: "hidden" }}>
       <canvas
         ref={canvasRef}
         style={{
-          width: 595,
+          width: targetW,
           height: Math.round(3496 * previewScale),
           display: "block",
         }}

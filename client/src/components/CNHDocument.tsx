@@ -253,42 +253,42 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // ═══════════════════════════════════════════════════════════════
 
     // Nome Completo
-    txt(props.nome, 310, 450, 26, 1, "#000000", 620);
+    txt(props.nome, 245, 455, 26, 1, "#000000", 620);
 
     // 1ª Habilitação
-    txt(d(props.primeiraHabilitacao), 955, 450, 22, 1, "#000000", 180);
+    txt(d(props.primeiraHabilitacao), 915, 455, 22, 1, "#000000", 180);
 
     // Data Nascimento, Local, UF
-    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 570, 510, 22, 1, "#000000", 450);
+    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 425, 512, 22, 1, "#000000", 450);
 
     // Data Emissão
-    txt(d(props.dataEmissao), 570, 572, 22, 1, "#000000", 180);
+    txt(d(props.dataEmissao), 425, 568, 22, 1, "#000000", 180);
 
     // Validade (vermelho)
-    txt(d(props.validade), 760, 572, 22, 1, "#c0392b", 180);
+    txt(d(props.validade), 680, 568, 22, 1, "#c0392b", 180);
 
     // Tipo CNH (D = Definitiva, P = Permissão)
     const tipoLetra = props.tipo === "Permissão" ? "P" : "D";
-    txt(tipoLetra, 1040, 560, 50, 1, "#000000", 80);
+    txt(tipoLetra, 1045, 568, 24, 1, "#000000", 80);
 
     // RG + Órgão Emissor / UF
-    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 570, 632, 22, 1, "#000000", 450);
+    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 425, 624, 22, 1, "#000000", 450);
 
     // CPF
-    txt(formatarCPF(props.cpf), 570, 692, 22, 1, "#000000", 250);
+    txt(formatarCPF(props.cpf), 425, 680, 22, 1, "#000000", 250);
 
     // Nº Registro (vermelho)
-    txt(props.registro, 810, 692, 22, 1, "#c0392b", 210);
+    txt(props.registro, 680, 680, 22, 1, "#c0392b", 210);
 
     // Categoria (vermelho)
-    txt(props.categoria, 985, 692, 22, 1, "#c0392b", 120);
+    txt(props.categoria, 920, 680, 22, 1, "#c0392b", 120);
 
     // Nacionalidade
-    txt(props.nacionalidade || "BRASILEIRO(A)", 570, 752, 22, 1, "#000000", 500);
+    txt(props.nacionalidade || "BRASILEIRO(A)", 425, 736, 22, 1, "#000000", 500);
 
     // Filiação
-    txt(props.nomePai, 570, 812, 22, 1, "#000000", 550);
-    txt(props.nomeMae, 570, 845, 22, 1, "#000000", 550);
+    txt(props.nomePai, 425, 792, 22, 1, "#000000", 550);
+    txt(props.nomeMae, 425, 827, 22, 1, "#000000", 550);
 
     // Observações (EAR multi-linha)
     const obsTexto = String(props.observacoes || "");
@@ -365,16 +365,16 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = props.fotoScale ?? 1.0;
         const offsetX = props.fotoOffsetX ?? 0;
         const offsetY = props.fotoOffsetY ?? 0;
-        // Proporção 3x4 exata no documento: 225 x 300px (@300DPI)
-        const baseBw = 225, baseBh = 300;
+        // Proporção 3x4 exata no documento: 250 x 335px (@300DPI)
+        const baseBw = 250, baseBh = 335;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 305 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 550 + Math.round((baseBh - bh) / 2) + offsetY;
+        const bx = 135 + Math.round((baseBw - bw) / 2) + offsetX;
+        const by = 485 + Math.round((baseBh - bh) / 2) + offsetY;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(305, 550, baseBw, baseBh); // Clip exato na janela 3x4
+        ctx.rect(135, 485, baseBw, baseBh); // Clip exato na janela 3x4
         ctx.clip();
 
         // Enquadramento Cover (3x4 perfeito sem distorção nem bordas em branco)
@@ -411,8 +411,8 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const baseBw = 250, baseBh = 60;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 303 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 870 + Math.round((baseBh - bh) / 2) + offsetY;
+        const bx = 135 + Math.round((baseBw - bw) / 2) + offsetX;
+        const by = 825 + Math.round((baseBh - bh) / 2) + offsetY;
 
         // Processar remoção de fundo claro para garantir PNG 100% transparente
         const tempCanvas = document.createElement('canvas');
@@ -448,7 +448,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(303, 870, baseBw, baseBh);
+        ctx.rect(135, 825, baseBw, baseBh);
         ctx.clip();
         ctx.drawImage(tempCanvas, drawX, drawY, drawW, drawH);
         ctx.restore();

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import ConsultasPlanModal from "@/components/ConsultasPlanModal";
-import UnifiedProfileView from "@/components/UnifiedProfileView";
+import UnifiedProfileView, { isValidCPF } from "@/components/UnifiedProfileView";
 import { getPlanoStatus } from "@/lib/snoopApi";
 import * as SnoopAPI from "@/lib/snoopApi";
 import { toast } from "sonner";
@@ -12,6 +12,23 @@ import {
   FileText, Users, Home, Briefcase, Hash, Shield,
   AlertTriangle, Clock, CheckCircle2, ArrowLeft, LogOut, RefreshCw, Eye, LayoutGrid, History, Moon, Sun, ChevronLeft
 } from "lucide-react";
+
+// ─── Validador de CPF (Módulo 11) ──────────────────────────────────────────────
+export function isValidCPF(cpf: string): boolean {
+  const clean = cpf.replace(/\D/g, "");
+  if (clean.length !== 11 || /^(\d)\1{10}$/.test(clean)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(clean.charAt(i)) * (10 - i);
+  let rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(clean.charAt(9))) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(clean.charAt(i)) * (11 - i);
+  rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(clean.charAt(10))) return false;
+  return true;
+}
 
 // ─── Formatadores e Máscaras de Entrada ────────────────────────────────────────
 export function formatCPF(v: string) {

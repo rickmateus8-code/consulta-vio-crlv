@@ -6,6 +6,61 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+export function calculateAge(birthDateStr: string): string {
+  if (!birthDateStr || birthDateStr === "Não informado") return "";
+  let day = 0, month = 0, year = 0;
+  if (birthDateStr.includes("/")) {
+    const parts = birthDateStr.split("/");
+    day = parseInt(parts[0]);
+    month = parseInt(parts[1]) - 1;
+    year = parseInt(parts[2]);
+  } else if (birthDateStr.includes("-")) {
+    const parts = birthDateStr.split(" ")[0].split("-");
+    year = parseInt(parts[0]);
+    month = parseInt(parts[1]) - 1;
+    day = parseInt(parts[2]);
+  }
+  if (!year || isNaN(year)) return "";
+  const birth = new Date(year, month, day);
+  const now = new Date();
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  if (months < 0 || (months === 0 && now.getDate() < birth.getDate())) {
+    years--;
+    months += 12;
+  }
+  return `${years} anos, ${months} meses`;
+}
+
+export function getZodiacSign(birthDateStr: string): string {
+  if (!birthDateStr || birthDateStr === "Não informado") return "";
+  let day = 0, month = 0;
+  if (birthDateStr.includes("/")) {
+    const parts = birthDateStr.split("/");
+    day = parseInt(parts[0]);
+    month = parseInt(parts[1]);
+  } else if (birthDateStr.includes("-")) {
+    const parts = birthDateStr.split(" ")[0].split("-");
+    month = parseInt(parts[1]);
+    day = parseInt(parts[2]);
+  }
+  if (!day || !month || isNaN(day) || isNaN(month)) return "";
+
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return "♈ Áries";
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return "♉ Touro";
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return "♊ Gêmeos";
+  if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return "♋ Câncer";
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return "♌ Leão";
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return "♍ Virgem";
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return "♎ Libra";
+  if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return "♏ Escorpião";
+  if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return "♐ Sagitário";
+  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return "♑ Capricórnio";
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return "♒ Aquário";
+  if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) return "♓ Peixes";
+  return "";
+}
+
 interface UnifiedProfileViewProps {
   data: any;
   onClose?: () => void;
@@ -23,7 +78,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
 
   if (isList && listItems && listItems.length > 0 && typeof listItems[0] === "object") {
     return (
-      <div className="w-full space-y-4 text-slate-100 font-sans">
+      <div className="w-full space-y-4 text-slate-100 font-sans select-none">
         <div className="flex items-center justify-between py-2 border-b border-violet-500/20">
           <span className="text-sm font-bold text-violet-300">
             {listItems.length} registro(s) encontrado(s)
@@ -92,6 +147,10 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   const sexo = cpfData.gender || cpfData.sexo || cpfData.SEXO || "Não informado";
   const mae = cpfData.mother_name || cpfData.mae || cpfData.NOME_MAE || "Não informado";
   const pai = cpfData.father_name || cpfData.pai || cpfData.NOME_PAI || "Não informado";
+
+  // Idade e Signo reais calculados da data de nascimento
+  const idadeStr = calculateAge(nascimento);
+  const signoStr = getZodiacSign(nascimento);
 
   // Documentos
   const rg = cpfData.rg || cpfData.RG || null;
@@ -173,10 +232,11 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
 
   const copyAllData = () => {
     const text = `
-=== CONSULTA DOCMASTER / SNOOP ===
+=== CONSULTA MASTER BUSCAS ===
 NOME: ${nome}
 CPF: ${cpf}
-NASCIMENTO: ${nascimento}
+NASCIMENTO: ${nascimento} (${idadeStr})
+SIGNO: ${signoStr}
 MÃE: ${mae}
 ENDEREÇO: ${enderecoPrincipal}
 CNH: ${cnh || 'N/A'}
@@ -199,7 +259,7 @@ PROFISISSÃO: ${profissao || 'N/A'}
     if (navigator.share) {
       navigator.share({
         title: `Perfil - ${nome}`,
-        text: `Consulta DocMaster: ${nome} - CPF ${cpf}`,
+        text: `Master Buscas: ${nome} - CPF ${cpf}`,
         url: window.location.href,
       }).catch(() => undefined);
     } else {
@@ -208,7 +268,7 @@ PROFISISSÃO: ${profissao || 'N/A'}
   };
 
   return (
-    <div className="w-full space-y-6 text-slate-100 font-sans">
+    <div className="w-full space-y-6 text-slate-100 font-sans select-none">
       {/* BARRA DE AÇÕES RÁPIDAS */}
       <div className="flex items-center justify-between py-3 border-b border-violet-500/20 flex-wrap gap-2">
         <div className="flex items-center gap-2">
@@ -327,10 +387,22 @@ PROFISISSÃO: ${profissao || 'N/A'}
             <span className="text-slate-400 block font-medium">Data de Nascimento</span>
             <span className="text-white font-semibold block">{nascimento}</span>
           </div>
+          {idadeStr && (
+            <div className="space-y-1">
+              <span className="text-slate-400 block font-medium">Idade Calculada</span>
+              <span className="text-emerald-400 font-semibold block">{idadeStr}</span>
+            </div>
+          )}
           <div className="space-y-1">
             <span className="text-slate-400 block font-medium">Sexo</span>
             <span className="text-white font-semibold block">{sexo === "F" ? "Feminino" : sexo === "M" ? "Masculino" : sexo}</span>
           </div>
+          {signoStr && (
+            <div className="space-y-1">
+              <span className="text-slate-400 block font-medium">Signo Astral</span>
+              <span className="text-violet-300 font-semibold block">{signoStr}</span>
+            </div>
+          )}
           {rgFormatted && (
             <div className="space-y-1">
               <span className="text-slate-400 block font-medium">RG / Órgão Emissor</span>
@@ -453,7 +525,6 @@ PROFISISSÃO: ${profissao || 'N/A'}
             telefonesList.map((tel: any, i: number) => {
               const num = typeof tel === "object" ? (tel.numero || tel.telefone || tel.PHONE || "") : String(tel);
               const cleanNum = String(num).replace(/\D/g, "");
-              const ddd = typeof tel === "object" ? tel.ddd : "";
               const fonte = typeof tel === "object" ? tel.fonte : "";
               return (
                 <div key={i} className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 text-xs flex justify-between items-center">

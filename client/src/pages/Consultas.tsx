@@ -13,133 +13,76 @@ import {
   AlertTriangle, Clock, CheckCircle2, ArrowLeft, LogOut, RefreshCw, Eye
 } from "lucide-react";
 
-// ─── Sub-Abas de Consulta Direta ──────────────────────────────────────────────
+// ─── Formatadores e Máscaras de Entrada ────────────────────────────────────────
+export function formatCPF(v: string) {
+  const digits = v.replace(/\D/g, "").slice(0, 11);
+  return digits
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2");
+}
+
+export function formatCEP(v: string) {
+  const digits = v.replace(/\D/g, "").slice(0, 8);
+  return digits.replace(/^(\d{5})(\d)/, "$1-$2");
+}
+
+export function formatTelefone(v: string) {
+  const digits = v.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 10) {
+    return digits
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  }
+  return digits
+    .replace(/^(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2");
+}
+
+export function formatPlaca(v: string) {
+  const clean = v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 7);
+  if (clean.length > 3 && /^[A-Z]{3}\d{4}$/.test(clean)) {
+    return clean.slice(0, 3) + "-" + clean.slice(3);
+  }
+  return clean;
+}
+
+// ─── Sub-Abas Principais de Consulta ──────────────────────────────────────────
 const MAIN_TABS = [
-  { id: "cpf", label: "CPF", placeholder: "Ex: 123.456.789-00", key: "cpf", emoji: "🪪" },
-  { id: "rg", label: "RG", placeholder: "Ex: 123456789", key: "rg", emoji: "📄" },
-  { id: "cep", label: "CEP", placeholder: "Ex: 01234-567", key: "cep", emoji: "📍" },
-  { id: "email", label: "Email", placeholder: "Ex: email@exemplo.com", key: "email", emoji: "✉️" },
-  { id: "telefone", label: "Telefone", placeholder: "Ex: (11) 99999-9999", key: "telefone", emoji: "📞" },
-  { id: "nome", label: "Nome", placeholder: "Ex: FULANO DE TAL", key: "nome", emoji: "👤" },
-  { id: "enriquecimento", label: "Enriquecimento/Higienização", placeholder: "Ex: 02967833401", key: "cpf", emoji: "📊" },
+  { id: "cpf", label: "CPF", placeholder: "Ex: 123.456.789-00", emoji: "🪪" },
+  { id: "nome", label: "Nome", placeholder: "Ex: MARIA CAROLINA DA SILVA", emoji: "👤" },
+  { id: "telefone", label: "Telefone", placeholder: "Ex: (11) 99999-9999", emoji: "📞" },
+  { id: "email", label: "Email", placeholder: "Ex: email@exemplo.com", emoji: "✉️" },
+  { id: "rg", label: "RG", placeholder: "Ex: 123456789", emoji: "📄" },
+  { id: "cep", label: "CEP", placeholder: "Ex: 01234-567", emoji: "📍" },
+  { id: "placa", label: "Placa", placeholder: "Ex: ABC-1234 ou ABC1D23", emoji: "🚗" },
+  { id: "parentes", label: "Parentes", placeholder: "Ex: 123.456.789-00", emoji: "👨‍👩‍👧" },
+  { id: "score", label: "Score", placeholder: "Ex: 123.456.789-00", emoji: "📊" },
+  { id: "foto", label: "Fotos", placeholder: "Ex: 123.456.789-00", emoji: "📷" },
+  { id: "enriquecimento", label: "Enriquecimento", placeholder: "Ex: 123.456.789-00", emoji: "⚡" },
 ];
 
-// ─── Módulos Principais ────────────────────────────────────────────────────────
+// ─── Módulos Principais por Categoria ─────────────────────────────────────────
 interface Module {
   id: string;
   label: string;
   description: string;
   emoji: string;
   category: string;
-  fields: { key: string; label: string; placeholder: string; required?: boolean; hint?: string }[];
-  apiCall: (params: any) => Promise<any>;
   dailyLimit?: number;
 }
 
 const MODULES: Module[] = [
-  {
-    id: "cpf",
-    label: "CPF Completo",
-    description: "Dados completos unificados por CPF",
-    emoji: "🔍",
-    category: "basicas",
-    fields: [{ key: "cpf", label: "CPF", placeholder: "000.000.000-00", required: true, hint: "Digite os 11 números do CPF" }],
-    apiCall: (p: any) => SnoopAPI.snoopPerfilCPF(p.cpf),
-    dailyLimit: 1000,
-  },
-  {
-    id: "nome",
-    label: "Busca por Nome",
-    description: "Busca de pessoas por nome completo ou parcial",
-    emoji: "👤",
-    category: "basicas",
-    fields: [
-      { key: "nome", label: "Nome Completo", placeholder: "Nome da pessoa", required: true },
-      { key: "uf", label: "Estado (UF)", placeholder: "SP, RJ, PE..." },
-    ],
-    apiCall: (p: any) => SnoopAPI.snoopNome(p.nome, p.uf),
-    dailyLimit: 1000,
-  },
-  {
-    id: "telefone",
-    label: "Consulta Telefone",
-    description: "Proprietário de um número de telefone com DDD",
-    emoji: "📞",
-    category: "basicas",
-    fields: [{ key: "telefone", label: "Telefone com DDD", placeholder: "11999999999", required: true }],
-    apiCall: (p: any) => SnoopAPI.snoopTelefoneFull(p.telefone || p.phone),
-    dailyLimit: 500,
-  },
-  {
-    id: "email",
-    label: "Consulta Email",
-    description: "Busca dados cadastrais por endereço de e-mail",
-    emoji: "✉️",
-    category: "basicas",
-    fields: [{ key: "email", label: "Email", placeholder: "exemplo@email.com", required: true }],
-    apiCall: (p: any) => SnoopAPI.snoopEmail(p.email),
-    dailyLimit: 500,
-  },
-  {
-    id: "rg",
-    label: "Consulta RG",
-    description: "Consulta por Registro Geral",
-    emoji: "🪪",
-    category: "documentos",
-    fields: [{ key: "rg", label: "RG", placeholder: "123456789", required: true }],
-    apiCall: (p: any) => SnoopAPI.snoopRG(p.rg),
-    dailyLimit: 500,
-  },
-  {
-    id: "cep",
-    label: "Consulta CEP",
-    description: "Lista de moradores e dados por CEP",
-    emoji: "📍",
-    category: "localizacao",
-    fields: [{ key: "cep", label: "CEP", placeholder: "01234567", required: true }],
-    apiCall: (p: any) => SnoopAPI.snoopCEP(p.cep),
-    dailyLimit: 500,
-  },
-  {
-    id: "parentes",
-    label: "Consulta Parentes",
-    description: "Árvore de parentes vinculados por CPF",
-    emoji: "👨‍👩‍👧",
-    category: "relacoes",
-    fields: [{ key: "cpf", label: "CPF", placeholder: "00000000000", required: true }],
-    apiCall: (p: any) => SnoopAPI.snoopParentes(p.cpf),
-    dailyLimit: 500,
-  },
-  {
-    id: "score",
-    label: "Score de Crédito",
-    description: "Análise de crédito e Serasa por CPF",
-    emoji: "📊",
-    category: "financeiro",
-    fields: [{ key: "cpf", label: "CPF", placeholder: "00000000000", required: true }],
-    apiCall: (p: any) => SnoopAPI.snoopScore(p.cpf),
-    dailyLimit: 500,
-  },
-  {
-    id: "placa",
-    label: "Consulta Placa",
-    description: "Dados do veículo e proprietário por placa",
-    emoji: "🚗",
-    category: "veiculos",
-    fields: [{ key: "placa", label: "Placa do Veículo", placeholder: "ABC1D23", required: true }],
-    apiCall: (p: any) => SnoopAPI.snoopPlaca(p.placa),
-    dailyLimit: 500,
-  },
-  {
-    id: "foto",
-    label: "Fotos Nacionais",
-    description: "Fotos oficiais cadastradas por CPF",
-    emoji: "📷",
-    category: "fotos",
-    fields: [{ key: "cpf", label: "CPF", placeholder: "00000000000", required: true }],
-    apiCall: (p: any) => SnoopAPI.snoopFoto(p.cpf),
-    dailyLimit: 100,
-  },
+  { id: "cpf", label: "CPF Completo", description: "Dados completos unificados por CPF", emoji: "🔍", category: "basicas", dailyLimit: 1000 },
+  { id: "nome", label: "Busca por Nome", description: "Busca de pessoas por nome completo ou parcial", emoji: "👤", category: "basicas", dailyLimit: 1000 },
+  { id: "telefone", label: "Consulta Telefone", description: "Proprietário de telefone com DDD", emoji: "📞", category: "basicas", dailyLimit: 500 },
+  { id: "email", label: "Consulta Email", description: "Dados cadastrais por e-mail", emoji: "✉️", category: "basicas", dailyLimit: 500 },
+  { id: "rg", label: "Consulta RG", description: "Consulta por Registro Geral", emoji: "🪪", category: "documentos", dailyLimit: 500 },
+  { id: "cep", label: "Consulta CEP", description: "Moradores e endereços por CEP", emoji: "📍", category: "localizacao", dailyLimit: 500 },
+  { id: "placa", label: "Consulta Placa", description: "Dados do veículo por placa", emoji: "🚗", category: "veiculos", dailyLimit: 500 },
+  { id: "parentes", label: "Consulta Parentes", description: "Árvore de parentes vinculados por CPF", emoji: "👨‍👩‍👧", category: "relacoes", dailyLimit: 500 },
+  { id: "score", label: "Score de Crédito", description: "Análise de crédito e Serasa por CPF", emoji: "📊", category: "financeiro", dailyLimit: 500 },
+  { id: "foto", label: "Fotos Nacionais", description: "Fotos oficiais cadastradas por CPF", emoji: "📷", category: "fotos", dailyLimit: 100 },
 ];
 
 const CATEGORIES = [
@@ -159,21 +102,12 @@ export default function Consultas() {
   const [planStatus, setPlanStatus] = useState<any>(null);
   const [planLoading, setPlanLoading] = useState(true);
 
-  // Estado da aba de pesquisa rápida no topo
+  // Estado da aba ativa
   const [activeTabId, setActiveTabId] = useState("cpf");
   const [quickInput, setQuickInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Módulo ativo
-  const [selectedModule, setSelectedModule] = useState<Module | null>(null);
-  const [moduleParams, setModuleParams] = useState<Record<string, string>>({});
-
-  // Favoritos
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("consultas_favorites") || '["cpf","nome","telefone"]'); } catch { return ["cpf","nome","telefone"]; }
-  });
 
   // Carregar status do plano
   useEffect(() => {
@@ -190,6 +124,27 @@ export default function Consultas() {
     const data = await getPlanoStatus();
     setPlanStatus(data);
   }, []);
+
+  // Formatador automático por tipo de aba
+  const handleInputChange = (val: string) => {
+    let formatted = val;
+    if (activeTabId === "cpf" || activeTabId === "parentes" || activeTabId === "score" || activeTabId === "foto" || activeTabId === "enriquecimento") {
+      formatted = formatCPF(val);
+    } else if (activeTabId === "cep") {
+      formatted = formatCEP(val);
+    } else if (activeTabId === "telefone") {
+      formatted = formatTelefone(val);
+    } else if (activeTabId === "placa") {
+      formatted = formatPlaca(val);
+    } else if (activeTabId === "rg") {
+      formatted = val.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    } else if (activeTabId === "nome") {
+      formatted = val.toUpperCase();
+    } else if (activeTabId === "email") {
+      formatted = val.toLowerCase().trim();
+    }
+    setQuickInput(formatted);
+  };
 
   // Executar busca rápida da barra superior
   const handleQuickSearch = async () => {
@@ -212,18 +167,20 @@ export default function Consultas() {
 
     try {
       let data: any;
-      if (cleanVal.length === 11 || activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto") {
+      if (cleanVal.length === 11 || activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto" || activeTabId === "parentes" || activeTabId === "score") {
         data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
       } else if (activeTabId === "rg") {
         data = await SnoopAPI.snoopRG(val);
       } else if (activeTabId === "cep") {
-        data = await SnoopAPI.snoopCEP(val);
+        data = await SnoopAPI.snoopCEP(cleanVal || val);
       } else if (activeTabId === "email") {
         data = await SnoopAPI.snoopEmail(val);
       } else if (activeTabId === "telefone") {
-        data = await SnoopAPI.snoopTelefoneFull(val);
+        data = await SnoopAPI.snoopTelefoneFull(cleanVal || val);
       } else if (activeTabId === "nome") {
         data = await SnoopAPI.snoopNome(val);
+      } else if (activeTabId === "placa") {
+        data = await SnoopAPI.snoopPlaca(val.replace(/[^a-zA-Z0-9]/g, ""));
       } else {
         data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
       }
@@ -240,9 +197,9 @@ export default function Consultas() {
     }
   };
 
-  // Selecionar pessoa a partir de uma busca por nome/lista
+  // Selecionar pessoa da lista por nome
   const handleSelectPersonFromList = (cpf: string) => {
-    setQuickInput(cpf);
+    setQuickInput(formatCPF(cpf));
     setActiveTabId("cpf");
     setLoading(true);
     setError(null);
@@ -251,6 +208,15 @@ export default function Consultas() {
       .then((data) => setResult(data))
       .catch((e) => setError(e.message || "Erro ao consultar CPF"))
       .finally(() => setLoading(false));
+  };
+
+  // Selecionar um módulo no grid
+  const handleSelectModule = (modId: string) => {
+    setActiveTabId(modId);
+    setQuickInput("");
+    setResult(null);
+    setError(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const currentTab = MAIN_TABS.find(t => t.id === activeTabId) || MAIN_TABS[0];
@@ -329,7 +295,7 @@ export default function Consultas() {
               </div>
             </div>
 
-            {/* Sub-Abas ([CPF] [RG] [CEP] [Email] [Telefone] [Nome] [Enriquecimento]) */}
+            {/* Sub-Abas ([CPF] [RG] [CEP] [Email] [Telefone] [Nome] [Placa] [Parentes] [Score] [Fotos]) */}
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               {MAIN_TABS.map((tab) => {
                 const isActive = tab.id === activeTabId;
@@ -355,14 +321,14 @@ export default function Consultas() {
               })}
             </div>
 
-            {/* Input e Botao de Pesquisa */}
+            {/* Input Formatado e Botao de Pesquisa */}
             <div className="flex gap-3 items-center">
               <div className="relative flex-1">
                 <input
                   type="text"
                   placeholder={currentTab.placeholder}
                   value={quickInput}
-                  onChange={(e) => setQuickInput(e.target.value)}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleQuickSearch(); }}
                   className="w-full px-4 py-3.5 rounded-xl bg-slate-950/80 border border-violet-500/30 text-white text-sm outline-none focus:border-violet-500 transition-all font-mono"
                 />
@@ -428,10 +394,7 @@ export default function Consultas() {
                       {catMods.map((mod) => (
                         <div
                           key={mod.id}
-                          onClick={() => {
-                            setActiveTabId(mod.id in MAIN_TABS.map(t => t.id) ? mod.id : "cpf");
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }}
+                          onClick={() => handleSelectModule(mod.id)}
                           className="group relative p-4 rounded-xl bg-gradient-to-br from-violet-900/60 to-indigo-950/80 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.03] transition-all cursor-pointer shadow-lg min-h-[110px] flex flex-col justify-between"
                         >
                           <div className="flex items-start gap-3">

@@ -17,16 +17,16 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
 
   if (!data) return null;
 
-  // Se a resposta for uma lista de resultados (ex: busca por nome)
+  // Se a resposta for uma lista de resultados (ex: busca por nome ou cep)
   const isList = Array.isArray(data) || Array.isArray(data.body) || Array.isArray(data.data);
   const listItems = isList ? (Array.isArray(data) ? data : (data.body || data.data)) : null;
 
-  if (isList && listItems) {
+  if (isList && listItems && listItems.length > 0 && typeof listItems[0] === "object") {
     return (
       <div className="w-full space-y-4 text-slate-100 font-sans">
         <div className="flex items-center justify-between py-2 border-b border-violet-500/20">
           <span className="text-sm font-bold text-violet-300">
-            {listItems.length} pessoa(s) encontrada(s)
+            {listItems.length} registro(s) encontrado(s)
           </span>
           {onClose && (
             <button onClick={onClose} className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
@@ -36,21 +36,21 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {listItems.map((item: any, idx: number) => {
-            const itemNome = item.name || item.nome || item.NOME || "Não informado";
-            const itemCpf = item.cpf || item.CPF || "Não informado";
+            const itemNome = item.name || item.nome || item.NOME || item.razao_social || "Não informado";
+            const itemCpf = item.cpf || item.CPF || item.cnpj || item.CNPJ || "Não informado";
             const itemMae = item.mother_name || item.mae || item.NOME_MAE || "";
             const itemNasc = item.birth_date || item.nascimento || "";
             const itemUf = item.uf || item.UF || (item.endereco?.state || item.endereco?.uf || "");
             return (
               <div
                 key={idx}
-                onClick={() => onSelectPerson && onSelectPerson(itemCpf)}
+                onClick={() => onSelectPerson && itemCpf !== "Não informado" && onSelectPerson(itemCpf)}
                 className="p-5 rounded-2xl bg-slate-900/90 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.01] transition-all cursor-pointer space-y-2 shadow-lg"
               >
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-black text-white text-base">{itemNome}</h4>
-                    <p className="text-violet-300 font-mono text-xs font-bold mt-0.5">CPF: {itemCpf}</p>
+                    <p className="text-violet-300 font-mono text-xs font-bold mt-0.5">CPF/Doc: {itemCpf}</p>
                   </div>
                   {itemUf && (
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-950/80 border border-violet-500/40 text-violet-300">
@@ -60,7 +60,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
                 </div>
                 {itemMae && <p className="text-slate-400 text-xs"><span className="text-slate-500">Mãe:</span> {itemMae}</p>}
                 {itemNasc && <p className="text-slate-400 text-xs"><span className="text-slate-500">Nascimento:</span> {itemNasc}</p>}
-                {onSelectPerson && (
+                {onSelectPerson && itemCpf !== "Não informado" && (
                   <div className="pt-2 text-right">
                     <span className="text-xs font-bold text-violet-400 hover:underline flex items-center justify-end gap-1">
                       Ver Perfil Completo <CheckCircle2 className="w-3.5 h-3.5" />
@@ -75,52 +75,100 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     );
   }
 
-  // Normalizar campos da API (suportando formato body da Snoop V2)
+  // Normalização Completa do Perfil Master
   const root = data.perfil || data.body || data.data || data;
-  const cpfData = root.cpf_dados || root.data || root;
-  const fotosData = data.fotos || root.fotos || root.foto || [];
-  const parentesData = data.parentes || root.parentes || [];
-  const vizinhosData = data.vizinhos || root.vizinhos || [];
-  const scoreData = data.score || root.score || {};
+  const cpfData = root.cpf_dados || root.body || root.data || root;
+  const fotoObj = data.foto || root.foto || root.fotos || null;
+  const parentesData = data.parentes || root.parentes || cpfData.parentes || [];
+  const vizinhosData = data.vizinhos || root.vizinhos || cpfData.vizinhos || [];
+  const scoreObj = data.score || root.score || cpfData.score || {};
   const profissionaisData = data.profissionais || root.profissionais || [];
-  const telefonesData = data.telefones || root.telefones || [];
+  const veiculosData = data.veiculos || root.veiculos || cpfData.vehicles || [];
 
-  // Extrair campos comuns de todas as variações da API Snoop
+  // Extrair campos de identificação
   const nome = cpfData.name || cpfData.nome || cpfData.NOME || "Não informado";
-  const cpf = cpfData.cpf || cpfData.CPF || "Não informado";
+  const cpf = cpfData.cpf || cpfData.CPF || data.cpf || "Não informado";
   const nascimento = cpfData.birth_date || cpfData.nascimento || cpfData.DATA_NASCIMENTO || "Não informado";
   const sexo = cpfData.gender || cpfData.sexo || cpfData.SEXO || "Não informado";
   const mae = cpfData.mother_name || cpfData.mae || cpfData.NOME_MAE || "Não informado";
   const pai = cpfData.father_name || cpfData.pai || cpfData.NOME_PAI || "Não informado";
 
-  // Endereço
-  let enderecoStr = "Não informado";
-  if (typeof cpfData.address === "object" && cpfData.address) {
-    const a = cpfData.address;
-    enderecoStr = [a.type || a.tipologradouro, a.street || a.logradouro, a.number || a.numero, a.neighborhood || a.bairro, a.city || a.cidade, a.state || a.uf, a.zip_code || a.cep].filter(Boolean).join(", ");
-  } else if (typeof cpfData.endereco === "string") {
-    enderecoStr = cpfData.endereco;
-  } else if (cpfData.LOGRADOURO) {
-    enderecoStr = [cpfData.LOGRADOURO, cpfData.NUMERO, cpfData.BAIRRO, cpfData.CIDADE, cpfData.UF, cpfData.CEP].filter(Boolean).join(", ");
+  // Documentos
+  const rg = cpfData.rg || cpfData.RG || null;
+  const rgIssuer = cpfData.rg_issuer || cpfData.ORGAO_EMISSOR || null;
+  const rgUf = cpfData.rg_state || cpfData.UF_EMISSAO_RG || null;
+  const rgFormatted = rg ? `${rg}${rgIssuer ? ' / ' + rgIssuer : ''}${rgUf ? ' - ' + rgUf : ''}` : null;
+  const titulo = cpfData.voter_id || cpfData.titulo || cpfData.TITULO_ELEITOR || null;
+  const pis = cpfData.pis || cpfData.PIS || cpfData.cns || null;
+  const cnh = cpfData.cnh || cpfData.NUMERO_CNH || cpfData.CNH || null;
+
+  // Socioeconômico
+  const renda = cpfData.income || cpfData.renda || cpfData.renda_mensal || cpfData.RENDA || null;
+  const scoreVal = typeof scoreObj === "object" ? (scoreObj.value || scoreObj.score || scoreObj.SCORE || null) : scoreObj;
+  const mosaic = cpfData.mosaic || scoreObj.cd_mosaic || null;
+  const profissao = cpfData.occupation || cpfData.occupation_name || cpfData.profissao || null;
+
+  // Foto
+  let fotoUrl = null;
+  if (typeof fotoObj === "string" && (fotoObj.startsWith("http") || fotoObj.startsWith("data:"))) {
+    fotoUrl = fotoObj;
+  } else if (fotoObj && typeof fotoObj === "object") {
+    fotoUrl = fotoObj.foto || fotoObj.url || fotoObj.base64 || null;
   }
 
-  const cidade = cpfData.address?.city || cpfData.cidade || cpfData.CIDADE || "";
-  const uf = cpfData.address?.state || cpfData.uf || cpfData.UF || "";
-  const cnh = cpfData.cnh || cpfData.NUMERO_CNH || cpfData.CNH || null;
-  const rg = cpfData.rg || cpfData.RG || null;
-  const titulo = cpfData.voter_id || cpfData.titulo || cpfData.TITULO_ELEITOR || null;
-  const pis = cpfData.pis || cpfData.PIS || null;
-  const renda = cpfData.income || cpfData.renda || cpfData.RENDA || null;
-  const score = typeof scoreData === "object" ? (scoreData.value || scoreData.score || scoreData.SCORE || cpfData.score?.value || null) : scoreData;
-  const mosaic = cpfData.mosaic || scoreData.cd_mosaic || null;
-  const profissao = cpfData.occupation || cpfData.profissao || null;
+  // Telefones (unificando todas as fontes de telefones retornadas)
+  const telefonesList: any[] = [];
+  const rawPhones = [
+    ...(Array.isArray(cpfData.phones) ? cpfData.phones : []),
+    ...(Array.isArray(cpfData.telefones_assecc) ? cpfData.telefones_assecc : []),
+    ...(Array.isArray(cpfData.datasus_phones) ? cpfData.datasus_phones : []),
+    ...(Array.isArray(cpfData.historico_telefones) ? cpfData.historico_telefones : []),
+    ...(Array.isArray(data.telefones) ? data.telefones : []),
+    ...(Array.isArray(root.telefones) ? root.telefones : []),
+  ];
+  if (cpfData.telefone) rawPhones.push(cpfData.telefone);
 
-  // Foto principal
-  let fotoUrl = null;
-  if (Array.isArray(fotosData) && fotosData.length > 0) {
-    fotoUrl = fotosData[0].url || fotosData[0];
-  } else if (typeof fotosData === "string" && fotosData.startsWith("http")) {
-    fotoUrl = fotosData;
+  const phoneSeen = new Set();
+  for (const item of rawPhones) {
+    const numStr = typeof item === "object" ? (item.numero || item.telefone || item.PHONE || "") : String(item);
+    const cleanNum = numStr.replace(/\D/g, "");
+    if (cleanNum && !phoneSeen.has(cleanNum)) {
+      phoneSeen.add(cleanNum);
+      telefonesList.push(typeof item === "object" ? item : { numero: numStr });
+    }
+  }
+
+  // Endereços (unificando todas as fontes)
+  const enderecosList: any[] = [];
+  const rawAddresses = [
+    ...(Array.isArray(cpfData.all_addresses) ? cpfData.all_addresses : []),
+    ...(Array.isArray(cpfData.enderecos) ? cpfData.enderecos : []),
+  ];
+  if (cpfData.address) rawAddresses.unshift(cpfData.address);
+
+  const addressSeen = new Set();
+  for (const item of rawAddresses) {
+    let key = "";
+    if (typeof item === "object" && item) {
+      key = [item.street || item.logradouro, item.number || item.numero, item.city || item.cidade].filter(Boolean).join("|");
+    } else {
+      key = String(item);
+    }
+    if (key && !addressSeen.has(key)) {
+      addressSeen.add(key);
+      enderecosList.push(item);
+    }
+  }
+
+  // Endereço string principal
+  let enderecoPrincipal = "Não informado";
+  if (enderecosList.length > 0) {
+    const a = enderecosList[0];
+    if (typeof a === "object") {
+      enderecoPrincipal = [a.type || a.tipologradouro, a.street || a.logradouro, a.number || a.numero, a.neighborhood || a.bairro, a.city || a.cidade, a.state || a.uf, a.zip_code || a.cep].filter(Boolean).join(", ");
+    } else {
+      enderecoPrincipal = String(a);
+    }
   }
 
   const copyAllData = () => {
@@ -130,13 +178,14 @@ NOME: ${nome}
 CPF: ${cpf}
 NASCIMENTO: ${nascimento}
 MÃE: ${mae}
-ENDEREÇO: ${enderecoStr}
+ENDEREÇO: ${enderecoPrincipal}
 CNH: ${cnh || 'N/A'}
-RG: ${rg || 'N/A'}
+RG: ${rgFormatted || rg || 'N/A'}
 TÍTULO ELEITOR: ${titulo || 'N/A'}
 PIS/NIS: ${pis || 'N/A'}
 RENDA: ${renda || 'N/A'}
-SCORE: ${score || 'N/A'}
+SCORE: ${scoreVal || 'N/A'}
+PROFISISSÃO: ${profissao || 'N/A'}
 `.trim();
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -144,9 +193,7 @@ SCORE: ${score || 'N/A'}
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handlePrintPDF = () => {
-    window.print();
-  };
+  const handlePrintPDF = () => { window.print(); };
 
   const handleShare = () => {
     if (navigator.share) {
@@ -160,17 +207,9 @@ SCORE: ${score || 'N/A'}
     }
   };
 
-  // Contadores
-  const enderecosList = Array.isArray(cpfData.all_addresses) ? cpfData.all_addresses : (Array.isArray(cpfData.enderecos) ? cpfData.enderecos : []);
-  const totalEnderecos = enderecosList.length > 0 ? enderecosList.length : (enderecoStr !== "Não informado" ? 1 : 0);
-  const totalTelefones = Array.isArray(telefonesData) ? telefonesData.length : (cpfData.telefone ? 1 : 0);
-  const totalEmails = Array.isArray(cpfData.emails) ? cpfData.emails.length : (cpfData.email ? 1 : 0);
-  const totalParentes = Array.isArray(parentesData) ? parentesData.length : 0;
-  const totalEmpresas = Array.isArray(profissionaisData) ? profissionaisData.length : 0;
-
   return (
     <div className="w-full space-y-6 text-slate-100 font-sans">
-      {/* Barra de Ações Rápidas */}
+      {/* BARRA DE AÇÕES RÁPIDAS */}
       <div className="flex items-center justify-between py-3 border-b border-violet-500/20 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           {onClose && (
@@ -179,7 +218,7 @@ SCORE: ${score || 'N/A'}
             </button>
           )}
           <span className="text-xs text-violet-300 font-bold uppercase tracking-wider">
-            Perfil Unificado • {cpf}
+            Perfil Master Unificado • {cpf}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -207,11 +246,11 @@ SCORE: ${score || 'N/A'}
         </div>
       </div>
 
-      {/* Box: Foto e Documentos */}
+      {/* BOX: FOTO E DOCUMENTOS */}
       <div className="rounded-2xl p-6 bg-slate-900/90 border border-violet-500/30 text-center shadow-xl">
         <div className="flex items-center justify-center gap-2 text-violet-300 font-bold text-sm mb-4">
           <User className="w-4 h-4 text-violet-400" />
-          <span>Foto e Documentos</span>
+          <span>Foto e Documentação Oficial</span>
         </div>
         <div className="flex justify-center items-center">
           {fotoUrl ? (
@@ -230,19 +269,19 @@ SCORE: ${score || 'N/A'}
         </div>
       </div>
 
-      {/* Grid de Resumo de Métricas */}
+      {/* GRID DE RESUMO DE MÉTRICAS */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {[
-          { label: "Endereços", count: totalEnderecos, icon: MapPin },
-          { label: "Telefones", count: totalTelefones, icon: Phone },
-          { label: "E-mails", count: totalEmails, icon: Mail },
-          { label: "Parentes", count: totalParentes, icon: Users },
-          { label: "Empresas", count: totalEmpresas, icon: Building2 },
+          { label: "Endereços", count: enderecosList.length || (enderecoPrincipal !== "Não informado" ? 1 : 0), icon: MapPin },
+          { label: "Telefones", count: telefonesList.length, icon: Phone },
+          { label: "Parentes", count: Array.isArray(parentesData) ? parentesData.length : 0, icon: Users },
+          { label: "Empresas", count: Array.isArray(profissionaisData) ? profissionaisData.length : 0, icon: Building2 },
+          { label: "Veículos", count: Array.isArray(veiculosData) ? veiculosData.length : 0, icon: Car },
           { label: "CNH", count: cnh ? 1 : 0, icon: Car },
           { label: "RG", count: rg ? 1 : 0, icon: FileText },
           { label: "Título Eleitor", count: titulo ? 1 : 0, icon: Award },
           { label: "PIS / NIS", count: pis ? 1 : 0, icon: Layers },
-          { label: "Score", count: score ? `${score} pts` : "N/A", icon: PieChart },
+          { label: "Score", count: scoreVal ? `${scoreVal} pts` : "N/A", icon: PieChart },
         ].map((item, idx) => {
           const IconComp = item.icon;
           return (
@@ -264,7 +303,7 @@ SCORE: ${score || 'N/A'}
         })}
       </div>
 
-      {/* Seção: Informações Pessoais (Destaque Roxo) */}
+      {/* SEÇÃO: INFORMAÇÕES PESSOAIS (DESTAQUE ROXO) */}
       <div className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
         <div className="px-6 py-3 bg-gradient-to-r from-violet-700 to-indigo-700 font-bold text-white text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -292,6 +331,18 @@ SCORE: ${score || 'N/A'}
             <span className="text-slate-400 block font-medium">Sexo</span>
             <span className="text-white font-semibold block">{sexo === "F" ? "Feminino" : sexo === "M" ? "Masculino" : sexo}</span>
           </div>
+          {rgFormatted && (
+            <div className="space-y-1">
+              <span className="text-slate-400 block font-medium">RG / Órgão Emissor</span>
+              <span className="text-white font-semibold block">{rgFormatted}</span>
+            </div>
+          )}
+          {titulo && (
+            <div className="space-y-1">
+              <span className="text-slate-400 block font-medium">Título de Eleitor</span>
+              <span className="text-white font-semibold block">{titulo}</span>
+            </div>
+          )}
           <div className="space-y-1 md:col-span-2">
             <span className="text-slate-400 block font-medium">Nome da Mãe</span>
             <span className="text-white font-semibold block">{mae}</span>
@@ -305,11 +356,11 @@ SCORE: ${score || 'N/A'}
         </div>
       </div>
 
-      {/* Seção: Informações Socioeconômicas */}
+      {/* SEÇÃO: INFORMAÇÕES SOCIOECONÔMICAS */}
       <div className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
         <div className="px-6 py-3 bg-gradient-to-r from-purple-700 to-violet-800 font-bold text-white text-sm flex items-center gap-2">
           <CreditCard className="w-4 h-4" />
-          <span>Informações Socioeconômicas</span>
+          <span>Informações Socioeconômicas & Profissão</span>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div className="space-y-1">
@@ -321,7 +372,7 @@ SCORE: ${score || 'N/A'}
           <div className="space-y-1">
             <span className="text-slate-400 block font-medium">Score de Crédito</span>
             <span className="text-violet-300 font-bold text-sm block">
-              {score ? `${score} pts` : "N/A"}
+              {scoreVal ? `${scoreVal} pts` : "N/A"}
             </span>
           </div>
           <div className="space-y-1">
@@ -337,49 +388,25 @@ SCORE: ${score || 'N/A'}
         </div>
       </div>
 
-      {/* Seção: CNH & Documentação Habilitação */}
-      {cnh && (
-        <div className="rounded-2xl overflow-hidden border border-amber-500/40 bg-slate-900 shadow-2xl">
-          <div className="px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-700 font-bold text-white text-sm flex items-center gap-2">
-            <Car className="w-4 h-4" />
-            <span>Dados da CNH Digital</span>
-          </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-            <div className="space-y-1">
-              <span className="text-slate-400 block font-medium">Número Registro CNH</span>
-              <span className="text-amber-300 font-bold font-mono text-sm block">{cnh}</span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-slate-400 block font-medium">Categoria</span>
-              <span className="text-white font-bold block">{cpfData.categoria_cnh || "AB"}</span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-slate-400 block font-medium">Validade CNH</span>
-              <span className="text-white font-semibold block">{cpfData.validade_cnh || "Em dia"}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Seção: Endereços Registrados */}
+      {/* SEÇÃO: ENDEREÇOS REGISTRADOS */}
       <div className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
         <div className="px-6 py-3 bg-slate-800/90 font-bold text-white text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-violet-400" />
             <span>Endereços Registrados</span>
           </div>
-          <span className="text-xs text-violet-300 font-medium">Total: {totalEnderecos}</span>
+          <span className="text-xs text-violet-300 font-medium">Total: {enderecosList.length || (enderecoPrincipal !== "Não informado" ? 1 : 0)}</span>
         </div>
         <div className="p-6 space-y-3">
           {enderecosList.length > 0 ? (
             enderecosList.map((end: any, i: number) => {
-              const rua = [end.type || end.tipologradouro, end.street || end.logradouro || end.LOGRADOURO, end.number || end.numero || end.NUMERO].filter(Boolean).join(" ");
-              const comp = [end.complement || end.complemento, end.neighborhood || end.bairro || end.BAIRRO, end.city || end.cidade || end.CIDADE, end.state || end.uf || end.UF, end.zip_code || end.cep || end.CEP].filter(Boolean).join(" - ");
+              const rua = typeof end === "object" ? [end.type || end.tipologradouro, end.street || end.logradouro || end.LOGRADOURO, end.number || end.numero || end.NUMERO].filter(Boolean).join(" ") : String(end);
+              const comp = typeof end === "object" ? [end.complement || end.complemento, end.neighborhood || end.bairro || end.BAIRRO, end.city || end.cidade || end.CIDADE, end.state || end.uf || end.UF, end.zip_code || end.cep || end.CEP].filter(Boolean).join(" - ") : "";
               return (
                 <div key={i} className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 text-xs flex justify-between items-center gap-3">
                   <div>
                     <p className="font-bold text-white">{rua || "Endereço registrado"}</p>
-                    <p className="text-slate-400">{comp}</p>
+                    {comp && <p className="text-slate-400">{comp}</p>}
                   </div>
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rua + " " + comp)}`}
@@ -396,11 +423,10 @@ SCORE: ${score || 'N/A'}
           ) : (
             <div className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 text-xs flex justify-between items-center gap-3">
               <div>
-                <p className="font-bold text-white">{enderecoStr}</p>
-                <p className="text-slate-400">{cidade} {uf}</p>
+                <p className="font-bold text-white">{enderecoPrincipal}</p>
               </div>
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoStr)}`}
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoPrincipal)}`}
                 target="_blank"
                 rel="noreferrer"
                 className="px-3 py-1.5 rounded-lg bg-violet-900/60 hover:bg-violet-800 text-violet-200 text-[11px] font-semibold flex items-center gap-1 transition-all"
@@ -413,23 +439,28 @@ SCORE: ${score || 'N/A'}
         </div>
       </div>
 
-      {/* Seção: Telefones Registrados */}
+      {/* SEÇÃO: TELEFONES REGISTRADOS */}
       <div className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
         <div className="px-6 py-3 bg-slate-800/90 font-bold text-white text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4 text-emerald-400" />
             <span>Telefones de Contato</span>
           </div>
-          <span className="text-xs text-emerald-300 font-medium">Total: {totalTelefones}</span>
+          <span className="text-xs text-emerald-300 font-medium">Total: {telefonesList.length}</span>
         </div>
         <div className="p-6 space-y-2">
-          {Array.isArray(telefonesData) && telefonesData.length > 0 ? (
-            telefonesData.map((tel: any, i: number) => {
-              const num = tel.numero || tel.telefone || tel.PHONE || tel;
+          {telefonesList.length > 0 ? (
+            telefonesList.map((tel: any, i: number) => {
+              const num = typeof tel === "object" ? (tel.numero || tel.telefone || tel.PHONE || "") : String(tel);
               const cleanNum = String(num).replace(/\D/g, "");
+              const ddd = typeof tel === "object" ? tel.ddd : "";
+              const fonte = typeof tel === "object" ? tel.fonte : "";
               return (
                 <div key={i} className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 text-xs flex justify-between items-center">
-                  <span className="font-mono font-bold text-white">{num}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-white">{num}</span>
+                    {fonte && <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">{fonte}</span>}
+                  </div>
                   <a
                     href={`https://wa.me/55${cleanNum}`}
                     target="_blank"
@@ -441,25 +472,13 @@ SCORE: ${score || 'N/A'}
                 </div>
               );
             })
-          ) : cpfData.telefone ? (
-            <div className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 text-xs flex justify-between items-center">
-              <span className="font-mono font-bold text-white">{cpfData.telefone}</span>
-              <a
-                href={`https://wa.me/55${String(cpfData.telefone).replace(/\D/g, "")}`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 transition-all"
-              >
-                WhatsApp
-              </a>
-            </div>
           ) : (
             <p className="text-slate-400 text-xs py-2">Nenhum telefone específico retornado.</p>
           )}
         </div>
       </div>
 
-      {/* Seção: Parentes Vinculados */}
+      {/* SEÇÃO: PARENTES VINCULADOS */}
       {Array.isArray(parentesData) && parentesData.length > 0 && (
         <div className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
           <div className="px-6 py-3 bg-slate-800/90 font-bold text-white text-sm flex items-center justify-between">
@@ -471,9 +490,16 @@ SCORE: ${score || 'N/A'}
           </div>
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             {parentesData.map((par: any, i: number) => (
-              <div key={i} className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20">
-                <p className="font-bold text-white">{par.nome || par.NOME}</p>
-                <p className="text-violet-300 text-[11px] font-mono">{par.cpf || par.CPF || par.vinculo || "Parente"}</p>
+              <div key={i} className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 flex justify-between items-center">
+                <div>
+                  <p className="font-bold text-white">{par.nome || par.NOME}</p>
+                  <p className="text-violet-300 text-[11px] font-mono">{par.cpf || par.CPF ? `CPF: ${par.cpf || par.CPF}` : ""}</p>
+                </div>
+                {par.vinculo && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-950 text-violet-300 border border-violet-500/30">
+                    {par.vinculo}
+                  </span>
+                )}
               </div>
             ))}
           </div>

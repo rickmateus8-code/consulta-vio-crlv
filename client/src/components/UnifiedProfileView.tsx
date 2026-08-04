@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   FileText, Download, Share2, Copy, MapPin, Phone, Mail, User,
   Calendar, CreditCard, Shield, Car, Briefcase, Award, CheckCircle2,
-  ExternalLink, Layers, PieChart, Users, AlertCircle, Building2, Check, ArrowLeft
+  ExternalLink, Layers, PieChart, Users, AlertCircle, Building2, Check, ArrowLeft, Camera
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -75,6 +75,23 @@ export function getZodiacSign(birthDateStr: string): string {
   if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return "♒ Aquário";
   if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) return "♓ Peixes";
   return "";
+}
+
+export function formatImageUrl(val: any): string | null {
+  if (!val) return null;
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:image/")) {
+      return trimmed;
+    }
+    if (trimmed.length > 50 && /^[A-Za-z0-9+/=]+$/.test(trimmed.slice(0, 50))) {
+      return `data:image/jpeg;base64,${trimmed}`;
+    }
+  }
+  if (typeof val === "object") {
+    return formatImageUrl(val.foto || val.url || val.base64 || val.image || val.data);
+  }
+  return null;
 }
 
 interface UnifiedProfileViewProps {
@@ -157,6 +174,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   const root = data.perfil || data.body || data.data || data;
   const cpfData = root.cpf_dados || root.body || root.data || root;
   const fotoObj = data.foto || root.foto || root.fotos || null;
+  const fotosDict = root.fotos || data.fotos || {};
   const parentesData = data.parentes || root.parentes || cpfData.parentes || [];
   const vizinhosData = data.vizinhos || root.vizinhos || cpfData.vizinhos || [];
   const scoreObj = data.score || root.score || cpfData.score || {};
@@ -171,7 +189,6 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   const mae = cpfData.mother_name || cpfData.mae || cpfData.NOME_MAE || "Não informado";
   const pai = cpfData.father_name || cpfData.pai || cpfData.NOME_PAI || "Não informado";
 
-  // Idade e Signo reais calculados da data de nascimento
   const idadeStr = calculateAge(nascimento);
   const signoStr = getZodiacSign(nascimento);
 
@@ -190,13 +207,20 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   const mosaic = cpfData.mosaic || scoreObj.cd_mosaic || null;
   const profissao = cpfData.occupation || cpfData.occupation_name || cpfData.profissao || null;
 
-  // Foto
-  let fotoUrl = null;
-  if (typeof fotoObj === "string" && (fotoObj.startsWith("http") || fotoObj.startsWith("data:"))) {
-    fotoUrl = fotoObj;
-  } else if (fotoObj && typeof fotoObj === "object") {
-    fotoUrl = fotoObj.foto || fotoObj.url || fotoObj.base64 || null;
-  }
+  // Coleção de Fotos Nacionais e Estaduais
+  const photoGallery: { label: string; url: string }[] = [];
+  
+  const imgNacional = formatImageUrl(fotosDict.nacional || fotoObj || cpfData.foto || cpfData.fotos);
+  if (imgNacional) photoGallery.push({ label: "Nacional / Base Única", url: imgNacional });
+
+  const imgSP = formatImageUrl(fotosDict.sp);
+  if (imgSP) photoGallery.push({ label: "Estado de São Paulo (SP)", url: imgSP });
+
+  const imgMA = formatImageUrl(fotosDict.ma);
+  if (imgMA) photoGallery.push({ label: "Estado do Maranhão (MA)", url: imgMA });
+
+  const imgRO = formatImageUrl(fotosDict.ro);
+  if (imgRO) photoGallery.push({ label: "Estado de Rondônia (RO)", url: imgRO });
 
   // Telefones
   const telefonesList: any[] = [];
@@ -329,30 +353,36 @@ PROFISISSÃO: ${profissao || 'N/A'}
         </div>
       </div>
 
-      {/* BOX: FOTO E DOCUMENTOS */}
-      <div id="secao-foto" className="rounded-2xl p-6 bg-slate-900/90 border border-violet-500/30 text-center shadow-xl">
-        <div className="flex items-center justify-center gap-2 text-violet-300 font-bold text-sm mb-4">
-          <User className="w-4 h-4 text-violet-400" />
-          <span>Foto e Documentação Oficial</span>
+      {/* BOX: GALERIA DE FOTOS NACIONAIS E DOS ESTADOS */}
+      <div id="secao-foto" className="rounded-2xl p-6 bg-slate-900/90 border border-violet-500/30 text-center shadow-xl space-y-4">
+        <div className="flex items-center justify-center gap-2 text-violet-300 font-bold text-sm">
+          <Camera className="w-4 h-4 text-violet-400" />
+          <span>Galeria de Fotos Nacionais e dos Estados</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-violet-950 text-violet-300 font-mono font-bold border border-violet-500/30">
+            {photoGallery.length} foto(s)
+          </span>
         </div>
-        <div className="flex justify-center items-center">
-          {fotoUrl ? (
-            <div className="relative group rounded-xl overflow-hidden border-2 border-violet-500/50 shadow-2xl max-w-xs">
-              <img src={fotoUrl} alt={nome} className="w-48 h-56 object-cover" />
-              <div className="absolute bottom-0 inset-x-0 bg-black/75 py-1 text-[10px] text-violet-300 font-bold">
-                DOCUMENTO OFICIAL
+
+        <div className="flex flex-wrap justify-center items-center gap-6 pt-2">
+          {photoGallery.length > 0 ? (
+            photoGallery.map((item, idx) => (
+              <div key={idx} className="relative group rounded-2xl overflow-hidden border-2 border-violet-500/50 shadow-2xl bg-slate-950 p-1 transition-all hover:scale-105">
+                <img src={item.url} alt={item.label} className="w-48 h-56 object-cover rounded-xl" />
+                <div className="absolute bottom-0 inset-x-0 bg-black/80 py-1.5 px-2 text-[10px] text-violet-300 font-bold tracking-wide">
+                  {item.label}
+                </div>
               </div>
-            </div>
+            ))
           ) : (
-            <div className="w-44 h-52 rounded-xl border-2 border-dashed border-violet-500/30 flex flex-col items-center justify-center bg-slate-800/50 p-4 text-slate-400">
+            <div className="w-48 h-56 rounded-2xl border-2 border-dashed border-violet-500/30 flex flex-col items-center justify-center bg-slate-800/50 p-4 text-slate-400">
               <User className="w-12 h-12 mb-2 text-slate-500" />
-              <span className="text-xs">Foto não disponível</span>
+              <span className="text-xs">Nenhuma foto cadastrada em bases oficiais</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* GRID DE RESUMO DE MÉTRICAS (INTERATIVO COM SCROLL DIRETO) */}
+      {/* GRID DE RESUMO DE MÉTRICAS */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {[
           { label: "Endereços", count: enderecosList.length || (enderecoPrincipal !== "Não informado" ? 1 : 0), icon: MapPin, targetId: "secao-enderecos" },

@@ -1,6 +1,5 @@
 /**
- * /api/snoop/perfil-cpf — Endpoint de agregacao: busca todos os dados de um CPF em paralelo
- * Retorna um perfil unificado e completo para exibicao.
+ * /api/snoop/perfil-cpf — Endpoint de agregação com suporte a fotos Nacionais e dos Estados
  */
 import type { Env } from '../../../types';
 
@@ -66,10 +65,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     return new Response(JSON.stringify({ success: false, error: 'CPF invalido' }), { status: 400, headers: CORS });
   }
 
-  // Todas as requisicoes paralelas para agregacao total do perfil
-  const [cpfData, fotoData, parentes, vizinhos, score, profissionais, telefones, veiculos] = await Promise.all([
+  // Agregação total incluindo Foto Nacional e Fotos Estaduais (SP, MA, RO)
+  const [cpfData, fotoData, fotoCpfData, fotoSPData, fotoMAData, fotoROData, parentes, vizinhos, score, profissionais, telefones, veiculos] = await Promise.all([
     snoopGet('generic/cpf', { cpf }, apiKey),
     snoopGet('foto', { cpf }, apiKey),
+    snoopGet('foto/cpf', { cpf }, apiKey),
+    snoopGet('foto-sp', { cpf }, apiKey),
+    snoopGet('foto-ma', { cpf }, apiKey),
+    snoopGet('foto-ro', { cpf }, apiKey),
     snoopGet('parentes', { cpf }, apiKey),
     snoopGet('vizinhos', { cpf }, apiKey),
     snoopGet('score', { cpf }, apiKey),
@@ -80,7 +83,13 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   const perfil = {
     cpf_dados: cpfData?.body ?? cpfData?.data ?? cpfData ?? null,
-    foto: fotoData?.foto || fotoData?.url || (fotoData?.success ? fotoData : null),
+    foto: fotoData || fotoCpfData || null,
+    fotos: {
+      nacional: fotoData || fotoCpfData || null,
+      sp: fotoSPData || null,
+      ma: fotoMAData || null,
+      ro: fotoROData || null,
+    },
     parentes: parentes?.data ?? parentes ?? null,
     vizinhos: vizinhos?.data ?? vizinhos ?? null,
     score: score?.data ?? score ?? null,

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * /api/snoop/perfil-cpf — Endpoint de agregacao: busca todos os dados de um CPF em paralelo
  * Retorna um perfil unificado e completo para exibicao.
  */
@@ -35,7 +35,14 @@ async function snoopGet(endpoint: string, params: Record<string, string>, apiKey
   try {
     const qs = new URLSearchParams(params).toString();
     const url = SNOOP_BASE + '/' + endpoint + (qs ? '?' + qs : '');
-    const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + apiKey }, signal: AbortSignal.timeout(8000) });
+    const resp = await fetch(url, {
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
     if (!resp.ok) return null;
     return await resp.json();
   } catch { return null; }

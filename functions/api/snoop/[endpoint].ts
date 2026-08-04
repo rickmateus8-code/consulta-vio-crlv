@@ -1,4 +1,4 @@
-﻿/**
+/**
  * /api/snoop/[...endpoint] — Proxy seguro para SnoopIntelligence API
  */
 import type { Env } from '../../types';
@@ -44,7 +44,13 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
   const url = new URL(request.url);
   const targetUrl = SNOOP_BASE + '/' + endpointPath + '?' + url.searchParams.toString();
   try {
-    const resp = await fetch(targetUrl, { headers: { Authorization: 'Bearer ' + apiKey } });
+    const resp = await fetch(targetUrl, {
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+      },
+    });
     const data = await resp.json();
     return new Response(JSON.stringify(data), { status: resp.status, headers: CORS });
   } catch (err: any) {

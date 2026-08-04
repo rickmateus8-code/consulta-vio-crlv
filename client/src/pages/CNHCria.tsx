@@ -445,8 +445,7 @@ export default function CNHCria() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="min-h-screen w-full bg-[#060919] text-slate-100 font-sans p-4 sm:p-6 flex flex-col items-center justify-between select-text">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#060919] text-slate-100 font-sans p-4 sm:p-6 flex flex-col items-center justify-between select-text">
         {/* CONTAINER CARD CENTRAL COM SOMBRA E GLASSMORPHISM */}
         <div className="w-full max-w-5xl bg-[#0b1026]/90 border border-blue-500/20 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col">
           {/* HEADER SUPERIOR DO CARD */}
@@ -1105,6 +1104,5 @@ export default function CNHCria() {
           historyPath="/cnhsalvas"
         />
       </div>
-    </DashboardLayout>
   );
 }

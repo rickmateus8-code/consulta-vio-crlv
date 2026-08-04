@@ -46,4 +46,14 @@ Este arquivo contém mandatos inegociáveis para qualquer agente de IA ou desenv
 *   **EXPORTAÇÃO PDF:** Manter `overflow: visible` e `paddingBottom: 4` no rodapé do documento para garantir que o código único seja legível e não sofra clipping.
 *   **DATA DE ASSINATURA:** O validador deve exibir estritamente a data recuperada da coluna `data_assinatura` do banco de dados.
 
+## 7. Separação Estrita de Domínios: Atestados IDAB vs CNH Carteira Digital
+*   **ATESTADOS MÉDICOS (`/atestadocria` + `atestados-idab`)**:
+    *   `atestados-idab` é o validador público oficial e **100% EXCLUSIVO** de `/atestadocria`. **NUNCA** utilizar para validar CNH ou outros documentos.
+    *   O formato de código **`XXXX-XXXX`** é **RESTRITO E EXCLUSIVO** a atestados médicos.
+*   **CNH DIGITAL (`/cnhcria` + `validacao-cnh` + `cnh-do-brasil`)**:
+    *   O validador oficial de QR Code da CNH é **`validacao-cnh`**.
+    *   O aplicativo de acesso do condutor é o **`cnh-do-brasil`** no domínio `carteira-digital-transito-vio.digital` (acesso por credenciais CPF e SENHA, preparado para futuro APK Android).
+    *   O formato de consulta do painel da CNH é estritamente via parâmetro de CPF: **`painel?cpf=94598940468`**. Jamais utilizar o formato `XXXX-XXXX` para CNH.
+
 *Este documento é a alma do projeto. Respeite-o.*
+

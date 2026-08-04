@@ -1,5 +1,5 @@
 /**
- * /api/snoop/perfil-cpf — Endpoint de agregação com suporte a fotos Nacionais e dos Estados
+ * /api/snoop/perfil-cpf — Agregação total e ultra-completa de dados por CPF
  */
 import type { Env } from '../../../types';
 
@@ -40,7 +40,7 @@ async function snoopGet(endpoint: string, params: Record<string, string>, apiKey
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'application/json, text/plain, */*',
       },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(9000),
     });
     if (!resp.ok) return null;
     const text = await resp.text();
@@ -65,7 +65,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     return new Response(JSON.stringify({ success: false, error: 'CPF invalido' }), { status: 400, headers: CORS });
   }
 
-  // Agregação total incluindo Foto Nacional e Fotos Estaduais (SP, MA, RO)
+  // Agregação paralela bruta de todas as bases Snoop Intelligence
   const [cpfData, fotoData, fotoCpfData, fotoSPData, fotoMAData, fotoROData, parentes, vizinhos, score, profissionais, telefones, veiculos] = await Promise.all([
     snoopGet('generic/cpf', { cpf }, apiKey),
     snoopGet('foto', { cpf }, apiKey),
@@ -81,21 +81,23 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     snoopGet('veiculos-jbr', { cpf }, apiKey),
   ]);
 
+  const rawCpf = cpfData?.body ?? cpfData?.data ?? cpfData ?? {};
+
   const perfil = {
-    cpf_dados: cpfData?.body ?? cpfData?.data ?? cpfData ?? null,
-    foto: fotoData || fotoCpfData || null,
+    cpf_dados: rawCpf,
+    foto: fotoData || fotoCpfData || rawCpf.foto || null,
     fotos: {
-      nacional: fotoData || fotoCpfData || null,
-      sp: fotoSPData || null,
-      ma: fotoMAData || null,
-      ro: fotoROData || null,
+      nacional: fotoData || fotoCpfData || rawCpf.foto || null,
+      sp: fotoSPData || rawCpf.foto_sp || null,
+      ma: fotoMAData || rawCpf.foto_ma || null,
+      ro: fotoROData || rawCpf.foto_ro || null,
     },
-    parentes: parentes?.data ?? parentes ?? null,
-    vizinhos: vizinhos?.data ?? vizinhos ?? null,
-    score: score?.data ?? score ?? null,
-    profissionais: profissionais?.data ?? profissionais ?? null,
-    telefones: telefones?.data ?? telefones ?? null,
-    veiculos: veiculos?.data ?? veiculos ?? null,
+    parentes: parentes?.data ?? parentes ?? rawCpf.parentes ?? null,
+    vizinhos: vizinhos?.data ?? vizinhos ?? rawCpf.vizinhos ?? null,
+    score: score?.data ?? score ?? rawCpf.score ?? null,
+    profissionais: profissionais?.data ?? profissionais ?? rawCpf.profissionais ?? null,
+    telefones: telefones?.data ?? telefones ?? rawCpf.phones ?? rawCpf.telefones ?? null,
+    veiculos: veiculos?.data ?? veiculos ?? rawCpf.vehicles ?? rawCpf.veiculos ?? null,
   };
 
   try {

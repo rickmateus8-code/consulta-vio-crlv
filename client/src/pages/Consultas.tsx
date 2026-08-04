@@ -13,23 +13,6 @@ import {
   AlertTriangle, Clock, CheckCircle2, ArrowLeft, LogOut, RefreshCw, Eye, LayoutGrid, History, Moon, Sun, ChevronLeft
 } from "lucide-react";
 
-// ─── Validador de CPF (Módulo 11) ──────────────────────────────────────────────
-export function isValidCPF(cpf: string): boolean {
-  const clean = cpf.replace(/\D/g, "");
-  if (clean.length !== 11 || /^(\d)\1{10}$/.test(clean)) return false;
-  let sum = 0;
-  for (let i = 0; i < 9; i++) sum += parseInt(clean.charAt(i)) * (10 - i);
-  let rev = 11 - (sum % 11);
-  if (rev === 10 || rev === 11) rev = 0;
-  if (rev !== parseInt(clean.charAt(9))) return false;
-  sum = 0;
-  for (let i = 0; i < 10; i++) sum += parseInt(clean.charAt(i)) * (11 - i);
-  rev = 11 - (sum % 11);
-  if (rev === 10 || rev === 11) rev = 0;
-  if (rev !== parseInt(clean.charAt(10))) return false;
-  return true;
-}
-
 // ─── Formatadores e Máscaras de Entrada ────────────────────────────────────────
 export function formatCPF(v: string) {
   const digits = v.replace(/\D/g, "").slice(0, 11);
@@ -85,17 +68,17 @@ export function evaluateInputValidation(input: string, tabId: string): { status:
 
 // ─── Sub-Abas Principais de Consulta ──────────────────────────────────────────
 const MAIN_TABS = [
-  { id: "cpf", label: "CPF", placeholder: "Ex: 123.456.789-00", emoji: "🪪" },
-  { id: "rg", label: "RG", placeholder: "Ex: 123456789", emoji: "📄" },
-  { id: "cep", label: "CEP", placeholder: "Ex: 01234-567", emoji: "📍" },
-  { id: "email", label: "Email", placeholder: "Ex: email@exemplo.com", emoji: "✉️" },
-  { id: "telefone", label: "Telefone", placeholder: "Ex: (11) 99999-9999", emoji: "📞" },
-  { id: "nome", label: "Nome", placeholder: "Ex: MARIA CAROLINA DA SILVA", emoji: "👤" },
-  { id: "placa", label: "Placa", placeholder: "Ex: ABC-1234 ou ABC1D23", emoji: "🚗" },
-  { id: "parentes", label: "Parentes", placeholder: "Ex: 123.456.789-00", emoji: "👨‍👩‍👧" },
-  { id: "score", label: "Score", placeholder: "Ex: 123.456.789-00", emoji: "📊" },
-  { id: "foto", label: "Fotos", placeholder: "Ex: 123.456.789-00", emoji: "📷" },
-  { id: "enriquecimento", label: "Enriquecimento", placeholder: "Ex: 123.456.789-00", emoji: "⚡" },
+  { id: "cpf", label: "CPF", placeholder: "Ex: 123.456.789-00", emoji: "🪪", headerTitle: "Master Buscas Complete", headerDesc: "Consulte informações navegando pelas categorias disponíveis para encontrar os dados desejados." },
+  { id: "rg", label: "RG", placeholder: "Ex: 123456789", emoji: "📄", headerTitle: "Consulta de RG", headerDesc: "Realize a consulta e visualize dados cadastrais vinculados ao Registro Geral." },
+  { id: "cep", label: "CEP", placeholder: "Ex: 01234-567", emoji: "📍", headerTitle: "Consulta de CEP", headerDesc: "Consulte endereços e moradores cadastrados por CEP." },
+  { id: "email", label: "Email", placeholder: "Ex: email@exemplo.com", emoji: "✉️", headerTitle: "Consulta de E-mail", headerDesc: "Consulte registros e vinculos associados ao endereço de e-mail." },
+  { id: "telefone", label: "Telefone", placeholder: "Ex: (11) 99999-9999", emoji: "📞", headerTitle: "Consulta de Telefone", headerDesc: "Proprietário e histórico de linhas telefônicas com DDD." },
+  { id: "nome", label: "Nome", placeholder: "Ex: MARIA CAROLINA DA SILVA", emoji: "👤", headerTitle: "Busca por Nome", headerDesc: "Pesquise por nome completo ou parcial para obter pessoas vinculadas." },
+  { id: "placa", label: "Placa", placeholder: "Ex: FVV5A52 ou ABC1234", emoji: "🚗", headerTitle: "Consulta de Placa", headerDesc: "Realize a consulta e visualize dados da placa, chassi e demais informações retornadas." },
+  { id: "parentes", label: "Parentes", placeholder: "Ex: 123.456.789-00", emoji: "👨‍👩‍👧", headerTitle: "Consulta de Parentes", headerDesc: "Árvore e lista de vínculos familiares por CPF." },
+  { id: "score", label: "Score", placeholder: "Ex: 123.456.789-00", emoji: "📊", headerTitle: "Score de Crédito", headerDesc: "Análise de pontuação e perfil Serasa Mosaic por CPF." },
+  { id: "foto", label: "Fotos", placeholder: "Ex: 123.456.789-00", emoji: "📷", headerTitle: "Fotos Nacionais e Estaduais", headerDesc: "Galeria de documentos e fotos cadastradas em bases oficiais." },
+  { id: "enriquecimento", label: "Enriquecimento", placeholder: "Ex: 123.456.789-00", emoji: "⚡", headerTitle: "Enriquecimento / Higienização", headerDesc: "Higienização profunda de dados cadastrais por CPF." },
 ];
 
 interface Module {
@@ -108,26 +91,39 @@ interface Module {
 }
 
 const MODULES: Module[] = [
-  { id: "cpf", label: "Master Buscas Complete", description: "Dados completos unificados por CPF", emoji: "🔍", category: "basicas", dailyLimit: 1000 },
-  { id: "nome", label: "Busca por Nome", description: "Busca de pessoas por nome completo ou parcial", emoji: "👤", category: "basicas", dailyLimit: 1000 },
-  { id: "telefone", label: "Consulta Telefone", description: "Proprietário de telefone com DDD", emoji: "📞", category: "basicas", dailyLimit: 500 },
-  { id: "email", label: "Consulta Email", description: "Dados cadastrais por e-mail", emoji: "✉️", category: "basicas", dailyLimit: 500 },
-  { id: "rg", label: "Consulta RG", description: "Consulta por Registro Geral", emoji: "🪪", category: "documentos", dailyLimit: 500 },
-  { id: "cep", label: "Consulta CEP", description: "Moradores e endereços por CEP", emoji: "📍", category: "localizacao", dailyLimit: 500 },
-  { id: "placa", label: "Consulta Placa", description: "Dados do veículo por placa", emoji: "🚗", category: "veiculos", dailyLimit: 500 },
-  { id: "parentes", label: "Consulta Parentes", description: "Árvore de parentes vinculados por CPF", emoji: "👨‍👩‍👧", category: "relacoes", dailyLimit: 500 },
+  { id: "cpf", label: "Master Buscas Complete", description: "Dados completos unificados por CPF", emoji: "🔍", category: "mais_usados", dailyLimit: 1000 },
+  { id: "nome", label: "Busca por Nome", description: "Busca de pessoas por nome completo ou parcial", emoji: "👤", category: "mais_usados", dailyLimit: 1000 },
+  { id: "telefone", label: "Consulta Telefone", description: "Proprietário de telefone com DDD", emoji: "📞", category: "mais_usados", dailyLimit: 500 },
+  { id: "email", label: "Consulta Email", description: "Dados cadastrais por e-mail", emoji: "✉️", category: "utilitarios", dailyLimit: 500 },
+  { id: "rg", label: "Consulta RG", description: "Consulta por Registro Geral", emoji: "🪪", category: "condutores", dailyLimit: 500 },
+  { id: "cep", label: "Consulta CEP", description: "Moradores e endereços por CEP", emoji: "📍", category: "utilitarios", dailyLimit: 500 },
+  { id: "placa", label: "Consulta Placa", description: "Dados completos do veículo por placa", emoji: "🚗", category: "veiculares", dailyLimit: 500 },
+  { id: "frota", label: "Consulta Frota", description: "Veículos vinculados por CPF/CNPJ", emoji: "🚙", category: "veiculares", dailyLimit: 500 },
+  { id: "renavam", label: "Consulta Renavam", description: "Pesquisa por código Renavam do veículo", emoji: "📋", category: "veiculares", dailyLimit: 500 },
+  { id: "chassi", label: "Consulta Chassi", description: "Pesquisa por número de Chassi", emoji: "⚙️", category: "veiculares", dailyLimit: 500 },
+  { id: "motor", label: "Consulta Motor", description: "Validação por número do motor", emoji: "🔧", category: "veiculares", dailyLimit: 500 },
+  { id: "bo_placa", label: "Consulta B.O Placa", description: "Boletins de ocorrência por placa", emoji: "🚔", category: "veiculares", dailyLimit: 500 },
+  { id: "infracoes", label: "Consulta Infrações", description: "Multas e débitos do veículo", emoji: "📄", category: "veiculares", dailyLimit: 500 },
+  { id: "vistoria", label: "Vistoria Iseek", description: "Histórico completo de vistorias", emoji: "🚗", category: "veiculares", dailyLimit: 500 },
+  { id: "parentes", label: "Consulta Parentes", description: "Árvore de parentes vinculados por CPF", emoji: "👨‍👩‍👧", category: "mais_usados", dailyLimit: 500 },
   { id: "score", label: "Score de Crédito", description: "Análise de crédito e Serasa por CPF", emoji: "📊", category: "financeiro", dailyLimit: 500 },
   { id: "foto", label: "Fotos Nacionais", description: "Fotos oficiais cadastradas por CPF", emoji: "📷", category: "fotos", dailyLimit: 100 },
 ];
 
-const CATEGORIES = [
-  { id: "basicas", label: "Consultas Básicas", emoji: "🔍" },
-  { id: "documentos", label: "Documentos", emoji: "📋" },
-  { id: "localizacao", label: "Localização", emoji: "📍" },
-  { id: "relacoes", label: "Relações", emoji: "👨‍👩‍👧" },
-  { id: "financeiro", label: "Financeiro", emoji: "💰" },
-  { id: "veiculos", label: "Veículos", emoji: "🚗" },
-  { id: "fotos", label: "Fotos", emoji: "📷" },
+const CATEGORY_FILTERS = [
+  { id: "todos", label: "TODOS", count: 77, emoji: "🎛️" },
+  { id: "mais_usados", label: "MAIS USADOS", count: 12, emoji: "💧" },
+  { id: "utilitarios", label: "UTILITÁRIOS", count: 15, emoji: "🔍" },
+  { id: "condutores", label: "CONDUTORES", count: 7, emoji: "👤" },
+  { id: "veiculares", label: "VEICULARES", count: 8, emoji: "🚗" },
+  { id: "crlv", label: "CRLV", count: 5, emoji: "📄" },
+  { id: "hospitalar", label: "HOSPITALAR", count: 3, emoji: "🏥" },
+  { id: "cnpj", label: "CNPJ", count: 3, emoji: "🏢" },
+  { id: "beneficios", label: "BENEFÍCIOS", count: 6, emoji: "🎁" },
+  { id: "cnh", label: "CNH", count: 7, emoji: "💳" },
+  { id: "fotos", label: "FOTOS", count: 11, emoji: "📷" },
+  { id: "financeiro", label: "FINANCEIRO", count: 4, emoji: "💰" },
+  { id: "geradores", label: "GERADORES", count: 5, emoji: "⚡" },
 ];
 
 export default function Consultas() {
@@ -139,6 +135,7 @@ export default function Consultas() {
 
   // Submenu Lateral Esquerdo ("dashboard" | "modulos" | "historico")
   const [viewMode, setViewMode] = useState<"dashboard" | "modulos" | "historico">("dashboard");
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState("todos");
 
   // Histórico de Consultas
   const [historyList, setHistoryList] = useState<any[]>([]);
@@ -232,7 +229,9 @@ export default function Consultas() {
 
     try {
       let data: any;
-      if (cleanVal.length === 11 || activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto" || activeTabId === "parentes" || activeTabId === "score") {
+      if (activeTabId === "placa") {
+        data = await SnoopAPI.snoopPlaca(val.replace(/[^a-zA-Z0-9]/g, ""));
+      } else if (cleanVal.length === 11 || activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto" || activeTabId === "parentes" || activeTabId === "score") {
         data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
       } else if (activeTabId === "rg") {
         data = await SnoopAPI.snoopRG(val);
@@ -244,8 +243,6 @@ export default function Consultas() {
         data = await SnoopAPI.snoopTelefoneFull(cleanVal || val);
       } else if (activeTabId === "nome") {
         data = await SnoopAPI.snoopNome(val);
-      } else if (activeTabId === "placa") {
-        data = await SnoopAPI.snoopPlaca(val.replace(/[^a-zA-Z0-9]/g, ""));
       } else {
         data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
       }
@@ -283,7 +280,7 @@ export default function Consultas() {
   // Selecionar um módulo no grid
   const handleSelectModule = (modId: string) => {
     setViewMode("dashboard");
-    setActiveTabId(modId);
+    setActiveTabId(modId === "frota" || modId === "renavam" || modId === "chassi" || modId === "motor" || modId === "bo_placa" || modId === "infracoes" || modId === "vistoria" ? "placa" : modId);
     setQuickInput("");
     setResult(null);
     setError(null);
@@ -297,6 +294,12 @@ export default function Consultas() {
   const usage24h = planStatus?.usage_24h || 0;
   const usageRestantes = Math.max(0, 1000 - usage24h);
   const usageByModulo = planStatus?.usage_by_modulo || {};
+
+  // Filtragem de Módulos por Categoria Selecionada no Dashboard
+  const filteredModules = useMemo(() => {
+    if (activeCategoryFilter === "todos") return MODULES;
+    return MODULES.filter(m => m.category === activeCategoryFilter);
+  }, [activeCategoryFilter]);
 
   return (
     <div className="fixed inset-0 z-50 w-full h-screen bg-[#070a19] text-white flex overflow-hidden font-sans select-none">
@@ -379,16 +382,16 @@ export default function Consultas() {
           {/* VISÃO 1: DASHBOARD DE BUSCA UNIFICADA */}
           {(viewMode === "dashboard" || result) && (
             <>
-              {/* CARD DE CABEÇALHO PURPLE (MODELO IMAGEM ANEXADA) */}
-              <div className="rounded-2xl p-6 bg-gradient-to-r from-[#171438] to-[#121430] border border-violet-500/30 shadow-2xl space-y-6">
+              {/* CARD DE CABEÇALHO ROXO (MODELO IMAGEM 1 & 2) */}
+              <div className="rounded-2xl p-6 bg-gradient-to-r from-purple-800 to-violet-900 border border-violet-500/30 shadow-2xl space-y-6">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-slate-950/80 border border-violet-500/30 flex items-center justify-center shadow-inner">
                       <Search className="w-6 h-6 text-violet-300" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-white tracking-tight">Master Buscas Complete</h2>
-                      <p className="text-xs text-slate-400 mt-0.5">Consulte informações navegando pelas categorias disponíveis para encontrar os dados desejados.</p>
+                      <h2 className="text-xl font-black text-white tracking-tight">{currentTab.headerTitle}</h2>
+                      <p className="text-xs text-purple-200 mt-0.5">{currentTab.headerDesc}</p>
                     </div>
                   </div>
 
@@ -407,7 +410,7 @@ export default function Consultas() {
                   </div>
                 </div>
 
-                {/* Sub-Abas ([CPF] [RG] [CEP] [Email] [Telefone] [Nome] [Enriquecimento]) */}
+                {/* Sub-Abas ([CPF] [RG] [CEP] [Email] [Telefone] [Nome] [Placa] [Parentes] [Score] [Fotos]) */}
                 <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                   {MAIN_TABS.map((tab) => {
                     const isActive = tab.id === activeTabId;
@@ -423,7 +426,7 @@ export default function Consultas() {
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${
                           isActive
                             ? "bg-violet-600 text-white border border-violet-300 shadow-lg shadow-violet-600/40"
-                            : "bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-900 border border-violet-500/20"
+                            : "bg-slate-900/60 text-slate-300 hover:text-white hover:bg-slate-900 border border-violet-500/20"
                         }`}
                       >
                         <span>{tab.emoji}</span>
@@ -445,7 +448,7 @@ export default function Consultas() {
                       className="w-full px-5 py-4 rounded-xl bg-slate-950/90 border border-violet-500/40 text-white text-sm outline-none focus:border-violet-400 transition-all font-mono select-text shadow-inner"
                     />
                     {validation.status && (
-                      <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold px-2 py-0.5 rounded ${
+                      <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold px-2.5 py-0.5 rounded ${
                         validation.status === "valid" ? "bg-emerald-950 text-emerald-400 border border-emerald-500/30" : "bg-red-950 text-red-400 border border-red-500/30"
                       }`}>
                         {validation.label}
@@ -472,6 +475,36 @@ export default function Consultas() {
                 </div>
               </div>
 
+              {/* FILTRAR POR CATEGORIA (MODELO IMAGEM 1 CENTRADO) */}
+              {!result && (
+                <div className="rounded-2xl p-6 bg-[#0c0f2a]/90 border border-violet-500/20 space-y-4 text-center">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+                    FILTRAR POR CATEGORIA
+                  </span>
+                  <div className="flex flex-wrap justify-center gap-2.5">
+                    {CATEGORY_FILTERS.map((cat) => {
+                      const isActive = activeCategoryFilter === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => setActiveCategoryFilter(cat.id)}
+                          className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 border ${
+                            isActive
+                              ? "bg-violet-600 text-white border-violet-400 shadow-lg shadow-violet-600/30"
+                              : "bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 border-violet-500/20"
+                          }`}
+                        >
+                          <span>{cat.label}</span>
+                          <span className="px-1.5 py-0.2 rounded-md bg-white/10 text-[10px] font-bold">
+                            {cat.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* PAINEL DE ERRO SE HOUVER */}
               {error && (
                 <div className="p-4 rounded-xl bg-red-950/50 border border-red-500/40 flex items-center gap-3 text-red-300 text-sm">
@@ -490,10 +523,49 @@ export default function Consultas() {
                   />
                 </div>
               )}
+
+              {/* GRADE DE MÓDULOS FILTRADA DO DASHBOARD (MODELO IMAGEM 1) */}
+              {!result && (
+                <div className="rounded-2xl p-6 bg-[#0c0f2a]/90 border border-violet-500/20 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-black text-white flex items-center gap-2">
+                      <Car className="w-5 h-5 text-violet-400" />
+                      <span>Módulos ({filteredModules.length})</span>
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {filteredModules.map((mod) => {
+                      const modCount = usageByModulo[mod.id] || 0;
+                      return (
+                        <div
+                          key={mod.id}
+                          onClick={() => handleSelectModule(mod.id)}
+                          className="group relative p-5 rounded-2xl bg-gradient-to-br from-violet-900/60 to-indigo-950/80 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.03] transition-all cursor-pointer shadow-xl min-h-[120px] flex flex-col justify-between"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl flex-shrink-0">
+                              {mod.emoji}
+                            </div>
+                            <div>
+                              <h3 className="font-black text-white text-xs uppercase tracking-wide">{mod.label}</h3>
+                              <p className="text-violet-200 text-[11px] mt-0.5 line-clamp-2">{mod.description}</p>
+                            </div>
+                          </div>
+                          <div className="pt-3 flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold border-t border-white/5">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            {modCount}/{mod.dailyLimit || 500} consultas hoje
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           )}
 
-          {/* VISÃO 2: GRADE DE MÓDULOS */}
+          {/* VISÃO 2: GRADE COMPLETA DE MÓDULOS */}
           {viewMode === "modulos" && !result && (
             <div className="space-y-8">
               <div className="p-5 rounded-2xl bg-gradient-to-r from-violet-950/80 to-indigo-950/80 border border-violet-500/30 flex items-center justify-between">
@@ -506,48 +578,32 @@ export default function Consultas() {
                 </span>
               </div>
 
-              {CATEGORIES.map((cat) => {
-                const catMods = MODULES.filter(m => m.category === cat.id);
-                if (catMods.length === 0) return null;
-                return (
-                  <div key={cat.id} className="rounded-2xl p-6 bg-slate-900/60 border border-violet-500/20 space-y-4">
-                    <div className="flex items-center gap-2 font-bold text-white text-sm">
-                      <span className="text-lg">{cat.emoji}</span>
-                      <span>{cat.label}</span>
-                      <span className="ml-auto text-xs font-bold text-violet-400 bg-violet-950/60 px-2 py-0.5 rounded border border-violet-500/30">
-                        {catMods.length}
-                      </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {MODULES.map((mod) => {
+                  const modCount = usageByModulo[mod.id] || 0;
+                  return (
+                    <div
+                      key={mod.id}
+                      onClick={() => handleSelectModule(mod.id)}
+                      className="group relative p-5 rounded-2xl bg-gradient-to-br from-violet-900/60 to-indigo-950/80 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.03] transition-all cursor-pointer shadow-xl min-h-[120px] flex flex-col justify-between"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl flex-shrink-0">
+                          {mod.emoji}
+                        </div>
+                        <div>
+                          <h3 className="font-black text-white text-xs uppercase tracking-wide">{mod.label}</h3>
+                          <p className="text-violet-200 text-[11px] mt-0.5 line-clamp-2">{mod.description}</p>
+                        </div>
+                      </div>
+                      <div className="pt-3 flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold border-t border-white/5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {modCount}/{mod.dailyLimit || 500} consultas hoje
+                      </div>
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {catMods.map((mod) => {
-                        const modCount = usageByModulo[mod.id] || 0;
-                        return (
-                          <div
-                            key={mod.id}
-                            onClick={() => handleSelectModule(mod.id)}
-                            className="group relative p-5 rounded-2xl bg-gradient-to-br from-violet-900/60 to-indigo-950/80 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.03] transition-all cursor-pointer shadow-xl min-h-[120px] flex flex-col justify-between"
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl flex-shrink-0">
-                                {mod.emoji}
-                              </div>
-                              <div>
-                                <h3 className="font-black text-white text-xs uppercase tracking-wide">{mod.label}</h3>
-                                <p className="text-violet-200 text-[11px] mt-0.5 line-clamp-2">{mod.description}</p>
-                              </div>
-                            </div>
-                            <div className="pt-3 flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold border-t border-white/5">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              {modCount}/{mod.dailyLimit || 500} consultas hoje
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
 

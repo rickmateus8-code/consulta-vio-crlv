@@ -112,6 +112,162 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     }
   };
 
+  // Detectar se a resposta é de Consulta de Placa (Veículo)
+  const isVehicle = data.placa || data.chassi || data.renavam || data.marca_modelo || data.body?.placa || data.data?.placa;
+  if (isVehicle && !data.perfil?.cpf_dados) {
+    const v = data.body || data.data || data;
+    const placa = v.placa || v.PLACA || "Não informado";
+    const placaMercosul = v.placa_mercosul || v.PLACA_MERCOSUL || placa;
+    const chassi = v.chassi || v.CHASSI || "Não informado";
+    const renavam = v.renavam || v.RENAVAM || "Não informado";
+    const motor = v.motor || v.NUMERO_MOTOR || "Não informado";
+    const restricoes = v.restricoes || v.RESTRIÇÃO || v.RESTRIÇÕES || "SEM RESTRIÇÕES";
+    const situacaoVeiculo = v.situacao_veiculo || v.SITUACAO_VEICULO || "EM CIRCULAÇÃO";
+    const situacaoChassi = v.situacao_chassi || v.SITUACAO_CHASSI || "REGULAR";
+    const marcaModelo = v.marca_modelo || v.MARCA_MODELO || v.modelo || "Não informado";
+    const anoFab = v.ano_fabricacao || v.ANO_FABRICACAO || "Não informado";
+    const anoMod = v.ano_modelo || v.ANO_MODELO || "Não informado";
+    const cor = v.cor || v.COR || "Não informado";
+    const combustivel = v.combustivel || v.COMBUSTIVEL || "Não informado";
+    const municipio = v.municipio || v.MUNICIPIO || "";
+    const uf = v.uf || v.UF || "";
+    const propNome = v.proprietario?.nome || v.PROPRIETARIO || v.NOME_PROPRIETARIO || "Não informado";
+    const propCpf = v.proprietario?.cpf_cnpj || v.CPF_PROPRIETARIO || "Não informado";
+
+    const copyVehicleData = () => {
+      const text = `
+=== CONSULTA VEÍCULO (PLACA) ===
+PLACA: ${placa}
+PLACA MERCOSUL: ${placaMercosul}
+CHASSI: ${chassi}
+RENAVAM: ${renavam}
+MOTOR: ${motor}
+RESTRIÇÕES: ${restricoes}
+SITUAÇÃO VEÍCULO: ${situacaoVeiculo}
+SITUAÇÃO CHASSI: ${situacaoChassi}
+MARCA/MODELO: ${marcaModelo}
+ANO FAB/MOD: ${anoFab}/${anoMod}
+COR: ${cor}
+COMBUSTÍVEL: ${combustivel}
+MUNICÍPIO/UF: ${municipio} - ${uf}
+PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
+`.trim();
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Dados do veículo copiados!");
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+      <div className="w-full space-y-6 text-slate-800 font-sans select-none bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+        {/* BOTÕES DE AÇÃO MODELO IMAGEM 3 */}
+        <div className="flex justify-end gap-3 pb-2 border-b border-slate-200">
+          <button
+            onClick={() => window.print()}
+            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-all"
+          >
+            <Download className="w-3.5 h-3.5" /> Exportar PDF
+          </button>
+          <button
+            onClick={copyVehicleData}
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-all"
+          >
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? "Copiado!" : "Copiar Dados"}
+          </button>
+        </div>
+
+        {/* SEÇÃO 1: DATA */}
+        <div className="space-y-3">
+          <h3 className="text-xl font-black text-slate-900 border-b-2 border-blue-500 pb-1">Data</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Placa Nacional</span>
+              <span className="font-mono font-bold text-slate-900 text-sm block">{placa}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Placa Mercosul</span>
+              <span className="font-mono font-bold text-slate-900 text-sm block">{placaMercosul}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Chassi</span>
+              <span className="font-mono font-bold text-slate-900 text-sm block">{chassi}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Renavam</span>
+              <span className="font-mono font-bold text-slate-900 text-sm block">{renavam}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Motor</span>
+              <span className="font-mono font-bold text-slate-900 text-sm block">{motor}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Restrições</span>
+              <span className="font-bold text-slate-900 text-sm block">{restricoes}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* SEÇÃO 2: CIRCULAÇÃO */}
+        <div className="space-y-3">
+          <h3 className="text-xl font-black text-slate-900 border-b-2 border-blue-500 pb-1">Circulação</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Situação Veículo</span>
+              <span className="font-bold text-emerald-600 text-sm block">{situacaoVeiculo}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Situação Chassi</span>
+              <span className="font-bold text-slate-900 text-sm block">{situacaoChassi}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* SEÇÃO 3: CARACTERÍSTICAS */}
+        <div className="space-y-3">
+          <h3 className="text-xl font-black text-slate-900 border-b-2 border-blue-500 pb-1">Características</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Marca / Modelo</span>
+              <span className="font-bold text-slate-900 block">{marcaModelo}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Ano Fab / Modelo</span>
+              <span className="font-bold text-slate-900 block">{anoFab} / {anoMod}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Cor</span>
+              <span className="font-bold text-slate-900 block">{cor}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Combustível</span>
+              <span className="font-bold text-slate-900 block">{combustivel}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 md:col-span-2">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Município / UF Licenciamento</span>
+              <span className="font-bold text-slate-900 block">{municipio} {uf ? `- ${uf}` : ''}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* SEÇÃO 4: PROPRIETÁRIO */}
+        <div className="space-y-3">
+          <h3 className="text-xl font-black text-slate-900 border-b-2 border-blue-500 pb-1">Proprietário</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">Nome Proprietário</span>
+              <span className="font-bold text-slate-900 text-sm block">{propNome}</span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">CPF / CNPJ Proprietário</span>
+              <span className="font-mono font-bold text-slate-900 text-sm block">{propCpf}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Se a resposta for uma lista de resultados (ex: busca por nome ou cep)
   const isList = Array.isArray(data) || Array.isArray(data.body) || Array.isArray(data.data);
   const listItems = isList ? (Array.isArray(data) ? data : (data.body || data.data)) : null;
@@ -201,9 +357,17 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   const pis = cpfData.pis || cpfData.PIS || cpfData.cns || null;
   const cnh = cpfData.cnh || cpfData.NUMERO_CNH || cpfData.CNH || null;
 
-  // Socioeconômico
+  // Socioeconômico & Tratar Score para NUNCA gerar [object Object]
   const renda = cpfData.income || cpfData.renda || cpfData.renda_mensal || cpfData.RENDA || null;
-  const scoreVal = typeof scoreObj === "object" ? (scoreObj.value || scoreObj.score || scoreObj.SCORE || null) : scoreObj;
+  let scoreVal: any = null;
+  if (typeof scoreObj === "number" || typeof scoreObj === "string") {
+    scoreVal = scoreObj;
+  } else if (scoreObj && typeof scoreObj === "object") {
+    scoreVal = scoreObj.value ?? scoreObj.score ?? scoreObj.SCORE ?? scoreObj.pontuacao ?? null;
+    if (typeof scoreVal === "object") {
+      scoreVal = scoreVal?.value ?? scoreVal?.score ?? null;
+    }
+  }
   const mosaic = cpfData.mosaic || scoreObj.cd_mosaic || null;
   const profissao = cpfData.occupation || cpfData.occupation_name || cpfData.profissao || null;
 

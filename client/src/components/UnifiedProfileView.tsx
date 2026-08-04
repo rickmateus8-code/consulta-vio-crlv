@@ -587,6 +587,16 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
     }
   };
 
+  const downloadPhoto = (url: string, filename: string) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Download da foto iniciado!");
+  };
+
   return (
     <div ref={profileRef} className="w-full space-y-6 text-slate-100 font-sans select-text">
       {/* BARRA DE AÇÕES RÁPIDAS */}
@@ -672,6 +682,14 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
             photoGallery.map((item, idx) => (
               <div key={idx} className="relative group rounded-2xl overflow-hidden border-2 border-violet-500/50 shadow-2xl bg-slate-950 p-1 transition-all hover:scale-105">
                 <img src={item.url} alt={item.label} className="w-48 h-56 object-cover rounded-xl" />
+                <button
+                  onClick={() => downloadPhoto(item.url, `FOTO_${nome.replace(/\s+/g, "_")}_${item.label.replace(/\s+/g, "_")}.jpg`)}
+                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/80 hover:bg-violet-600 text-white text-[10px] font-bold flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-all shadow border border-violet-500/40 no-print"
+                  title="Baixar Foto"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Baixar</span>
+                </button>
                 <div className="absolute bottom-0 inset-x-0 bg-black/80 py-1.5 px-2 text-[10px] text-violet-300 font-bold tracking-wide">
                   {item.label}
                 </div>

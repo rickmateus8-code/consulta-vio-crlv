@@ -1,5 +1,5 @@
 /**
- * /api/snoop/perfil-cpf — Agregação total e ultra-completa de dados por CPF com Cache D1
+ * /api/snoop/perfil-cpf — Agregação total e ultra-completa de dados por CPF com Cache D1 & Foto-All
  */
 import type { Env } from '../../../types';
 
@@ -79,29 +79,31 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   // Agregação paralela bruta de todas as bases Snoop Intelligence
-  const [cpfData, fotoData, fotoCpfData, fotoSPData, fotoMAData, fotoROData, parentes, vizinhos, score, profissionais, telefones, veiculos] = await Promise.all([
+  const [cpfData, fotoData, fotoCpfData, fotoSPData, fotoMAData, fotoROData, fotoAllData, parentes, vizinhos, score, profissionais, telefones, veiculos, geoData] = await Promise.all([
     snoopGet('generic/cpf', { cpf }, apiKey),
     snoopGet('foto', { cpf }, apiKey),
     snoopGet('foto/cpf', { cpf }, apiKey),
     snoopGet('foto-sp', { cpf }, apiKey),
     snoopGet('foto-ma', { cpf }, apiKey),
     snoopGet('foto-ro', { cpf }, apiKey),
+    snoopGet('foto-all', { cpf }, apiKey),
     snoopGet('parentes', { cpf }, apiKey),
     snoopGet('vizinhos', { cpf }, apiKey),
     snoopGet('score', { cpf }, apiKey),
     snoopGet('profissionais', { cpf }, apiKey),
     snoopGet('telefone/cpf', { cpf }, apiKey),
     snoopGet('veiculos-jbr', { cpf }, apiKey),
+    snoopGet('geo', { cpf }, apiKey),
   ]);
 
   const rawCpf = cpfData?.body ?? cpfData?.data ?? cpfData ?? {};
 
   const fontesConsultadas = {
     receita_federal: !!(rawCpf.name || rawCpf.nome || rawCpf.cpf),
-    foto_nacional: !!(fotoData || fotoCpfData || rawCpf.foto),
-    foto_sp: !!(fotoSPData || rawCpf.foto_sp),
-    foto_ma: !!(fotoMAData || rawCpf.foto_ma),
-    foto_ro: !!(fotoROData || rawCpf.foto_ro),
+    foto_nacional: !!(fotoData || fotoCpfData || fotoAllData?.nacional || rawCpf.foto),
+    foto_sp: !!(fotoSPData || fotoAllData?.sp || rawCpf.foto_sp),
+    foto_ma: !!(fotoMAData || fotoAllData?.ma || rawCpf.foto_ma),
+    foto_ro: !!(fotoROData || fotoAllData?.ro || rawCpf.foto_ro),
     telefones: Array.isArray(telefones?.data || telefones?.body || telefones || rawCpf.phones) && (telefones?.data || telefones?.body || telefones || rawCpf.phones).length > 0,
     enderecos: Array.isArray(rawCpf.all_addresses || rawCpf.enderecos) && (rawCpf.all_addresses || rawCpf.enderecos).length > 0,
     parentes: Array.isArray(parentes?.data || parentes?.body || parentes || rawCpf.parentes) && (parentes?.data || parentes?.body || parentes || rawCpf.parentes).length > 0,
@@ -111,12 +113,13 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   const perfil: any = {
     cpf_dados: rawCpf,
-    foto: fotoData?.body ?? fotoData?.data ?? fotoData ?? fotoCpfData?.body ?? fotoCpfData?.data ?? fotoCpfData ?? rawCpf.foto ?? null,
+    foto: fotoData?.body ?? fotoData?.data ?? fotoData ?? fotoCpfData?.body ?? fotoCpfData?.data ?? fotoCpfData ?? fotoAllData?.nacional ?? rawCpf.foto ?? null,
     fotos: {
-      nacional: fotoData?.body ?? fotoData?.data ?? fotoData ?? fotoCpfData?.body ?? fotoCpfData?.data ?? fotoCpfData ?? rawCpf.foto ?? rawCpf.fotos?.nacional ?? null,
-      sp: fotoSPData?.body ?? fotoSPData?.data ?? fotoSPData ?? rawCpf.foto_sp ?? rawCpf.fotos?.sp ?? null,
-      ma: fotoMAData?.body ?? fotoMAData?.data ?? fotoMAData ?? rawCpf.foto_ma ?? rawCpf.fotos?.ma ?? null,
-      ro: fotoROData?.body ?? fotoROData?.data ?? fotoROData ?? rawCpf.foto_ro ?? rawCpf.fotos?.ro ?? null,
+      nacional: fotoData?.body ?? fotoData?.data ?? fotoData ?? fotoCpfData?.body ?? fotoCpfData?.data ?? fotoCpfData ?? fotoAllData?.nacional ?? fotoAllData?.body?.nacional ?? rawCpf.foto ?? rawCpf.fotos?.nacional ?? null,
+      sp: fotoSPData?.body ?? fotoSPData?.data ?? fotoSPData ?? fotoAllData?.sp ?? fotoAllData?.body?.sp ?? rawCpf.foto_sp ?? rawCpf.fotos?.sp ?? null,
+      ma: fotoMAData?.body ?? fotoMAData?.data ?? fotoMAData ?? fotoAllData?.ma ?? fotoAllData?.body?.ma ?? rawCpf.foto_ma ?? rawCpf.fotos?.ma ?? null,
+      ro: fotoROData?.body ?? fotoROData?.data ?? fotoROData ?? fotoAllData?.ro ?? fotoAllData?.body?.ro ?? rawCpf.foto_ro ?? rawCpf.fotos?.ro ?? null,
+      all: fotoAllData?.data ?? fotoAllData?.body ?? fotoAllData ?? null,
     },
     parentes: parentes?.data ?? parentes?.body ?? parentes ?? rawCpf.parentes ?? null,
     vizinhos: vizinhos?.data ?? vizinhos?.body ?? vizinhos ?? rawCpf.vizinhos ?? null,
@@ -124,6 +127,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     profissionais: profissionais?.data ?? profissionais?.body ?? profissionais ?? rawCpf.profissionais ?? null,
     telefones: telefones?.data ?? telefones?.body ?? telefones ?? rawCpf.phones ?? rawCpf.telefones ?? null,
     veiculos: veiculos?.data ?? veiculos?.body ?? veiculos ?? rawCpf.vehicles ?? rawCpf.veiculos ?? null,
+    geo: geoData?.data ?? geoData?.body ?? geoData ?? null,
     fontes_consultadas: fontesConsultadas,
   };
 

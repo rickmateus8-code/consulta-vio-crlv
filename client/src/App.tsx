@@ -123,6 +123,7 @@ import JudicialHistory from "./pages/JudicialHistory";
 import JudicialOabDetails from "./pages/JudicialOabDetails";
 import DiplomaUninterCria from "./pages/DiplomaUninterCria";
 import CNHLanding from "./pages/cnh-validation/CNHLanding";
+import Consultas from "./pages/Consultas";
 
 import CNHAutorizacao from "./pages/cnh-validation/CNHAutorizacao";
 import CNHPainel from "./pages/cnh-validation/CNHPainel";
@@ -235,6 +236,11 @@ function DocMasterRouter() {
       {/* Painel principal */}
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
+      </Route>
+
+      {/* Área de Consultas SnoopIntelligence */}
+      <Route path="/consultas">
+        <ProtectedRoute component={Consultas} />
       </Route>
 
       {/* Emissão de documentos - slugs principais */}

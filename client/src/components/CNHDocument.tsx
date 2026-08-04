@@ -253,42 +253,42 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // ═══════════════════════════════════════════════════════════════
 
     // Nome Completo
-    txt(props.nome, 308, 450, 26, 1, "#000000", 620);
+    txt(props.nome, 310, 450, 26, 1, "#000000", 620);
 
     // 1ª Habilitação
-    txt(d(props.primeiraHabilitacao), 958, 450, 22, 1, "#000000", 180);
+    txt(d(props.primeiraHabilitacao), 955, 450, 22, 1, "#000000", 180);
 
     // Data Nascimento, Local, UF
-    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 308, 570, 22, 1, "#000000", 450);
+    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 570, 510, 22, 1, "#000000", 450);
 
     // Data Emissão
-    txt(d(props.dataEmissao), 308, 630, 22, 1, "#000000", 180);
+    txt(d(props.dataEmissao), 570, 572, 22, 1, "#000000", 180);
 
     // Validade (vermelho)
-    txt(d(props.validade), 775, 570, 22, 1, "#c0392b", 180);
+    txt(d(props.validade), 760, 572, 22, 1, "#c0392b", 180);
 
     // Tipo CNH (D = Definitiva, P = Permissão)
     const tipoLetra = props.tipo === "Permissão" ? "P" : "D";
-    txt(tipoLetra, 1055, 555, 55, 1, "#000000", 80);
+    txt(tipoLetra, 1040, 560, 50, 1, "#000000", 80);
 
     // RG + Órgão Emissor / UF
-    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 597, 630, 22, 1, "#000000", 450);
+    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 570, 632, 22, 1, "#000000", 450);
 
     // CPF
-    txt(formatarCPF(props.cpf), 597, 695, 22, 1, "#000000", 250);
+    txt(formatarCPF(props.cpf), 570, 692, 22, 1, "#000000", 250);
 
     // Nº Registro (vermelho)
-    txt(props.registro, 801, 695, 22, 1, "#c0392b", 210);
+    txt(props.registro, 810, 692, 22, 1, "#c0392b", 210);
 
     // Categoria (vermelho)
-    txt(props.categoria, 990, 695, 22, 1, "#c0392b", 120);
+    txt(props.categoria, 985, 692, 22, 1, "#c0392b", 120);
 
     // Nacionalidade
-    txt(props.nacionalidade || "BRASILEIRO(A)", 308, 760, 22, 1, "#000000", 500);
+    txt(props.nacionalidade || "BRASILEIRO(A)", 570, 752, 22, 1, "#000000", 500);
 
     // Filiação
-    txt(props.nomePai, 597, 826, 22, 1, "#000000", 550);
-    txt(props.nomeMae, 597, 869, 22, 1, "#000000", 550);
+    txt(props.nomePai, 570, 812, 22, 1, "#000000", 550);
+    txt(props.nomeMae, 570, 845, 22, 1, "#000000", 550);
 
     // Observações (EAR multi-linha)
     const obsTexto = String(props.observacoes || "");

@@ -33,23 +33,34 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       `SELECT * FROM documents WHERE type = 'cnh' AND status != 'cancelado' ORDER BY created_at DESC`
     ).all();
 
+    let cpfFoundDoc: any = null;
     let matchedDoc: any = null;
 
     for (const doc of docs.results || []) {
       try {
         const data = typeof doc.data === "string" ? JSON.parse(doc.data as string) : (doc.data || {});
-        const docCpf = (data.cpf || "").replace(/\D/g, "");
-        const docSenha = data.senhaApp || data.senha || data.password || "";
+        const docCpf = (data.cpf || (doc as any).cpf || "").replace(/\D/g, "");
+        const docSenha = data.senhaApp || data.senha || data.password || (doc as any).senha || "";
 
-        if (docCpf === cpfNorm && String(docSenha) === String(senha)) {
-          matchedDoc = { ...doc, parsedData: data };
-          break;
+        if (docCpf === cpfNorm) {
+          if (!cpfFoundDoc) cpfFoundDoc = { ...doc, parsedData: data };
+          if (String(docSenha).trim() === String(senha).trim()) {
+            matchedDoc = { ...doc, parsedData: data };
+            break;
+          }
         }
       } catch {}
     }
 
+    if (!cpfFoundDoc) {
+      return new Response(JSON.stringify({ success: false, error: "CPF informado inválido. (ERL0000500)", code: "CPF_NOT_FOUND" }), {
+        status: 404,
+        headers: corsHeaders,
+      });
+    }
+
     if (!matchedDoc) {
-      return new Response(JSON.stringify({ success: false, error: "CPF ou senha inválidos" }), {
+      return new Response(JSON.stringify({ success: false, error: "Senha incorreta. Tente novamente.", code: "INVALID_PASSWORD" }), {
         status: 401,
         headers: corsHeaders,
       });

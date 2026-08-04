@@ -39,7 +39,15 @@ export interface CNHValidationRecord {
 
 export function queryCpf() {
   if (typeof window === "undefined") return "";
-  return new URLSearchParams(window.location.search).get("cpf") || "";
+  const params = new URLSearchParams(window.location.search);
+  const val = params.get("cpf") || params.get("id") || params.get("code") || "";
+  if (val) return val;
+  const parts = window.location.pathname.split("/").filter(Boolean);
+  const lastPart = parts[parts.length - 1] || "";
+  if (lastPart && !["painel", "autorizacao", "condutor", "habilitacao"].includes(lastPart.toLowerCase())) {
+    return lastPart;
+  }
+  return "";
 }
 
 export function cleanCpf(value: string) {
@@ -144,29 +152,40 @@ export function normalizeRecord(payload: any): CNHValidationRecord {
   };
 }
 
-export function useCnhRecord(cpf: string) {
+export function useCnhRecord(cpfOrCode: string) {
   const [record, setRecord] = useState<CNHValidationRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const value = cleanCpf(cpf);
-    if (!value) {
+    const raw = (cpfOrCode || "").trim();
+    const digits = cleanCpf(raw);
+    if (!raw && !digits) {
       setLoading(false);
-      setError("CPF não informado.");
+      setError("ID / CPF não informado.");
       return;
     }
     let active = true;
     setLoading(true);
     setError(null);
-    const searchParams = new URLSearchParams(window.location.search);
-    const orig = searchParams.get("origem_tabela");
-    const origParam = orig ? `&origem_tabela=${orig}` : "";
-    fetch(`/api/cnh/validate?cpf=${value}${origParam}`)
+
+    const isCpfFormat = digits.length === 11;
+    const fetchUrl = isCpfFormat
+      ? `/api/cnh/validate?cpf=${digits}`
+      : `/api/cnh/validate?id=${encodeURIComponent(raw)}`;
+
+    fetch(fetchUrl)
       .then(async (response) => {
-        const json = await response.json().catch(() => ({}));
+        let json = await response.json().catch(() => ({}));
         if (!response.ok || !json?.success) {
-          throw new Error(json?.error || "CNH não encontrada");
+          if (!isCpfFormat && digits.length > 0) {
+            const fallbackRes = await fetch(`/api/cnh/validate?cpf=${digits}`);
+            json = await fallbackRes.json().catch(() => ({}));
+            if (fallbackRes.ok && json?.success) {
+              return normalizeRecord(json.data);
+            }
+          }
+          throw new Error(json?.error || "CNH não encontrada.");
         }
         return normalizeRecord(json.data);
       })
@@ -181,10 +200,11 @@ export function useCnhRecord(cpf: string) {
       .finally(() => {
         if (active) setLoading(false);
       });
+
     return () => {
       active = false;
     };
-  }, [cpf]);
+  }, [cpfOrCode]);
 
   return { record, loading, error };
 }

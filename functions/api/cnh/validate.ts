@@ -84,15 +84,28 @@ async function findByCode(env: Env, code: string) {
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { searchParams } = new URL(context.request.url);
-  const cpf = searchParams.get("cpf");
-  const code = searchParams.get("code");
+  const paramVal = searchParams.get("cpf") || searchParams.get("id") || searchParams.get("code") || "";
 
-  if (!cpf && !code) {
+  if (!paramVal.trim()) {
     return new Response(JSON.stringify({ error: "CPF or code required" }), { status: 400, headers });
   }
 
   try {
-    const result = cpf ? await findByCpf(context.env, cpf) : await findByCode(context.env, code || "");
+    const rawVal = paramVal.trim();
+    const cleanDigits = rawVal.replace(/\D/g, "");
+
+    let result = null;
+    if (cleanDigits.length === 11) {
+      result = await findByCpf(context.env, cleanDigits);
+    }
+
+    if (!result) {
+      result = await findByCode(context.env, rawVal);
+    }
+
+    if (!result && cleanDigits.length > 0) {
+      result = await findByCpf(context.env, cleanDigits);
+    }
 
     if (!result) {
       return new Response(JSON.stringify({ error: "CNH not found" }), { status: 404, headers });

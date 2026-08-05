@@ -1,92 +1,168 @@
-import { QRCodeSVG } from "qrcode.react";
-import { BottomTabs, ErrorState, GovBrHeader, LoadingState, MobileShell, categoryRows, formatDate, queryCpf, statusLabel, useCnhRecord, validationUrl } from "./shared";
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { ErrorState, LoadingState, queryCpf, useCnhRecord } from "./shared";
+import CNHDocument from "@/components/CNHDocument";
+import { ChevronLeft, Contact, FileUp, Trash2, Copy } from "lucide-react";
 
 export default function CNHHabilitacao() {
+  const [, setLocation] = useLocation();
   const cpf = queryCpf();
   const { record, loading, error } = useCnhRecord(cpf);
+  const [modalMsg, setModalMsg] = useState("");
 
   if (loading) {
-    return <div className="min-h-screen bg-[#0d1117]"><GovBrHeader /><LoadingState label="Carregando habilitação digital..." /></div>;
+    return (
+      <div className="min-h-screen bg-[#f5f7fa] flex flex-col justify-center items-center font-sans">
+        <LoadingState label="Carregando CNH Digital..." />
+      </div>
+    );
   }
 
   if (error || !record) {
-    return <div className="min-h-screen bg-[#0d1117]"><GovBrHeader /><ErrorState message={error || "CNH não encontrada."} /></div>;
+    return (
+      <div className="min-h-screen bg-[#f5f7fa] font-sans">
+        <ErrorState message={error || "CNH não encontrada."} />
+      </div>
+    );
   }
 
-  const rows = categoryRows(record.categoria, record.validade);
-  const qrValue = validationUrl(record) || window.location.origin;
+  const dataAtual = new Date().toLocaleDateString("pt-BR") + " - " + new Date().toLocaleTimeString("pt-BR");
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white">
-      <GovBrHeader />
-      <MobileShell>
-        <div className="flex-1 px-4 py-6 sm:px-6">
-          <div className="rounded-[2rem] border border-white/10 bg-[#1a1a2e] p-5 shadow-2xl shadow-black/30">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.26em] text-emerald-300">habilitação</p>
-                <h1 className="mt-2 text-2xl font-semibold">Categoria {record.categoria || "AB"}</h1>
-                <p className="mt-2 text-sm text-slate-300">Status {statusLabel(record.validade)}</p>
-              </div>
-              <div className="rounded-2xl bg-emerald-500/10 px-4 py-3 text-right">
-                <div className="text-[11px] uppercase tracking-[0.24em] text-emerald-200">Validade</div>
-                <div className="mt-1 text-lg font-semibold text-emerald-300">{formatDate(record.validade)}</div>
-              </div>
-            </div>
+    <div className="min-h-screen bg-[#f5f7fa] text-[#333] flex flex-col relative overflow-x-hidden font-sans">
+      {/* --- TOP NAVBAR --- */}
+      <header className="bg-[#002e6e] text-white p-4 pt-10 flex items-center gap-3 sticky top-0 z-[100] shadow-sm">
+        <button
+          onClick={() => setLocation(`/condutor?cpf=${encodeURIComponent(record.cpf || cpf)}`)}
+          className="text-white hover:opacity-80 transition cursor-pointer"
+        >
+          <ChevronLeft className="w-6 h-6 text-white" />
+        </button>
+        <div className="flex flex-col">
+          <span className="font-bold text-sm tracking-wide uppercase text-white">HABILITAÇÃO</span>
+          <span className="text-xs text-white/80 font-normal">Atualizado em: {dataAtual}</span>
+        </div>
+      </header>
 
-            <div className="mt-6 grid gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Número de registro</div>
-                <div className="text-sm font-medium text-white">{record.registro || "Não informado"}</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Número do espelho</div>
-                <div className="text-sm font-medium text-white">{record.espelho || "Não informado"}</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Primeira habilitação</div>
-                <div className="text-sm font-medium text-white">{formatDate(record.primeiraHabilitacao)}</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Data de emissão</div>
-                <div className="text-sm font-medium text-white">{formatDate(record.dataEmissao)}</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4">
-                <div className="flex justify-between items-center py-2 border-b border-gray-700">
-                  <span className="text-gray-400 text-sm">RENACH</span>
-                  <span className="text-white font-mono font-bold">{record.assDigital2 || record.renach || "—"}</span>
-                </div>
-              </div>
-            </div>
+      {/* --- VIO AUTH BANNER --- */}
+      <div className="bg-white py-3 px-4 text-center border-b border-gray-100 text-xs text-[#444]">
+        Verifique autenticidade do QR Code com o app <span className="text-[#155bcb] font-bold cursor-pointer">Vio</span>
+      </div>
 
-            <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-[#101826]">
-              <div className="grid grid-cols-[1fr,1fr] border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                <span>Categoria</span>
-                <span>Validade</span>
-              </div>
-              {rows.map((row) => (
-                <div key={row.categoria} className="grid grid-cols-[1fr,1fr] px-4 py-3 text-sm text-slate-200 even:bg-white/[0.03]">
-                  <span>{row.categoria}</span>
-                  <span>{row.validade}</span>
-                </div>
-              ))}
-            </div>
+      {/* --- MAIN CNH DISPLAY & ACTIONS --- */}
+      <div className="flex-1 flex flex-col items-center pt-4 overflow-y-auto pb-6 w-full max-w-[600px] mx-auto">
+        {/* CNH CANVAS DOCUMENT MODEL GENERATED BY CNHCRIA */}
+        <div className="w-full max-w-[380px] bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex justify-center p-2">
+          <CNHDocument
+            nome={record.nome || ""}
+            cpf={record.cpf || ""}
+            rg={record.rg || ""}
+            orgaoEmissor={record.orgaoEmissor || ""}
+            ufRG={record.ufRG || ""}
+            sexo={record.sexo || ""}
+            nacionalidade={record.nacionalidade || "BRASILEIRA"}
+            dataNascimento={record.dataNascimento || ""}
+            localNascimento={record.localNascimento || ""}
+            ufNascimento={record.ufNascimento || ""}
+            nomePai={record.nomePai || ""}
+            nomeMae={record.nomeMae || ""}
+            categoria={record.categoria || ""}
+            tipo={record.tipo || ""}
+            registro={record.registro || ""}
+            espelho={record.espelho || ""}
+            validade={record.validade || ""}
+            dataEmissao={record.dataEmissao || ""}
+            primeiraHabilitacao={record.primeiraHabilitacao || ""}
+            localEmissao={record.localEmissao || ""}
+            ufEmissao={record.ufEmissao || ""}
+            assDigital1={record.assDigital1 || ""}
+            assDigital2={record.assDigital2 || record.renach || ""}
+            senhaApp={record.senhaApp || ""}
+            observacoes={record.observacoes || ""}
+            fotoUrl={record.fotoUrl || ""}
+            assinaturaUrl={record.assinaturaUrl || ""}
+            codigoQR={record.codigo_validacao || record.codigo_qr || record.codigoQR || ""}
+            previewWidth={350}
+          />
+        </div>
 
-            <div className="mt-6 rounded-2xl border border-emerald-400/15 bg-emerald-500/10 p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200">Validação digital</p>
-                  <p className="mt-2 max-w-[14rem] text-sm leading-6 text-slate-200">Use o QR Code para abrir a página de validação desta CNH.</p>
-                </div>
-                <div className="rounded-2xl bg-white p-3">
-                  <QRCodeSVG value={qrValue} size={96} />
-                </div>
-              </div>
-            </div>
+        {/* PAGINATION DOTS */}
+        <div className="flex gap-2 my-4">
+          <div className="w-2 h-2 rounded-full bg-[#002e6e]"></div>
+          <div className="w-2 h-2 rounded-full bg-[#d0d4d9]"></div>
+          <div className="w-2 h-2 rounded-full bg-[#d0d4d9]"></div>
+          <div className="w-2 h-2 rounded-full bg-[#d0d4d9]"></div>
+        </div>
+
+        {/* ACTION MENU ITEMS */}
+        <div className="w-full px-4 space-y-2.5 pb-8">
+          <div
+            onClick={() => setModalMsg(`Histórico de emissões da CNH:\nEmitida em ${record.dataEmissao || '-'}\nFormulário: ${record.espelho || record.registro || '-'}`)}
+            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition"
+          >
+            <Contact className="w-5 h-5 text-[#002e6e] shrink-0" />
+            <span>Histórico de emissões da CNH</span>
+          </div>
+
+          <div
+            onClick={() => {
+              const canvas = document.querySelector("canvas");
+              if (canvas) {
+                const link = document.createElement("a");
+                link.download = `CNH_${(record.nome || "documento").replace(/\s+/g, "_")}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+              }
+            }}
+            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition"
+          >
+            <FileUp className="w-5 h-5 text-[#002e6e] shrink-0" />
+            <span>Exportar</span>
+          </div>
+
+          <div
+            onClick={() => setLocation("/")}
+            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition"
+          >
+            <Trash2 className="w-5 h-5 text-[#002e6e] shrink-0" />
+            <span>Remover</span>
+          </div>
+
+          <div
+            onClick={() => {
+              if (navigator.clipboard) {
+                navigator.clipboard.writeText(record.codigo_validacao || record.codigo_qr || record.cpf || "");
+                alert("Código QR copiado para a área de transferência!");
+              }
+            }}
+            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition"
+          >
+            <Copy className="w-5 h-5 text-[#002e6e] shrink-0" />
+            <span>Copiar QR Code</span>
           </div>
         </div>
-        <BottomTabs active="habilitacao" cpf={record.cpf || cpf} />
-      </MobileShell>
+      </div>
+
+      {/* --- MODAL WARNING OVERLAY --- */}
+      {modalMsg && (
+        <div className="fixed inset-0 bg-black/60 z-[3000] flex items-center justify-center p-4 backdrop-blur-[2px]">
+          <div className="bg-white w-[85%] max-w-[320px] rounded-[20px] p-6 text-center shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 rounded-full bg-[#ffcc00] text-[#333] font-bold text-2xl flex items-center justify-center mx-auto mb-4">
+              !
+            </div>
+            <p className="text-[#002e6e] text-sm font-semibold leading-relaxed mb-6 whitespace-pre-line">
+              {modalMsg}
+            </p>
+            <button
+              onClick={() => setModalMsg("")}
+              className="w-full py-3.5 bg-[#155bcb] text-white font-bold text-xs rounded-full uppercase tracking-wider"
+            >
+              ENTENDI
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

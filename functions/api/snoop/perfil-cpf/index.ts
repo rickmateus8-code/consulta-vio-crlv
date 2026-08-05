@@ -118,14 +118,41 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     snoopGet('geo', { cpf }, apiKey),
   ]);
 
+  const getValidPhoto = (obj: any): string | null => {
+    if (!obj) return null;
+    if (obj.success === false) return null;
+    if (typeof obj === 'string') {
+      const trimmed = obj.trim();
+      if (trimmed.length > 50 || trimmed.startsWith('data:') || trimmed.startsWith('http')) {
+        return trimmed;
+      }
+      return null;
+    }
+    if (typeof obj === 'object') {
+      const candidate = obj.foto ?? obj.url ?? obj.base64 ?? obj.data ?? obj.body;
+      if (candidate && typeof candidate === 'string') {
+        const trimmed = candidate.trim();
+        if (trimmed.length > 50 || trimmed.startsWith('data:') || trimmed.startsWith('http')) {
+          return trimmed;
+        }
+      }
+    }
+    return null;
+  };
+
   const rawCpf = cpfData?.body ?? cpfData?.data ?? cpfData ?? {};
+
+  const cleanFotoNacional = getValidPhoto(fotoData) ?? getValidPhoto(fotoCpfData) ?? getValidPhoto(fotoAllData?.nacional) ?? getValidPhoto(fotoAllData?.body?.nacional) ?? rawCpf.foto ?? rawCpf.fotos?.nacional ?? null;
+  const cleanFotoSP = getValidPhoto(fotoSPData) ?? getValidPhoto(fotoAllData?.sp) ?? getValidPhoto(fotoAllData?.body?.sp) ?? rawCpf.foto_sp ?? rawCpf.fotos?.sp ?? null;
+  const cleanFotoMA = getValidPhoto(fotoMAData) ?? getValidPhoto(fotoAllData?.ma) ?? getValidPhoto(fotoAllData?.body?.ma) ?? rawCpf.foto_ma ?? rawCpf.fotos?.ma ?? null;
+  const cleanFotoRO = getValidPhoto(fotoROData) ?? getValidPhoto(fotoAllData?.ro) ?? getValidPhoto(fotoAllData?.body?.ro) ?? rawCpf.foto_ro ?? rawCpf.fotos?.ro ?? null;
 
   const fontesConsultadas = {
     receita_federal: !!(rawCpf.name || rawCpf.nome || rawCpf.cpf),
-    foto_nacional: !!(fotoData || fotoCpfData || fotoAllData?.nacional || rawCpf.foto),
-    foto_sp: !!(fotoSPData || fotoAllData?.sp || rawCpf.foto_sp),
-    foto_ma: !!(fotoMAData || fotoAllData?.ma || rawCpf.foto_ma),
-    foto_ro: !!(fotoROData || fotoAllData?.ro || rawCpf.foto_ro),
+    foto_nacional: !!cleanFotoNacional,
+    foto_sp: !!cleanFotoSP,
+    foto_ma: !!cleanFotoMA,
+    foto_ro: !!cleanFotoRO,
     telefones: Array.isArray(telefones?.data || telefones?.body || telefones || rawCpf.phones) && (telefones?.data || telefones?.body || telefones || rawCpf.phones).length > 0,
     enderecos: Array.isArray(rawCpf.all_addresses || rawCpf.enderecos) && (rawCpf.all_addresses || rawCpf.enderecos).length > 0,
     parentes: Array.isArray(parentes?.data || parentes?.body || parentes || rawCpf.parentes) && (parentes?.data || parentes?.body || parentes || rawCpf.parentes).length > 0,
@@ -135,12 +162,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   const perfil: any = {
     cpf_dados: rawCpf,
-    foto: fotoData?.body ?? fotoData?.data ?? fotoData ?? fotoCpfData?.body ?? fotoCpfData?.data ?? fotoCpfData ?? fotoAllData?.nacional ?? rawCpf.foto ?? null,
+    foto: cleanFotoNacional,
     fotos: {
-      nacional: fotoData?.body ?? fotoData?.data ?? fotoData ?? fotoCpfData?.body ?? fotoCpfData?.data ?? fotoCpfData ?? fotoAllData?.nacional ?? fotoAllData?.body?.nacional ?? rawCpf.foto ?? rawCpf.fotos?.nacional ?? null,
-      sp: fotoSPData?.body ?? fotoSPData?.data ?? fotoSPData ?? fotoAllData?.sp ?? fotoAllData?.body?.sp ?? rawCpf.foto_sp ?? rawCpf.fotos?.sp ?? null,
-      ma: fotoMAData?.body ?? fotoMAData?.data ?? fotoMAData ?? fotoAllData?.ma ?? fotoAllData?.body?.ma ?? rawCpf.foto_ma ?? rawCpf.fotos?.ma ?? null,
-      ro: fotoROData?.body ?? fotoROData?.data ?? fotoROData ?? fotoAllData?.ro ?? fotoAllData?.body?.ro ?? rawCpf.foto_ro ?? rawCpf.fotos?.ro ?? null,
+      nacional: cleanFotoNacional,
+      sp: cleanFotoSP,
+      ma: cleanFotoMA,
+      ro: cleanFotoRO,
       all: fotoAllData?.data ?? fotoAllData?.body ?? fotoAllData ?? null,
     },
     parentes: parentes?.data ?? parentes?.body ?? parentes ?? rawCpf.parentes ?? null,

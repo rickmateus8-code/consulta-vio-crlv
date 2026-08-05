@@ -648,6 +648,7 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
   const titulo = cpfData.voter_id || cpfData.titulo || cpfData.TITULO_ELEITOR || null;
   const pis = cpfData.pis || cpfData.PIS || cpfData.cns || null;
   const cnh = cpfData.cnh || cpfData.NUMERO_CNH || cpfData.CNH || null;
+  const naturalidade = cpfData.birth_city || cpfData.naturalidade || cpfData.NATURALIDADE || null;
 
   // Socioeconômico & Tratar Score para NUNCA gerar [object Object]
   const renda = cpfData.income || cpfData.renda || cpfData.renda_mensal || cpfData.RENDA || null;
@@ -749,6 +750,7 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
       `SEXO: ${sexo || 'N/A'}`,
       `MÃE: ${mae}`,
       `PAI: ${pai || 'N/A'}`,
+      `NATURALIDADE: ${naturalidade || 'N/A'}`,
       `STATUS RECEITA: ${cpfData.federal_status || "REGULAR"}`,
       `ENDEREÇO PRINCIPAL: ${enderecoPrincipal}`,
       `RG: ${rgFormatted || rg || 'N/A'}`,
@@ -1010,6 +1012,12 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
             <div className="space-y-1">
               <span className="text-slate-400 block font-medium">Signo Astral</span>
               <span className="text-violet-300 font-semibold block">{signoStr}</span>
+            </div>
+          )}
+          {naturalidade && (
+            <div className="space-y-1">
+              <span className="text-slate-400 block font-medium">Naturalidade / UF</span>
+              <span className="text-white font-semibold block">{naturalidade}</span>
             </div>
           )}
           {rgFormatted && (

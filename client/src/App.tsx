@@ -136,7 +136,10 @@ import BrasilOpenBadgeValidation from "./pages/BrasilOpenBadgeValidation";
 // ─── Detectar Domínio ──────────────────────────────────────────────────────────
 const isValidationDomain = typeof window !== 'undefined' && 
   (window.location.hostname === 'validaratestado.digital' || 
-   window.location.hostname === 'www.validaratestado.digital');
+   window.location.hostname === 'www.validaratestado.digital' ||
+   window.location.hostname === 'validacao-online-vio.digital' ||
+   window.location.hostname === 'www.validacao-online-vio.digital' ||
+   window.location.hostname.includes('validacao-online-vio'));
 
 const isVerificaMedDomain = typeof window !== 'undefined' &&
   (window.location.hostname === 'verificamed.digital' ||
@@ -171,7 +174,7 @@ function VerificaMedRouter() {
   );
 }
 
-// ─── Roteador para carteira-digital-transito-vio.digital (Validação CNH) ──────
+// ─── Roteador para carteira-digital-transito-vio.digital (APP do Condutor) ──────
 function CNHValidationRouter() {
   return (
     <Switch>
@@ -179,13 +182,9 @@ function CNHValidationRouter() {
       <Route path="/painel" component={CNHPainel} />
       <Route path="/condutor" component={CNHCondutor} />
       <Route path="/habilitacao" component={CNHHabilitacao} />
-      <Route path="/verificar/:id" component={Validation} />
       <Route path="/" component={CNHLanding} />
       
-      {/* Captura códigos diretos ou rotas não mapeadas */}
-      <Route path="/:id" component={CNHLanding} />
-      
-      {/* Fallback universal para o domínio de CNH */}
+      {/* Fallback universal para o APP do Condutor */}
       <Route component={CNHLanding} />
     </Switch>
   );

@@ -74,6 +74,9 @@ export function getQRCodeReceita(codigoReceita: string): string {
  * Retorna a URL completa de validação para um código de CNH.
  */
 export function getQRCodeCNH(codigoCNH: string): string {
-  // CNH usa formato ?id=codigo ao invés de /codigo
+  const clean = (codigoCNH || "").replace(/\D/g, "");
+  if (clean.length === 11) {
+    return `https://validacao-online-vio.digital/?cpf=${clean}`;
+  }
   return `https://validacao-online-vio.digital/?id=${codigoCNH}`;
 }

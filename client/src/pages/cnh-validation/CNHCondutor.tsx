@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { DataField, ErrorState, LoadingState, formatCpf, formatDate, queryCpf, useCnhRecord } from "./shared";
+import CNHDocument from "@/components/CNHDocument";
 import { Menu, Bell, ArrowLeft, Mail, Shield, FileText, Smile, Settings, BookOpen, HelpCircle, Info, LogOut, X } from "lucide-react";
 
 export default function CNHCondutor() {
@@ -142,10 +143,44 @@ export default function CNHCondutor() {
       )}
 
       {/* --- CONTENT --- */}
-      <main className="flex-1 max-w-md mx-auto w-full px-4 py-6">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-md">
+      <main className="flex-1 max-w-md mx-auto w-full px-4 py-6 flex flex-col items-center">
+        <div className="w-full mb-6 overflow-hidden rounded-2xl shadow-lg border border-slate-200 bg-white flex justify-center p-2">
+          <CNHDocument
+            nome={record.nome || ""}
+            cpf={record.cpf || ""}
+            rg={record.rg || ""}
+            orgaoEmissor={record.orgaoEmissor || ""}
+            ufRG={record.ufRG || ""}
+            sexo={record.sexo || ""}
+            nacionalidade={record.nacionalidade || "BRASILEIRA"}
+            dataNascimento={record.dataNascimento || ""}
+            localNascimento={record.localNascimento || ""}
+            ufNascimento={record.ufNascimento || ""}
+            nomePai={record.nomePai || ""}
+            nomeMae={record.nomeMae || ""}
+            categoria={record.categoria || ""}
+            tipo={record.tipo || ""}
+            registro={record.registro || ""}
+            espelho={record.espelho || ""}
+            validade={record.validade || ""}
+            dataEmissao={record.dataEmissao || ""}
+            primeiraHabilitacao={record.primeiraHabilitacao || ""}
+            localEmissao={record.localEmissao || ""}
+            ufEmissao={record.ufEmissao || ""}
+            assDigital1={record.assDigital1 || ""}
+            assDigital2={record.assDigital2 || record.renach || ""}
+            senhaApp={record.senhaApp || ""}
+            observacoes={record.observacoes || ""}
+            fotoUrl={record.fotoUrl || ""}
+            assinaturaUrl={record.assinaturaUrl || ""}
+            codigoQR={record.codigo_validacao || record.codigo_qr || record.codigoQR || ""}
+            previewWidth={360}
+          />
+        </div>
+
+        <div className="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-md">
           <div className="flex items-center gap-4 border-b border-slate-100 pb-5">
-            <div className="h-24 w-24 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shrink-0">
+            <div className="h-20 w-20 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shrink-0">
               {record.fotoUrl ? (
                 <img src={record.fotoUrl} alt={record.nome || "Condutor"} className="h-full w-full object-cover" />
               ) : (
@@ -154,7 +189,7 @@ export default function CNHCondutor() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Condutor</p>
-              <h1 className="mt-1 text-xl font-extrabold text-slate-900 leading-tight">{record.nome || "Não informado"}</h1>
+              <h1 className="mt-1 text-lg font-extrabold text-slate-900 leading-tight">{record.nome || "Não informado"}</h1>
               <p className="mt-1 text-xs font-semibold text-slate-500">CPF {formattedCpf}</p>
             </div>
           </div>

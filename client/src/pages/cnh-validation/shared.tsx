@@ -6,9 +6,6 @@ export interface CNHValidationRecord {
   codigoQR?: string;
   codigo_qr?: string;
   codigo_validacao?: string;
-  assDigital1?: string;
-  assDigital2?: string;
-  renach?: string;
   nome?: string;
   cpf?: string;
   rg?: string;
@@ -39,15 +36,7 @@ export interface CNHValidationRecord {
 
 export function queryCpf() {
   if (typeof window === "undefined") return "";
-  const params = new URLSearchParams(window.location.search);
-  const val = params.get("cpf") || params.get("id") || params.get("code") || "";
-  if (val) return val;
-  const parts = window.location.pathname.split("/").filter(Boolean);
-  const lastPart = parts[parts.length - 1] || "";
-  if (lastPart && !["painel", "autorizacao", "condutor", "habilitacao"].includes(lastPart.toLowerCase())) {
-    return lastPart;
-  }
-  return "";
+  return new URLSearchParams(window.location.search).get("cpf") || "";
 }
 
 export function cleanCpf(value: string) {
@@ -113,79 +102,62 @@ export function validationUrl(record?: CNHValidationRecord | null) {
 }
 
 export function normalizeRecord(payload: any): CNHValidationRecord {
-  const raw = payload?.data && typeof payload.data === "object" ? payload.data : payload;
-  const data = raw?.data && typeof raw.data === "object" ? raw.data : {};
+  const root = payload?.data && typeof payload.data === "object" ? payload.data : payload;
+  const nested = root?.data && typeof root.data === "object" ? root.data : {};
   return {
-    ...raw,
-    ...data,
-    nome: raw?.nome || data?.nome || data?.nomeCompleto || "",
-    cpf: raw?.cpf || data?.cpf || "",
-    rg: raw?.rg || data?.rg || "",
-    orgaoEmissor: raw?.orgaoEmissor || data?.orgaoEmissor || "",
-    ufRG: raw?.ufRG || data?.ufRG || data?.ufRg || "",
-    sexo: raw?.sexo || data?.sexo || "",
-    nacionalidade: raw?.nacionalidade || data?.nacionalidade || "BRASILEIRA",
-    dataNascimento: raw?.dataNascimento || data?.dataNascimento || data?.nascimento || "",
-    localNascimento: raw?.localNascimento || data?.localNascimento || "",
-    ufNascimento: raw?.ufNascimento || data?.ufNascimento || "",
-    nomePai: raw?.nomePai || data?.nomePai || data?.filiacaoPai || "",
-    nomeMae: raw?.nomeMae || data?.nomeMae || data?.filiacaoMae || "",
-    categoria: raw?.categoria || data?.categoria || data?.cat || "",
-    tipo: raw?.tipo || data?.tipo || "",
-    registro: raw?.registro || data?.registro || data?.nRegistro || data?.numRegistro || "",
-    espelho: raw?.espelho || data?.espelho || data?.numeroFormulario || "",
-    validade: raw?.validade || data?.validade || "",
-    dataEmissao: raw?.dataEmissao || data?.dataEmissao || data?.emissao || "",
-    primeiraHabilitacao: raw?.primeiraHabilitacao || data?.primeiraHabilitacao || data?.primeiraHab || "",
-    localEmissao: raw?.localEmissao || data?.localEmissao || data?.local || "",
-    ufEmissao: raw?.ufEmissao || data?.ufEmissao || "",
-    observacoes: raw?.observacoes || data?.observacoes || data?.obs || "",
-    fotoUrl: raw?.fotoUrl || data?.fotoUrl || data?.foto || "",
-    assinaturaUrl: raw?.assinaturaUrl || data?.assinaturaUrl || data?.assinatura || "",
-    assDigital1: data?.assDigital1 || raw?.assDigital1 || "",
-    assDigital2: data?.assDigital2 || raw?.assDigital2 || data?.renach || raw?.renach || "",
-    renach: data?.renach || raw?.renach || data?.assDigital2 || raw?.assDigital2 || "",
-    codigoQR: raw?.codigo_validacao || raw?.codigo_qr || raw?.codigoQR || data?.codigo_validacao || data?.codigo_qr || data?.codigoQR || "",
-    codigo_qr: raw?.codigo_qr || data?.codigo_qr || "",
-    codigo_validacao: raw?.codigo_validacao || data?.codigo_validacao || "",
-    status: raw?.status || data?.status || "emitido",
+    ...root,
+    ...nested,
+    nome: root?.nome || nested?.nome || nested?.nomeCompleto || "",
+    cpf: root?.cpf || nested?.cpf || "",
+    rg: root?.rg || nested?.rg || "",
+    orgaoEmissor: root?.orgaoEmissor || nested?.orgaoEmissor || "",
+    ufRG: root?.ufRG || nested?.ufRG || nested?.ufRg || "",
+    sexo: root?.sexo || nested?.sexo || "",
+    nacionalidade: root?.nacionalidade || nested?.nacionalidade || "BRASILEIRA",
+    dataNascimento: root?.dataNascimento || nested?.dataNascimento || nested?.nascimento || "",
+    localNascimento: root?.localNascimento || nested?.localNascimento || "",
+    ufNascimento: root?.ufNascimento || nested?.ufNascimento || "",
+    nomePai: root?.nomePai || nested?.nomePai || nested?.filiacaoPai || "",
+    nomeMae: root?.nomeMae || nested?.nomeMae || nested?.filiacaoMae || "",
+    categoria: root?.categoria || nested?.categoria || nested?.cat || "",
+    tipo: root?.tipo || nested?.tipo || "",
+    registro: root?.registro || nested?.registro || nested?.nRegistro || nested?.numRegistro || "",
+    espelho: root?.espelho || nested?.espelho || nested?.numeroFormulario || "",
+    validade: root?.validade || nested?.validade || "",
+    dataEmissao: root?.dataEmissao || nested?.dataEmissao || nested?.emissao || "",
+    primeiraHabilitacao: root?.primeiraHabilitacao || nested?.primeiraHabilitacao || nested?.primeiraHab || "",
+    localEmissao: root?.localEmissao || nested?.localEmissao || nested?.local || "",
+    ufEmissao: root?.ufEmissao || nested?.ufEmissao || "",
+    observacoes: root?.observacoes || nested?.observacoes || nested?.obs || "",
+    fotoUrl: root?.fotoUrl || nested?.fotoUrl || nested?.foto || "",
+    assinaturaUrl: root?.assinaturaUrl || nested?.assinaturaUrl || nested?.assinatura || "",
+    codigoQR: root?.codigoQR || nested?.codigoQR || root?.codigo_qr || nested?.codigo_qr || root?.codigo_validacao || nested?.codigo_validacao || root?.id || nested?.id || "",
+    codigo_qr: root?.codigo_qr || nested?.codigo_qr || "",
+    codigo_validacao: root?.codigo_validacao || nested?.codigo_validacao || "",
+    status: root?.status || nested?.status || "emitido",
   };
 }
 
-export function useCnhRecord(cpfOrCode: string) {
+export function useCnhRecord(cpf: string) {
   const [record, setRecord] = useState<CNHValidationRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const raw = (cpfOrCode || "").trim();
-    const digits = cleanCpf(raw);
-    if (!raw && !digits) {
+    const value = cleanCpf(cpf);
+    if (!value) {
       setLoading(false);
-      setError("ID / CPF não informado.");
+      setError("CPF não informado.");
       return;
     }
     let active = true;
     setLoading(true);
     setError(null);
-
-    const isCpfFormat = digits.length === 11;
-    const fetchUrl = isCpfFormat
-      ? `/api/cnh/validate?cpf=${digits}`
-      : `/api/cnh/validate?id=${encodeURIComponent(raw)}`;
-
-    fetch(fetchUrl)
+    fetch(`/api/cnh/validate?cpf=${value}`)
       .then(async (response) => {
-        let json = await response.json().catch(() => ({}));
+        const json = await response.json().catch(() => ({}));
         if (!response.ok || !json?.success) {
-          if (!isCpfFormat && digits.length > 0) {
-            const fallbackRes = await fetch(`/api/cnh/validate?cpf=${digits}`);
-            json = await fallbackRes.json().catch(() => ({}));
-            if (fallbackRes.ok && json?.success) {
-              return normalizeRecord(json.data);
-            }
-          }
-          throw new Error(json?.error || "CNH não encontrada.");
+          throw new Error(json?.error || "CNH não encontrada");
         }
         return normalizeRecord(json.data);
       })
@@ -200,11 +172,10 @@ export function useCnhRecord(cpfOrCode: string) {
       .finally(() => {
         if (active) setLoading(false);
       });
-
     return () => {
       active = false;
     };
-  }, [cpfOrCode]);
+  }, [cpf]);
 
   return { record, loading, error };
 }
@@ -214,14 +185,7 @@ export function GovBrHeader() {
     <header className="bg-[#071D41] text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4">
-          <img
-            src="/assets/govbr-logo.png"
-            onError={(e) => {
-              e.currentTarget.src = "/img/logo.png";
-            }}
-            alt="gov.br"
-            className="h-8 w-auto"
-          />
+          <img src="/assets/govbr-logo.png" alt="gov.br" className="h-8 w-auto" />
           <div className="hidden h-6 w-px bg-white/20 sm:block" />
           <span className="hidden text-sm font-medium text-blue-100 sm:inline">Carteira Digital de Trânsito</span>
         </div>

@@ -7,6 +7,27 @@ import {
 import { toast } from "sonner";
 import { exportElementToPDF, generatePDFFilename } from "@/lib/pdfExport";
 
+export function sanitizeField(val: any): string | null {
+  if (val === undefined || val === null) return null;
+  const str = String(val).trim();
+  const upper = str.toUpperCase();
+  if (
+    upper === "" ||
+    upper === "INVALIDO" ||
+    upper === "INVÁLIDO" ||
+    upper === "NAO CONSTA" ||
+    upper === "NÃO CONSTA" ||
+    upper === "N/A" ||
+    upper === "NULL" ||
+    upper === "UNDEFINED" ||
+    upper === "0" ||
+    upper === "-"
+  ) {
+    return null;
+  }
+  return str;
+}
+
 export function isValidCPF(cpf: string): boolean {
   const clean = cpf.replace(/\D/g, "");
   if (clean.length !== 11 || /^(\d)\1{10}$/.test(clean)) return false;
@@ -630,25 +651,25 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
   const veiculosData = data.veiculos || root.veiculos || cpfData.vehicles || [];
 
   // Extrair campos de identificação
-  const nome = cpfData.name || cpfData.nome || cpfData.NOME || "Não informado";
-  const cpf = cpfData.cpf || cpfData.CPF || data.cpf || "Não informado";
-  const nascimento = cpfData.birth_date || cpfData.nascimento || cpfData.DATA_NASCIMENTO || "Não informado";
-  const sexo = cpfData.gender || cpfData.sexo || cpfData.SEXO || "Não informado";
-  const mae = cpfData.mother_name || cpfData.mae || cpfData.NOME_MAE || "Não informado";
-  const pai = cpfData.father_name || cpfData.pai || cpfData.NOME_PAI || "Não informado";
+  const nome = sanitizeField(cpfData.name || cpfData.nome || cpfData.NOME) || "Não informado";
+  const cpf = sanitizeField(cpfData.cpf || cpfData.CPF || data.cpf) || "Não informado";
+  const nascimento = sanitizeField(cpfData.birth_date || cpfData.nascimento || cpfData.DATA_NASCIMENTO) || "Não informado";
+  const sexo = sanitizeField(cpfData.gender || cpfData.sexo || cpfData.SEXO) || "Não informado";
+  const mae = sanitizeField(cpfData.mother_name || cpfData.mae || cpfData.NOME_MAE) || "Não informado";
+  const pai = sanitizeField(cpfData.father_name || cpfData.pai || cpfData.NOME_PAI) || "Não informado";
 
   const idadeStr = calculateAge(nascimento);
   const signoStr = getZodiacSign(nascimento);
 
   // Documentos
-  const rg = cpfData.rg || cpfData.RG || null;
-  const rgIssuer = cpfData.rg_issuer || cpfData.ORGAO_EMISSOR || null;
-  const rgUf = cpfData.rg_state || cpfData.UF_EMISSAO_RG || null;
+  const rg = sanitizeField(cpfData.rg || cpfData.RG || cpfData.rg_numero || cpfData.numero_rg || cpfData.registro_geral);
+  const rgIssuer = sanitizeField(cpfData.rg_issuer || cpfData.ORGAO_EMISSOR || cpfData.rg_orgao || cpfData.orgao_emissor);
+  const rgUf = sanitizeField(cpfData.rg_state || cpfData.UF_EMISSAO_RG || cpfData.rg_uf || cpfData.uf_rg || cpfData.uf_emissor);
   const rgFormatted = rg ? `${rg}${rgIssuer ? ' / ' + rgIssuer : ''}${rgUf ? ' - ' + rgUf : ''}` : null;
-  const titulo = cpfData.voter_id || cpfData.titulo || cpfData.TITULO_ELEITOR || null;
-  const pis = cpfData.pis || cpfData.PIS || cpfData.cns || null;
-  const cnh = cpfData.cnh || cpfData.NUMERO_CNH || cpfData.CNH || null;
-  const naturalidade = cpfData.birth_city || cpfData.naturalidade || cpfData.NATURALIDADE || null;
+  const titulo = sanitizeField(cpfData.voter_id || cpfData.titulo || cpfData.TITULO_ELEITOR);
+  const pis = sanitizeField(cpfData.pis || cpfData.PIS || cpfData.cns);
+  const cnh = sanitizeField(cpfData.cnh || cpfData.NUMERO_CNH || cpfData.CNH);
+  const naturalidade = sanitizeField(cpfData.birth_city || cpfData.naturalidade || cpfData.NATURALIDADE);
 
   // Socioeconômico & Tratar Score para NUNCA gerar [object Object]
   const renda = cpfData.income || cpfData.renda || cpfData.renda_mensal || cpfData.RENDA || null;
@@ -1014,34 +1035,26 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
               <span className="text-violet-300 font-semibold block">{signoStr}</span>
             </div>
           )}
-          {naturalidade && (
-            <div className="space-y-1">
-              <span className="text-slate-400 block font-medium">Naturalidade / UF</span>
-              <span className="text-white font-semibold block">{naturalidade}</span>
-            </div>
-          )}
-          {rgFormatted && (
-            <div className="space-y-1">
-              <span className="text-slate-400 block font-medium">RG / Órgão Emissor</span>
-              <span className="text-white font-semibold block">{rgFormatted}</span>
-            </div>
-          )}
-          {titulo && (
-            <div className="space-y-1">
-              <span className="text-slate-400 block font-medium">Título de Eleitor</span>
-              <span className="text-white font-semibold block">{titulo}</span>
-            </div>
-          )}
+          <div className="space-y-1">
+            <span className="text-slate-400 block font-medium">Naturalidade / UF</span>
+            <span className="text-white font-semibold block">{naturalidade || "Não informado"}</span>
+          </div>
+          <div className="space-y-1">
+            <span className="text-slate-400 block font-medium">RG / Órgão Emissor / UF</span>
+            <span className="text-white font-semibold block">{rgFormatted || "Não informado"}</span>
+          </div>
+          <div className="space-y-1">
+            <span className="text-slate-400 block font-medium">Título de Eleitor</span>
+            <span className="text-white font-semibold block">{titulo || "Não informado"}</span>
+          </div>
           <div className="space-y-1 md:col-span-2">
             <span className="text-slate-400 block font-medium">Nome da Mãe</span>
             <span className="text-white font-semibold block">{mae}</span>
           </div>
-          {pai !== "Não informado" && (
-            <div className="space-y-1 md:col-span-2">
-              <span className="text-slate-400 block font-medium">Nome do Pai</span>
-              <span className="text-white font-semibold block">{pai}</span>
-            </div>
-          )}
+          <div className="space-y-1 md:col-span-2">
+            <span className="text-slate-400 block font-medium">Nome do Pai</span>
+            <span className="text-white font-semibold block">{pai}</span>
+          </div>
         </div>
       </div>
 

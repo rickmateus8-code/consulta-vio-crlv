@@ -1,86 +1,133 @@
-import { QRCodeSVG } from "qrcode.react";
-import { BottomTabs, ErrorState, GovBrHeader, LoadingState, MobileShell, categoryRows, formatDate, queryCpf, statusLabel, useCnhRecord, validationUrl } from "./shared";
+import { useLocation } from "wouter";
+import { ErrorState, LoadingState, queryCpf, useCnhRecord } from "./shared";
+import CNHDocument from "@/components/CNHDocument";
+import { ChevronLeft } from "lucide-react";
 
 export default function CNHHabilitacao() {
+  const [, setLocation] = useLocation();
   const cpf = queryCpf();
   const { record, loading, error } = useCnhRecord(cpf);
 
   if (loading) {
-    return <div className="min-h-screen bg-[#0d1117]"><GovBrHeader /><LoadingState label="Carregando habilitação digital..." /></div>;
+    return (
+      <div className="min-h-screen bg-[#e9ecf2] flex flex-col justify-center items-center">
+        <LoadingState label="Carregando CNH Digital..." />
+      </div>
+    );
   }
 
   if (error || !record) {
-    return <div className="min-h-screen bg-[#0d1117]"><GovBrHeader /><ErrorState message={error || "CNH não encontrada."} /></div>;
+    return (
+      <div className="min-h-screen bg-[#e9ecf2]">
+        <ErrorState message={error || "CNH não encontrada."} />
+      </div>
+    );
   }
 
-  const rows = categoryRows(record.categoria, record.validade);
-  const qrValue = validationUrl(record) || window.location.origin;
+  const dataAtual = new Date().toLocaleDateString("pt-BR") + " - " + new Date().toLocaleTimeString("pt-BR");
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white">
-      <GovBrHeader />
-      <MobileShell>
-        <div className="flex-1 px-4 py-6 sm:px-6">
-          <div className="rounded-[2rem] border border-white/10 bg-[#1a1a2e] p-5 shadow-2xl shadow-black/30">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.26em] text-emerald-300">habilitação</p>
-                <h1 className="mt-2 text-2xl font-semibold">Categoria {record.categoria || "AB"}</h1>
-                <p className="mt-2 text-sm text-slate-300">Status {statusLabel(record.validade)}</p>
-              </div>
-              <div className="rounded-2xl bg-emerald-500/10 px-4 py-3 text-right">
-                <div className="text-[11px] uppercase tracking-[0.24em] text-emerald-200">Validade</div>
-                <div className="mt-1 text-lg font-semibold text-emerald-300">{formatDate(record.validade)}</div>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Número de registro</div>
-                <div className="text-sm font-medium text-white">{record.registro || "Não informado"}</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Número do espelho</div>
-                <div className="text-sm font-medium text-white">{record.espelho || "Não informado"}</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Primeira habilitação</div>
-                <div className="text-sm font-medium text-white">{formatDate(record.primeiraHabilitacao)}</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Data de emissão</div>
-                <div className="text-sm font-medium text-white">{formatDate(record.dataEmissao)}</div>
-              </div>
-            </div>
-
-            <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-[#101826]">
-              <div className="grid grid-cols-[1fr,1fr] border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                <span>Categoria</span>
-                <span>Validade</span>
-              </div>
-              {rows.map((row) => (
-                <div key={row.categoria} className="grid grid-cols-[1fr,1fr] px-4 py-3 text-sm text-slate-200 even:bg-white/[0.03]">
-                  <span>{row.categoria}</span>
-                  <span>{row.validade}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-emerald-400/15 bg-emerald-500/10 p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200">Validação digital</p>
-                  <p className="mt-2 max-w-[14rem] text-sm leading-6 text-slate-200">Use o QR Code para abrir a página de validação desta CNH.</p>
-                </div>
-                <div className="rounded-2xl bg-white p-3">
-                  <QRCodeSVG value={qrValue} size={96} />
-                </div>
-              </div>
-            </div>
+    <div className="min-h-screen bg-[#e9ecf2] text-slate-900 flex flex-col relative overflow-x-hidden font-sans max-w-[450px] mx-auto shadow-2xl">
+      {/* --- TOP HEADER --- */}
+      <div className="bg-[#0a1c40] text-white p-4 pb-5 rounded-b-[20px] shadow-md z-10">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setLocation(`/condutor?cpf=${encodeURIComponent(record.cpf || cpf)}`)}
+            className="bg-[#2a4570] p-1.5 rounded-full hover:bg-opacity-80 transition flex items-center justify-center w-9 h-9"
+          >
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
+          <div className="flex flex-col">
+            <h1 className="font-bold text-lg leading-tight tracking-wide uppercase text-white">HABILITAÇÃO</h1>
+            <p className="text-[11px] text-gray-300 font-light">Atualizado em: {dataAtual}</p>
           </div>
         </div>
-        <BottomTabs active="habilitacao" cpf={record.cpf || cpf} />
-      </MobileShell>
+      </div>
+
+      {/* --- VIO SUBHEADER BANNER --- */}
+      <div className="bg-[#eef2f8] py-3 px-4 text-center border-b border-gray-200">
+        <p className="text-[#2c4b8e] text-xs font-medium">
+          Verifique autenticidade do QR Code com o app <span className="font-bold underline cursor-pointer">Vio</span>
+        </p>
+      </div>
+
+      {/* --- MAIN CNH DISPLAY & ACTIONS --- */}
+      <div className="flex-1 flex flex-col items-center pt-4 overflow-y-auto pb-6 no-scrollbar">
+        {/* CNH CANVAS DOCUMENT MODEL GENERATED BY CNHCRIA */}
+        <div className="w-full max-w-[380px] bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex justify-center p-2">
+          <CNHDocument
+            nome={record.nome || ""}
+            cpf={record.cpf || ""}
+            rg={record.rg || ""}
+            orgaoEmissor={record.orgaoEmissor || ""}
+            ufRG={record.ufRG || ""}
+            sexo={record.sexo || ""}
+            nacionalidade={record.nacionalidade || "BRASILEIRA"}
+            dataNascimento={record.dataNascimento || ""}
+            localNascimento={record.localNascimento || ""}
+            ufNascimento={record.ufNascimento || ""}
+            nomePai={record.nomePai || ""}
+            nomeMae={record.nomeMae || ""}
+            categoria={record.categoria || ""}
+            tipo={record.tipo || ""}
+            registro={record.registro || ""}
+            espelho={record.espelho || ""}
+            validade={record.validade || ""}
+            dataEmissao={record.dataEmissao || ""}
+            primeiraHabilitacao={record.primeiraHabilitacao || ""}
+            localEmissao={record.localEmissao || ""}
+            ufEmissao={record.ufEmissao || ""}
+            assDigital1={record.assDigital1 || ""}
+            assDigital2={record.assDigital2 || record.renach || ""}
+            senhaApp={record.senhaApp || ""}
+            observacoes={record.observacoes || ""}
+            fotoUrl={record.fotoUrl || ""}
+            assinaturaUrl={record.assinaturaUrl || ""}
+            codigoQR={record.codigo_validacao || record.codigo_qr || record.codigoQR || ""}
+            previewWidth={350}
+          />
+        </div>
+
+        {/* PAGINATION DOTS */}
+        <div className="flex gap-2 my-4">
+          <div className="w-2 h-2 rounded-full bg-[#1e40af]"></div>
+          <div className="w-2 h-2 rounded-full border border-gray-400"></div>
+          <div className="w-2 h-2 rounded-full border border-gray-400"></div>
+          <div className="w-2 h-2 rounded-full border border-gray-400"></div>
+        </div>
+
+        {/* ACTION BUTTONS WITH ASSET IMAGES */}
+        <div className="w-full px-4 space-y-3 pb-8">
+          <button className="w-full bg-white p-4 rounded-xl shadow-sm flex items-center gap-4 hover:bg-gray-50 active:scale-[0.99] transition text-left cursor-pointer">
+            <img src="/img/IMG_CNH.png" alt="Histórico" className="w-10 h-10 object-contain" />
+            <span className="text-[#0a1c40] font-semibold text-sm">Histórico de emissões da CNH</span>
+          </button>
+
+          <button className="w-full bg-white p-4 rounded-xl shadow-sm flex items-center gap-4 hover:bg-gray-50 active:scale-[0.99] transition text-left cursor-pointer">
+            <img src="/img/IMG_EXPORTAR.png" alt="Exportar" className="w-10 h-10 object-contain" />
+            <span className="text-[#0a1c40] font-semibold text-sm">Exportar</span>
+          </button>
+
+          <button className="w-full bg-white p-4 rounded-xl shadow-sm flex items-center gap-4 hover:bg-gray-50 active:scale-[0.99] transition text-left cursor-pointer">
+            <img src="/img/IMG_REMOVER.png" alt="Remover" className="w-10 h-10 object-contain" />
+            <span className="text-[#0a1c40] font-semibold text-sm">Remover</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (navigator.clipboard) {
+                navigator.clipboard.writeText(record.codigo_validacao || record.codigo_qr || record.cpf || "");
+                alert("Código/QR Code copiado!");
+              }
+            }}
+            className="w-full bg-white p-4 rounded-xl shadow-sm flex items-center gap-4 hover:bg-gray-50 active:scale-[0.99] transition text-left cursor-pointer"
+          >
+            <img src="/img/IMG_COPIAR.png" alt="Copiar QR Code" className="w-10 h-10 object-contain" />
+            <span className="text-[#0a1c40] font-semibold text-sm">Copiar QR Code</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
+

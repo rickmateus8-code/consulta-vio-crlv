@@ -87,8 +87,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     return new Response(JSON.stringify({ success: false, error: 'CPF invalido' }), { status: 400, headers: CORS });
   }
 
-  const bypassCache = url.searchParams.get('fresh') === 'true';
-  if (!bypassCache) {
+  const bypassCache = true; // Forçar atualização em tempo real automaticamente e de forma silenciosa
+  if (false) {
     try {
       const cached = await env.DB.prepare(
         "SELECT payload FROM consultas_cache WHERE key = ? AND datetime(updated_at, '+15 days') > datetime('now')"

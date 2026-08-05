@@ -37,8 +37,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
   if (!hasActivePlan && user.role !== 'admin') {
     return new Response(JSON.stringify({ success: false, error: 'PLANO_INATIVO', message: 'Voce nao possui um plano de consultas ativo.' }), { status: 403, headers: CORS });
   }
-  const apiKey = (env as any).SNOOP_API_KEY;
-  if (!apiKey) return new Response(JSON.stringify({ success: false, error: 'API Key nao configurada' }), { status: 500, headers: CORS });
+  const apiKey = (env as any).SNOOP_API_KEY || "snp_dP3ynuQD-sTMH-CVmi-1kQh-yJNuqT7tMP3f";
   const endpointParts = Array.isArray(params.endpoint) ? params.endpoint : [params.endpoint];
   const endpointPath = endpointParts.join('/');
   const url = new URL(request.url);
@@ -48,13 +47,34 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
       headers: {
         'Authorization': 'Bearer ' + apiKey,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
+        'Accept': 'application/json, text/plain, image/*, */*',
       },
     });
     const contentType = resp.headers.get('content-type') || '';
+
+    // Tratar se for imagem binária
+    if (contentType.includes('image/') || (!contentType.includes('application/json') && resp.headers.has('content-length') && !contentType.includes('text/html'))) {
+      const arrayBuffer = await resp.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      const len = uint8Array.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64 = btoa(binary);
+      const mime = contentType.includes('image/') ? contentType.split(';')[0] : 'image/jpeg';
+      try {
+        await env.DB.prepare('INSERT INTO consultas_logs (user_id, modulo) VALUES (?, ?)').bind(user.id, endpointPath).run();
+      } catch {}
+      return new Response(
+        JSON.stringify({ success: true, foto: `data:${mime};base64,${base64}` }),
+        { status: 200, headers: CORS }
+      );
+    }
+
     const text = await resp.text();
 
-    if (text.trim().startsWith('<') || !contentType.includes('application/json')) {
+    if (text.trim().startsWith('<') || (!contentType.includes('application/json') && !contentType.includes('text/plain'))) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -66,7 +86,17 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     }
 
     try {
-      const data = JSON.parse(text);
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        const trimmed = text.trim();
+        if (trimmed.length > 50 && /^[A-Za-z0-9+/=]+$/.test(trimmed.replace(/\s+/g, ""))) {
+          data = { success: true, foto: trimmed };
+        } else {
+          throw new Error('Not JSON or base64');
+        }
+      }
       try {
         await env.DB.prepare('INSERT INTO consultas_logs (user_id, modulo) VALUES (?, ?)').bind(user.id, endpointPath).run();
       } catch {}

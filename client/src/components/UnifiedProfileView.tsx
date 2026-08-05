@@ -169,6 +169,239 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     }
   };
 
+  // ─── CUSTOM RENDER: OPERADORA ───────────────────────────────────────────────
+  const rawOp = data.body || data.data || data;
+  const isOperadora = !!(rawOp.operadora || rawOp.carrier || rawOp.portabilidade || rawOp.status_operadora);
+  if (isOperadora && !data.perfil?.cpf_dados) {
+    const operadora = rawOp.operadora || rawOp.carrier || "Não informado";
+    const portado = rawOp.portado ?? rawOp.portabilidade ?? "Não informado";
+    const telefone = rawOp.telefone || rawOp.phone || "Não informado";
+    const ddd = rawOp.ddd || "";
+    const estado = rawOp.uf || rawOp.estado || "";
+
+    const copyOpData = () => {
+      const text = `=== CONSULTA OPERADORA ===\nTELEFONE: ${telefone}\nOPERADORA: ${operadora}\nPORTADO: ${portado}\nDDD: ${ddd}\nESTADO: ${estado}`;
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Dados da operadora copiados!");
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+      <div className="w-full space-y-6 text-slate-100 font-sans select-text bg-slate-900/90 border border-violet-500/30 p-6 rounded-2xl shadow-2xl">
+        <div className="flex justify-between items-center pb-3 border-b border-violet-500/20 no-print">
+          <span className="text-sm font-bold text-violet-300">Consulta de Operadora</span>
+          <div className="flex gap-2">
+            <button onClick={copyOpData} className="px-3 py-1.5 rounded-xl bg-violet-900/40 hover:bg-violet-800/60 text-violet-200 border border-violet-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all">
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-violet-400" />}
+              <span>{copied ? "Copiado!" : "Copiar"}</span>
+            </button>
+            {onClose && (
+              <button onClick={onClose} className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 transition-all">
+                <ArrowLeft className="w-3.5 h-3.5" /> Voltar
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Número de Telefone</span>
+            <span className="font-mono font-bold text-white text-base block mt-1">{telefone}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Operadora Celular</span>
+            <span className="font-bold text-violet-300 text-base block mt-1">{operadora}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Portabilidade Recente?</span>
+            <span className={`font-bold text-sm block mt-1 ${portado === true || String(portado).toLowerCase() === "sim" ? "text-emerald-400" : "text-slate-300"}`}>
+              {String(portado).toUpperCase()}
+            </span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Região / DDD / UF</span>
+            <span className="font-bold text-white text-sm block mt-1">{ddd ? `DDD ${ddd}` : ""} {estado ? `(${estado})` : "Não informado"}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── CUSTOM RENDER: BANCOS ──────────────────────────────────────────────────
+  const rawBank = data.body || data.data || data;
+  const isBanco = !!(rawBank.ispb || rawBank.COMPE || rawBank.banco || rawBank.fullName);
+  if (isBanco && !data.perfil?.cpf_dados) {
+    const nomeBanco = rawBank.name || rawBank.fullName || rawBank.banco || rawBank.NOME || "Não informado";
+    const codigoBanco = rawBank.code || rawBank.COMPE || rawBank.codigo || "Não informado";
+    const ispb = rawBank.ispb || "Não informado";
+    const site = rawBank.site || "";
+
+    const copyBankData = () => {
+      const text = `=== CONSULTA BANCO ===\nBANCO: ${nomeBanco}\nCÓDIGO COMPE: ${codigoBanco}\nISPB: ${ispb}\nSITE: ${site}`;
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Dados do banco copiados!");
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+      <div className="w-full space-y-6 text-slate-100 font-sans select-text bg-slate-900/90 border border-violet-500/30 p-6 rounded-2xl shadow-2xl">
+        <div className="flex justify-between items-center pb-3 border-b border-violet-500/20 no-print">
+          <span className="text-sm font-bold text-violet-300">Consulta de Banco / ISPB</span>
+          <div className="flex gap-2">
+            <button onClick={copyBankData} className="px-3 py-1.5 rounded-xl bg-violet-900/40 hover:bg-violet-800/60 text-violet-200 border border-violet-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all">
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-violet-400" />}
+              <span>{copied ? "Copiado!" : "Copiar"}</span>
+            </button>
+            {onClose && (
+              <button onClick={onClose} className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 transition-all">
+                <ArrowLeft className="w-3.5 h-3.5" /> Voltar
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10 md:col-span-2">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Razão Social / Nome da Instituição</span>
+            <span className="font-bold text-white text-base block mt-1">{nomeBanco}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Código COMPE (Compensação)</span>
+            <span className="font-mono font-bold text-violet-300 text-base block mt-1">{codigoBanco}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">ISPB (Identificador de Sistema de Pagamentos)</span>
+            <span className="font-mono font-bold text-white text-base block mt-1">{ispb}</span>
+          </div>
+          {site && (
+            <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10 md:col-span-2">
+              <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Website Oficial</span>
+              <a href={site.startsWith("http") ? site : `https://${site}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 font-semibold text-sm flex items-center gap-1.5 mt-1">
+                {site} <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── CUSTOM RENDER: TÍTULO ELEITORAL ────────────────────────────────────────
+  const rawTse = data.body || data.data || data;
+  const isTitulo = !!(rawTse.inscricao || rawTse.secao || rawTse.zona || rawTse.titulo_eleitor || rawTse.TITULO_ELEITOR);
+  if (isTitulo && !data.perfil?.cpf_dados) {
+    const nomeEleitor = rawTse.nome || rawTse.NOME || "Não informado";
+    const inscricao = rawTse.inscricao || rawTse.titulo_eleitor || rawTse.TITULO_ELEITOR || "Não informado";
+    const secao = rawTse.secao || "Não informado";
+    const zona = rawTse.zona || "Não informado";
+    const municipio = rawTse.municipio || "Não informado";
+    const uf = rawTse.uf || rawTse.estado || "";
+
+    const copyTseData = () => {
+      const text = `=== CONSULTA TÍTULO ELEITORAL ===\nNOME: ${nomeEleitor}\nINSCRIÇÃO: ${inscricao}\nSEÇÃO: ${secao}\nZONA: ${zona}\nMUNICÍPIO/UF: ${municipio} - ${uf}`;
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Dados eleitorais copiados!");
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+      <div className="w-full space-y-6 text-slate-100 font-sans select-text bg-slate-900/90 border border-violet-500/30 p-6 rounded-2xl shadow-2xl">
+        <div className="flex justify-between items-center pb-3 border-b border-violet-500/20 no-print">
+          <span className="text-sm font-bold text-violet-300">Consulta de Título Eleitoral</span>
+          <div className="flex gap-2">
+            <button onClick={copyTseData} className="px-3 py-1.5 rounded-xl bg-violet-900/40 hover:bg-violet-800/60 text-violet-200 border border-violet-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all">
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-violet-400" />}
+              <span>{copied ? "Copiado!" : "Copiar"}</span>
+            </button>
+            {onClose && (
+              <button onClick={onClose} className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 transition-all">
+                <ArrowLeft className="w-3.5 h-3.5" /> Voltar
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10 md:col-span-2">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Nome Completo do Eleitor</span>
+            <span className="font-bold text-white text-base block mt-1">{nomeEleitor}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Número de Inscrição</span>
+            <span className="font-mono font-bold text-violet-300 text-base block mt-1">{inscricao}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Zona Eleitoral / Seção</span>
+            <span className="font-bold text-white text-sm block mt-1">Zona: {zona} • Seção: {secao}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10 md:col-span-2">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Domicílio Eleitoral</span>
+            <span className="font-bold text-white text-sm block mt-1">{municipio} {uf ? ` - ${uf}` : ""}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── CUSTOM RENDER: PIS / PASEP / NIT ────────────────────────────────────────
+  const rawPis = data.body || data.data || data;
+  const isPIS = !!(rawPis.pis || rawPis.nis || rawPis.nit || rawPis.pasep || rawPis.PIS || rawPis.NIS);
+  if (isPIS && !data.perfil?.cpf_dados) {
+    const nomeTrabalhador = rawPis.nome || rawPis.NOME || "Não informado";
+    const pisNum = rawPis.pis || rawPis.nis || rawPis.nit || rawPis.pasep || rawPis.PIS || rawPis.NIS || "Não informado";
+    const cpf = rawPis.cpf || rawPis.CPF || "Não informado";
+    const ctps = rawPis.ctps || rawPis.carteira_trabalho || "Não informado";
+
+    const copyPisData = () => {
+      const text = `=== CONSULTA PIS/PASEP ===\nNOME: ${nomeTrabalhador}\nPIS/NIS: ${pisNum}\nCPF: ${cpf}\nCTPS: ${ctps}`;
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Dados do PIS/PASEP copiados!");
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+      <div className="w-full space-y-6 text-slate-100 font-sans select-text bg-slate-900/90 border border-violet-500/30 p-6 rounded-2xl shadow-2xl">
+        <div className="flex justify-between items-center pb-3 border-b border-violet-500/20 no-print">
+          <span className="text-sm font-bold text-violet-300">Consulta PIS / PASEP / NIS</span>
+          <div className="flex gap-2">
+            <button onClick={copyPisData} className="px-3 py-1.5 rounded-xl bg-violet-900/40 hover:bg-violet-800/60 text-violet-200 border border-violet-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all">
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-violet-400" />}
+              <span>{copied ? "Copiado!" : "Copiar"}</span>
+            </button>
+            {onClose && (
+              <button onClick={onClose} className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 transition-all">
+                <ArrowLeft className="w-3.5 h-3.5" /> Voltar
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10 md:col-span-2">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Nome do Trabalhador</span>
+            <span className="font-bold text-white text-base block mt-1">{nomeTrabalhador}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Número PIS / NIS / NIT</span>
+            <span className="font-mono font-bold text-violet-300 text-base block mt-1">{pisNum}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Documento Vinculado (CPF)</span>
+            <span className="font-mono font-bold text-white text-sm block mt-1">{cpf}</span>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10 md:col-span-2">
+            <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Carteira de Trabalho (CTPS)</span>
+            <span className="font-bold text-white text-sm block mt-1">{ctps}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Detectar se a resposta é de Consulta de Placa (Veículo)
   const isVehicle = data.placa || data.chassi || data.renavam || data.marca_modelo || data.body?.placa || data.data?.placa;
   if (isVehicle && !data.perfil?.cpf_dados) {

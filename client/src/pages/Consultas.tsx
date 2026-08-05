@@ -52,33 +52,41 @@ export function evaluateInputValidation(input: string, tabId: string): { status:
   const val = input.trim();
   const clean = val.replace(/\D/g, "");
 
-  if (tabId === "cpf" || tabId === "parentes" || tabId === "score" || tabId === "foto" || tabId === "enriquecimento") {
+  if (tabId === "cpf" || tabId === "parentes" || tabId === "score" || tabId === "foto" || tabId === "enriquecimento" || tabId === "vizinhos") {
     if (clean.length < 11) return { status: "invalid", label: "Incompleto" };
     return isValidCPF(clean) ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
   }
   if (tabId === "cep") return clean.length === 8 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
-  if (tabId === "telefone") return clean.length >= 10 && clean.length <= 11 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  if (tabId === "telefone" || tabId === "operadora") return clean.length >= 10 && clean.length <= 11 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
   if (tabId === "placa") return /^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z0-9]\d{2}$/i.test(val) ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
   if (tabId === "email") return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
   if (tabId === "rg") return val.length >= 4 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
   if (tabId === "nome") return val.length >= 3 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  if (tabId === "banco") return clean.length >= 1 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  if (tabId === "titulo" || tabId === "pis") return clean.length >= 9 ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Inválido" };
+  if (tabId === "endereco") return val.includes(";") ? { status: "valid", label: "Válido" } : { status: "invalid", label: "Formato UF;Rua" };
 
   return { status: "valid", label: "Válido" };
 }
 
 // ─── Sub-Abas Principais de Consulta ──────────────────────────────────────────
 const MAIN_TABS = [
-  { id: "cpf", label: "CPF", placeholder: "Ex: 123.456.789-00", emoji: "🪪", headerTitle: "Master Buscas Complete", headerDesc: "Consulte informações navegando pelas categorias disponíveis para encontrar os dados desejados." },
+  { id: "cpf", label: "CPF", placeholder: "Ex: 123.456.789-00", emoji: "🪪", headerTitle: "Master Buscas Complete", headerDesc: "Consulte informações unificadas completas por CPF." },
   { id: "rg", label: "RG", placeholder: "Ex: 123456789", emoji: "📄", headerTitle: "Consulta de RG", headerDesc: "Realize a consulta e visualize dados cadastrais vinculados ao Registro Geral." },
   { id: "cep", label: "CEP", placeholder: "Ex: 01234-567", emoji: "📍", headerTitle: "Consulta de CEP", headerDesc: "Consulte endereços e moradores cadastrados por CEP." },
-  { id: "email", label: "Email", placeholder: "Ex: email@exemplo.com", emoji: "✉️", headerTitle: "Consulta de E-mail", headerDesc: "Consulte registros e vinculos associados ao endereço de e-mail." },
+  { id: "email", label: "Email", placeholder: "Ex: email@exemplo.com", emoji: "✉️", headerTitle: "Consulta de E-mail", headerDesc: "Consulte registros e vínculos associados ao endereço de e-mail." },
   { id: "telefone", label: "Telefone", placeholder: "Ex: (11) 99999-9999", emoji: "📞", headerTitle: "Consulta de Telefone", headerDesc: "Proprietário e histórico de linhas telefônicas com DDD." },
   { id: "nome", label: "Nome", placeholder: "Ex: MARIA CAROLINA DA SILVA", emoji: "👤", headerTitle: "Busca por Nome", headerDesc: "Pesquise por nome completo ou parcial para obter pessoas vinculadas." },
-  { id: "placa", label: "Placa", placeholder: "Ex: FVV5A52 ou ABC1234", emoji: "🚗", headerTitle: "Consulta de Placa", headerDesc: "Realize a consulta e visualize dados da placa, chassi e demais informações retornadas." },
+  { id: "placa", label: "Placa", placeholder: "Ex: FVV5A52 ou ABC1234", emoji: "🚗", headerTitle: "Consulta de Placa", headerDesc: "Realize a consulta e visualize dados da placa, chassi, motor e renavam." },
   { id: "parentes", label: "Parentes", placeholder: "Ex: 123.456.789-00", emoji: "👨‍👩‍👧", headerTitle: "Consulta de Parentes", headerDesc: "Árvore e lista de vínculos familiares por CPF." },
+  { id: "vizinhos", label: "Vizinhos", placeholder: "Ex: 123.456.789-00", emoji: "👥", headerTitle: "Consulta de Vizinhos", headerDesc: "Busque os vizinhos e moradores próximos associados ao CPF informado." },
   { id: "score", label: "Score", placeholder: "Ex: 123.456.789-00", emoji: "📊", headerTitle: "Score de Crédito", headerDesc: "Análise de pontuação e perfil Serasa Mosaic por CPF." },
-  { id: "foto", label: "Fotos", placeholder: "Ex: 123.456.789-00", emoji: "📷", headerTitle: "Fotos Nacionais e Estaduais", headerDesc: "Galeria de documentos e fotos cadastradas em bases oficiais." },
-  { id: "enriquecimento", label: "Enriquecimento", placeholder: "Ex: 123.456.789-00", emoji: "⚡", headerTitle: "Enriquecimento / Higienização", headerDesc: "Higienização profunda de dados cadastrais por CPF." },
+  { id: "foto", label: "Fotos", placeholder: "Ex: 123.456.789-00", emoji: "📷", headerTitle: "Fotos Nacionais", headerDesc: "Galeria de fotos oficiais cadastradas por CPF." },
+  { id: "endereco", label: "Endereço", placeholder: "Ex: SP;Paulista (UF;Rua)", emoji: "🏠", headerTitle: "Busca por Endereço", headerDesc: "Digite UF e Logradouro separados por ponto e vírgula para buscar moradores." },
+  { id: "operadora", label: "Operadora", placeholder: "Ex: (11) 99999-9999", emoji: "📶", headerTitle: "Consulta de Operadora", headerDesc: "Identifique a operadora celular atual e o status do número de telefone." },
+  { id: "banco", label: "Bancos", placeholder: "Ex: 001", emoji: "🏦", headerTitle: "Consulta de Bancos", headerDesc: "Consulte a instituição bancária oficial a partir de seu código COMPE." },
+  { id: "titulo", label: "Título Eleitor", placeholder: "Ex: 123456789012", emoji: "🗳️", headerTitle: "Título de Eleitor", headerDesc: "Consulte a situação cadastral do Título de Eleitor." },
+  { id: "pis", label: "PIS/NIS", placeholder: "Ex: 12345678901", emoji: "💳", headerTitle: "Consulta PIS / NIS", headerDesc: "Consulte o cadastro do PIS/PASEP e vínculos do trabalhador." },
 ];
 
 interface Module {
@@ -98,13 +106,12 @@ const MODULES: Module[] = [
   { id: "rg", label: "Consulta RG", description: "Consulta por Registro Geral", emoji: "🪪", category: "condutores", dailyLimit: 500 },
   { id: "cep", label: "Consulta CEP", description: "Moradores e endereços por CEP", emoji: "📍", category: "utilitarios", dailyLimit: 500 },
   { id: "placa", label: "Consulta Placa", description: "Dados completos do veículo por placa", emoji: "🚗", category: "veiculares", dailyLimit: 500 },
-  { id: "frota", label: "Consulta Frota", description: "Veículos vinculados por CPF/CNPJ", emoji: "🚙", category: "veiculares", dailyLimit: 500 },
-  { id: "renavam", label: "Consulta Renavam", description: "Pesquisa por código Renavam do veículo", emoji: "📋", category: "veiculares", dailyLimit: 500 },
-  { id: "chassi", label: "Consulta Chassi", description: "Pesquisa por número de Chassi", emoji: "⚙️", category: "veiculares", dailyLimit: 500 },
-  { id: "motor", label: "Consulta Motor", description: "Validação por número do motor", emoji: "🔧", category: "veiculares", dailyLimit: 500 },
-  { id: "bo_placa", label: "Consulta B.O Placa", description: "Boletins de ocorrência por placa", emoji: "🚔", category: "veiculares", dailyLimit: 500 },
-  { id: "infracoes", label: "Consulta Infrações", description: "Multas e débitos do veículo", emoji: "📄", category: "veiculares", dailyLimit: 500 },
-  { id: "vistoria", label: "Vistoria Iseek", description: "Histórico completo de vistorias", emoji: "🚗", category: "veiculares", dailyLimit: 500 },
+  { id: "endereco", label: "Busca por Endereço", description: "Moradores por logradouro e UF (formato UF;Rua)", emoji: "🏠", category: "utilitarios", dailyLimit: 500 },
+  { id: "vizinhos", label: "Consulta Vizinhos", description: "Vizinhos e moradores próximos por CPF", emoji: "👥", category: "mais_usados", dailyLimit: 500 },
+  { id: "operadora", label: "Consulta Operadora", description: "Descubra a operadora de um celular", emoji: "📶", category: "utilitarios", dailyLimit: 500 },
+  { id: "banco", label: "Consulta Bancos", description: "Código e dados de compensação de bancos", emoji: "🏦", category: "financeiro", dailyLimit: 500 },
+  { id: "titulo", label: "Título de Eleitor", description: "Consulta cadastral do Título por número", emoji: "🗳️", category: "condutores", dailyLimit: 500 },
+  { id: "pis", label: "Consulta PIS / NIS", description: "PIS/NIS e vínculos de trabalho", emoji: "💳", category: "financeiro", dailyLimit: 500 },
   { id: "parentes", label: "Consulta Parentes", description: "Árvore de parentes vinculados por CPF", emoji: "👨‍👩‍👧", category: "mais_usados", dailyLimit: 500 },
   { id: "score", label: "Score de Crédito", description: "Análise de crédito e Serasa por CPF", emoji: "📊", category: "financeiro", dailyLimit: 500 },
   { id: "foto", label: "Fotos Nacionais", description: "Fotos oficiais cadastradas por CPF", emoji: "📷", category: "fotos", dailyLimit: 100 },
@@ -184,20 +191,22 @@ export default function Consultas() {
   // Formatador automático por tipo de aba
   const handleInputChange = (val: string) => {
     let formatted = val;
-    if (activeTabId === "cpf" || activeTabId === "parentes" || activeTabId === "score" || activeTabId === "foto" || activeTabId === "enriquecimento") {
+    if (activeTabId === "cpf" || activeTabId === "parentes" || activeTabId === "score" || activeTabId === "foto" || activeTabId === "enriquecimento" || activeTabId === "vizinhos") {
       formatted = formatCPF(val);
     } else if (activeTabId === "cep") {
       formatted = formatCEP(val);
-    } else if (activeTabId === "telefone") {
+    } else if (activeTabId === "telefone" || activeTabId === "operadora") {
       formatted = formatTelefone(val);
     } else if (activeTabId === "placa") {
       formatted = formatPlaca(val);
-    } else if (activeTabId === "rg") {
+    } else if (activeTabId === "rg" || activeTabId === "banco" || activeTabId === "titulo" || activeTabId === "pis") {
       formatted = val.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
     } else if (activeTabId === "nome") {
       formatted = val.toUpperCase();
     } else if (activeTabId === "email") {
       formatted = val.toLowerCase().trim();
+    } else if (activeTabId === "endereco") {
+      formatted = val;
     }
     setQuickInput(formatted);
   };
@@ -231,8 +240,14 @@ export default function Consultas() {
       let data: any;
       if (activeTabId === "placa") {
         data = await SnoopAPI.snoopPlaca(val.replace(/[^a-zA-Z0-9]/g, ""));
-      } else if (cleanVal.length === 11 || activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto" || activeTabId === "parentes" || activeTabId === "score") {
+      } else if (activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto") {
         data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
+      } else if (activeTabId === "parentes") {
+        data = await SnoopAPI.snoopParentes(cleanVal || val);
+      } else if (activeTabId === "vizinhos") {
+        data = await SnoopAPI.snoopVizinhos(cleanVal || val);
+      } else if (activeTabId === "score") {
+        data = await SnoopAPI.snoopScore(cleanVal || val);
       } else if (activeTabId === "rg") {
         data = await SnoopAPI.snoopRG(val);
       } else if (activeTabId === "cep") {
@@ -241,6 +256,19 @@ export default function Consultas() {
         data = await SnoopAPI.snoopEmail(val);
       } else if (activeTabId === "telefone") {
         data = await SnoopAPI.snoopTelefoneFull(cleanVal || val);
+      } else if (activeTabId === "operadora") {
+        data = await SnoopAPI.snoopOperadora(cleanVal || val);
+      } else if (activeTabId === "banco") {
+        data = await SnoopAPI.snoopBanco(val);
+      } else if (activeTabId === "titulo") {
+        data = await SnoopAPI.snoopTitulo(val);
+      } else if (activeTabId === "pis") {
+        data = await SnoopAPI.snoopPIS(val);
+      } else if (activeTabId === "endereco") {
+        const parts = val.split(";");
+        const uf = parts[0].trim().toUpperCase();
+        const logradouro = parts[1].trim();
+        data = await SnoopAPI.snoopEndereco(uf, logradouro);
       } else if (activeTabId === "nome") {
         const sanitizedNome = val.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
         data = await SnoopAPI.snoopNome(sanitizedNome);
@@ -281,7 +309,7 @@ export default function Consultas() {
   // Selecionar um módulo no grid
   const handleSelectModule = (modId: string) => {
     setViewMode("dashboard");
-    setActiveTabId(modId === "frota" || modId === "renavam" || modId === "chassi" || modId === "motor" || modId === "bo_placa" || modId === "infracoes" || modId === "vistoria" ? "placa" : modId);
+    setActiveTabId(modId);
     setQuickInput("");
     setResult(null);
     setError(null);

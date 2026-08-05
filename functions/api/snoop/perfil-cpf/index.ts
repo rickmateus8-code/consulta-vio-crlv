@@ -38,14 +38,37 @@ async function snoopGet(endpoint: string, params: Record<string, string>, apiKey
       headers: {
         'Authorization': 'Bearer ' + apiKey,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
+        'Accept': 'application/json, text/plain, image/*, */*',
       },
       signal: AbortSignal.timeout(9000),
     });
     if (!resp.ok) return null;
+
+    const contentType = resp.headers.get('content-type') || '';
+    if (contentType.includes('image/') || (!contentType.includes('application/json') && resp.headers.has('content-length') && !contentType.includes('text/html'))) {
+      const arrayBuffer = await resp.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      const len = uint8Array.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64 = btoa(binary);
+      const mime = contentType.includes('image/') ? contentType.split(';')[0] : 'image/jpeg';
+      return { success: true, foto: `data:${mime};base64,${base64}` };
+    }
+
     const text = await resp.text();
     if (text.trim().startsWith('<')) return null;
-    return JSON.parse(text);
+    try {
+      return JSON.parse(text);
+    } catch {
+      const trimmed = text.trim();
+      if (trimmed.length > 50 && /^[A-Za-z0-9+/=]+$/.test(trimmed.replace(/\s+/g, ""))) {
+        return { success: true, foto: trimmed };
+      }
+      return null;
+    }
   } catch { return null; }
 }
 
@@ -57,8 +80,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   if (!hasActivePlan && user.role !== 'admin') {
     return new Response(JSON.stringify({ success: false, error: 'PLANO_INATIVO' }), { status: 403, headers: CORS });
   }
-  const apiKey = (env as any).SNOOP_API_KEY;
-  if (!apiKey) return new Response(JSON.stringify({ success: false, error: 'API Key nao configurada' }), { status: 500, headers: CORS });
+  const apiKey = (env as any).SNOOP_API_KEY || "snp_dP3ynuQD-sTMH-CVmi-1kQh-yJNuqT7tMP3f";
   const url = new URL(request.url);
   const cpf = (url.searchParams.get('cpf') || '').replace(/\D/g, '');
   if (!cpf || cpf.length < 11) {

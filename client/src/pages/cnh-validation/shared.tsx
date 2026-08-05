@@ -6,6 +6,9 @@ export interface CNHValidationRecord {
   codigoQR?: string;
   codigo_qr?: string;
   codigo_validacao?: string;
+  assDigital1?: string;
+  assDigital2?: string;
+  renach?: string;
   nome?: string;
   cpf?: string;
   rg?: string;
@@ -102,39 +105,42 @@ export function validationUrl(record?: CNHValidationRecord | null) {
 }
 
 export function normalizeRecord(payload: any): CNHValidationRecord {
-  const root = payload?.data && typeof payload.data === "object" ? payload.data : payload;
-  const nested = root?.data && typeof root.data === "object" ? root.data : {};
+  const raw = payload?.data && typeof payload.data === "object" ? payload.data : payload;
+  const data = raw?.data && typeof raw.data === "object" ? raw.data : {};
   return {
-    ...root,
-    ...nested,
-    nome: root?.nome || nested?.nome || nested?.nomeCompleto || "",
-    cpf: root?.cpf || nested?.cpf || "",
-    rg: root?.rg || nested?.rg || "",
-    orgaoEmissor: root?.orgaoEmissor || nested?.orgaoEmissor || "",
-    ufRG: root?.ufRG || nested?.ufRG || nested?.ufRg || "",
-    sexo: root?.sexo || nested?.sexo || "",
-    nacionalidade: root?.nacionalidade || nested?.nacionalidade || "BRASILEIRA",
-    dataNascimento: root?.dataNascimento || nested?.dataNascimento || nested?.nascimento || "",
-    localNascimento: root?.localNascimento || nested?.localNascimento || "",
-    ufNascimento: root?.ufNascimento || nested?.ufNascimento || "",
-    nomePai: root?.nomePai || nested?.nomePai || nested?.filiacaoPai || "",
-    nomeMae: root?.nomeMae || nested?.nomeMae || nested?.filiacaoMae || "",
-    categoria: root?.categoria || nested?.categoria || nested?.cat || "",
-    tipo: root?.tipo || nested?.tipo || "",
-    registro: root?.registro || nested?.registro || nested?.nRegistro || nested?.numRegistro || "",
-    espelho: root?.espelho || nested?.espelho || nested?.numeroFormulario || "",
-    validade: root?.validade || nested?.validade || "",
-    dataEmissao: root?.dataEmissao || nested?.dataEmissao || nested?.emissao || "",
-    primeiraHabilitacao: root?.primeiraHabilitacao || nested?.primeiraHabilitacao || nested?.primeiraHab || "",
-    localEmissao: root?.localEmissao || nested?.localEmissao || nested?.local || "",
-    ufEmissao: root?.ufEmissao || nested?.ufEmissao || "",
-    observacoes: root?.observacoes || nested?.observacoes || nested?.obs || "",
-    fotoUrl: root?.fotoUrl || nested?.fotoUrl || nested?.foto || "",
-    assinaturaUrl: root?.assinaturaUrl || nested?.assinaturaUrl || nested?.assinatura || "",
-    codigoQR: root?.codigoQR || nested?.codigoQR || root?.codigo_qr || nested?.codigo_qr || root?.codigo_validacao || nested?.codigo_validacao || root?.id || nested?.id || "",
-    codigo_qr: root?.codigo_qr || nested?.codigo_qr || "",
-    codigo_validacao: root?.codigo_validacao || nested?.codigo_validacao || "",
-    status: root?.status || nested?.status || "emitido",
+    ...raw,
+    ...data,
+    nome: raw?.nome || data?.nome || data?.nomeCompleto || "",
+    cpf: raw?.cpf || data?.cpf || "",
+    rg: raw?.rg || data?.rg || "",
+    orgaoEmissor: raw?.orgaoEmissor || data?.orgaoEmissor || "",
+    ufRG: raw?.ufRG || data?.ufRG || data?.ufRg || "",
+    sexo: raw?.sexo || data?.sexo || "",
+    nacionalidade: raw?.nacionalidade || data?.nacionalidade || "BRASILEIRA",
+    dataNascimento: raw?.dataNascimento || data?.dataNascimento || data?.nascimento || "",
+    localNascimento: raw?.localNascimento || data?.localNascimento || "",
+    ufNascimento: raw?.ufNascimento || data?.ufNascimento || "",
+    nomePai: raw?.nomePai || data?.nomePai || data?.filiacaoPai || "",
+    nomeMae: raw?.nomeMae || data?.nomeMae || data?.filiacaoMae || "",
+    categoria: raw?.categoria || data?.categoria || data?.cat || "",
+    tipo: raw?.tipo || data?.tipo || "",
+    registro: raw?.registro || data?.registro || data?.nRegistro || data?.numRegistro || "",
+    espelho: raw?.espelho || data?.espelho || data?.numeroFormulario || "",
+    validade: raw?.validade || data?.validade || "",
+    dataEmissao: raw?.dataEmissao || data?.dataEmissao || data?.emissao || "",
+    primeiraHabilitacao: raw?.primeiraHabilitacao || data?.primeiraHabilitacao || data?.primeiraHab || "",
+    localEmissao: raw?.localEmissao || data?.localEmissao || data?.local || "",
+    ufEmissao: raw?.ufEmissao || data?.ufEmissao || "",
+    observacoes: raw?.observacoes || data?.observacoes || data?.obs || "",
+    fotoUrl: raw?.fotoUrl || data?.fotoUrl || data?.foto || "",
+    assinaturaUrl: raw?.assinaturaUrl || data?.assinaturaUrl || data?.assinatura || "",
+    assDigital1: data?.assDigital1 || raw?.assDigital1 || "",
+    assDigital2: data?.assDigital2 || raw?.assDigital2 || data?.renach || raw?.renach || "",
+    renach: data?.renach || raw?.renach || data?.assDigital2 || raw?.assDigital2 || "",
+    codigoQR: raw?.codigo_validacao || raw?.codigo_qr || raw?.codigoQR || data?.codigo_validacao || data?.codigo_qr || data?.codigoQR || "",
+    codigo_qr: raw?.codigo_qr || data?.codigo_qr || "",
+    codigo_validacao: raw?.codigo_validacao || data?.codigo_validacao || "",
+    status: raw?.status || data?.status || "emitido",
   };
 }
 
@@ -153,7 +159,10 @@ export function useCnhRecord(cpf: string) {
     let active = true;
     setLoading(true);
     setError(null);
-    fetch(`/api/cnh/validate?cpf=${value}`)
+    const searchParams = new URLSearchParams(window.location.search);
+    const orig = searchParams.get("origem_tabela");
+    const origParam = orig ? `&origem_tabela=${orig}` : "";
+    fetch(`/api/cnh/validate?cpf=${value}${origParam}`)
       .then(async (response) => {
         const json = await response.json().catch(() => ({}));
         if (!response.ok || !json?.success) {

@@ -45,7 +45,7 @@ function GlobalSupportWhatsappSync() {
 }
 
 // Helper for protected routes
-function ProtectedRoute({ component: Component, adminOnly = false, requiredTool, ...rest }: any) {
+function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: any) {
   const { user, loading, isAdmin } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -55,26 +55,12 @@ function ProtectedRoute({ component: Component, adminOnly = false, requiredTool,
         setLocation("/login");
       } else if (adminOnly && !isAdmin) {
         setLocation("/dashboard");
-      } else if (!isAdmin && requiredTool) {
-        const perms = user.permissions 
-          ? (typeof user.permissions === 'string' ? JSON.parse(user.permissions) : user.permissions)
-          : { ferramentas: [] };
-        if (!perms.ferramentas?.includes(requiredTool)) {
-          setLocation("/dashboard");
-        }
       }
     }
-  }, [user, loading, isAdmin, adminOnly, requiredTool, setLocation]);
+  }, [user, loading, isAdmin, adminOnly, setLocation]);
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   if (!user || (adminOnly && !isAdmin)) return null;
-  
-  if (!isAdmin && requiredTool) {
-    const perms = user.permissions 
-      ? (typeof user.permissions === 'string' ? JSON.parse(user.permissions) : user.permissions)
-      : { ferramentas: [] };
-    if (!perms.ferramentas?.includes(requiredTool)) return null;
-  }
 
   return <Component {...rest} />;
 }
@@ -92,8 +78,7 @@ import CHACria from "./pages/CHACria";
 import ToxicriaCria from "./pages/ToxicriaCria";
 import ToxicriaSalvos from "./pages/ToxicriaSalvos";
 import HistoricoSP from "./pages/HistoricoSP";
-import HistoricoCria from "./pages/HistoricoCria";
-import HistoricoEditar from "./pages/HistoricoEditar";
+import HistoricoUNINTER from "./pages/HistoricoUNINTER";
 import AdminDashboard from "./pages/AdminDashboard";
 import ReceitaCria from "./pages/ReceitaCria";
 import AtestadoEditar from "./pages/AtestadoEditar";
@@ -117,21 +102,17 @@ import HistoricoSPSalvos from "./pages/HistoricoSPSalvos";
 import HistoricoUNINTERSalvos from "./pages/HistoricoUNINTERSalvos";
 import PeticaoCria from "./pages/PeticaoCria";
 import PeticaoSalvos from "./pages/PeticaoSalvos";
+import ValidationPeticao from "./pages/ValidationPeticao";
 import JudicialSearch from "./pages/JudicialSearch";
 import JudicialDetails from "./pages/JudicialDetails";
 import JudicialHistory from "./pages/JudicialHistory";
-import JudicialOabDetails from "./pages/JudicialOabDetails";
 import DiplomaUninterCria from "./pages/DiplomaUninterCria";
 import CNHLanding from "./pages/cnh-validation/CNHLanding";
-import Consultas from "./pages/Consultas";
 
 import CNHAutorizacao from "./pages/cnh-validation/CNHAutorizacao";
 import CNHPainel from "./pages/cnh-validation/CNHPainel";
 import CNHCondutor from "./pages/cnh-validation/CNHCondutor";
 import CNHHabilitacao from "./pages/cnh-validation/CNHHabilitacao";
-
-import CertificadoFGVCria from "./pages/CertificadoFGVCria";
-import BrasilOpenBadgeValidation from "./pages/BrasilOpenBadgeValidation";
 
 // ─── Detectar Domínio ──────────────────────────────────────────────────────────
 const isValidationDomain = typeof window !== 'undefined' && 
@@ -146,15 +127,9 @@ const isVerificaMedDomain = typeof window !== 'undefined' &&
    window.location.hostname === 'www.verificamed.digital');
 
 const isCNHValidationDomain = typeof window !== 'undefined' &&
-  (window.location.hostname === 'carteira-digital-transito-vio.digital' ||
-   window.location.hostname === 'www.carteira-digital-transito-vio.digital');
-
-const isBrasilOpenBadgeDomain = typeof window !== 'undefined' &&
-  (window.location.hostname.includes('brasilopenbadge') ||
-   window.location.hostname === 'brasilopenbadge.dev' ||
-   window.location.hostname === 'www.brasilopenbadge.dev' ||
-   window.location.pathname.startsWith('/pages/badge/') ||
-   window.location.pathname.startsWith('/badge/'));
+  (window.location.hostname.includes('carteira-digital-transito-vio') ||
+   window.location.hostname.includes('cnh-do-brasil') ||
+   window.location.hostname.includes('cnh-digital'));
 
 // ─── Roteador para verificamed.digital (Validação de Receitas) ───────────────────
 function VerificaMedRouter() {
@@ -186,18 +161,6 @@ function CNHValidationRouter() {
       
       {/* Fallback universal para o APP do Condutor */}
       <Route component={CNHLanding} />
-    </Switch>
-  );
-}
-
-// ─── Roteador para brasilopenbadge (Validação de Certificados/Badges) ───────────
-function BrasilOpenBadgeRouter() {
-  return (
-    <Switch>
-      <Route path="/pages/badge/:id" component={BrasilOpenBadgeValidation} />
-      <Route path="/badge/:id" component={BrasilOpenBadgeValidation} />
-      <Route path="/:id" component={BrasilOpenBadgeValidation} />
-      <Route component={BrasilOpenBadgeValidation} />
     </Switch>
   );
 }
@@ -235,11 +198,6 @@ function DocMasterRouter() {
       {/* Painel principal */}
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
-      </Route>
-
-      {/* Área de Consultas SnoopIntelligence */}
-      <Route path="/consultas">
-        <ProtectedRoute component={Consultas} />
       </Route>
 
       {/* Emissão de documentos - slugs principais */}
@@ -319,46 +277,29 @@ function DocMasterRouter() {
       <Route path="/historico-sp-salvos">
         <ProtectedRoute component={HistoricoSPSalvos} />
       </Route>
-      <Route path="/historicocria">
-        <ProtectedRoute component={HistoricoCria} />
-      </Route>
-      <Route path="/historicocria/editar/:id">
-        {(params) => <ProtectedRoute component={HistoricoEditar} params={params} />}
+      <Route path="/historico-uninter">
+        <ProtectedRoute component={HistoricoUNINTER} />
       </Route>
       <Route path="/historico-uninter-salvos">
         <ProtectedRoute component={HistoricoUNINTERSalvos} />
       </Route>
 
       <Route path="/peticaocria">
-        <ProtectedRoute component={PeticaoCria} requiredTool="bot-adv" />
+        <ProtectedRoute component={PeticaoCria} />
       </Route>
       <Route path="/peticaocria-salvos">
-        <ProtectedRoute component={PeticaoSalvos} requiredTool="bot-adv" />
+        <ProtectedRoute component={PeticaoSalvos} />
       </Route>
 
       {/* Consulta de Processos Judiciais */}
       <Route path="/bot-adv/historico">
-        <ProtectedRoute component={JudicialHistory} requiredTool="bot-adv" />
+        <ProtectedRoute component={JudicialHistory} />
       </Route>
-      <Route path="/bot-adv/oab/:uf/:oab">
-        <ProtectedRoute component={JudicialOabDetails} requiredTool="bot-adv" />
-      </Route>
-      <Route path="/bot-adv/:id">
-        {(params) => <ProtectedRoute component={JudicialDetails} params={params} requiredTool="bot-adv" />}
-      </Route>
-      <Route path="/bot-adv">
-        <ProtectedRoute component={JudicialSearch} requiredTool="bot-adv" />
-      </Route>
+      <Route path="/bot-adv/:id" component={JudicialDetails} />
+      <Route path="/bot-adv" component={JudicialSearch} />
 
       <Route path="/diplomaunintercria">
         <ProtectedRoute component={DiplomaUninterCria} />
-      </Route>
-
-      <Route path="/certificado-fgv">
-        <ProtectedRoute component={CertificadoFGVCria} />
-      </Route>
-      <Route path="/certificado-fgv/editar/:id">
-        {(params) => <ProtectedRoute component={CertificadoFGVCria} params={params} />}
       </Route>
 
       {/* Financeiro */}
@@ -403,27 +344,6 @@ function DocMasterRouter() {
 }
 
 function App() {
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isVal = isValidationDomain || isVerificaMedDomain || isCNHValidationDomain || isBrasilOpenBadgeDomain;
-      
-      if (isVal) {
-        document.body.classList.add('is-validation-page');
-        document.title = isValidationDomain 
-          ? "Validação Oficial" 
-          : isVerificaMedDomain 
-            ? "VerificaMed" 
-            : isCNHValidationDomain 
-              ? "Carteira Digital"
-              : "Brasil Open Badge";
-      } else {
-        document.body.classList.remove('is-validation-page');
-        // Apenas setar DocMaster se NÃO for um domínio de validação
-        if (!isVal) document.title = "DocMaster";
-      }
-    }
-  }, []);
-
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable={true}>
@@ -437,9 +357,7 @@ function App() {
                 ? <VerificaMedRouter />
                 : isValidationDomain
                   ? <ValidationRouter />
-                  : isBrasilOpenBadgeDomain
-                    ? <BrasilOpenBadgeRouter />
-                    : <DocMasterRouter />
+                  : <DocMasterRouter />
             }
           </TooltipProvider>
         </AuthProvider>

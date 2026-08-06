@@ -133,6 +133,52 @@ export function calculateProfileHealth(cpfData: any, photoGallery: any[]): { sco
   return { score, label, color };
 }
 
+export function cleanRgIssuer(issuer: string | null): string | null {
+  if (!issuer) return null;
+  let str = issuer.trim();
+  if (!str || str.toUpperCase() === "NULL" || str.toUpperCase() === "INVALIDO" || str.toUpperCase() === "INVÁLIDO") return null;
+
+  if (/SECRETARIA\s+DE\s+SEGURA/i.test(str) || /SEGURANCA\s+PUBLICA/i.test(str)) {
+    if (/SESP/i.test(str)) return "SESP";
+    if (/SSPSP/i.test(str)) return "SSP";
+    if (/SSP/i.test(str)) return "SSP";
+    if (/PC/i.test(str)) return "PC";
+    return "SSP";
+  }
+
+  if (str.includes(" - ")) {
+    const parts = str.split(" - ").map(p => p.trim()).filter(Boolean);
+    if (parts.length > 0) {
+      const first = parts[0].toUpperCase();
+      if (["SSP", "SESP", "DETRAN", "PC", "DIC", "IFP", "IPF", "SPTC", "DGPC"].includes(first)) {
+        return first;
+      }
+      return parts[0];
+    }
+  }
+
+  return str.length > 15 ? str.substring(0, 15) : str;
+}
+
+export function getCPFStateFromNinthDigit(cpfStr: string): string {
+  const digits = (cpfStr || "").replace(/\D/g, "");
+  if (digits.length !== 11) return "";
+  const ninth = digits.charAt(8);
+  switch (ninth) {
+    case '1': return 'DF / GO / MS / MT / TO (1ª Região Fiscal)';
+    case '2': return 'AC / AM / AP / PA / RO / RR (2ª Região Fiscal)';
+    case '3': return 'CE / MA / PI (3ª Região Fiscal)';
+    case '4': return 'AL / PB / PE / RN (4ª Região Fiscal)';
+    case '5': return 'BA / SE (5ª Região Fiscal)';
+    case '6': return 'Minas Gerais - MG (6ª Região Fiscal)';
+    case '7': return 'ES / RJ (7ª Região Fiscal)';
+    case '8': return 'São Paulo - SP (8ª Região Fiscal)';
+    case '9': return 'PR / SC (9ª Região Fiscal)';
+    case '0': return 'Rio Grande do Sul - RS (10ª Região Fiscal)';
+    default: return '';
+  }
+}
+
 export function TeiaConexoesGraph({
   nomeCentral,
   cpfCentral,
@@ -152,152 +198,226 @@ export function TeiaConexoesGraph({
   corporateShare: any;
   onSelectPerson?: (cpf: string) => void;
 }) {
-  const width = 600;
-  const height = 360;
+  const width = 860;
+  const height = 480;
   const centerX = width / 2;
   const centerY = height / 2;
 
-  const nodes: { id: string; label: string; sub: string; type: string; cpf?: string; color: string }[] = [];
+  const nodes: { id: string; label: string; sub: string; type: string; cpf?: string; color: string; bg: string; icon: string }[] = [];
 
-  (parentes || []).slice(0, 3).forEach(p => {
+  (parentes || []).slice(0, 4).forEach((p, idx) => {
     nodes.push({
-      id: `p-${p.cpf || p.nome}`,
+      id: `p-${p.cpf || idx}`,
       label: p.nome || p.NOME || "Parente",
-      sub: p.vinculo || "Parente",
+      sub: p.vinculo || "Parente Direto",
       type: "parente",
       cpf: p.cpf || p.CPF,
-      color: "#a855f7"
+      color: "#c084fc",
+      bg: "rgba(168, 85, 247, 0.15)",
+      icon: "👤"
     });
   });
 
-  (vizinhos || []).slice(0, 3).forEach(v => {
+  (vizinhos || []).slice(0, 4).forEach((v, idx) => {
     nodes.push({
-      id: `v-${v.cpf || v.nome}`,
+      id: `v-${v.cpf || idx}`,
       label: v.nome || v.NOME || "Vizinho",
-      sub: "Vizinho",
+      sub: "Vizinho / Entorno",
       type: "vizinho",
       cpf: v.cpf || v.CPF,
-      color: "#3b82f6"
+      color: "#60a5fa",
+      bg: "rgba(59, 130, 246, 0.15)",
+      icon: "🏡"
     });
   });
 
-  (telefones || []).slice(0, 2).forEach((t, idx) => {
+  (telefones || []).slice(0, 3).forEach((t, idx) => {
+    const rawNum = typeof t === 'object' ? (t.telefone || t.numero || String(t)) : String(t);
+    const cleanNum = rawNum.replace(/\D/g, "");
+    const formattedNum = cleanNum.length === 11 
+      ? `(${cleanNum.substring(0, 2)}) ${cleanNum.substring(2, 7)}-${cleanNum.substring(7)}`
+      : rawNum;
     nodes.push({
       id: `t-${idx}`,
-      label: typeof t === 'object' ? (t.telefone || t.numero || String(t)) : String(t),
-      sub: "Telefone",
+      label: formattedNum,
+      sub: typeof t === 'object' && t.fonte ? `Tel (${t.fonte})` : "Contato Telefônico",
       type: "telefone",
-      color: "#10b981"
+      color: "#34d399",
+      bg: "rgba(16, 185, 129, 0.15)",
+      icon: "📞"
     });
   });
 
   if (corporateShare) {
     nodes.push({
       id: "emp-1",
-      label: "Empresa",
-      sub: `${corporateShare}% Quotas`,
+      label: `${nomeCentral.split(" ")[0]} Sociedade Empresarial`,
+      sub: `Quadro Societário (${corporateShare}%)`,
       type: "empresa",
-      color: "#f59e0b"
+      color: "#fbbf24",
+      bg: "rgba(245, 158, 11, 0.15)",
+      icon: "🏢"
     });
   }
 
-  if ((enderecos || []).length > 0) {
-    const end = enderecos[0];
-    const city = typeof end === 'object' ? (end.city || end.cidade || "Residência") : "Residência";
+  (enderecos || []).slice(0, 2).forEach((end, idx) => {
+    let loc = "Residência Cadastrada";
+    if (typeof end === 'object') {
+      const street = end.street || end.logradouro || "";
+      const city = end.city || end.cidade || "";
+      const state = end.state || end.uf || "";
+      if (street) loc = `${street}${city ? `, ${city}` : ""}${state ? ` - ${state}` : ""}`;
+      else if (city) loc = `${city} - ${state}`;
+    }
     nodes.push({
-      id: "end-1",
-      label: String(city),
-      sub: "Endereço",
+      id: `end-${idx}`,
+      label: loc.length > 25 ? loc.substring(0, 23) + "…" : loc,
+      sub: idx === 0 ? "Endereço Principal" : "Endereço Secundário",
       type: "endereco",
-      color: "#ec4899"
+      color: "#f472b6",
+      bg: "rgba(236, 72, 153, 0.15)",
+      icon: "📍"
     });
-  }
+  });
 
   const total = nodes.length;
-  const radius = 130;
+  const rx = 310;
+  const ry = 180;
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl bg-slate-950/90 border border-violet-500/30 p-4 shadow-2xl space-y-3 no-print">
-      <div className="flex items-center justify-between border-b border-violet-500/20 pb-2">
-        <span className="text-xs font-bold text-violet-300 uppercase tracking-wider flex items-center gap-1.5">
-          <Layers className="w-4 h-4 text-violet-400" /> Diagrama de Teia de Conexões (Link Analysis Graph)
-        </span>
-        <span className="text-[10px] text-slate-300 bg-violet-950 px-2 py-0.5 rounded border border-violet-500/30 font-mono font-bold">
-          {total + 1} Nós Mapeados
-        </span>
+    <div className="w-full overflow-hidden rounded-3xl bg-gradient-to-b from-slate-950 via-[#0a0c24] to-slate-950 border border-violet-500/40 p-6 shadow-2xl space-y-4 no-print relative">
+      <style>{`
+        @keyframes dashFlow {
+          from { stroke-dashoffset: 24; }
+          to { stroke-dashoffset: 0; }
+        }
+        .animate-dash-flow {
+          animation: dashFlow 2s linear infinite;
+        }
+      `}</style>
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-violet-500/20 pb-3 gap-2">
+        <div>
+          <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+            Diagrama Avançado de Teia de Conexões (Link Analysis Graph)
+          </h3>
+          <p className="text-[11px] text-violet-300/80 font-mono">
+            Mapeamento dinâmico de conexões interpessoais, telefônicas, imobiliárias e corporativas
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-1 rounded-xl font-mono font-bold">
+            {total + 1} VÍNCULOS MAPEADOS
+          </span>
+        </div>
       </div>
 
-      <div className="w-full overflow-x-auto flex justify-center py-2">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-[580px] h-auto font-sans">
+      <div className="w-full overflow-x-auto flex justify-center py-4 bg-slate-950/60 rounded-2xl border border-violet-500/10 shadow-inner">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-[850px] h-auto font-sans select-none">
           <defs>
-            <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+            <radialGradient id="centerPulse" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.6" />
+              <stop offset="60%" stopColor="#6366f1" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
             </radialGradient>
+            <filter id="nodeShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000000" floodOpacity="0.6" />
+            </filter>
           </defs>
 
-          <circle cx={centerX} cy={centerY} r={75} fill="url(#centerGlow)" />
+          <ellipse cx={centerX} cy={centerY} rx={rx} ry={ry} fill="none" stroke="#4c1d95" strokeWidth="1.5" strokeDasharray="6 6" opacity="0.3" />
 
           {nodes.map((node, i) => {
             const angle = (i * 2 * Math.PI) / (total || 1) - Math.PI / 2;
-            const nx = centerX + radius * Math.cos(angle);
-            const ny = centerY + radius * Math.sin(angle);
+            const nx = centerX + rx * Math.cos(angle);
+            const ny = centerY + ry * Math.sin(angle);
             return (
               <line
-                key={`line-${node.id}`}
+                key={`group-line-${node.id}`}
                 x1={centerX}
                 y1={centerY}
                 x2={nx}
                 y2={ny}
                 stroke={node.color}
-                strokeWidth="1.5"
-                strokeDasharray="4 2"
-                opacity="0.7"
+                strokeWidth="2"
+                strokeDasharray="6 4"
+                className="animate-dash-flow"
+                opacity="0.6"
               />
             );
           })}
 
-          <g transform={`translate(${centerX}, ${centerY})`}>
-            <circle r="34" fill="#1e1b4b" stroke="#8b5cf6" strokeWidth="3" />
-            <text textAnchor="middle" y="-5" fill="#ffffff" fontSize="10" fontWeight="bold">
-              {nomeCentral.split(" ")[0]}
+          <g transform={`translate(${centerX}, ${centerY})`} filter="url(#nodeShadow)">
+            <circle r="75" fill="url(#centerPulse)" />
+            <rect x="-85" y="-32" width="170" height="64" rx="18" fill="#1e1b4b" stroke="#8b5cf6" strokeWidth="3" />
+            <text textAnchor="middle" y="-8" fill="#ffffff" fontSize="12" fontWeight="900" letterSpacing="0.5">
+              {nomeCentral.length > 18 ? nomeCentral.substring(0, 16) + "…" : nomeCentral}
             </text>
-            <text textAnchor="middle" y="8" fill="#a7f3d0" fontSize="8" fontFamily="monospace" fontWeight="bold">
-              TITULAR
+            <text textAnchor="middle" y="10" fill="#a7f3d0" fontSize="10" fontFamily="monospace" fontWeight="bold">
+              CPF: {cpfCentral}
+            </text>
+            <text textAnchor="middle" y="24" fill="#c084fc" fontSize="9" fontWeight="bold" letterSpacing="1">
+              [ INVESTIGADO PRINCIPAL ]
             </text>
           </g>
 
           {nodes.map((node, i) => {
             const angle = (i * 2 * Math.PI) / (total || 1) - Math.PI / 2;
-            const nx = centerX + radius * Math.cos(angle);
-            const ny = centerY + radius * Math.sin(angle);
+            const nx = centerX + rx * Math.cos(angle);
+            const ny = centerY + ry * Math.sin(angle);
+
+            const cardWidth = 150;
+            const cardHeight = 44;
+            const isClickable = !!(node.cpf && onSelectPerson);
 
             return (
               <g
                 key={node.id}
                 transform={`translate(${nx}, ${ny})`}
-                className={node.cpf && onSelectPerson ? "cursor-pointer hover:scale-110 transition-transform" : ""}
-                onClick={() => node.cpf && onSelectPerson && onSelectPerson(node.cpf)}
+                filter="url(#nodeShadow)"
+                className={isClickable ? "cursor-pointer hover:scale-105 transition-transform" : ""}
+                onClick={() => node.cpf && onSelectPerson && onSelectPerson(node.cpf.replace(/\D/g, ''))}
               >
-                <circle r="22" fill="#0f172a" stroke={node.color} strokeWidth="2" />
-                <text textAnchor="middle" y="-2" fill="#f8fafc" fontSize="8" fontWeight="bold">
-                  {node.label.length > 9 ? node.label.substring(0, 8) + "…" : node.label}
+                <rect
+                  x={-cardWidth / 2}
+                  y={-cardHeight / 2}
+                  width={cardWidth}
+                  height={cardHeight}
+                  rx="14"
+                  fill="#090d16"
+                  stroke={node.color}
+                  strokeWidth="2"
+                />
+                <circle cx={-cardWidth / 2 + 20} cy="0" r="13" fill={node.bg} stroke={node.color} strokeWidth="1" />
+                <text x={-cardWidth / 2 + 20} y="4" textAnchor="middle" fontSize="12">
+                  {node.icon}
                 </text>
-                <text textAnchor="middle" y="9" fill="#94a3b8" fontSize="7" fontWeight="medium">
+
+                <text x={-cardWidth / 2 + 40} y="-4" textAnchor="start" fill="#ffffff" fontSize="10" fontWeight="bold">
+                  {node.label.length > 14 ? node.label.substring(0, 13) + "…" : node.label}
+                </text>
+                <text x={-cardWidth / 2 + 40} y="11" textAnchor="start" fill={node.color} fontSize="8" fontWeight="bold">
                   {node.sub}
                 </text>
+
+                {isClickable && (
+                  <circle cx={cardWidth / 2 - 12} cy="-12" r="7" fill="#10b981" stroke="#ffffff" strokeWidth="1">
+                    <title>Clique para buscar este perfil</title>
+                  </circle>
+                )}
               </g>
             );
           })}
         </svg>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] text-slate-400 pt-1">
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block" /> Parentes</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" /> Vizinhos</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> Telefones</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" /> Empresas</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-pink-500 inline-block" /> Endereços</span>
+      <div className="flex flex-wrap items-center justify-center gap-5 text-xs text-slate-300 font-medium pt-1">
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-purple-500/20 border border-purple-400 inline-block" /> 👤 Parentes</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-blue-500/20 border border-blue-400 inline-block" /> 🏡 Vizinhos</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-emerald-500/20 border border-emerald-400 inline-block" /> 📞 Telefones</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-amber-500/20 border border-amber-400 inline-block" /> 🏢 Empresas (QSA)</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-pink-500/20 border border-pink-400 inline-block" /> 📍 Endereços</span>
       </div>
     </div>
   );
@@ -960,14 +1080,37 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
   const signoStr = getZodiacSign(nascimento);
 
   // Documentos
-  const rg = sanitizeField(cpfData.rg || cpfData.RG || cpfData.rg_numero || cpfData.numero_rg || cpfData.registro_geral);
-  const rgIssuer = sanitizeField(cpfData.rg_issuer || cpfData.ORGAO_EMISSOR || cpfData.rg_orgao || cpfData.orgao_emissor);
-  const rgUf = sanitizeField(cpfData.rg_state || cpfData.UF_EMISSAO_RG || cpfData.rg_uf || cpfData.uf_rg || cpfData.uf_emissor);
-  const rgFormatted = rg ? `${rg}${rgIssuer ? ' / ' + rgIssuer : ''}${rgUf ? ' - ' + rgUf : ''}` : null;
+  const rg = sanitizeField(
+    cpfData.rg || 
+    cpfData.RG || 
+    cpfData.rg_numero || 
+    cpfData.numero_rg || 
+    cpfData.registro_geral || 
+    cpfData.serasa_completo?.dados_cadastrais?.rg
+  );
+  const rgIssuer = sanitizeField(
+    cpfData.rg_issuer || 
+    cpfData.ORGAO_EMISSOR || 
+    cpfData.rg_orgao || 
+    cpfData.orgao_emissor || 
+    cpfData.serasa_completo?.dados_cadastrais?.rg_issuer
+  );
+  const rgUf = sanitizeField(
+    cpfData.rg_state || 
+    cpfData.UF_EMISSAO_RG || 
+    cpfData.rg_uf || 
+    cpfData.uf_rg || 
+    cpfData.uf_emissor || 
+    cpfData.serasa_completo?.dados_cadastrais?.rg_state
+  );
+  const cleanedIssuer = cleanRgIssuer(rgIssuer);
+  const rgFormatted = rg ? `${rg}${cleanedIssuer ? ' / ' + cleanedIssuer : ''}${rgUf ? '-' + rgUf : ''}` : null;
   const titulo = sanitizeField(cpfData.voter_id || cpfData.titulo || cpfData.TITULO_ELEITOR);
   const pis = sanitizeField(cpfData.pis || cpfData.PIS || cpfData.cns);
   const cnh = sanitizeField(cpfData.cnh || cpfData.NUMERO_CNH || cpfData.CNH);
-  const naturalidade = sanitizeField(cpfData.birth_city || cpfData.naturalidade || cpfData.NATURALIDADE);
+  
+  const rawNaturalidade = sanitizeField(cpfData.birth_city || cpfData.naturalidade || cpfData.NATURALIDADE || cpfData.cidade_nascimento || cpfData.uf_nascimento);
+  const naturalidade = rawNaturalidade || (cpf ? getCPFStateFromNinthDigit(cpf) : null);
 
   // Socioeconômico & Tratar Score para NUNCA gerar [object Object]
   const renda = cpfData.income || cpfData.renda || cpfData.renda_mensal || cpfData.RENDA || null;

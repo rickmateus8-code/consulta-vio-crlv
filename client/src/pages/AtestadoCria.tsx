@@ -593,7 +593,7 @@ export default function AtestadoCria() {
           setCepPaciente(`${cepNum.slice(0,5)}-${cepNum.slice(5)}`);
         }
       }
-      const source = data.source === "snoop" ? "Snoop Intelligence" : "BrasilAPI";
+      const source = data.source === "snoop" ? "Base de Dados Unificada" : "BrasilAPI";
       setCpfStatus("ok");
       setCpfMsg(`✅ Dados preenchidos via ${source}.`);
     } catch {

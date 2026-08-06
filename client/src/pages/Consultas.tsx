@@ -516,7 +516,7 @@ export default function Consultas() {
                     </div>
                     <div>
                       <h3 className="text-xs font-black text-white uppercase tracking-widest">Agregando Bases de Inteligência (Radar OSINT)</h3>
-                      <p className="text-[11px] text-violet-300 font-mono mt-1">Varrendo registros em tempo real na SnoopIntelligence v2...</p>
+                      <p className="text-[11px] text-violet-300 font-mono mt-1">Varrendo registros em tempo real nas Bases Nacionais Unificadas v3...</p>
                     </div>
                   </div>
 

@@ -102,6 +102,7 @@ import HistoricoSPSalvos from "./pages/HistoricoSPSalvos";
 import HistoricoUNINTERSalvos from "./pages/HistoricoUNINTERSalvos";
 import PeticaoCria from "./pages/PeticaoCria";
 import PeticaoSalvos from "./pages/PeticaoSalvos";
+import Consultas from "./pages/Consultas";
 import ValidationPeticao from "./pages/ValidationPeticao";
 import JudicialSearch from "./pages/JudicialSearch";
 import JudicialDetails from "./pages/JudicialDetails";
@@ -198,6 +199,9 @@ function DocMasterRouter() {
       {/* Painel principal */}
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
+      </Route>
+      <Route path="/consultas">
+        <ProtectedRoute component={Consultas} />
       </Route>
 
       {/* Emissão de documentos - slugs principais */}

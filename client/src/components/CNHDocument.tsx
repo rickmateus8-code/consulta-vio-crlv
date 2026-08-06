@@ -145,166 +145,16 @@ async function loadFonts() {
 const PAGE_W = 2481;
 const PAGE_H = 3508;
 
-// ─── Gerador do Painel QR (lado direito no PDF) ───────────────────────────────
-async function gerarPainelQR(qrDataUrl: string, cpfFormatado: string): Promise<HTMLCanvasElement> {
-  // Painel branco 960 x 2600 px
-  const W = 960;
-  const H = 2600;
-  const cvs = document.createElement("canvas");
-  cvs.width = W;
-  cvs.height = H;
-  const ctx = cvs.getContext("2d")!;
-
-  // Fundo branco
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(0, 0, W, H);
-
-  // Borda esquerda sutil
-  ctx.fillStyle = "#dde3da";
-  ctx.fillRect(0, 0, 2, H);
-
-  // Label "QR-CODE"
-  ctx.fillStyle = "#333333";
-  ctx.font = "bold 48px Arial, sans-serif";
-  ctx.textBaseline = "top";
-  ctx.textAlign = "left";
-  ctx.fillText("QR-CODE", 60, 60);
-
-  // Linha separadora
-  ctx.fillStyle = "#cccccc";
-  ctx.fillRect(60, 120, W - 120, 2);
-
-  // QR Code image (620x620)
-  try {
-    const qrImg = await loadImage(qrDataUrl);
-    ctx.drawImage(qrImg, 60, 140, 620, 620);
-  } catch (_) {
-    // fallback: retângulo placeholder
-    ctx.fillStyle = "#eeeeee";
-    ctx.fillRect(60, 140, 620, 620);
-    ctx.fillStyle = "#999";
-    ctx.font = "28px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("QR CODE", 370, 450);
-    ctx.textAlign = "left";
-  }
-
-  // Texto de conformidade MP 2200-2/2001
-  ctx.fillStyle = "#444444";
-  ctx.font = "24px Arial, sans-serif";
-  ctx.textBaseline = "top";
-  ctx.textAlign = "left";
-
-  const linhasTexto = [
-    "Documento assinado com certificado digital em",
-    "conformidade com a Medida Provisória nº 2200-2/2001.",
-    "Sua validade poderá ser confirmada pelo programa",
-    "Assinador Serpro.",
-    "",
-    "As orientações para instalar o Assinador Serpro e",
-    "realizar a validação do documento digital estão",
-    "disponíveis em:",
-    "https://www.serpro.gov.br/assinador-digital",
-  ];
-
-  let textY = 800;
-  for (const linha of linhasTexto) {
-    ctx.fillText(linha, 60, textY);
-    textY += linha === "" ? 12 : 34;
-  }
-
-  // Rodapé SERPRO / SENATRAN
-  ctx.fillStyle = "#555555";
-  ctx.font = "bold 36px Arial, sans-serif";
-  ctx.textAlign = "right";
-  ctx.fillText("SERPRO / SENATRAN", W - 60, H - 100);
-
-  ctx.textAlign = "left";
-  return cvs;
-}
-
-// ─── Gerador da Página 2 (Legenda Multilíngue) ───────────────────────────────
-function gerarPaginaLegenda(): HTMLCanvasElement {
-  const W = PAGE_W;
-  const H = PAGE_H;
-  const cvs = document.createElement("canvas");
-  cvs.width = W;
-  cvs.height = H;
-  const ctx = cvs.getContext("2d")!;
-
-  // Fundo verde claro (idêntico ao template)
-  ctx.fillStyle = "#e8ede5";
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.fillStyle = "#333333";
-  ctx.textBaseline = "top";
-  ctx.textAlign = "left";
-  ctx.font = "30px Arial, sans-serif";
-
-  const legendaLinhas = [
-    "2 e 1. Nome e Sobrenome / Name and Surname / Nombre y Apellidos – Primeira Habilitação / First Driver License / Primera Licencia de Conducir – 3. Data e",
-    "Local de Nascimento / Date and Place of Birth DD/MM/YYYY / Fecha y Lugar de Nacimiento – 4a. Data de Emissão / Issuing Date DD/MM/YYYY / Fecha de Emisión – 4b.",
-    "Data de Validade / Expiration Date DD/MM/YYYY / Valido Hasta – ACC – 4c. Documento Identidade - Órgão emissor / Identity Document - Issuing Authority /",
-    "Documento de Identificación - Autoridad Expedidora – 4d. CPF – 5. Número de registro da CNH / Driver License Number / Número de Permiso de Conducir – 9.",
-    "Categoria de Veículos da Carteira de Habilitação / Driver license Class / Categoria de Permisos de Conducir – Nacionalidade / Nationality / Nacionalidad –",
-    "Filiação / Filiation / Filiación – 12. Observações / Observations / Observaciones - Local / Place / Lugar",
-  ];
-
-  let y = 300;
-  for (const linha of legendaLinhas) {
-    ctx.fillText(linha, 200, y);
-    y += 50;
-  }
-
-  return cvs;
-}
-
-// ─── Export para PDF (2 páginas: CNH+QR | Legenda) ──────────────────────────
+// ─── Export para PDF (2 páginas A4 Retrato: CNH+QR | Legenda Multilíngue) ─────
 async function exportToPdf(cnhCanvas: HTMLCanvasElement, props: CNHDocumentProps) {
   const { default: jsPDF } = await import("jspdf");
 
-  const cleanCpf = (props.cpf || "").replace(/\D/g, "");
-  const qrUrl = cleanCpf
-    ? `https://validacao-online-vio.digital/?cpf=${cleanCpf}`
-    : "https://validacao-online-vio.digital/";
+  // ── PÁGINA 1: CNH-e Completa (A4 Retrato 210mm x 297mm) ─────────────────
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const imgData1 = cnhCanvas.toDataURL("image/jpeg", 0.95);
+  pdf.addImage(imgData1, "JPEG", 0, 0, 210, 297);
 
-  // Gerar QR Code Data URL
-  const qrDataUrl = await QRCode.toDataURL(qrUrl, {
-    width: 620,
-    margin: 1,
-    errorCorrectionLevel: "M",
-    color: { dark: "#000000", light: "#FFFFFF" },
-  });
-
-  // ── PÁGINA 1: Layout A4 Retrato com CNH (esq) + Painel QR (dir) ──────────
-  // Usar A4 paisagem para acomodar ambos side by side
-  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  // A4 paisagem: 297mm x 210mm
-
-  // Canvas combinado: CNH (2481px) + Painel QR (960px) = 3441px total
-  // Escalar para caber em 297mm x 210mm
-  const combinadoW = PAGE_W + 960;
-  const combinadoH = Math.max(PAGE_H, 2600);
-  const combinado = document.createElement("canvas");
-  combinado.width = combinadoW;
-  combinado.height = combinadoH;
-  const ctxComb = combinado.getContext("2d")!;
-
-  // Fundo branco
-  ctxComb.fillStyle = "#FFFFFF";
-  ctxComb.fillRect(0, 0, combinadoW, combinadoH);
-
-  // CNH à esquerda
-  ctxComb.drawImage(cnhCanvas, 0, 0, PAGE_W, PAGE_H);
-
-  // Painel QR à direita
-  const painelQR = await gerarPainelQR(qrDataUrl, formatarCPF(cleanCpf));
-  ctxComb.drawImage(painelQR, PAGE_W, 0, 960, 2600);
-
-  const imgData1 = combinado.toDataURL("image/jpeg", 0.94);
-  pdf.addImage(imgData1, "JPEG", 0, 0, 297, 210);
-
-  // ── PÁGINA 2: Legenda Multilíngue ────────────────────────────────────────
+  // ── PÁGINA 2: Legenda Multilíngue (A4 Retrato 210mm x 297mm) ────────────
   pdf.addPage("a4", "portrait");
   const pag2Canvas = gerarPaginaLegenda();
   const imgData2 = pag2Canvas.toDataURL("image/jpeg", 0.92);
@@ -662,8 +512,8 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     mrz.forEach((l, i) => ctx.fillText(l, 317, 2221 + (i * 57)));
 
     // ═══════════════════════════════════════════════════════════════════
-    // QR CODE NO PREVIEW (preview somente — na exportação vai ao painel lateral)
-    // Posição: x=1441, y=430 — canva de 700x700
+    // QR CODE SERPRO (desenhado dentro da moldura oficial da CNH_BASE.PNG)
+    // Posição calibrada 1:1: x=1416, y=425 — tamanho 752x752 px
     // ═══════════════════════════════════════════════════════════════════
     const cleanCpf = (props.cpf || "").replace(/\D/g, "");
     const qrUrl = cleanCpf
@@ -672,7 +522,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
     try {
       const qrDataUrl = await QRCode.toDataURL(qrUrl, {
-        width: 700,
+        width: 752,
         margin: 0,
         errorCorrectionLevel: "M",
         color: { dark: "#000000", light: "#FFFFFF" },
@@ -682,18 +532,11 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       if (props.blurred || props.codigoQR === "PREVIEW") {
         ctx.save();
         ctx.filter = "blur(12px)";
-        ctx.drawImage(qrImg, 1441, 430, 700, 700);
+        ctx.drawImage(qrImg, 1416, 425, 752, 752);
         ctx.restore();
       } else {
-        ctx.drawImage(qrImg, 1441, 430, 700, 700);
+        ctx.drawImage(qrImg, 1416, 425, 752, 752);
       }
-
-      // Label "QR-CODE" acima do QR no canvas
-      ctx.font = "bold 28px Arial, sans-serif";
-      ctx.fillStyle = "#222222";
-      ctx.textBaseline = "top";
-      ctx.fillText("QR-CODE", 1641, 395);
-
     } catch (e) {
       console.warn("Erro ao gerar QR Code:", e);
     }

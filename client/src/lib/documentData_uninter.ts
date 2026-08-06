@@ -27,7 +27,8 @@ export type ProfileKey =
   | "marketing"
   | "gestao_recursos_humanos"
   | "servico_social"
-  | "teologia";
+  | "teologia"
+  | "educacao_fisica";
 
 export type HistoricoDisponivelKey = ProfileKey;
 
@@ -41,6 +42,7 @@ export const HISTORICOS_DISPONIVEIS: HistoricoDisponivel[] = [
   { key: "administracao", label: "ADMINISTRAÇÃO", shortLabel: "ADM" },
   { key: "ciencias_contabeis", label: "CIÊNCIAS CONTÁBEIS", shortLabel: "CONT" },
   { key: "direito", label: "DIREITO", shortLabel: "DIR" },
+  { key: "educacao_fisica", label: "EDUCAÇÃO FÍSICA", shortLabel: "EDF" },
   { key: "enfermagem", label: "ENFERMAGEM", shortLabel: "ENF" },
   { key: "engenharia_controle_automacao", label: "ENG. CONTROLE E AUTOMAÇÃO", shortLabel: "ENG" },
   { key: "engenharia_eletrica", label: "ENGENHARIA ELÉTRICA", shortLabel: "ELET" },
@@ -156,6 +158,7 @@ export const PROFILES: Record<ProfileKey, Profile> = {
   administracao: { name: "", label: "Administração", curso: "BACHARELADO EM ADMINISTRAÇÃO", cursoAbreviado: "Administração", fields: { ...BASE_FIELDS } },
   ciencias_contabeis: { name: "", label: "Ciências Contábeis", curso: "BACHARELADO EM CIÊNCIAS CONTÁBEIS", cursoAbreviado: "Ciências Contábeis", fields: { ...BASE_FIELDS } },
   direito: { name: "", label: "Direito", curso: "BACHARELADO EM DIREITO", cursoAbreviado: "Direito", fields: { ...BASE_FIELDS } },
+  educacao_fisica: { name: "", label: "Educação Física", curso: "LICENCIATURA EM EDUCAÇÃO FÍSICA", cursoAbreviado: "Educação Física", fields: { ...BASE_FIELDS } },
   enfermagem: { name: "", label: "Enfermagem", curso: "BACHARELADO EM ENFERMAGEM", cursoAbreviado: "Enfermagem", fields: { ...BASE_FIELDS } },
   engenharia_controle_automacao: { name: "", label: "Eng. Controle e Automação", curso: "BACHARELADO EM ENGENHARIA DE CONTROLE E AUTOMAÇÃO", cursoAbreviado: "Eng. Controle e Automação", fields: { ...BASE_FIELDS } },
   engenharia_eletrica: { name: "", label: "Engenharia Elétrica", curso: "BACHARELADO EM ENGENHARIA ELÉTRICA", cursoAbreviado: "Engenharia Elétrica", fields: { ...BASE_FIELDS } },
@@ -185,6 +188,7 @@ export const COURSE_METADATA: Record<ProfileKey, CourseMetadata> = {
   administracao: { ...BASE_META },
   ciencias_contabeis: { ...BASE_META },
   direito: { ...BASE_META },
+  educacao_fisica: { ...BASE_META },
   enfermagem: { ...BASE_META },
   engenharia_controle_automacao: { ...BASE_META },
   engenharia_eletrica: { ...BASE_META },

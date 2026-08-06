@@ -27,6 +27,7 @@ const HISTORICO_TO_PROFILE: Record<HistoricoDisponivelKey, ProfileKey> = {
   psicologia: "psicologia",
   servico_social: "servico_social",
   teologia: "teologia",
+  educacao_fisica: "educacao_fisica",
 };
 
 const DEFAULT_HISTORICO: HistoricoDisponivelKey | null = null;
@@ -86,6 +87,7 @@ function detectHistoricoByCurso(curso: string): HistoricoDisponivelKey | null {
   if (text.includes("PSICOL")) return "psicologia";
   if (text.includes("SOCIAL")) return "servico_social";
   if (text.includes("TEOL")) return "teologia";
+  if (text.includes("EDUCACAO FISICA") || text.includes("EDUCAÇÃO FÍSICA") || text.includes("ED. FISICA") || text.includes("ED. FÍSICA") || text.includes("EDF")) return "educacao_fisica";
   return null;
 }
 
@@ -291,6 +293,7 @@ function normalizeHistoricoKey(input?: string): HistoricoDisponivelKey | null {
   if (value.includes("PED")) return "pedagogia";
   if (value.includes("ADM")) return "administracao";
   if (value.includes("DIR")) return "direito";
+  if (value.includes("EDF") || value.includes("EDUC")) return "educacao_fisica";
   const keys = Object.keys(HISTORICO_TO_PROFILE) as HistoricoDisponivelKey[];
   return keys.find(k => k.toUpperCase() === value) || null;
 }

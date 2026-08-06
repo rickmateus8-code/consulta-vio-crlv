@@ -35,6 +35,17 @@ const SUBJECTS_DATABASE: Record<string, string[]> = {
     "Antropologia Jurídica", "Hermenêutica Jurídica", "Ética Profissional", "Economia Política", "Direitos Humanos",
     "Prática Jurídica Cível", "Prática Jurídica Penal", "Prática Jurídica Trabalhista", "Estágio Curricular I", "Estágio Curricular II", "TCC I", "TCC II"
   ],
+  educacao_fisica: [
+    "Anatomia Humana Aplicada à Educação Física", "Fisiologia Humana e do Exercício", "Cinesiologia e Biomecânica do Movimento", "História e Fundamentos da Educação Física", "Aprendizagem e Desenvolvimento Motor",
+    "Psicologia do Esporte e do Exercício", "Crescimento e Desenvolvimento Humano", "Recreação, Lazer e Sociedade", "Didática Geral e Organização do Trabalho Pedagógico", "Filosofia e Sociologia da Educação e do Esporte",
+    "Metodologia do Ensino do Atletismo", "Metodologia do Ensino da Natação e Atividades Aquáticas", "Metodologia do Ensino da Ginástica Geral e de Academia", "Metodologia do Ensino dos Esportes Coletivos: Futebol e Futsal", "Metodologia do Ensino dos Esportes Coletivos: Basquetebol",
+    "Metodologia do Ensino dos Esportes Coletivos: Voleibol", "Metodologia do Ensino dos Esportes Coletivos: Handebol", "Metodologia do Ensino dos Esportes de Combate e Lutas", "Metodologia do Ensino das Danças e Atividades Rítmicas", "Educação Física Inclusiva e Adaptada",
+    "Atividade Física, Saúde Coletiva e Qualidade de Vida", "Primeiros Socorros e Urgências no Esporte e na Escola", "Avaliação Física, Antropometria e Prescrição de Exercícios", "Treinamento Desportivo e Preparação Física", "Bioquímica do Exercício e Nutrição Esportiva",
+    "Organização e Gestão de Eventos Esportivos e Lazer", "Políticas Públicas de Educação, Esporte e Lazer", "Metodologia da Pesquisa em Educação Física", "Educação Física na Educação Infantil", "Educação Física no Ensino Fundamental - Anos Iniciais",
+    "Educação Física no Ensino Fundamental - Anos Finais", "Educação Física no Ensino Médio", "Jogos, Brinquedos e Brincadeiras na Escola", "Ritmo e Expressão Corporal", "Libras - Língua Brasileira de Sinais",
+    "Ética e Deontologia Profissional na Educação Física", "Educação Ambiental e Atividades de Aventura", "Tecnologias Aplicadas ao Ensino da Educação Física", "Atividades Acadêmico-Científico-Culturais (AACC)", "Estágio Supervisionado: Educação Infantil e Anos Iniciais",
+    "Estágio Supervisionado: Ensino Fundamental e Médio", "Estágio Supervisionado: Gestão de Projetos e Espaços Não Escolares", "Trabalho de Conclusão de Curso (TCC) I", "Trabalho de Conclusão de Curso (TCC) II"
+  ],
   enfermagem: [
     "Anatomia Humana I", "Anatomia Humana II", "Fisiologia Humana I", "Fisiologia Humana II", "Bioquímica",
     "Microbiologia", "Imunologia", "Histologia e Embriologia", "Genética Humana", "Fundamentos de Enfermagem I",

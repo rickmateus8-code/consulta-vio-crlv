@@ -1,0 +1,2 @@
+# Fallback para SPA (Cloudflare Pages lida nativamente na maioria dos casos)
+# /* /index.html 200

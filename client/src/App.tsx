@@ -78,7 +78,7 @@ import CHACria from "./pages/CHACria";
 import ToxicriaCria from "./pages/ToxicriaCria";
 import ToxicriaSalvos from "./pages/ToxicriaSalvos";
 import HistoricoSP from "./pages/HistoricoSP";
-import HistoricoUNINTER from "./pages/HistoricoUNINTER";
+import HistoricoCria from "./pages/HistoricoCria";
 import AdminDashboard from "./pages/AdminDashboard";
 import ReceitaCria from "./pages/ReceitaCria";
 import AtestadoEditar from "./pages/AtestadoEditar";
@@ -277,8 +277,11 @@ function DocMasterRouter() {
       <Route path="/historico-sp-salvos">
         <ProtectedRoute component={HistoricoSPSalvos} />
       </Route>
+      <Route path="/historicocria">
+        <ProtectedRoute component={HistoricoCria} />
+      </Route>
       <Route path="/historico-uninter">
-        <ProtectedRoute component={HistoricoUNINTER} />
+        <ProtectedRoute component={HistoricoCria} />
       </Route>
       <Route path="/historico-uninter-salvos">
         <ProtectedRoute component={HistoricoUNINTERSalvos} />

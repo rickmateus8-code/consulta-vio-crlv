@@ -411,67 +411,67 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     const d = fmtDate;
 
     // ═══════════════════════════════════════════════════════════════════
-    // DADOS DO CONDUTOR (coordenadas calibradas @300DPI sobre o template)
+    // DADOS DO CONDUTOR (coordenadas calibradas @300DPI sobre o template CNH_BASE.PNG)
     // ═══════════════════════════════════════════════════════════════════
 
     // Nome Completo
-    txt(props.nome, 245, 455, 26, 1, "#000000", 620);
+    txt(props.nome, 245, 420, 26, 1, "#000000", 620);
 
     // 1ª Habilitação
-    txt(d(props.primeiraHabilitacao), 915, 455, 22, 1, "#000000", 180);
+    txt(d(props.primeiraHabilitacao), 915, 420, 22, 1, "#000000", 180);
 
     // Data Nascimento, Local, UF
-    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 425, 512, 22, 1, "#000000", 450);
+    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 425, 489, 22, 1, "#000000", 450);
 
     // Data Emissão
-    txt(d(props.dataEmissao), 425, 568, 22, 1, "#000000", 180);
+    txt(d(props.dataEmissao), 425, 540, 22, 1, "#000000", 180);
 
     // Validade (vermelho)
-    txt(d(props.validade), 680, 568, 22, 1, "#c0392b", 180);
+    txt(d(props.validade), 680, 540, 22, 1, "#c0392b", 180);
 
     // Tipo CNH (D = Definitiva, P = Permissão)
     const tipoLetra = props.tipo === "Permissão" ? "P" : "D";
-    txt(tipoLetra, 1045, 568, 24, 1, "#000000", 80);
+    txt(tipoLetra, 1045, 549, 24, 1, "#000000", 80);
 
     // RG + Órgão Emissor / UF
-    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 425, 624, 22, 1, "#000000", 450);
+    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 425, 600, 22, 1, "#000000", 450);
 
     // CPF
-    txt(formatarCPF(props.cpf), 425, 680, 22, 1, "#000000", 250);
+    txt(formatarCPF(props.cpf), 425, 655, 22, 1, "#000000", 250);
 
     // Nº Registro (vermelho)
-    txt(props.registro, 680, 680, 22, 1, "#c0392b", 210);
+    txt(props.registro, 680, 655, 22, 1, "#c0392b", 210);
 
     // Categoria (vermelho)
-    txt(props.categoria, 920, 680, 22, 1, "#c0392b", 120);
+    txt(props.categoria, 920, 660, 22, 1, "#c0392b", 120);
 
     // Nacionalidade
-    txt(props.nacionalidade || "BRASILEIRO(A)", 425, 736, 22, 1, "#000000", 500);
+    txt(props.nacionalidade || "BRASILEIRO(A)", 425, 715, 22, 1, "#000000", 500);
 
     // Filiação — Pai
-    txt(props.nomePai, 425, 792, 22, 1, "#000000", 550);
+    txt(props.nomePai, 425, 765, 21, 1, "#000000", 550);
     // Filiação — Mãe
-    txt(props.nomeMae, 425, 827, 22, 1, "#000000", 550);
+    txt(props.nomeMae, 425, 815, 21, 1, "#000000", 550);
 
     // Observações (EAR multi-linha)
     const obsTexto = String(props.observacoes || "");
     const linhasObs = obsTexto.split("\n");
-    const obsY = 1340;
+    const obsY = 1250;
     linhasObs.forEach((linha, index) => {
-      txt(linha, 320, obsY + (index * 22), 20, false, "#000000", 680);
+      txt(linha, 300, obsY + (index * 24), 20, false, "#000000", 780);
     });
 
     // Local Emissão + UF
-    txt(`${props.localEmissao}, ${props.ufEmissao}`, 318, 1569, 22, 1, "#000000", 450);
+    txt(`${props.localEmissao}, ${props.ufEmissao}`, 320, 1538, 22, 1, "#000000", 490);
 
     // Nome do Estado por extenso em destaque (Painel 2)
     ctx.save();
     ctx.textAlign = "center";
     const ufDigitada = (props.ufEmissao || "").trim().toUpperCase();
     const nomeEstadoCompleto = NOMES_ESTADOS[ufDigitada] || "SÃO PAULO";
-    ctx.font = "bold 44px 'Ultra', Arial, sans-serif";
+    ctx.font = "bold 38px 'Ultra', Arial, sans-serif";
     ctx.fillStyle = "#000000";
-    ctx.fillText(nomeEstadoCompleto, 670, 1660);
+    ctx.fillText(nomeEstadoCompleto, 600, 1630);
     ctx.textAlign = "left";
     ctx.restore();
 
@@ -480,23 +480,23 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.textAlign = "right";
     ctx.fillStyle = "#333333";
     ctx.font = "18px 'Ultra', Arial, sans-serif";
-    ctx.fillText("ASSINADO DIGITALMENTE", 1100, 1490);
+    ctx.fillText("ASSINADO DIGITALMENTE", 1100, 1425);
     ctx.fillStyle = "#555555";
     ctx.font = "16px 'Ultra', Arial, sans-serif";
-    ctx.fillText("DEPARTAMENTO ESTADUAL DE TRÂNSITO", 1100, 1513);
+    ctx.fillText("DEPARTAMENTO ESTADUAL DE TRÂNSITO", 1100, 1445);
     // Linha horizontal acima
     ctx.fillStyle = "#888888";
-    ctx.fillRect(830, 1485, 270, 1);
+    ctx.fillRect(830, 1420, 270, 1);
     ctx.textAlign = "left";
     ctx.restore();
 
     // ── Assinaturas digitais (números de série) ──────────────────────────
     ctx.save();
-    ctx.font = "23px 'Ultra', Arial, sans-serif";
+    ctx.font = "22px 'Ultra', Arial, sans-serif";
     ctx.fillStyle = "#333333";
     ctx.textAlign = "center";
-    ctx.fillText(props.assDigital1 || "46418156416", 945, 1545);
-    ctx.fillText(props.assDigital2 || "SP032377809", 945, 1575);
+    ctx.fillText(props.assDigital1 || "46418356416", 945, 1475);
+    ctx.fillText(props.assDigital2 || "SP032337809", 945, 1500);
     ctx.restore();
 
     // ── Textos laterais verticais (Nº Espelho) ───────────────────────────
@@ -612,7 +612,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
         const bx = 135 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 825 + Math.round((baseBh - bh) / 2) + offsetY;
+        const by = 845 + Math.round((baseBh - bh) / 2) + offsetY;
 
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = assImg.width;
@@ -645,7 +645,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(135, 825, baseBw, baseBh);
+        ctx.rect(135, 845, baseBw, baseBh);
         ctx.clip();
         ctx.drawImage(tempCanvas, drawX, drawY, drawW, drawH);
         ctx.restore();
@@ -653,13 +653,13 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // MRZ (OCR-B 28px @300DPI) — 3 linhas
+    // MRZ (OCR-B 26px @300DPI) — 3 linhas calibradas
     // ═══════════════════════════════════════════════════════════════════
     const mrz = gerarMRZ(props);
-    ctx.font = "28px 'OCR-B', monospace";
+    ctx.font = "26px 'OCR-B', monospace";
     ctx.fillStyle = "#353535";
     ctx.textBaseline = "top";
-    mrz.forEach((l, i) => ctx.fillText(l, 335, 2225 + (i * 33)));
+    mrz.forEach((l, i) => ctx.fillText(l, 317, 2221 + (i * 57)));
 
     // ═══════════════════════════════════════════════════════════════════
     // QR CODE NO PREVIEW (preview somente — na exportação vai ao painel lateral)

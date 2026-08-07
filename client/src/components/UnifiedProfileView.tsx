@@ -990,7 +990,17 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
 
         {/* SEÇÃO 4: PROPRIETÁRIO */}
         <div className="space-y-3">
-          <h3 className="text-xl font-black text-slate-900 border-b-2 border-blue-500 pb-1">Proprietário</h3>
+          <div className="flex items-center justify-between border-b-2 border-blue-500 pb-1">
+            <h3 className="text-xl font-black text-slate-900">Proprietário</h3>
+            {onSelectPerson && propCpf && propCpf !== "Não informado" && (
+              <button
+                onClick={() => onSelectPerson(propCpf.replace(/\D/g, ""))}
+                className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-lg transition-colors flex items-center gap-1 border border-blue-200"
+              >
+                <Search className="w-3 h-3" /> Consultar CPF do Proprietário
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
               <span className="text-slate-500 text-[10px] block font-bold uppercase">Nome Proprietário</span>

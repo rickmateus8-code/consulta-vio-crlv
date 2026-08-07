@@ -1714,7 +1714,7 @@ export default function AdminDashboard() {
                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fluxo de Atividade</p>
                         </div>
                         <div className="space-y-2">
-                          {(p.timeline || []).slice(0, 4).map((item) => (
+                          {(Array.isArray(p.timeline) ? p.timeline : []).slice(0, 4).map((item: any) => (
                             <div key={item.id} className="flex items-center justify-between gap-4 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                               <div className="flex items-center gap-2.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
@@ -1738,7 +1738,7 @@ export default function AdminDashboard() {
                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Distribuição de Tempo</p>
                         </div>
                         <div className="space-y-2">
-                          {(p.page_totals || []).slice(0, 4).map((item) => (
+                          {(Array.isArray(p.page_totals) ? p.page_totals : []).slice(0, 4).map((item: any) => (
                             <div key={item.page} className="flex items-center justify-between gap-4 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                               <span className="text-[11px] font-bold text-gray-600 dark:text-gray-300">{PAGE_LABELS[item.page] || item.page}</span>
                               <div className="flex items-center gap-3 flex-1">

@@ -191,10 +191,10 @@ export function TeiaConexoesGraph({
 }: {
   nomeCentral: string;
   cpfCentral: string;
-  parentes: any[];
-  vizinhos: any[];
-  telefones: any[];
-  enderecos: any[];
+  parentes: any;
+  vizinhos: any;
+  telefones: any;
+  enderecos: any;
   corporateShare: any;
   onSelectPerson?: (cpf: string) => void;
 }) {
@@ -205,7 +205,13 @@ export function TeiaConexoesGraph({
 
   const nodes: { id: string; label: string; sub: string; type: string; cpf?: string; color: string; bg: string; icon: string }[] = [];
 
-  (parentes || []).slice(0, 4).forEach((p, idx) => {
+  const safeParentes = Array.isArray(parentes) ? parentes : [];
+  const safeVizinhos = Array.isArray(vizinhos) ? vizinhos : [];
+  const safeTelefones = Array.isArray(telefones) ? telefones : [];
+  const safeEnderecos = Array.isArray(enderecos) ? enderecos : [];
+
+  safeParentes.slice(0, 4).forEach((p, idx) => {
+    if (!p || typeof p !== 'object') return;
     nodes.push({
       id: `p-${p.cpf || idx}`,
       label: p.nome || p.NOME || "Parente",
@@ -218,7 +224,8 @@ export function TeiaConexoesGraph({
     });
   });
 
-  (vizinhos || []).slice(0, 4).forEach((v, idx) => {
+  safeVizinhos.slice(0, 4).forEach((v, idx) => {
+    if (!v || typeof v !== 'object') return;
     nodes.push({
       id: `v-${v.cpf || idx}`,
       label: v.nome || v.NOME || "Vizinho",
@@ -231,8 +238,8 @@ export function TeiaConexoesGraph({
     });
   });
 
-  (telefones || []).slice(0, 3).forEach((t, idx) => {
-    const rawNum = typeof t === 'object' ? (t.telefone || t.numero || String(t)) : String(t);
+  safeTelefones.slice(0, 3).forEach((t, idx) => {
+    const rawNum = typeof t === 'object' && t ? (t.telefone || t.numero || String(t)) : String(t || '');
     const cleanNum = rawNum.replace(/\D/g, "");
     const formattedNum = cleanNum.length === 11 
       ? `(${cleanNum.substring(0, 2)}) ${cleanNum.substring(2, 7)}-${cleanNum.substring(7)}`
@@ -240,7 +247,7 @@ export function TeiaConexoesGraph({
     nodes.push({
       id: `t-${idx}`,
       label: formattedNum,
-      sub: typeof t === 'object' && t.fonte ? `Tel (${t.fonte})` : "Contato Telefônico",
+      sub: typeof t === 'object' && t && t.fonte ? `Tel (${t.fonte})` : "Contato Telefônico",
       type: "telefone",
       color: "#34d399",
       bg: "rgba(16, 185, 129, 0.15)",
@@ -251,7 +258,7 @@ export function TeiaConexoesGraph({
   if (corporateShare) {
     nodes.push({
       id: "emp-1",
-      label: `${nomeCentral.split(" ")[0]} Sociedade Empresarial`,
+      label: `${(nomeCentral || "").split(" ")[0]} Sociedade Empresarial`,
       sub: `Quadro Societário (${corporateShare}%)`,
       type: "empresa",
       color: "#fbbf24",
@@ -260,9 +267,9 @@ export function TeiaConexoesGraph({
     });
   }
 
-  (enderecos || []).slice(0, 2).forEach((end, idx) => {
+  safeEnderecos.slice(0, 2).forEach((end, idx) => {
     let loc = "Residência Cadastrada";
-    if (typeof end === 'object') {
+    if (typeof end === 'object' && end) {
       const street = end.street || end.logradouro || "";
       const city = end.city || end.cidade || "";
       const state = end.state || end.uf || "";
@@ -1057,16 +1064,32 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
     );
   }
 
+  // Helper para garantir array válido independente da resposta da API
+  const safeArray = (val: any): any[] => {
+    if (Array.isArray(val)) return val;
+    if (val && typeof val === 'object') {
+      if (Array.isArray(val.data)) return val.data;
+      if (Array.isArray(val.body)) return val.body;
+      if (Array.isArray(val.parentes)) return val.parentes;
+      if (Array.isArray(val.vizinhos)) return val.vizinhos;
+      if (Array.isArray(val.phones)) return val.phones;
+      if (Array.isArray(val.telefones)) return val.telefones;
+      if (Array.isArray(val.vehicles)) return val.vehicles;
+      if (Array.isArray(val.veiculos)) return val.veiculos;
+    }
+    return [];
+  };
+
   // Normalização Completa do Perfil Master
   const root = data.perfil || data.body || data.data || data;
   const cpfData = root.cpf_dados || root.body || root.data || root;
   const fotoObj = data.foto || root.foto || root.fotos || null;
   const fotosDict = root.fotos || data.fotos || {};
-  const parentesData = data.parentes || root.parentes || cpfData.parentes || [];
-  const vizinhosData = data.vizinhos || root.vizinhos || cpfData.vizinhos || [];
+  const parentesData = safeArray(data.parentes || root.parentes || cpfData.parentes);
+  const vizinhosData = safeArray(data.vizinhos || root.vizinhos || cpfData.vizinhos);
   const scoreObj = data.score || root.score || cpfData.score || {};
-  const profissionaisData = data.profissionais || root.profissionais || [];
-  const veiculosData = data.veiculos || root.veiculos || cpfData.vehicles || [];
+  const profissionaisData = safeArray(data.profissionais || root.profissionais);
+  const veiculosData = safeArray(data.veiculos || root.veiculos || cpfData.vehicles);
 
   // Extrair campos de identificação
   const nome = sanitizeField(cpfData.name || cpfData.nome || cpfData.NOME) || "Não informado";

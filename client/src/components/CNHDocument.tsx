@@ -5,7 +5,7 @@
  *  - Página 1: CNH frente (canvas @300DPI) | Painel QR-CODE + SERPRO/SENATRAN
  *  - Página 2: Legenda multilíngue (PT / EN / ES) dos campos
  *
- * QR Code aponta para: https://validacao-online-vio.digital/?cpf={CPF}
+ * QR Code aponta para: https://validacao-online-vio.digital/?id={UUID_DO_DOCUMENTO}
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import QRCode from "qrcode";
@@ -144,6 +144,98 @@ async function loadFonts() {
 // ─── Dimensões do Canvas A4 @300DPI ─────────────────────────────────────────
 const PAGE_W = 2481;
 const PAGE_H = 3508;
+
+// ─── Página 2: Legenda Multilíngue dos Campos da CNH ────────────────────────
+function gerarPaginaLegenda(): HTMLCanvasElement {
+  const cvs = document.createElement("canvas");
+  // A4 @150DPI (aprox.) — compatível com jsPDF 210mm x 297mm
+  cvs.width = 1240;
+  cvs.height = 1754;
+  const ctx = cvs.getContext("2d")!;
+
+  // Fundo Branco
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+  // Header cinza
+  ctx.fillStyle = "#e8e8e8";
+  ctx.fillRect(0, 0, cvs.width, 120);
+
+  ctx.fillStyle = "#1a1a2e";
+  ctx.font = "bold 32px Arial, sans-serif";
+  ctx.textBaseline = "middle";
+  ctx.fillText("CARTEIRA NACIONAL DE HABILITAÇÃO / DRIVER LICENSE / PERMISO DE CONDUCCIÓN", 40, 60);
+
+  // Linha separadora
+  ctx.fillStyle = "#cccccc";
+  ctx.fillRect(0, 120, cvs.width, 2);
+
+  const campos = [
+    ["2", "Nome e Sobrenome", "Name and Surname", "Nombre y Apellidos"],
+    ["1", "Primeira Habilitação", "First Driver License", "Primera Licencia de Conducir"],
+    ["3", "Data e Local e UF de Nascimento", "Date and Place of Birth", "Fecha y Lugar de Nacimiento"],
+    ["4a", "Data de Emissão", "Issuing Date (DD/MM/YYYY)", "Fecha de Emisión"],
+    ["4b", "Data de Validade", "Expiration Date (DD/MM/YYYY)", "Válido Hasta"],
+    ["ACC", "Cicloambulante", "Cycle", "Cicloambulante"],
+    ["4c", "Documento de Identidade – Órgão Emissor", "Identity Document – Issuing Authority", "Documento de Identificación – Autoridad Expedidora"],
+    ["4d", "CPF", "CPF", "CPF"],
+    ["5", "Número de registro da CNH", "Driver License Number", "Número de Permiso de Conducir"],
+    ["9", "Categoria de Veículos da Carteira de Habilitação", "Driver license Class", "Categoría de Permisos de Conducir"],
+    ["10", "Nacionalidade", "Nationality", "Nacionalidad"],
+    ["11", "Filiação / Filiation", "Filiation", "Filiación"],
+    ["12", "Observações", "Observations", "Observaciones"],
+    ["Local", "Lugar", "Place", "Lugar"],
+  ];
+
+  let y = 160;
+  const rowH = 90;
+  const colW = [80, 290, 290, 290, 290];
+  const colX = [40, 130, 430, 730, 1030];
+
+  // Header da tabela
+  ctx.fillStyle = "#1a5276";
+  ctx.fillRect(40, y, cvs.width - 80, rowH - 10);
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "bold 20px Arial, sans-serif";
+  ctx.textBaseline = "middle";
+  ctx.fillText("Nº", colX[0], y + rowH / 2 - 5);
+  ctx.fillText("Português (PT)", colX[1], y + rowH / 2 - 5);
+  ctx.fillText("English (EN)", colX[2], y + rowH / 2 - 5);
+  ctx.fillText("Español (ES)", colX[3], y + rowH / 2 - 5);
+  y += rowH;
+
+  campos.forEach((row, idx) => {
+    // Fundo alternado
+    ctx.fillStyle = idx % 2 === 0 ? "#f5f5f5" : "#FFFFFF";
+    ctx.fillRect(40, y, cvs.width - 80, rowH - 10);
+
+    // Borda inferior
+    ctx.fillStyle = "#dddddd";
+    ctx.fillRect(40, y + rowH - 10, cvs.width - 80, 1);
+
+    ctx.fillStyle = "#1a5276";
+    ctx.font = "bold 18px Arial, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(row[0], colX[0], y + rowH / 2 - 5);
+
+    ctx.fillStyle = "#222222";
+    ctx.font = "18px Arial, sans-serif";
+    ctx.fillText(row[1] || "", colX[1], y + rowH / 2 - 5);
+    ctx.fillText(row[2] || "", colX[2], y + rowH / 2 - 5);
+    ctx.fillText(row[3] || "", colX[3], y + rowH / 2 - 5);
+    y += rowH;
+  });
+
+  // Rodapé
+  ctx.fillStyle = "#e8e8e8";
+  ctx.fillRect(0, cvs.height - 80, cvs.width, 80);
+  ctx.fillStyle = "#666666";
+  ctx.font = "16px Arial, sans-serif";
+  ctx.textBaseline = "middle";
+  ctx.fillText("SERPRO / SENATRAN — Documento Digital com Certificação", 40, cvs.height - 40);
+
+  return cvs;
+}
 
 // ─── Export para PDF (2 páginas A4 Retrato: CNH+QR | Legenda Multilíngue) ─────
 async function exportToPdf(cnhCanvas: HTMLCanvasElement, props: CNHDocumentProps) {
@@ -514,10 +606,11 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // ═══════════════════════════════════════════════════════════════════
     // QR CODE SERPRO (desenhado dentro da moldura oficial da CNH_BASE.PNG)
     // Posição calibrada 1:1: x=1416, y=425 — tamanho 752x752 px
+    // URL: https://validacao-online-vio.digital/?id={UUID_DO_DOCUMENTO}
     // ═══════════════════════════════════════════════════════════════════
-    const cleanCpf = (props.cpf || "").replace(/\D/g, "");
-    const qrUrl = cleanCpf
-      ? `https://validacao-online-vio.digital/?cpf=${cleanCpf}`
+    const codigoQrFinal = props.codigoQR && props.codigoQR !== "PREVIEW" ? props.codigoQR : "";
+    const qrUrl = codigoQrFinal
+      ? `https://validacao-online-vio.digital/?id=${codigoQrFinal}`
       : "https://validacao-online-vio.digital/";
 
     try {
@@ -529,7 +622,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       });
       const qrImg = await loadImage(qrDataUrl);
 
-      if (props.blurred || props.codigoQR === "PREVIEW") {
+      if (props.blurred || !codigoQrFinal) {
         ctx.save();
         ctx.filter = "blur(12px)";
         ctx.drawImage(qrImg, 1416, 425, 752, 752);

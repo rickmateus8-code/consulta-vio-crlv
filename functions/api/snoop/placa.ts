@@ -1,5 +1,5 @@
 /**
- * /api/snoop/placa — Agregação completa e unificada de veículos por Placa (Snoop Intelligence v2)
+ * /api/snoop/placa — Agregação e Mapeamento Completo de Veículos por Placa (Snoop Intelligence v2)
  */
 import type { Env } from '../../types';
 
@@ -81,41 +81,61 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     snoopGet('veiculos/jbr', { placa: rawPlaca }, apiKey),
   ]);
 
-  const pData = placaRes?.data || placaRes?.body || (placaRes?.placa ? placaRes : null);
-  const jData = jbrRes?.data || jbrRes?.body || (jbrRes?.placa ? jbrRes : null);
+  const pData = placaRes?.body || placaRes?.data || (placaRes?.brand || placaRes?.marca || placaRes?.owner ? placaRes : null);
+  const jData = jbrRes?.data || jbrRes?.body || (jbrRes?.marca_modelo ? jbrRes : null);
 
-  if (!pData && !jData) {
+  // Verificar se há dados reais do veículo
+  const hasRealData = !!(
+    pData?.brand || pData?.marca || pData?.marca_modelo || pData?.owner || pData?.proprietario || pData?.renavam || pData?.chassi || pData?.color || pData?.cor ||
+    jData?.marca_modelo || jData?.chassi || jData?.renavam || jData?.proprietario
+  );
+
+  if (!hasRealData) {
     return new Response(JSON.stringify({
       success: false,
       error: 'VEICULO_NAO_ENCONTRADO',
-      message: 'Nenhum veículo foi localizado para a placa informada.',
+      message: `A placa ${rawPlaca} não foi localizada ou não possui registros cadastrados nas bases veiculares.`,
     }), { status: 404, headers: CORS });
   }
 
-  const propNome = pData?.proprietario?.nome || pData?.proprietario || pData?.PROPRIETARIO || pData?.NOME_PROPRIETARIO || jData?.proprietario || "Não informado";
-  const propCpf = pData?.proprietario?.cpf_cnpj || pData?.CPF_PROPRIETARIO || pData?.cpf_cnpj || jData?.cpf_cnpj || "Não informado";
+  // Formatar restrições
+  let restricoesStr = "SEM RESTRIÇÕES";
+  const rawRestr = pData?.restrictions || jData?.restricoes;
+  if (typeof rawRestr === 'string' && rawRestr.trim()) {
+    restricoesStr = rawRestr;
+  } else if (typeof rawRestr === 'object' && rawRestr !== null) {
+    const list = Object.entries(rawRestr)
+      .filter(([, v]) => !!v)
+      .map(([k, v]) => (typeof v === 'string' ? v : k.toUpperCase().replace(/_/g, ' ')));
+    if (list.length > 0) restricoesStr = list.join(' | ');
+  }
+
+  const propNome = pData?.owner || pData?.proprietario || pData?.NOME_PROPRIETARIO || jData?.proprietario || "Não informado";
+  const propCpf = pData?.owner_cpf || pData?.cpf || pData?.cpf_cnpj || pData?.CPF_PROPRIETARIO || jData?.cpf_cnpj || "Não informado";
+
+  const marcaModelo = pData?.marca_modelo || pData?.brand || jData?.marca_modelo || (pData?.marca ? `${pData.marca} ${pData.modelo || ''}` : "") || "Não informado";
 
   const merged = {
-    placa: pData?.placa || jData?.placa || rawPlaca,
-    placa_mercosul: pData?.placa_mercosul || jData?.placa_nova || pData?.placa_nova || pData?.placa || rawPlaca,
-    placa_antiga: jData?.placa_antiga || pData?.placa_antiga || pData?.placa || rawPlaca,
-    chassi: pData?.chassi || jData?.chassi || "Não informado",
+    placa: pData?.plate || pData?.placa || jData?.placa || rawPlaca,
+    placa_mercosul: pData?.placa_nova || jData?.placa_nova || pData?.placa_mercosul || pData?.plate || rawPlaca,
+    placa_antiga: pData?.placa_antiga || jData?.placa_antiga || pData?.plate || rawPlaca,
+    chassi: pData?.chassi || pData?.chassis || jData?.chassi || "Não informado",
     renavam: pData?.renavam || jData?.renavam || "Não informado",
-    motor: pData?.motor || jData?.motor || pData?.NUMERO_MOTOR || jData?.NUMERO_MOTOR || "Não informado",
-    marca: pData?.marca || jData?.marca || "",
-    modelo: pData?.modelo || jData?.modelo || "",
-    marca_modelo: pData?.marca_modelo || jData?.marca_modelo || (pData?.marca ? `${pData.marca} ${pData.modelo || ''}` : "") || "Não informado",
-    ano_fabricacao: pData?.ano_fabricacao || jData?.ano_fabricacao || pData?.ano || jData?.ano_modelo || "Não informado",
-    ano_modelo: pData?.ano_modelo || jData?.ano_modelo || pData?.ano || jData?.ano_fabricacao || "Não informado",
-    cor: pData?.cor || jData?.cor || "Não informado",
-    combustivel: pData?.combustivel || jData?.combustivel || "Não informado",
-    uf: pData?.uf || jData?.uf || pData?.estado || "",
-    municipio: pData?.municipio || jData?.municipio || pData?.cidade || "",
+    motor: pData?.motor || pData?.engine || jData?.motor || pData?.NUMERO_MOTOR || "Não informado",
+    marca: pData?.brand || pData?.marca || jData?.marca || "",
+    modelo: pData?.model || pData?.modelo || jData?.modelo || "",
+    marca_modelo: marcaModelo,
+    ano_fabricacao: String(pData?.year_fab || pData?.ano_fabricacao || jData?.ano_fabricacao || pData?.year_model || "Não informado"),
+    ano_modelo: String(pData?.year_model || pData?.ano_modelo || jData?.ano_modelo || pData?.year_fab || "Não informado"),
+    cor: pData?.color || pData?.cor || jData?.cor || "Não informado",
+    combustivel: pData?.fuel || pData?.combustivel || jData?.combustivel || "Não informado",
+    uf: pData?.address?.state || pData?.uf || jData?.uf || pData?.estado || "",
+    municipio: pData?.address?.city || pData?.municipio || jData?.municipio || pData?.cidade || "",
     proprietario: {
       nome: propNome,
       cpf_cnpj: propCpf,
     },
-    restricoes: pData?.restricoes || pData?.RESTRIÇÃO || jData?.restricoes || "SEM RESTRIÇÕES",
+    restricoes: restricoesStr,
     situacao_veiculo: pData?.situacao_veiculo || jData?.situacao_veiculo || "EM CIRCULAÇÃO",
     situacao_chassi: pData?.situacao_chassi || jData?.situacao_chassi || "REGULAR",
   };

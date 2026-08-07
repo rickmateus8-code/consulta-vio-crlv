@@ -162,7 +162,7 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
   ctx.fillRect(0, 0, cvs.width, 120);
 
   ctx.fillStyle = "#1a1a2e";
-  ctx.font = "bold 32px Arial, sans-serif";
+  ctx.font = "bold 26px Arial, sans-serif";
   ctx.textBaseline = "middle";
   ctx.fillText("CARTEIRA NACIONAL DE HABILITAÇÃO / DRIVER LICENSE / PERMISO DE CONDUCCIÓN", 40, 60);
 
@@ -189,20 +189,30 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
 
   let y = 160;
   const rowH = 90;
-  const colW = [80, 290, 290, 290, 290];
-  const colX = [40, 130, 430, 730, 1030];
+  const colX = [40, 120, 470, 820];
+  const colW = [70, 330, 330, 360];
 
   // Header da tabela
   ctx.fillStyle = "#1a5276";
   ctx.fillRect(40, y, cvs.width - 80, rowH - 10);
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = "bold 20px Arial, sans-serif";
+  ctx.font = "bold 18px Arial, sans-serif";
   ctx.textBaseline = "middle";
-  ctx.fillText("Nº", colX[0], y + rowH / 2 - 5);
-  ctx.fillText("Português (PT)", colX[1], y + rowH / 2 - 5);
-  ctx.fillText("English (EN)", colX[2], y + rowH / 2 - 5);
-  ctx.fillText("Español (ES)", colX[3], y + rowH / 2 - 5);
+  ctx.fillText("Nº", colX[0], y + (rowH - 10) / 2);
+  ctx.fillText("Português (PT)", colX[1], y + (rowH - 10) / 2);
+  ctx.fillText("English (EN)", colX[2], y + (rowH - 10) / 2);
+  ctx.fillText("Español (ES)", colX[3], y + (rowH - 10) / 2);
   y += rowH;
+
+  const drawClippedText = (text: string, x: number, centerY: number, maxW: number, isBold = false) => {
+    ctx.font = `${isBold ? "bold " : ""}14px Arial, sans-serif`;
+    let fontSize = 14;
+    while (ctx.measureText(text).width > maxW && fontSize > 9) {
+      fontSize -= 0.5;
+      ctx.font = `${isBold ? "bold " : ""}${fontSize}px Arial, sans-serif`;
+    }
+    ctx.fillText(text, x, centerY, maxW);
+  };
 
   campos.forEach((row, idx) => {
     // Fundo alternado
@@ -213,16 +223,15 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
     ctx.fillStyle = "#dddddd";
     ctx.fillRect(40, y + rowH - 10, cvs.width - 80, 1);
 
+    const centerY = y + (rowH - 10) / 2;
+
     ctx.fillStyle = "#1a5276";
-    ctx.font = "bold 18px Arial, sans-serif";
-    ctx.textBaseline = "middle";
-    ctx.fillText(row[0], colX[0], y + rowH / 2 - 5);
+    drawClippedText(row[0], colX[0], centerY, colW[0], true);
 
     ctx.fillStyle = "#222222";
-    ctx.font = "18px Arial, sans-serif";
-    ctx.fillText(row[1] || "", colX[1], y + rowH / 2 - 5);
-    ctx.fillText(row[2] || "", colX[2], y + rowH / 2 - 5);
-    ctx.fillText(row[3] || "", colX[3], y + rowH / 2 - 5);
+    drawClippedText(row[1] || "", colX[1], centerY, colW[1]);
+    drawClippedText(row[2] || "", colX[2], centerY, colW[2]);
+    drawClippedText(row[3] || "", colX[3], centerY, colW[3]);
     y += rowH;
   });
 
@@ -230,7 +239,7 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
   ctx.fillStyle = "#e8e8e8";
   ctx.fillRect(0, cvs.height - 80, cvs.width, 80);
   ctx.fillStyle = "#666666";
-  ctx.font = "16px Arial, sans-serif";
+  ctx.font = "15px Arial, sans-serif";
   ctx.textBaseline = "middle";
   ctx.fillText("SERPRO / SENATRAN — Documento Digital com Certificação", 40, cvs.height - 40);
 
@@ -356,89 +365,75 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // DADOS DO CONDUTOR (coordenadas calibradas @300DPI sobre o template CNH_BASE.PNG)
     // ═══════════════════════════════════════════════════════════════════
 
-    // Nome Completo
-    txt(props.nome, 245, 420, 26, 1, "#000000", 620);
+    // Nome Completo (na caixa "2 e 1 NOME E SOBRENOME")
+    txt(props.nome, 245, 432, 24, 1, "#000000", 640);
 
-    // 1ª Habilitação
-    txt(d(props.primeiraHabilitacao), 915, 420, 22, 1, "#000000", 180);
+    // 1ª Habilitação (na caixa "1ª HABILITAÇÃO")
+    txt(d(props.primeiraHabilitacao), 915, 432, 21, 1, "#000000", 180);
 
-    // Data Nascimento, Local, UF
-    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 425, 489, 22, 1, "#000000", 450);
+    // Data Nascimento, Local, UF (na caixa "3 DATA, LOCAL E UF DE NASCIMENTO")
+    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 410, 488, 20, 1, "#000000", 470);
 
-    // Data Emissão
-    txt(d(props.dataEmissao), 425, 540, 22, 1, "#000000", 180);
+    // Data Emissão (na caixa "4a DATA EMISSÃO")
+    txt(d(props.dataEmissao), 410, 544, 20, 1, "#000000", 180);
 
-    // Validade (vermelho)
-    txt(d(props.validade), 680, 540, 22, 1, "#c0392b", 180);
+    // Validade em vermelho (na caixa "4b VALIDADE")
+    txt(d(props.validade), 670, 544, 20, 1, "#c0392b", 180);
 
-    // Tipo CNH (D = Definitiva, P = Permissão)
+    // Tipo CNH (D = Definitiva, P = Permissão) na caixinha ACC/TIPO
     const tipoLetra = props.tipo === "Permissão" ? "P" : "D";
-    txt(tipoLetra, 1045, 549, 24, 1, "#000000", 80);
+    txt(tipoLetra, 925, 544, 22, 1, "#000000", 60);
 
-    // RG + Órgão Emissor / UF
-    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 425, 600, 22, 1, "#000000", 450);
+    // RG + Órgão Emissor / UF (na caixa "4c DOC IDENTIDADE / ÓRG EMISSOR / UF")
+    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 410, 600, 20, 1, "#000000", 470);
 
-    // CPF
-    txt(formatarCPF(props.cpf), 425, 655, 22, 1, "#000000", 250);
+    // CPF (na caixa "4d CPF")
+    txt(formatarCPF(props.cpf), 410, 656, 20, 1, "#000000", 240);
 
-    // Nº Registro (vermelho)
-    txt(props.registro, 680, 655, 22, 1, "#c0392b", 210);
+    // Nº Registro em vermelho (na caixa "5 Nº REGISTRO")
+    txt(props.registro, 670, 656, 20, 1, "#c0392b", 210);
 
-    // Categoria (vermelho)
-    txt(props.categoria, 920, 660, 22, 1, "#c0392b", 120);
+    // Categoria em vermelho (na caixa "9 CAT HAB")
+    txt(props.categoria, 885, 656, 20, 1, "#c0392b", 100);
 
-    // Nacionalidade
-    txt(props.nacionalidade || "BRASILEIRO(A)", 425, 715, 22, 1, "#000000", 500);
+    // Nacionalidade (na caixa "NACIONALIDADE")
+    txt(props.nacionalidade || "BRASILEIRO(A)", 410, 712, 20, 1, "#000000", 500);
 
-    // Filiação — Pai
-    txt(props.nomePai, 425, 765, 21, 1, "#000000", 550);
+    // Filiação — Pai (na caixa "FILIAÇÃO")
+    txt(props.nomePai, 410, 765, 19, 1, "#000000", 550);
     // Filiação — Mãe
-    txt(props.nomeMae, 425, 815, 21, 1, "#000000", 550);
+    txt(props.nomeMae, 410, 812, 19, 1, "#000000", 550);
 
-    // Observações (EAR multi-linha)
+    // Observações (EAR multi-linha na caixa "12 OBSERVAÇÕES")
     const obsTexto = String(props.observacoes || "");
     const linhasObs = obsTexto.split("\n");
-    const obsY = 1250;
+    const obsY = 1275;
     linhasObs.forEach((linha, index) => {
-      txt(linha, 300, obsY + (index * 24), 20, false, "#000000", 780);
+      txt(linha, 245, obsY + (index * 24), 18, false, "#000000", 800);
     });
 
-    // Local Emissão + UF
-    txt(`${props.localEmissao}, ${props.ufEmissao}`, 320, 1538, 22, 1, "#000000", 490);
+    // Local Emissão + UF (na caixa "LOCAL")
+    txt(`${props.localEmissao}, ${props.ufEmissao}`, 315, 1538, 20, 1, "#000000", 500);
 
     // Nome do Estado por extenso em destaque (Painel 2)
     ctx.save();
     ctx.textAlign = "center";
     const ufDigitada = (props.ufEmissao || "").trim().toUpperCase();
     const nomeEstadoCompleto = NOMES_ESTADOS[ufDigitada] || "SÃO PAULO";
-    ctx.font = "bold 38px 'Ultra', Arial, sans-serif";
+    ctx.font = "bold 32px 'Ultra', Arial, sans-serif";
     ctx.fillStyle = "#000000";
-    ctx.fillText(nomeEstadoCompleto, 600, 1630);
+    ctx.fillText(nomeEstadoCompleto, 600, 1620);
     ctx.textAlign = "left";
     ctx.restore();
 
-    // ── Bloco "ASSINADO DIGITALMENTE / DEPARTAMENTO ESTADUAL DE TRÂNSITO" ──
+    // ── Assinaturas digitais (números de série) sob o bloco ASSINADO DIGITALMENTE ──
+    // O template CNH_BASE já possui a linha e as palavras "ASSINADO DIGITALMENTE / DEPARTAMENTO ESTADUAL DE TRÂNSITO"
     ctx.save();
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#333333";
     ctx.font = "18px 'Ultra', Arial, sans-serif";
-    ctx.fillText("ASSINADO DIGITALMENTE", 1100, 1425);
-    ctx.fillStyle = "#555555";
-    ctx.font = "16px 'Ultra', Arial, sans-serif";
-    ctx.fillText("DEPARTAMENTO ESTADUAL DE TRÂNSITO", 1100, 1445);
-    // Linha horizontal acima
-    ctx.fillStyle = "#888888";
-    ctx.fillRect(830, 1420, 270, 1);
-    ctx.textAlign = "left";
-    ctx.restore();
-
-    // ── Assinaturas digitais (números de série) ──────────────────────────
-    ctx.save();
-    ctx.font = "22px 'Ultra', Arial, sans-serif";
-    ctx.fillStyle = "#333333";
+    ctx.fillStyle = "#222222";
     ctx.textAlign = "center";
-    ctx.fillText(props.assDigital1 || "46418356416", 945, 1475);
-    ctx.fillText(props.assDigital2 || "SP032337809", 945, 1500);
+    ctx.fillText(props.assDigital1 || "46418356416", 945, 1465);
+    ctx.fillText(props.assDigital2 || "SP032337809", 945, 1490);
     ctx.restore();
 
     // ── Textos laterais verticais (Nº Espelho) ───────────────────────────
@@ -460,26 +455,24 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
     // ═══════════════════════════════════════════════════════════════════
     // TABELA EXPANDIDA DE CATEGORIAS (14 tipos com datas de validade)
-    // Esquerda: ACC, A, A1, B, B1, C, C1
-    // Direita:  D, D1, BE, CE, C1E, DE, D1E
+    // Coluna 12 (Validade) alinhada nas células da tabela
     // ═══════════════════════════════════════════════════════════════════
     const catsEsq: Record<string, { x: number; y: number }> = {
-      ACC: { x: 385, y: 900 },
-      A:   { x: 530, y: 1010 },
-      A1:  { x: 530, y: 1048 },
-      B:   { x: 530, y: 1086 },
-      B1:  { x: 530, y: 1124 },
-      C:   { x: 530, y: 1158 },
-      C1:  { x: 530, y: 1196 },
+      A:   { x: 575, y: 955 },
+      A1:  { x: 575, y: 992 },
+      B:   { x: 575, y: 1030 },
+      B1:  { x: 575, y: 1068 },
+      C:   { x: 575, y: 1105 },
+      C1:  { x: 575, y: 1142 },
     };
     const catsDir: Record<string, { x: number; y: number }> = {
-      D:   { x: 952, y: 1010 },
-      D1:  { x: 952, y: 1048 },
-      BE:  { x: 952, y: 1086 },
-      CE:  { x: 952, y: 1124 },
-      C1E: { x: 952, y: 1158 },
-      DE:  { x: 952, y: 1196 },
-      D1E: { x: 952, y: 1234 },
+      D:   { x: 1005, y: 955 },
+      D1:  { x: 1005, y: 992 },
+      BE:  { x: 1005, y: 1030 },
+      CE:  { x: 1005, y: 1068 },
+      C1E: { x: 1005, y: 1105 },
+      DE:  { x: 1005, y: 1142 },
+      D1E: { x: 1005, y: 1180 },
     };
     const allCats = { ...catsEsq, ...catsDir };
 
@@ -502,7 +495,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         (k === "C" && (userCat.includes("C") || userCat.includes("E")));
 
       if (habilitada) {
-        txt(d(props.validade), pos.x, pos.y, 14, 1, "#000000", 130);
+        txt(d(props.validade), pos.x, pos.y, 14, 1, "#000000", 110);
       }
     });
 
@@ -519,11 +512,11 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
         const bx = 135 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 485 + Math.round((baseBh - bh) / 2) + offsetY;
+        const by = 455 + Math.round((baseBh - bh) / 2) + offsetY;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(135, 485, baseBw, baseBh);
+        ctx.rect(135, 455, baseBw, baseBh);
         ctx.clip();
 
         const imgRatio = fotoImg.width / fotoImg.height;
@@ -554,7 +547,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
         const bx = 135 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 845 + Math.round((baseBh - bh) / 2) + offsetY;
+        const by = 815 + Math.round((baseBh - bh) / 2) + offsetY;
 
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = assImg.width;
@@ -587,7 +580,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(135, 845, baseBw, baseBh);
+        ctx.rect(135, 815, baseBw, baseBh);
         ctx.clip();
         ctx.drawImage(tempCanvas, drawX, drawY, drawW, drawH);
         ctx.restore();
@@ -595,13 +588,13 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // MRZ (OCR-B 26px @300DPI) — 3 linhas calibradas
+    // MRZ (OCR-B 26px @300DPI) — 3 linhas calibradas na área inferior
     // ═══════════════════════════════════════════════════════════════════
     const mrz = gerarMRZ(props);
     ctx.font = "26px 'OCR-B', monospace";
     ctx.fillStyle = "#353535";
     ctx.textBaseline = "top";
-    mrz.forEach((l, i) => ctx.fillText(l, 317, 2221 + (i * 57)));
+    mrz.forEach((l, i) => ctx.fillText(l, 317, 2360 + (i * 55)));
 
     // ═══════════════════════════════════════════════════════════════════
     // QR CODE SERPRO (desenhado dentro da moldura oficial da CNH_BASE.PNG)

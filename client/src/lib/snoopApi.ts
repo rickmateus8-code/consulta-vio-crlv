@@ -87,7 +87,7 @@ export const snoopTelefoneDDD = (ddd: string) =>
   get('telefone/ddd', { ddd });
 
 export const snoopTelefoneFull = (phone: string) =>
-  get('telefone/full', { phone });
+  get('telefone/full', { phone, telefone: phone });
 
 export const snoopTelefoneCPF = (cpf: string) =>
   get('telefone/cpf', { cpf });
@@ -100,10 +100,10 @@ export const snoopRenda = (min?: number, max?: number, limit?: number) =>
   get('renda', { min, max, limit });
 
 export const snoopCBO = (cbo: string) =>
-  get('cbo', { cbo });
+  get('cbo', { cbo, profissao: cbo });
 
 export const snoopProfissao = (profissao: string) =>
-  get('profissao', { profissao });
+  get('profissao', { profissao, cbo: profissao });
 
 export const snoopBIN = (bin: string) =>
   get('bin', { bin });
@@ -116,35 +116,35 @@ export const snoopFoto = (cpf: string) =>
   get('foto', { cpf });
 
 export const snoopFotoSP = (cpf: string) =>
-  get('foto-sp', { cpf });
+  get('foto/sp', { cpf });
 
 export const snoopFotoMA = (cpf: string) =>
-  get('foto-ma', { cpf });
+  get('foto/ma', { cpf });
 
 export const snoopFotoRO = (cpf: string) =>
-  get('foto-ro', { cpf });
+  get('foto/ro', { cpf });
 
 export const snoopFotoAll = (cpf: string) =>
-  get('foto-all', { cpf });
+  get('foto/all', { cpf });
 
 // ── Veículos & Outros ────────────────────────────────────────────────────────
 export const snoopPlaca = (placa: string) =>
   get('placa', { placa });
 
 export const snoopOperadora = (telefone: string) =>
-  get('operadora', { telefone });
+  get('operadora', { telefone, phone: telefone });
 
-export const snoopRandom = () =>
-  get('random');
+export const snoopRandom = (uf?: string) =>
+  get('random', { uf });
 
-export const snoopProfissionais = (cpf: string) =>
-  get('profissionais', { cpf });
+export const snoopProfissionais = (params: { nome?: string; email?: string; profissao?: string; limit?: number }) =>
+  get('profissionais', params);
 
-export const snoopVeiculosJBR = (cpf: string) =>
-  get('veiculos-jbr', { cpf });
+export const snoopVeiculosJBR = (params: { placa?: string; chassi?: string }) =>
+  get('veiculos/jbr', params);
 
-export const snoopGeo = (cpf: string) =>
-  get('geo', { cpf });
+export const snoopGeo = (cep: string, limit?: number) =>
+  get('geo', { cep, limit });
 
 export const snoopPerfilCPF = (cpf: string) =>
   get('perfil-cpf', { cpf });

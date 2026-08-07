@@ -15,7 +15,7 @@ import {
   Link, Copy, Calendar, Trash, Lock, UserPlus, Clock, User
 } from "lucide-react";
 
-type Tab = "users" | "pricing" | "notices" | "logs" | "emissions" | "monitoring" | "referral" | "settings";
+type Tab = "users" | "tools" | "pricing" | "notices" | "logs" | "emissions" | "monitoring" | "referral" | "settings";
 
 interface EmissionRow {
   id: string;
@@ -105,6 +105,7 @@ interface PresenceRow {
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: "users", label: "Usuários", icon: Users },
+  { key: "tools", label: "Ferramentas (Módulos)", icon: Shield },
   { key: "monitoring", label: "Monitoramento", icon: Monitor },
   { key: "pricing", label: "Preços", icon: DollarSign },
   { key: "notices", label: "Avisos", icon: Bell },
@@ -122,6 +123,7 @@ const NOTICE_TYPES = [
 ];
 
 const DOC_TYPE_LABELS: Record<string, string> = {
+  consultas: "Master Buscas (/consultas)",
   atestado: "Atestado",
   receita: "Receita",
   cnh: "CNH",
@@ -242,6 +244,70 @@ export default function AdminDashboard() {
   const selectAllTools = (selected: boolean) => {
     const all = ["bot-adv", "peticao-stj"];
     setUserPermissions({ ...userPermissions, ferramentas: selected ? all : [] });
+  };
+
+  const toggleConsultasAccess = async (user: UserRow) => {
+    const currentFree = Array.isArray(user.free_documents) ? user.free_documents : [];
+    const hasConsultas = currentFree.includes("consultas");
+    const newFree = hasConsultas
+      ? currentFree.filter(s => s !== "consultas")
+      : [...currentFree, "consultas"];
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ user_id: user.id, free_documents: newFree }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(
+          hasConsultas
+            ? `Módulo /consultas alterado para MODO PAGO para ${user.username}`
+            : `Acesso GRATUITO a /consultas liberado para ${user.username}!`
+        );
+        setUsers(prev =>
+          prev.map(u => (u.id === user.id ? { ...u, free_documents: newFree } : u))
+        );
+      } else {
+        toast.error(json.error || "Erro ao atualizar permissão");
+      }
+    } catch {
+      toast.error("Erro de conexão");
+    }
+  };
+
+  const toggleBulkConsultasAccess = async (makeFree: boolean) => {
+    toast.info(`Atualizando permissão de consultas para ${users.length} usuários...`);
+    for (const u of users) {
+      if (u.role === "admin") continue;
+      const currentFree = Array.isArray(u.free_documents) ? u.free_documents : [];
+      const hasConsultas = currentFree.includes("consultas");
+      if (makeFree && !hasConsultas) {
+        const newFree = [...currentFree, "consultas"];
+        await fetch("/api/admin/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ user_id: u.id, free_documents: newFree }),
+        }).catch(() => {});
+      } else if (!makeFree && hasConsultas) {
+        const newFree = currentFree.filter(s => s !== "consultas");
+        await fetch("/api/admin/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ user_id: u.id, free_documents: newFree }),
+        }).catch(() => {});
+      }
+    }
+    fetchUsers();
+    toast.success(
+      makeFree
+        ? `Acesso GRATUITO a /consultas liberado para todos os usuários!`
+        : `Módulo /consultas definido para MODO PAGO para todos os usuários!`
+    );
   };
   const [hardDeleteUser, setHardDeleteUser] = useState<UserRow | null>(null);
   const [hardDeleteConfirmChecked, setHardDeleteConfirmChecked] = useState(false);
@@ -1451,6 +1517,16 @@ export default function AdminDashboard() {
                             }`}>
                               {u.is_active ? "Ativo" : "Bloqueado"}
                             </span>
+                            <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black uppercase tracking-widest border flex items-center gap-1 ${
+                              u.role === "admin" || (Array.isArray(u.free_documents) && u.free_documents.includes("consultas"))
+                                ? "bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/60 dark:border-violet-800 dark:text-violet-300"
+                                : "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/60 dark:border-amber-800 dark:text-amber-300"
+                            }`}>
+                              <Search className="w-2.5 h-2.5" />
+                              {u.role === "admin" || (Array.isArray(u.free_documents) && u.free_documents.includes("consultas"))
+                                ? "Buscas: Grátis"
+                                : "Buscas: Pagas"}
+                            </span>
                           </div>
                           <p className="text-xs font-medium text-gray-400 dark:text-gray-500">{u.email || "Sem email cadastrado"}</p>
                           <div className="mt-2 flex items-center gap-3">
@@ -1483,6 +1559,20 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => toggleConsultasAccess(u)}
+                            className={`flex items-center gap-1 px-2.5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 border shadow-sm ${
+                              Array.isArray(u.free_documents) && u.free_documents.includes("consultas")
+                                ? "bg-violet-600 text-white border-violet-500 hover:bg-violet-700"
+                                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-violet-50 hover:text-violet-600"
+                            }`}
+                            title="Alternar se este usuário tem buscas /consultas gratuitas ou pagas"
+                          >
+                            <Search className="w-3.5 h-3.5" />
+                            {Array.isArray(u.free_documents) && u.free_documents.includes("consultas")
+                              ? "Buscas: Grátis"
+                              : "Buscas: Pagas"}
+                          </button>
                           <button
                             onClick={() => { setBalanceModalUser(u); setBalanceModalValue(""); setBalanceModalType("credit"); }}
                             className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all active:scale-95 border border-emerald-100 dark:border-emerald-900/30 shadow-sm"
@@ -1561,6 +1651,102 @@ export default function AdminDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── FERRAMENTAS (MÓDULOS) & PERMISSÕES TAB ── */}
+        {tab === "tools" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Master Buscas /consultas Spotlight Control Card */}
+            <div className="rounded-3xl bg-gradient-to-br from-violet-900 via-indigo-900 to-slate-900 border border-violet-500/40 p-7 text-white shadow-2xl space-y-6">
+              <div className="flex items-center justify-between flex-wrap gap-4 border-b border-violet-500/30 pb-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-3xl shadow-inner">
+                    🔍
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                      <span>Master Buscas / Snoop Intelligence</span>
+                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-violet-500/30 border border-violet-300/40 text-violet-200">
+                        /consultas
+                      </span>
+                    </h2>
+                    <p className="text-xs text-violet-200 mt-1">
+                      Gerencie a liberação de permissão para ferramentas e pesquisas cadastrais.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    onClick={() => toggleBulkConsultasAccess(true)}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg transition-all"
+                  >
+                    <CheckCircle className="w-4 h-4" /> Liberar Gratuito p/ Todos
+                  </button>
+                  <button
+                    onClick={() => toggleBulkConsultasAccess(false)}
+                    className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg transition-all"
+                  >
+                    <Lock className="w-4 h-4" /> Definir Modo Pago p/ Todos
+                  </button>
+                </div>
+              </div>
+
+              {/* Status Counters */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <span className="text-[10px] font-bold text-violet-300 uppercase tracking-wider block">TOTAL OPERADORES</span>
+                  <span className="text-2xl font-black text-white">{users.length}</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 space-y-1">
+                  <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider block">🟢 ACESSO GRATUITO (LIBERADO)</span>
+                  <span className="text-2xl font-black text-emerald-400">
+                    {users.filter(u => u.role === "admin" || (Array.isArray(u.free_documents) && u.free_documents.includes("consultas"))).length}
+                  </span>
+                </div>
+                <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/30 space-y-1">
+                  <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block">🔴 MODO PAGO (REQUER PLANO)</span>
+                  <span className="text-2xl font-black text-amber-400">
+                    {users.filter(u => u.role !== "admin" && (!Array.isArray(u.free_documents) || !u.free_documents.includes("consultas"))).length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Matriz Completa de Ferramentas & Módulos por Usuário */}
+            <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6 space-y-5 shadow-sm">
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
+                <div>
+                  <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                    Matriz de Liberação Gratuita de Módulos
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Visualize o número de operadores com liberação gratuita em cada ferramenta do ecossistema.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {Object.entries(DOC_TYPE_LABELS).map(([slug, label]) => {
+                  const freeUsersCount = users.filter(u => u.role === "admin" || (Array.isArray(u.free_documents) && u.free_documents.includes(slug))).length;
+                  return (
+                    <div key={slug} className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 flex flex-col justify-between">
+                      <div>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">{slug}</span>
+                        <h4 className="font-extrabold text-gray-900 dark:text-white text-xs mt-0.5">{label}</h4>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-gray-500">Operadores grátis:</span>
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-xs">
+                          {freeUsersCount} / {users.length}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
@@ -3232,6 +3418,51 @@ export default function AdminDashboard() {
 	                </div>
 	              </div>
 
+	              {/* DESTAQUE: Permissão do Módulo /consultas (Master Buscas) */}
+	              <div className="p-4 rounded-2xl border-2 border-violet-500/30 bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40 space-y-3 shadow-inner">
+	                <div className="flex items-center justify-between flex-wrap gap-2">
+	                  <div className="flex items-center gap-3">
+	                    <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center text-white font-bold shadow-md">
+                        🔍
+                      </div>
+	                    <div>
+	                      <h4 className="text-xs font-black text-violet-950 dark:text-violet-200 uppercase tracking-wide">
+	                        Módulo Master Buscas (/consultas)
+	                      </h4>
+	                      <p className="text-[10px] text-violet-700 dark:text-violet-300 font-medium">
+	                        Acesso livre sem custo vs Necessidade de plano
+	                      </p>
+	                    </div>
+	                  </div>
+	                  <button
+	                    type="button"
+	                    onClick={() => {
+	                      const hasConsultas = userFreeDocs.includes("consultas");
+	                      if (hasConsultas) {
+	                        setUserFreeDocs(userFreeDocs.filter(s => s !== "consultas"));
+	                      } else {
+	                        setUserFreeDocs([...userFreeDocs, "consultas"]);
+	                      }
+	                    }}
+	                    className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all flex items-center gap-1.5 border shadow-sm ${
+	                      userFreeDocs.includes("consultas")
+	                        ? "bg-emerald-600 text-white border-emerald-400"
+	                        : "bg-amber-500 text-white border-amber-400"
+	                    }`}
+	                  >
+	                    {userFreeDocs.includes("consultas") ? (
+	                      <>
+	                        <CheckCircle className="w-3.5 h-3.5" /> 🟢 MODO GRATUITO (LIBERADO)
+	                      </>
+	                    ) : (
+	                      <>
+	                        <Lock className="w-3.5 h-3.5" /> 🔴 MODO PAGO (REQUER PLANO)
+	                      </>
+	                    )}
+	                  </button>
+	                </div>
+	              </div>
+
 	              <div>
                   <div className="flex items-center justify-between mb-3">
 	                  <h4 className="text-[10px] font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-widest">FERRAMENTAS (Módulos)</h4>
@@ -3241,20 +3472,27 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 	                <div className="grid grid-cols-2 gap-2">
-	                  {["bot-adv", "peticao-stj"].map(tool => (
+	                  {["bot-adv", "peticao-stj", "consultas"].map(tool => (
 	                    <label key={tool} className="flex items-center gap-2 p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:border-emerald-300 transition-all">
 	                      <input 
 	                        type="checkbox" 
-	                        checked={userPermissions.ferramentas.includes(tool)}
+	                        checked={userPermissions.ferramentas.includes(tool) || userFreeDocs.includes(tool)}
 	                        onChange={(e) => {
 	                          const next = e.target.checked 
 	                            ? [...userPermissions.ferramentas, tool]
 	                            : userPermissions.ferramentas.filter((t: string) => t !== tool);
 	                          setUserPermissions({ ...userPermissions, ferramentas: next });
+                            if (tool === "consultas") {
+                              if (e.target.checked && !userFreeDocs.includes("consultas")) {
+                                setUserFreeDocs([...userFreeDocs, "consultas"]);
+                              } else if (!e.target.checked && userFreeDocs.includes("consultas")) {
+                                setUserFreeDocs(userFreeDocs.filter(s => s !== "consultas"));
+                              }
+                            }
 	                        }}
 	                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" 
 	                      />
-	                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">{tool}</span>
+	                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">{DOC_TYPE_LABELS[tool] || tool}</span>
 	                    </label>
 	                  ))}
 	                </div>

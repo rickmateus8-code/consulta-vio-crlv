@@ -16,16 +16,26 @@ async function getUserFromSession(request: Request, env: Env): Promise<any | nul
   const match = cookie.match(/docmaster_session=([^;]+)/);
   if (!match) return null;
   const session = await env.DB.prepare(
-    'SELECT s.user_id, u.id, u.username, u.role FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime(\'now\')'
+    'SELECT s.user_id, u.id, u.username, u.role, u.free_documents FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime(\'now\')'
   ).bind(match[1]).first<any>();
   return session || null;
 }
 
-async function checkActivePlan(userId: number, env: Env): Promise<boolean> {
+async function checkActivePlan(user: any, env: Env): Promise<boolean> {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  let freeDocs: string[] = [];
+  try {
+    if (user.free_documents) {
+      freeDocs = typeof user.free_documents === 'string' ? JSON.parse(user.free_documents) : user.free_documents;
+    }
+  } catch {}
+  if (Array.isArray(freeDocs) && freeDocs.includes('consultas')) return true;
+
   try {
     const plan = await env.DB.prepare(
       'SELECT id FROM consultas_planos WHERE user_id = ? AND expires_at > datetime(\'now\') LIMIT 1'
-    ).bind(userId).first<any>();
+    ).bind(user.id).first<any>();
     return !!plan;
   } catch { return false; }
 }
@@ -76,7 +86,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
   const user = await getUserFromSession(request, env);
   if (!user) return new Response(JSON.stringify({ success: false, error: 'Nao autenticado' }), { status: 401, headers: CORS });
-  const hasActivePlan = await checkActivePlan(user.id, env);
+  const hasActivePlan = await checkActivePlan(user, env);
   if (!hasActivePlan && user.role !== 'admin') {
     return new Response(JSON.stringify({ success: false, error: 'PLANO_INATIVO' }), { status: 403, headers: CORS });
   }

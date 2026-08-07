@@ -21,7 +21,7 @@ async function getUserFromSession(request: Request, env: Env): Promise<any | nul
   const match = cookie.match(/docmaster_session=([^;]+)/);
   if (!match) return null;
   const session = await env.DB.prepare(
-    'SELECT s.user_id, u.id, u.username, u.role, u.balance FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime(\'now\')'
+    'SELECT s.user_id, u.id, u.username, u.role, u.balance, u.free_documents FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime(\'now\')'
   ).bind(match[1]).first<any>();
   return session || null;
 }
@@ -31,9 +31,25 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const user = await getUserFromSession(request, env);
   if (!user) return new Response(JSON.stringify({ success: false, error: 'Nao autenticado' }), { status: 401, headers: CORS });
   
-  const plan = await env.DB.prepare(
+  let freeDocs: string[] = [];
+  try {
+    if (user.free_documents) {
+      freeDocs = typeof user.free_documents === 'string' ? JSON.parse(user.free_documents) : user.free_documents;
+    }
+  } catch {}
+
+  const isFree = user.role === 'admin' || (Array.isArray(freeDocs) && freeDocs.includes('consultas'));
+
+  const dbPlan = await env.DB.prepare(
     'SELECT * FROM consultas_planos WHERE user_id = ? AND expires_at > datetime(\'now\') ORDER BY expires_at DESC LIMIT 1'
   ).bind(user.id).first<any>();
+
+  const activePlan = isFree ? {
+    id: 'free-admin-granted',
+    plano: 'Concedido pelo Admin (Gratuito)',
+    is_free: true,
+    expires_at: '2099-12-31T23:59:59Z'
+  } : dbPlan;
 
   let usage24h = 0;
   let usageByModulo: Record<string, number> = {};
@@ -55,7 +71,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   return new Response(JSON.stringify({
     success: true,
-    plan: plan || null,
+    is_free: isFree,
+    plan: activePlan || null,
     balance: user.balance,
     usage_24h: usage24h,
     usage_by_modulo: usageByModulo,

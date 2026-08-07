@@ -160,7 +160,8 @@ export default function Consultas() {
     getPlanoStatus()
       .then((data) => {
         setPlanStatus(data);
-        if (!data.plan && user?.role !== "admin") setShowPlanModal(true);
+        const isFree = data.is_free || data.plan?.is_free || user?.role === "admin" || (Array.isArray(user?.free_documents) && user.free_documents.includes("consultas"));
+        if (!data.plan && !isFree) setShowPlanModal(true);
       })
       .catch(() => setPlanStatus({ plan: null }))
       .finally(() => setPlanLoading(false));
@@ -224,7 +225,8 @@ export default function Consultas() {
       return;
     }
 
-    if (!planStatus?.plan && user?.role !== "admin") {
+    const isFreeAccess = planStatus?.is_free || planStatus?.plan?.is_free || user?.role === "admin" || (Array.isArray(user?.free_documents) && user.free_documents.includes("consultas"));
+    if (!planStatus?.plan && !isFreeAccess) {
       setShowPlanModal(true);
       return;
     }

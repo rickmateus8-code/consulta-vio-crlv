@@ -329,12 +329,28 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-    // 2. Template CNH_BASE.pdf (@300DPI - 2480x3508)
+    // 2. Template CNH_BASE (com múltiplos fallbacks para nunca sumir)
     try {
-      const bg = await loadImage("/assets/cnh_base_template_300.png");
-      ctx.drawImage(bg, 0, 0, PAGE_W, PAGE_H);
+      let bg: HTMLImageElement | null = null;
+      const sources = [
+        "/assets/cnh_base_template.png",
+        "/assets/cnh_base_template_300.png",
+        "assets/cnh_base_template.png",
+      ];
+      for (const src of sources) {
+        try {
+          bg = await loadImage(src);
+          if (bg && bg.width > 0) break;
+        } catch (_) {}
+      }
+
+      if (bg) {
+        ctx.drawImage(bg, 0, 0, PAGE_W, PAGE_H);
+      } else {
+        throw new Error("Bg não carregou");
+      }
     } catch (_) {
-      console.warn("Template cnh_base_template_300.png não encontrado — usando fundo verde claro");
+      console.warn("Template CNH não encontrado — desenhando estrutura vetorial de segurança");
       ctx.fillStyle = "#e8ede5";
       ctx.fillRect(0, 0, PAGE_W, PAGE_H);
     }
@@ -351,8 +367,8 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       if (mw) {
         let fontSize = s;
         ctx.font = `${fontSize}px 'Ultra', Arial, sans-serif`;
-        while (ctx.measureText(t).width > mw && fontSize > 9) {
-          fontSize -= 0.5;
+        while (ctx.measureText(t).width > mw && fontSize > 10) {
+          fontSize -= 1;
           ctx.font = `${fontSize}px 'Ultra', Arial, sans-serif`;
         }
       }
@@ -362,77 +378,92 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     const d = fmtDate;
 
     // ═══════════════════════════════════════════════════════════════════
-    // DADOS DO CONDUTOR (coordenadas escaneadas 1:1 sobre cnh_base_template_300.png)
+    // DADOS DO CONDUTOR (coordenadas calibradas @300DPI sobre o template CNH_BASE.PNG)
     // ═══════════════════════════════════════════════════════════════════
 
-    // Nome Completo (caixa 2 e 1 NOME E SOBRENOME: y=370 a y=448)
-    txt(props.nome, 245, 405, 22, 1, "#000000", 630);
+    // Nome Completo
+    txt(props.nome, 245, 420, 26, 1, "#000000", 620);
 
-    // 1ª Habilitação (caixa 1ª HABILITAÇÃO: y=370 a y=448)
-    txt(d(props.primeiraHabilitacao), 890, 405, 20, 1, "#000000", 170);
+    // 1ª Habilitação
+    txt(d(props.primeiraHabilitacao), 915, 420, 22, 1, "#000000", 180);
 
-    // Data Nascimento, Local, UF (caixa 3: y=449 a y=492)
-    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 425, 468, 19, 1, "#000000", 470);
+    // Data Nascimento, Local, UF
+    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 425, 489, 22, 1, "#000000", 450);
 
-    // Data Emissão (caixa 4a: y=493 a y=552)
-    txt(d(props.dataEmissao), 425, 520, 19, 1, "#000000", 170);
+    // Data Emissão
+    txt(d(props.dataEmissao), 425, 540, 22, 1, "#000000", 180);
 
-    // Validade em vermelho (caixa 4b: y=493 a y=552)
-    txt(d(props.validade), 680, 520, 19, 1, "#c0392b", 170);
+    // Validade (vermelho)
+    txt(d(props.validade), 680, 540, 22, 1, "#c0392b", 180);
 
-    // Tipo CNH (D = Definitiva, P = Permissão) na caixinha ACC/TIPO
+    // Tipo CNH (D = Definitiva, P = Permissão)
     const tipoLetra = props.tipo === "Permissão" ? "P" : "D";
-    txt(tipoLetra, 915, 520, 20, 1, "#000000", 60);
+    txt(tipoLetra, 1045, 549, 24, 1, "#000000", 80);
 
-    // RG + Órgão Emissor / UF (caixa 4c: y=553 a y=612)
-    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 425, 580, 19, 1, "#000000", 470);
+    // RG + Órgão Emissor / UF
+    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 425, 600, 22, 1, "#000000", 450);
 
-    // CPF (caixa 4d: y=613 a y=672)
-    txt(formatarCPF(props.cpf), 425, 640, 19, 1, "#000000", 230);
+    // CPF
+    txt(formatarCPF(props.cpf), 425, 655, 22, 1, "#000000", 250);
 
-    // Nº Registro em vermelho (caixa 5: y=613 a y=672)
-    txt(props.registro, 680, 640, 19, 1, "#c0392b", 210);
+    // Nº Registro (vermelho)
+    txt(props.registro, 680, 655, 22, 1, "#c0392b", 210);
 
-    // Categoria em vermelho (caixa 9: y=613 a y=672)
-    txt(props.categoria, 915, 640, 19, 1, "#c0392b", 100);
+    // Categoria (vermelho)
+    txt(props.categoria, 920, 660, 22, 1, "#c0392b", 120);
 
-    // Nacionalidade (caixa NACIONALIDADE: y=674 a y=733)
-    txt(props.nacionalidade || "BRASILEIRO(A)", 425, 700, 19, 1, "#000000", 500);
+    // Nacionalidade
+    txt(props.nacionalidade || "BRASILEIRO(A)", 425, 715, 22, 1, "#000000", 500);
 
-    // Filiação — Pai (caixa FILIAÇÃO: y=734 a y=810)
-    txt(props.nomePai, 425, 752, 18, 1, "#000000", 550);
+    // Filiação — Pai
+    txt(props.nomePai, 425, 765, 21, 1, "#000000", 550);
     // Filiação — Mãe
-    txt(props.nomeMae, 425, 780, 18, 1, "#000000", 550);
+    txt(props.nomeMae, 425, 815, 21, 1, "#000000", 550);
 
-    // Observações (EAR multi-linha na caixa 12 OBSERVAÇÕES: y=1318 a y=1540)
+    // Observações (EAR multi-linha)
     const obsTexto = String(props.observacoes || "");
     const linhasObs = obsTexto.split("\n");
-    const obsY = 1345;
+    const obsY = 1250;
     linhasObs.forEach((linha, index) => {
-      txt(linha, 245, obsY + (index * 24), 18, false, "#000000", 800);
+      txt(linha, 300, obsY + (index * 24), 20, false, "#000000", 780);
     });
 
-    // Local Emissão + UF (caixa LOCAL: y=1540 a y=1607)
-    txt(`${props.localEmissao}, ${props.ufEmissao}`, 315, 1545, 19, 1, "#000000", 500);
+    // Local Emissão + UF
+    txt(`${props.localEmissao}, ${props.ufEmissao}`, 320, 1538, 22, 1, "#000000", 490);
 
     // Nome do Estado por extenso em destaque (Painel 2)
     ctx.save();
     ctx.textAlign = "center";
     const ufDigitada = (props.ufEmissao || "").trim().toUpperCase();
     const nomeEstadoCompleto = NOMES_ESTADOS[ufDigitada] || "SÃO PAULO";
-    ctx.font = "bold 32px 'Ultra', Arial, sans-serif";
+    ctx.font = "bold 38px 'Ultra', Arial, sans-serif";
     ctx.fillStyle = "#000000";
-    ctx.fillText(nomeEstadoCompleto, 600, 1615);
+    ctx.fillText(nomeEstadoCompleto, 600, 1630);
     ctx.textAlign = "left";
     ctx.restore();
 
-    // ── Assinaturas digitais (números de série) sob o bloco ASSINADO DIGITALMENTE ──
+    // ── Bloco "ASSINADO DIGITALMENTE / DEPARTAMENTO ESTADUAL DE TRÂNSITO" ──
     ctx.save();
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#333333";
     ctx.font = "18px 'Ultra', Arial, sans-serif";
-    ctx.fillStyle = "#222222";
+    ctx.fillText("ASSINADO DIGITALMENTE", 1100, 1425);
+    ctx.fillStyle = "#555555";
+    ctx.font = "16px 'Ultra', Arial, sans-serif";
+    ctx.fillText("DEPARTAMENTO ESTADUAL DE TRÂNSITO", 1100, 1445);
+    // Linha horizontal acima
+    ctx.fillStyle = "#888888";
+    ctx.fillRect(830, 1420, 270, 1);
+    ctx.textAlign = "left";
+    ctx.restore();
+
+    // ── Assinaturas digitais (números de série) ──────────────────────────
+    ctx.save();
+    ctx.font = "22px 'Ultra', Arial, sans-serif";
+    ctx.fillStyle = "#333333";
     ctx.textAlign = "center";
-    ctx.fillText(props.assDigital1 || "46418356416", 945, 1455);
-    ctx.fillText(props.assDigital2 || "SP032337809", 945, 1480);
+    ctx.fillText(props.assDigital1 || "46418356416", 945, 1475);
+    ctx.fillText(props.assDigital2 || "SP032337809", 945, 1500);
     ctx.restore();
 
     // ── Textos laterais verticais (Nº Espelho) ───────────────────────────
@@ -454,23 +485,26 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
     // ═══════════════════════════════════════════════════════════════════
     // TABELA EXPANDIDA DE CATEGORIAS (14 tipos com datas de validade)
+    // Esquerda: ACC, A, A1, B, B1, C, C1
+    // Direita:  D, D1, BE, CE, C1E, DE, D1E
     // ═══════════════════════════════════════════════════════════════════
     const catsEsq: Record<string, { x: number; y: number }> = {
-      A:   { x: 525, y: 1062 },
-      A1:  { x: 525, y: 1096 },
-      B:   { x: 525, y: 1130 },
-      B1:  { x: 525, y: 1165 },
-      C:   { x: 525, y: 1200 },
-      C1:  { x: 525, y: 1235 },
+      ACC: { x: 385, y: 900 },
+      A:   { x: 530, y: 1010 },
+      A1:  { x: 530, y: 1048 },
+      B:   { x: 530, y: 1086 },
+      B1:  { x: 530, y: 1124 },
+      C:   { x: 530, y: 1158 },
+      C1:  { x: 530, y: 1196 },
     };
     const catsDir: Record<string, { x: number; y: number }> = {
-      D:   { x: 945, y: 1062 },
-      D1:  { x: 945, y: 1096 },
-      BE:  { x: 945, y: 1130 },
-      CE:  { x: 945, y: 1165 },
-      C1E: { x: 945, y: 1200 },
-      DE:  { x: 945, y: 1235 },
-      D1E: { x: 945, y: 1270 },
+      D:   { x: 952, y: 1010 },
+      D1:  { x: 952, y: 1048 },
+      BE:  { x: 952, y: 1086 },
+      CE:  { x: 952, y: 1124 },
+      C1E: { x: 952, y: 1158 },
+      DE:  { x: 952, y: 1196 },
+      D1E: { x: 952, y: 1234 },
     };
     const allCats = { ...catsEsq, ...catsDir };
 
@@ -486,19 +520,18 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     else if (userCat.includes("C")) userCat += "B";
 
     Object.entries(allCats).forEach(([k, pos]) => {
-      // Checar se a categoria está habilitada
       const habilitada = userCat === k ||
         userCat.includes(k) ||
         (k === "B" && userCat.includes("B")) ||
         (k === "C" && (userCat.includes("C") || userCat.includes("E")));
 
       if (habilitada) {
-        txt(d(props.validade), pos.x, pos.y, 13, 1, "#000000", 105);
+        txt(d(props.validade), pos.x, pos.y, 14, 1, "#000000", 130);
       }
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // FOTO DO CONDUTOR (proporção 3x4 perfeita: x=165, y=449, w=245, h=331)
+    // FOTO DO CONDUTOR (proporção 3x4 perfeita, clip exato)
     // ═══════════════════════════════════════════════════════════════════
     if (props.fotoUrl) {
       try {
@@ -506,15 +539,15 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = props.fotoScale ?? 1.0;
         const offsetX = props.fotoOffsetX ?? 0;
         const offsetY = props.fotoOffsetY ?? 0;
-        const baseBw = 245, baseBh = 331;
+        const baseBw = 250, baseBh = 335;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 165 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 449 + Math.round((baseBh - bh) / 2) + offsetY;
+        const bx = 135 + Math.round((baseBw - bw) / 2) + offsetX;
+        const by = 485 + Math.round((baseBh - bh) / 2) + offsetY;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(165, 449, baseBw, baseBh);
+        ctx.rect(135, 485, baseBw, baseBh);
         ctx.clip();
 
         const imgRatio = fotoImg.width / fotoImg.height;
@@ -533,7 +566,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // ASSINATURA DO CONDUTOR (PNG transparente: x=165, y=782, w=245, h=53)
+    // ASSINATURA DO CONDUTOR (PNG transparente)
     // ═══════════════════════════════════════════════════════════════════
     if (props.assinaturaUrl) {
       try {
@@ -541,11 +574,11 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = props.assScale ?? 1.0;
         const offsetX = props.assOffsetX ?? 0;
         const offsetY = props.assOffsetY ?? 0;
-        const baseBw = 245, baseBh = 53;
+        const baseBw = 250, baseBh = 60;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 165 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 782 + Math.round((baseBh - bh) / 2) + offsetY;
+        const bx = 135 + Math.round((baseBw - bw) / 2) + offsetX;
+        const by = 845 + Math.round((baseBh - bh) / 2) + offsetY;
 
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = assImg.width;

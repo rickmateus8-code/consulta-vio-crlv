@@ -200,19 +200,13 @@ export function TeiaConexoesGraph({
 }) {
   const [activeCategory, setActiveCategory] = useState<string>("todos");
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
-  const [viewMode, setViewMode] = useState<"grafo" | "cards">("grafo");
-
-  const width = 900;
-  const height = 520;
-  const centerX = width / 2;
-  const centerY = height / 2;
 
   const safeParentes = Array.isArray(parentes) ? parentes : [];
   const safeVizinhos = Array.isArray(vizinhos) ? vizinhos : [];
   const safeTelefones = Array.isArray(telefones) ? telefones : [];
   const safeEnderecos = Array.isArray(enderecos) ? enderecos : [];
 
-  const allNodes: { id: string; label: string; sub: string; type: string; rawValue: string; cpf?: string; color: string; bg: string; icon: string }[] = [];
+  const allNodes: { id: string; label: string; sub: string; type: string; rawValue: string; cpf?: string; color: string; bg: string; icon: string; border: string }[] = [];
 
   safeParentes.forEach((p, idx) => {
     if (!p || typeof p !== 'object') return;
@@ -226,7 +220,8 @@ export function TeiaConexoesGraph({
       rawValue: cpfVal ? `CPF: ${cpfVal}` : name,
       cpf: cpfVal,
       color: "#c084fc",
-      bg: "rgba(168, 85, 247, 0.2)",
+      bg: "bg-purple-950/40",
+      border: "border-purple-500/40",
       icon: "👤"
     });
   });
@@ -243,7 +238,8 @@ export function TeiaConexoesGraph({
       rawValue: cpfVal ? `CPF: ${cpfVal}` : name,
       cpf: cpfVal,
       color: "#60a5fa",
-      bg: "rgba(59, 130, 246, 0.2)",
+      bg: "bg-blue-950/40",
+      border: "border-blue-500/40",
       icon: "🏡"
     });
   });
@@ -261,7 +257,8 @@ export function TeiaConexoesGraph({
       type: "telefones",
       rawValue: formattedNum,
       color: "#34d399",
-      bg: "rgba(16, 185, 129, 0.2)",
+      bg: "bg-emerald-950/40",
+      border: "border-emerald-500/40",
       icon: "📞"
     });
   });
@@ -274,7 +271,8 @@ export function TeiaConexoesGraph({
       type: "empresas",
       rawValue: `Participação Societária: ${corporateShare}%`,
       color: "#fbbf24",
-      bg: "rgba(245, 158, 11, 0.2)",
+      bg: "bg-amber-950/40",
+      border: "border-amber-500/40",
       icon: "🏢"
     });
   }
@@ -295,77 +293,64 @@ export function TeiaConexoesGraph({
       type: "enderecos",
       rawValue: loc,
       color: "#f472b6",
-      bg: "rgba(236, 72, 153, 0.2)",
+      bg: "bg-pink-950/40",
+      border: "border-pink-500/40",
       icon: "📍"
     });
   });
 
+  if (allNodes.length === 0) return null;
+
   const filteredNodes = activeCategory === "todos" 
-    ? allNodes.slice(0, 10) 
+    ? allNodes 
     : allNodes.filter(n => n.type === activeCategory);
 
-  const total = filteredNodes.length;
-  const rx = 330;
-  const ry = 195;
-
   return (
-    <div className="w-full overflow-hidden rounded-3xl bg-gradient-to-b from-slate-950 via-[#0b0e2b] to-slate-950 border border-violet-500/40 p-5 md:p-6 shadow-2xl space-y-4 no-print relative">
-      <style>{`
-        @keyframes dashFlow {
-          from { stroke-dashoffset: 24; }
-          to { stroke-dashoffset: 0; }
-        }
-        .animate-dash-flow {
-          animation: dashFlow 1.8s linear infinite;
-        }
-      `}</style>
-
-      {/* Cabeçalho Interativo & Filtros de Categoria */}
+    <div className="w-full overflow-hidden rounded-3xl bg-gradient-to-b from-slate-950 via-[#0b0e2b] to-slate-950 border border-violet-500/40 p-5 md:p-6 shadow-2xl space-y-5 no-print relative">
+      {/* Cabeçalho de Análise Forense */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between border-b border-violet-500/20 pb-4 gap-3">
         <div>
           <h3 className="text-sm md:text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-            Matriz Interativa de Teia de Conexões (Link Analysis)
+            Matriz de Teia de Conexões & Vínculos (Link Analysis)
           </h3>
           <p className="text-[11px] text-violet-300 font-mono mt-0.5">
-            Clique em qualquer elemento para inspecionar, copiar dados ou disparar investigação direta
+            Mapeamento dinâmico de conexões interpessoais, telefônicas, imobiliárias e corporativas
           </p>
         </div>
 
-        {/* Alternador de Visualização (Grafo vs Cards) */}
-        <div className="flex items-center gap-2 self-stretch lg:self-auto justify-between">
-          <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-violet-500/30">
-            <button
-              onClick={() => setViewMode("grafo")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                viewMode === "grafo"
-                  ? "bg-violet-600 text-white shadow"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              🕸️ Grafo
-            </button>
-            <button
-              onClick={() => setViewMode("cards")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                viewMode === "cards"
-                  ? "bg-violet-600 text-white shadow"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              🎴 Cards
-            </button>
-          </div>
-          <span className="text-[10px] text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-mono font-bold">
-            {allNodes.length + 1} CONEXÕES
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-mono font-bold shadow-sm">
+            {allNodes.length} VÍNCULOS MAPEADOS
           </span>
         </div>
       </div>
 
-      {/* Filtros por Categoria de Conexão */}
+      {/* CARD DO INVESTIGADO PRINCIPAL (ALVO CENTRAL) */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-950/80 via-indigo-950/80 to-slate-950 border-2 border-violet-500/50 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-violet-900/60 border border-violet-400/50 flex items-center justify-center text-xl text-violet-200 font-bold shadow-inner">
+            👤
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-violet-600 text-white tracking-widest">
+                Investigado Principal
+              </span>
+              <span className="text-xs font-mono text-emerald-300 font-bold">CPF: {cpfCentral}</span>
+            </div>
+            <h4 className="text-base font-black text-white tracking-tight mt-0.5">{nomeCentral}</h4>
+          </div>
+        </div>
+        <span className="text-xs text-purple-200/80 font-mono">
+          {filteredNodes.length} vínculo(s) visível(is)
+        </span>
+      </div>
+
+      {/* FILTROS POR CATEGORIA DE CONEXÃO */}
       <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar touch-pan-x">
         {[
-          { id: "todos", label: "TODOS OS VÍNCULOS", count: allNodes.length, icon: "🎛️" },
+          { id: "todos", label: "TODAS AS CONEXÕES", count: allNodes.length, icon: "🌐" },
           { id: "parentes", label: "PARENTES", count: allNodes.filter(n => n.type === "parentes").length, icon: "👤" },
           { id: "vizinhos", label: "VIZINHOS", count: allNodes.filter(n => n.type === "vizinhos").length, icon: "🏡" },
           { id: "telefones", label: "TELEFONES", count: allNodes.filter(n => n.type === "telefones").length, icon: "📞" },
@@ -377,15 +362,15 @@ export function TeiaConexoesGraph({
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 border ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 border ${
                 isActive
-                  ? "bg-violet-600 text-white border-violet-300 shadow-md shadow-violet-600/30"
-                  : "bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-900 border-violet-500/20"
+                  ? "bg-violet-600 text-white border-violet-300 shadow-lg shadow-violet-600/30 scale-105"
+                  : "bg-slate-900/70 text-slate-400 hover:text-white hover:bg-slate-900 border-violet-500/20"
               }`}
             >
               <span>{cat.icon}</span>
               <span>{cat.label}</span>
-              <span className="px-1.5 py-0.2 rounded-md bg-white/10 text-[10px]">
+              <span className="px-1.5 py-0.2 rounded-md bg-white/10 text-[10px] font-mono">
                 {cat.count}
               </span>
             </button>
@@ -393,145 +378,71 @@ export function TeiaConexoesGraph({
         })}
       </div>
 
-      {/* VISÃO 1: CANVAS DO GRAFO INTERATIVO */}
-      {viewMode === "grafo" && (
-        <div className="w-full overflow-x-auto flex justify-center py-4 bg-slate-950/80 rounded-2xl border border-violet-500/20 shadow-inner relative min-h-[380px]">
-          <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-[880px] h-auto font-sans select-none">
-            <defs>
-              <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#a855f7" stopOpacity="0.8" />
-                <stop offset="50%" stopColor="#6366f1" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#090d16" stopOpacity="0" />
-              </radialGradient>
-              <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#8b5cf6" floodOpacity="0.5" />
-              </filter>
-            </defs>
-
-            {/* Círculo de Orbitagem do Grafo */}
-            <ellipse cx={centerX} cy={centerY} rx={rx} ry={ry} fill="none" stroke="#4c1d95" strokeWidth="1.5" strokeDasharray="6 6" opacity="0.35" />
-
-            {/* Linhas de Conexão com Animação */}
-            {filteredNodes.map((node, i) => {
-              const angle = (i * 2 * Math.PI) / (total || 1) - Math.PI / 2;
-              const nx = centerX + rx * Math.cos(angle);
-              const ny = centerY + ry * Math.sin(angle);
-              const isSelected = selectedNode?.id === node.id;
-
-              return (
-                <line
-                  key={`line-${node.id}`}
-                  x1={centerX}
-                  y1={centerY}
-                  x2={nx}
-                  y2={ny}
-                  stroke={node.color}
-                  strokeWidth={isSelected ? "3.5" : "2"}
-                  strokeDasharray={isSelected ? "none" : "6 4"}
-                  className={isSelected ? "" : "animate-dash-flow"}
-                  opacity={isSelected ? "1" : "0.7"}
-                />
-              );
-            })}
-
-            {/* Nó Central (Investigado Principal) */}
-            <g transform={`translate(${centerX}, ${centerY})`} filter="url(#glowEffect)">
-              <circle r="80" fill="url(#centerGlow)" />
-              <rect x="-95" y="-35" width="190" height="70" rx="20" fill="#1e1b4b" stroke="#a855f7" strokeWidth="3" />
-              <text textAnchor="middle" y="-10" fill="#ffffff" fontSize="13" fontWeight="900" letterSpacing="0.5">
-                {nomeCentral.length > 20 ? nomeCentral.substring(0, 18) + "…" : nomeCentral}
-              </text>
-              <text textAnchor="middle" y="10" fill="#a7f3d0" fontSize="11" fontFamily="monospace" fontWeight="bold">
-                CPF: {cpfCentral}
-              </text>
-              <text textAnchor="middle" y="25" fill="#c084fc" fontSize="9" fontWeight="bold" letterSpacing="1">
-                [ INVESTIGADO PRINCIPAL ]
-              </text>
-            </g>
-
-            {/* Nós Conectados Radial */}
-            {filteredNodes.map((node, i) => {
-              const angle = (i * 2 * Math.PI) / (total || 1) - Math.PI / 2;
-              const nx = centerX + rx * Math.cos(angle);
-              const ny = centerY + ry * Math.sin(angle);
-
-              const cardWidth = 155;
-              const cardHeight = 46;
-              const isSelected = selectedNode?.id === node.id;
-
-              return (
-                <g
-                  key={node.id}
-                  transform={`translate(${nx}, ${ny})`}
-                  filter="url(#glowEffect)"
-                  className="cursor-pointer hover:scale-110 transition-all duration-300"
-                  onClick={() => setSelectedNode(node)}
-                >
-                  <rect
-                    x={-cardWidth / 2}
-                    y={-cardHeight / 2}
-                    width={cardWidth}
-                    height={cardHeight}
-                    rx="14"
-                    fill={isSelected ? "#1e1b4b" : "#0d111d"}
-                    stroke={isSelected ? "#ffffff" : node.color}
-                    strokeWidth={isSelected ? "3" : "2"}
-                  />
-                  <circle cx={-cardWidth / 2 + 22} cy="0" r="14" fill={node.bg} stroke={node.color} strokeWidth="1.5" />
-                  <text x={-cardWidth / 2 + 22} y="4" textAnchor="middle" fontSize="12">
-                    {node.icon}
-                  </text>
-
-                  <text x={-cardWidth / 2 + 42} y="-4" textAnchor="start" fill="#ffffff" fontSize="10" fontWeight="bold">
-                    {node.label.length > 13 ? node.label.substring(0, 12) + "…" : node.label}
-                  </text>
-                  <text x={-cardWidth / 2 + 42} y="11" textAnchor="start" fill={node.color} fontSize="8" fontWeight="bold">
-                    {node.sub}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-      )}
-
-      {/* VISÃO 2: GRADE DE CARDS INTERATIVOS */}
-      {viewMode === "cards" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
-          {filteredNodes.map((node) => (
-            <div
-              key={node.id}
-              onClick={() => setSelectedNode(node)}
-              className="p-4 rounded-2xl bg-slate-900/90 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.02] transition-all cursor-pointer shadow-lg flex items-center justify-between gap-3"
-            >
+      {/* GRADE ESTRUTURADA DE VÍNCULOS E CONEXÕES */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+        {filteredNodes.map((node) => (
+          <div
+            key={node.id}
+            onClick={() => setSelectedNode(node)}
+            className={`p-4 rounded-2xl ${node.bg} border ${node.border} hover:border-violet-400 hover:scale-[1.02] transition-all cursor-pointer shadow-lg space-y-3 flex flex-col justify-between`}
+          >
+            <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-violet-950 flex items-center justify-center text-lg border border-violet-500/30">
+                <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center text-lg border border-violet-500/30 shrink-0">
                   {node.icon}
                 </div>
                 <div>
-                  <h4 className="font-bold text-white text-xs">{node.label}</h4>
-                  <p className="text-[10px] font-semibold mt-0.5" style={{ color: node.color }}>{node.sub}</p>
+                  <h4 className="font-bold text-white text-xs leading-snug">{node.label}</h4>
+                  <span className="text-[10px] font-bold block mt-0.5" style={{ color: node.color }}>
+                    {node.sub}
+                  </span>
                 </div>
               </div>
-              <button className="px-2.5 py-1 rounded-lg bg-violet-900/60 text-violet-200 text-[10px] font-bold hover:bg-violet-800">
-                Inspecionar
-              </button>
             </div>
-          ))}
-        </div>
-      )}
 
-      {/* INSPECTOR DRAWER DA CONEXÃO SELECIONADA */}
+            <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2 text-xs">
+              <span className="text-[11px] font-mono text-purple-200 truncate">{node.rawValue}</span>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(node.rawValue.replace(/^CPF:\s*/, ''));
+                    toast.success("Dado copiado!");
+                  }}
+                  className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] font-bold border border-violet-500/20"
+                >
+                  📋 Copiar
+                </button>
+                {node.cpf && onSelectPerson && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectPerson(node.cpf!.replace(/\D/g, ''));
+                    }}
+                    className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold shadow"
+                  >
+                    🔍 Buscar
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* INSPECTOR MODAL QUANDO UM NÓ É SELECIONADO */}
       {selectedNode && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-950/90 to-indigo-950/90 border-2 border-violet-400/60 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-950 to-indigo-950 border-2 border-violet-400 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-slate-950 flex items-center justify-center text-2xl border border-violet-400/40">
               {selectedNode.icon}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="font-black text-white text-sm tracking-tight">{selectedNode.label}</h4>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md text-white" style={{ backgroundColor: selectedNode.color }}>
+                <h4 className="font-black text-white text-sm">{selectedNode.label}</h4>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded text-white" style={{ backgroundColor: selectedNode.color }}>
                   {selectedNode.sub}
                 </span>
               </div>
@@ -543,11 +454,11 @@ export function TeiaConexoesGraph({
             <button
               onClick={() => {
                 navigator.clipboard.writeText(selectedNode.rawValue.replace(/^CPF:\s*/, ''));
-                toast.success("Dado copiado para a área de transferência!");
+                toast.success("Dado copiado!");
               }}
-              className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-violet-500/30 text-white text-xs font-bold transition-all flex items-center gap-1.5"
+              className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-violet-500/30 text-white text-xs font-bold transition-all"
             >
-              📋 Copiar
+              📋 Copiar Dado
             </button>
 
             {selectedNode.cpf && onSelectPerson && (
@@ -556,7 +467,7 @@ export function TeiaConexoesGraph({
                   onSelectPerson(selectedNode.cpf.replace(/\D/g, ''));
                   setSelectedNode(null);
                 }}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-lg active:scale-95"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all shadow-lg active:scale-95"
               >
                 🔍 Investigar este Perfil em 1-Clique ➔
               </button>
@@ -1748,17 +1659,19 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
         </div>
       </div>
 
-      {/* SEÇÃO: DIAGRAMA DE TEIA DE CONEXÕES */}
-      <TeiaConexoesGraph
-        nomeCentral={nome}
-        cpfCentral={cpf}
-        parentes={parentesData}
-        vizinhos={vizinhosData}
-        telefones={telefonesList}
-        enderecos={enderecosList}
-        corporateShare={cpfData.corporate_share_pct}
-        onSelectPerson={onSelectPerson}
-      />
+      {/* SEÇÃO: DIAGRAMA DE TEIA DE CONEXÕES (Filtrado para Perfil Completo com Vínculos) */}
+      {(parentesData.length > 0 || vizinhosData.length > 0 || telefonesList.length > 0 || enderecosList.length > 0 || cpfData.corporate_share_pct) && (
+        <TeiaConexoesGraph
+          nomeCentral={nome}
+          cpfCentral={cpf}
+          parentes={parentesData}
+          vizinhos={vizinhosData}
+          telefones={telefonesList}
+          enderecos={enderecosList}
+          corporateShare={cpfData.corporate_share_pct}
+          onSelectPerson={onSelectPerson}
+        />
+      )}
 
       {/* SEÇÃO: INFORMAÇÕES SOCIOECONÔMICAS */}
       <div id="secao-socioeconomicas" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">

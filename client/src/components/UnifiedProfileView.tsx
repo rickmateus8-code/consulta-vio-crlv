@@ -165,16 +165,16 @@ export function getCPFStateFromNinthDigit(cpfStr: string): string {
   if (digits.length !== 11) return "";
   const ninth = digits.charAt(8);
   switch (ninth) {
-    case '1': return 'DF / GO / MS / MT / TO (1ª Região Fiscal)';
-    case '2': return 'AC / AM / AP / PA / RO / RR (2ª Região Fiscal)';
-    case '3': return 'CE / MA / PI (3ª Região Fiscal)';
-    case '4': return 'AL / PB / PE / RN (4ª Região Fiscal)';
-    case '5': return 'BA / SE (5ª Região Fiscal)';
-    case '6': return 'Minas Gerais - MG (6ª Região Fiscal)';
-    case '7': return 'ES / RJ (7ª Região Fiscal)';
-    case '8': return 'São Paulo - SP (8ª Região Fiscal)';
-    case '9': return 'PR / SC (9ª Região Fiscal)';
-    case '0': return 'Rio Grande do Sul - RS (10ª Região Fiscal)';
+    case '1': return 'DF / GO / MS / MT / TO';
+    case '2': return 'AC / AM / AP / PA / RO / RR';
+    case '3': return 'CE / MA / PI';
+    case '4': return 'AL / PB / PE / RN';
+    case '5': return 'BA / SE';
+    case '6': return 'Minas Gerais - MG';
+    case '7': return 'ES / RJ';
+    case '8': return 'São Paulo - SP';
+    case '9': return 'PR / SC';
+    case '0': return 'Rio Grande do Sul - RS';
     default: return '';
   }
 }
@@ -1199,7 +1199,10 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
   const cnh = sanitizeField(cpfData.cnh || cpfData.NUMERO_CNH || cpfData.CNH);
   
   const rawNaturalidade = sanitizeField(cpfData.birth_city || cpfData.naturalidade || cpfData.NATURALIDADE || cpfData.cidade_nascimento || cpfData.uf_nascimento);
-  const naturalidade = rawNaturalidade || (cpf ? getCPFStateFromNinthDigit(cpf) : null);
+  let naturalidade = rawNaturalidade || (cpf ? getCPFStateFromNinthDigit(cpf) : null);
+  if (naturalidade) {
+    naturalidade = naturalidade.replace(/\s*\(\d+ª?\s*Regiã[o|o]\s*Fiscal\)/gi, "").trim();
+  }
 
   // Socioeconômico & Tratar Score para NUNCA gerar [object Object]
   const renda = cpfData.income || cpfData.renda || cpfData.renda_mensal || cpfData.RENDA || null;

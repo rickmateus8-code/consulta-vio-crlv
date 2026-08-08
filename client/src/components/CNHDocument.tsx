@@ -159,16 +159,16 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
 
   // Header cinza
   ctx.fillStyle = "#e8e8e8";
-  ctx.fillRect(0, 0, cvs.width, 120);
+  ctx.fillRect(0, 0, cvs.width, 100);
 
   ctx.fillStyle = "#1a1a2e";
-  ctx.font = "bold 26px Arial, sans-serif";
+  ctx.font = "bold 22px Arial, sans-serif";
   ctx.textBaseline = "middle";
-  ctx.fillText("CARTEIRA NACIONAL DE HABILITAÇÃO / DRIVER LICENSE / PERMISO DE CONDUCCIÓN", 40, 60);
+  ctx.fillText("CARTEIRA NACIONAL DE HABILITAÇÃO / DRIVER LICENSE / PERMISO DE CONDUCCIÓN", 40, 50);
 
   // Linha separadora
   ctx.fillStyle = "#cccccc";
-  ctx.fillRect(0, 120, cvs.width, 2);
+  ctx.fillRect(0, 100, cvs.width, 2);
 
   const campos = [
     ["2", "Nome e Sobrenome", "Name and Surname", "Nombre y Apellidos"],
@@ -187,27 +187,27 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
     ["Local", "Lugar", "Place", "Lugar"],
   ];
 
-  let y = 160;
-  const rowH = 90;
-  const colX = [40, 120, 470, 820];
-  const colW = [70, 330, 330, 360];
+  let y = 130;
+  const rowH = 78;
+  const colX = [40, 120, 480, 840];
+  const colW = [70, 340, 340, 350];
 
   // Header da tabela
   ctx.fillStyle = "#1a5276";
-  ctx.fillRect(40, y, cvs.width - 80, rowH - 10);
+  ctx.fillRect(40, y, cvs.width - 80, 40);
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = "bold 18px Arial, sans-serif";
+  ctx.font = "bold 16px Arial, sans-serif";
   ctx.textBaseline = "middle";
-  ctx.fillText("Nº", colX[0], y + (rowH - 10) / 2);
-  ctx.fillText("Português (PT)", colX[1], y + (rowH - 10) / 2);
-  ctx.fillText("English (EN)", colX[2], y + (rowH - 10) / 2);
-  ctx.fillText("Español (ES)", colX[3], y + (rowH - 10) / 2);
-  y += rowH;
+  ctx.fillText("Nº", colX[0], y + 20);
+  ctx.fillText("Português (PT)", colX[1], y + 20);
+  ctx.fillText("English (EN)", colX[2], y + 20);
+  ctx.fillText("Español (ES)", colX[3], y + 20);
+  y += 45;
 
   const drawClippedText = (text: string, x: number, centerY: number, maxW: number, isBold = false) => {
-    ctx.font = `${isBold ? "bold " : ""}14px Arial, sans-serif`;
-    let fontSize = 14;
-    while (ctx.measureText(text).width > maxW && fontSize > 9) {
+    ctx.font = `${isBold ? "bold " : ""}13px Arial, sans-serif`;
+    let fontSize = 13;
+    while (ctx.measureText(text).width > maxW && fontSize > 8.5) {
       fontSize -= 0.5;
       ctx.font = `${isBold ? "bold " : ""}${fontSize}px Arial, sans-serif`;
     }
@@ -216,14 +216,14 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
 
   campos.forEach((row, idx) => {
     // Fundo alternado
-    ctx.fillStyle = idx % 2 === 0 ? "#f5f5f5" : "#FFFFFF";
-    ctx.fillRect(40, y, cvs.width - 80, rowH - 10);
+    ctx.fillStyle = idx % 2 === 0 ? "#f8f9fa" : "#FFFFFF";
+    ctx.fillRect(40, y, cvs.width - 80, rowH - 6);
 
     // Borda inferior
-    ctx.fillStyle = "#dddddd";
-    ctx.fillRect(40, y + rowH - 10, cvs.width - 80, 1);
+    ctx.fillStyle = "#e5e7eb";
+    ctx.fillRect(40, y + rowH - 6, cvs.width - 80, 1);
 
-    const centerY = y + (rowH - 10) / 2;
+    const centerY = y + (rowH - 6) / 2;
 
     ctx.fillStyle = "#1a5276";
     drawClippedText(row[0], colX[0], centerY, colW[0], true);
@@ -237,11 +237,11 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
 
   // Rodapé
   ctx.fillStyle = "#e8e8e8";
-  ctx.fillRect(0, cvs.height - 80, cvs.width, 80);
+  ctx.fillRect(0, cvs.height - 70, cvs.width, 70);
   ctx.fillStyle = "#666666";
-  ctx.font = "15px Arial, sans-serif";
+  ctx.font = "14px Arial, sans-serif";
   ctx.textBaseline = "middle";
-  ctx.fillText("SERPRO / SENATRAN — Documento Digital com Certificação", 40, cvs.height - 40);
+  ctx.fillText("SERPRO / SENATRAN — Documento Digital com Certificação", 40, cvs.height - 35);
 
   return cvs;
 }
@@ -329,12 +329,12 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-    // 2. Template CNH_BASE.pdf (@300DPI)
+    // 2. Template CNH_BASE.pdf (@300DPI - 2480x3508)
     try {
-      const bg = await loadImage("/assets/cnh_base_template.png");
+      const bg = await loadImage("/assets/cnh_base_template_300.png");
       ctx.drawImage(bg, 0, 0, PAGE_W, PAGE_H);
     } catch (_) {
-      console.warn("Template cnh_base_template.png não encontrado — usando fundo verde claro");
+      console.warn("Template cnh_base_template_300.png não encontrado — usando fundo verde claro");
       ctx.fillStyle = "#e8ede5";
       ctx.fillRect(0, 0, PAGE_W, PAGE_H);
     }
@@ -351,8 +351,8 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       if (mw) {
         let fontSize = s;
         ctx.font = `${fontSize}px 'Ultra', Arial, sans-serif`;
-        while (ctx.measureText(t).width > mw && fontSize > 10) {
-          fontSize -= 1;
+        while (ctx.measureText(t).width > mw && fontSize > 9) {
+          fontSize -= 0.5;
           ctx.font = `${fontSize}px 'Ultra', Arial, sans-serif`;
         }
       }
@@ -362,58 +362,58 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     const d = fmtDate;
 
     // ═══════════════════════════════════════════════════════════════════
-    // DADOS DO CONDUTOR (coordenadas calibradas @300DPI sobre o template CNH_BASE.PNG)
+    // DADOS DO CONDUTOR (coordenadas escaneadas 1:1 sobre cnh_base_template_300.png)
     // ═══════════════════════════════════════════════════════════════════
 
-    // Nome Completo (na caixa "2 e 1 NOME E SOBRENOME")
-    txt(props.nome, 245, 432, 24, 1, "#000000", 640);
+    // Nome Completo (caixa 2 e 1 NOME E SOBRENOME: y=370 a y=448)
+    txt(props.nome, 245, 405, 22, 1, "#000000", 630);
 
-    // 1ª Habilitação (na caixa "1ª HABILITAÇÃO")
-    txt(d(props.primeiraHabilitacao), 915, 432, 21, 1, "#000000", 180);
+    // 1ª Habilitação (caixa 1ª HABILITAÇÃO: y=370 a y=448)
+    txt(d(props.primeiraHabilitacao), 890, 405, 20, 1, "#000000", 170);
 
-    // Data Nascimento, Local, UF (na caixa "3 DATA, LOCAL E UF DE NASCIMENTO")
-    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 410, 488, 20, 1, "#000000", 470);
+    // Data Nascimento, Local, UF (caixa 3: y=449 a y=492)
+    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 425, 468, 19, 1, "#000000", 470);
 
-    // Data Emissão (na caixa "4a DATA EMISSÃO")
-    txt(d(props.dataEmissao), 410, 544, 20, 1, "#000000", 180);
+    // Data Emissão (caixa 4a: y=493 a y=552)
+    txt(d(props.dataEmissao), 425, 520, 19, 1, "#000000", 170);
 
-    // Validade em vermelho (na caixa "4b VALIDADE")
-    txt(d(props.validade), 670, 544, 20, 1, "#c0392b", 180);
+    // Validade em vermelho (caixa 4b: y=493 a y=552)
+    txt(d(props.validade), 680, 520, 19, 1, "#c0392b", 170);
 
     // Tipo CNH (D = Definitiva, P = Permissão) na caixinha ACC/TIPO
     const tipoLetra = props.tipo === "Permissão" ? "P" : "D";
-    txt(tipoLetra, 925, 544, 22, 1, "#000000", 60);
+    txt(tipoLetra, 915, 520, 20, 1, "#000000", 60);
 
-    // RG + Órgão Emissor / UF (na caixa "4c DOC IDENTIDADE / ÓRG EMISSOR / UF")
-    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 410, 600, 20, 1, "#000000", 470);
+    // RG + Órgão Emissor / UF (caixa 4c: y=553 a y=612)
+    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 425, 580, 19, 1, "#000000", 470);
 
-    // CPF (na caixa "4d CPF")
-    txt(formatarCPF(props.cpf), 410, 656, 20, 1, "#000000", 240);
+    // CPF (caixa 4d: y=613 a y=672)
+    txt(formatarCPF(props.cpf), 425, 640, 19, 1, "#000000", 230);
 
-    // Nº Registro em vermelho (na caixa "5 Nº REGISTRO")
-    txt(props.registro, 670, 656, 20, 1, "#c0392b", 210);
+    // Nº Registro em vermelho (caixa 5: y=613 a y=672)
+    txt(props.registro, 680, 640, 19, 1, "#c0392b", 210);
 
-    // Categoria em vermelho (na caixa "9 CAT HAB")
-    txt(props.categoria, 885, 656, 20, 1, "#c0392b", 100);
+    // Categoria em vermelho (caixa 9: y=613 a y=672)
+    txt(props.categoria, 915, 640, 19, 1, "#c0392b", 100);
 
-    // Nacionalidade (na caixa "NACIONALIDADE")
-    txt(props.nacionalidade || "BRASILEIRO(A)", 410, 712, 20, 1, "#000000", 500);
+    // Nacionalidade (caixa NACIONALIDADE: y=674 a y=733)
+    txt(props.nacionalidade || "BRASILEIRO(A)", 425, 700, 19, 1, "#000000", 500);
 
-    // Filiação — Pai (na caixa "FILIAÇÃO")
-    txt(props.nomePai, 410, 765, 19, 1, "#000000", 550);
+    // Filiação — Pai (caixa FILIAÇÃO: y=734 a y=810)
+    txt(props.nomePai, 425, 752, 18, 1, "#000000", 550);
     // Filiação — Mãe
-    txt(props.nomeMae, 410, 812, 19, 1, "#000000", 550);
+    txt(props.nomeMae, 425, 780, 18, 1, "#000000", 550);
 
-    // Observações (EAR multi-linha na caixa "12 OBSERVAÇÕES")
+    // Observações (EAR multi-linha na caixa 12 OBSERVAÇÕES: y=1318 a y=1540)
     const obsTexto = String(props.observacoes || "");
     const linhasObs = obsTexto.split("\n");
-    const obsY = 1275;
+    const obsY = 1345;
     linhasObs.forEach((linha, index) => {
       txt(linha, 245, obsY + (index * 24), 18, false, "#000000", 800);
     });
 
-    // Local Emissão + UF (na caixa "LOCAL")
-    txt(`${props.localEmissao}, ${props.ufEmissao}`, 315, 1538, 20, 1, "#000000", 500);
+    // Local Emissão + UF (caixa LOCAL: y=1540 a y=1607)
+    txt(`${props.localEmissao}, ${props.ufEmissao}`, 315, 1545, 19, 1, "#000000", 500);
 
     // Nome do Estado por extenso em destaque (Painel 2)
     ctx.save();
@@ -422,18 +422,17 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     const nomeEstadoCompleto = NOMES_ESTADOS[ufDigitada] || "SÃO PAULO";
     ctx.font = "bold 32px 'Ultra', Arial, sans-serif";
     ctx.fillStyle = "#000000";
-    ctx.fillText(nomeEstadoCompleto, 600, 1620);
+    ctx.fillText(nomeEstadoCompleto, 600, 1615);
     ctx.textAlign = "left";
     ctx.restore();
 
     // ── Assinaturas digitais (números de série) sob o bloco ASSINADO DIGITALMENTE ──
-    // O template CNH_BASE já possui a linha e as palavras "ASSINADO DIGITALMENTE / DEPARTAMENTO ESTADUAL DE TRÂNSITO"
     ctx.save();
     ctx.font = "18px 'Ultra', Arial, sans-serif";
     ctx.fillStyle = "#222222";
     ctx.textAlign = "center";
-    ctx.fillText(props.assDigital1 || "46418356416", 945, 1465);
-    ctx.fillText(props.assDigital2 || "SP032337809", 945, 1490);
+    ctx.fillText(props.assDigital1 || "46418356416", 945, 1455);
+    ctx.fillText(props.assDigital2 || "SP032337809", 945, 1480);
     ctx.restore();
 
     // ── Textos laterais verticais (Nº Espelho) ───────────────────────────
@@ -455,24 +454,23 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
     // ═══════════════════════════════════════════════════════════════════
     // TABELA EXPANDIDA DE CATEGORIAS (14 tipos com datas de validade)
-    // Coluna 12 (Validade) alinhada nas células da tabela
     // ═══════════════════════════════════════════════════════════════════
     const catsEsq: Record<string, { x: number; y: number }> = {
-      A:   { x: 575, y: 955 },
-      A1:  { x: 575, y: 992 },
-      B:   { x: 575, y: 1030 },
-      B1:  { x: 575, y: 1068 },
-      C:   { x: 575, y: 1105 },
-      C1:  { x: 575, y: 1142 },
+      A:   { x: 525, y: 1062 },
+      A1:  { x: 525, y: 1096 },
+      B:   { x: 525, y: 1130 },
+      B1:  { x: 525, y: 1165 },
+      C:   { x: 525, y: 1200 },
+      C1:  { x: 525, y: 1235 },
     };
     const catsDir: Record<string, { x: number; y: number }> = {
-      D:   { x: 1005, y: 955 },
-      D1:  { x: 1005, y: 992 },
-      BE:  { x: 1005, y: 1030 },
-      CE:  { x: 1005, y: 1068 },
-      C1E: { x: 1005, y: 1105 },
-      DE:  { x: 1005, y: 1142 },
-      D1E: { x: 1005, y: 1180 },
+      D:   { x: 945, y: 1062 },
+      D1:  { x: 945, y: 1096 },
+      BE:  { x: 945, y: 1130 },
+      CE:  { x: 945, y: 1165 },
+      C1E: { x: 945, y: 1200 },
+      DE:  { x: 945, y: 1235 },
+      D1E: { x: 945, y: 1270 },
     };
     const allCats = { ...catsEsq, ...catsDir };
 
@@ -495,12 +493,12 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         (k === "C" && (userCat.includes("C") || userCat.includes("E")));
 
       if (habilitada) {
-        txt(d(props.validade), pos.x, pos.y, 14, 1, "#000000", 110);
+        txt(d(props.validade), pos.x, pos.y, 13, 1, "#000000", 105);
       }
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // FOTO DO CONDUTOR (proporção 3x4 perfeita, clip exato)
+    // FOTO DO CONDUTOR (proporção 3x4 perfeita: x=165, y=449, w=245, h=331)
     // ═══════════════════════════════════════════════════════════════════
     if (props.fotoUrl) {
       try {
@@ -508,15 +506,15 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = props.fotoScale ?? 1.0;
         const offsetX = props.fotoOffsetX ?? 0;
         const offsetY = props.fotoOffsetY ?? 0;
-        const baseBw = 250, baseBh = 335;
+        const baseBw = 245, baseBh = 331;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 135 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 455 + Math.round((baseBh - bh) / 2) + offsetY;
+        const bx = 165 + Math.round((baseBw - bw) / 2) + offsetX;
+        const by = 449 + Math.round((baseBh - bh) / 2) + offsetY;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(135, 455, baseBw, baseBh);
+        ctx.rect(165, 449, baseBw, baseBh);
         ctx.clip();
 
         const imgRatio = fotoImg.width / fotoImg.height;
@@ -535,7 +533,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // ASSINATURA DO CONDUTOR (PNG transparente)
+    // ASSINATURA DO CONDUTOR (PNG transparente: x=165, y=782, w=245, h=53)
     // ═══════════════════════════════════════════════════════════════════
     if (props.assinaturaUrl) {
       try {
@@ -543,11 +541,11 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = props.assScale ?? 1.0;
         const offsetX = props.assOffsetX ?? 0;
         const offsetY = props.assOffsetY ?? 0;
-        const baseBw = 250, baseBh = 60;
+        const baseBw = 245, baseBh = 53;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 135 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 815 + Math.round((baseBh - bh) / 2) + offsetY;
+        const bx = 165 + Math.round((baseBw - bw) / 2) + offsetX;
+        const by = 782 + Math.round((baseBh - bh) / 2) + offsetY;
 
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = assImg.width;

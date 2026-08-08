@@ -198,13 +198,23 @@ export default function AdminDashboard() {
   const savePermissions = async () => {
     try {
       setLoading(true);
+      // Sincronizar 'consultas' entre free_documents e permissions.ferramentas
+      let nextFerramentas = Array.isArray(userPermissions.ferramentas) ? [...userPermissions.ferramentas] : [];
+      const hasConsultasFree = userFreeDocs.includes("consultas");
+      if (hasConsultasFree && !nextFerramentas.includes("consultas")) {
+        nextFerramentas.push("consultas");
+      } else if (!hasConsultasFree && nextFerramentas.includes("consultas")) {
+        nextFerramentas = nextFerramentas.filter(t => t !== "consultas");
+      }
+      const updatedPermissions = { ...userPermissions, ferramentas: nextFerramentas };
+
       const res = await fetch("/api/admin/users", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ 
           user_id: aclSelectedUser.id, 
-          permissions: userPermissions,
+          permissions: updatedPermissions,
           free_documents: userFreeDocs 
         }),
       });
@@ -221,7 +231,7 @@ export default function AdminDashboard() {
         // Atualizar estado local com objetos PARSEADOS para paridade com o load inicial
         setUsers(prev => prev.map(u => u.id === aclSelectedUser.id ? { 
           ...u, 
-          permissions: userPermissions,
+          permissions: updatedPermissions,
           free_documents: userFreeDocs
         } : u));
         setShowPermissionsModal(false);
@@ -242,8 +252,13 @@ export default function AdminDashboard() {
   };
 
   const selectAllTools = (selected: boolean) => {
-    const all = ["bot-adv", "peticao-stj"];
+    const all = ["bot-adv", "peticao-stj", "consultas"];
     setUserPermissions({ ...userPermissions, ferramentas: selected ? all : [] });
+    if (selected && !userFreeDocs.includes("consultas")) {
+      setUserFreeDocs([...userFreeDocs, "consultas"]);
+    } else if (!selected && userFreeDocs.includes("consultas")) {
+      setUserFreeDocs(userFreeDocs.filter(s => s !== "consultas"));
+    }
   };
 
   const toggleConsultasAccess = async (user: UserRow) => {
@@ -253,12 +268,21 @@ export default function AdminDashboard() {
       ? currentFree.filter(s => s !== "consultas")
       : [...currentFree, "consultas"];
 
+    const currentPerms = typeof user.permissions === 'object' && user.permissions !== null
+      ? user.permissions
+      : { editaveis: [], ferramentas: [] };
+    const currentTools = Array.isArray(currentPerms.ferramentas) ? currentPerms.ferramentas : [];
+    const newTools = hasConsultas
+      ? currentTools.filter((t: string) => t !== "consultas")
+      : [...currentTools, "consultas"];
+    const newPerms = { ...currentPerms, ferramentas: newTools };
+
     try {
       const res = await fetch("/api/admin/users", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ user_id: user.id, free_documents: newFree }),
+        body: JSON.stringify({ user_id: user.id, free_documents: newFree, permissions: newPerms }),
       });
       const json = await res.json();
       if (json.success) {
@@ -268,7 +292,7 @@ export default function AdminDashboard() {
             : `Acesso GRATUITO a /consultas liberado para ${user.username}!`
         );
         setUsers(prev =>
-          prev.map(u => (u.id === user.id ? { ...u, free_documents: newFree } : u))
+          prev.map(u => (u.id === user.id ? { ...u, free_documents: newFree, permissions: newPerms } : u))
         );
       } else {
         toast.error(json.error || "Erro ao atualizar permissão");
@@ -284,21 +308,31 @@ export default function AdminDashboard() {
       if (u.role === "admin") continue;
       const currentFree = Array.isArray(u.free_documents) ? u.free_documents : [];
       const hasConsultas = currentFree.includes("consultas");
+      
+      const currentPerms = typeof u.permissions === 'object' && u.permissions !== null
+        ? u.permissions
+        : { editaveis: [], ferramentas: [] };
+      const currentTools = Array.isArray(currentPerms.ferramentas) ? currentPerms.ferramentas : [];
+
       if (makeFree && !hasConsultas) {
         const newFree = [...currentFree, "consultas"];
+        const newTools = [...currentTools, "consultas"];
+        const newPerms = { ...currentPerms, ferramentas: newTools };
         await fetch("/api/admin/users", {
-          method: "POST",
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ user_id: u.id, free_documents: newFree }),
+          body: JSON.stringify({ user_id: u.id, free_documents: newFree, permissions: newPerms }),
         }).catch(() => {});
       } else if (!makeFree && hasConsultas) {
         const newFree = currentFree.filter(s => s !== "consultas");
+        const newTools = currentTools.filter((t: string) => t !== "consultas");
+        const newPerms = { ...currentPerms, ferramentas: newTools };
         await fetch("/api/admin/users", {
-          method: "POST",
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ user_id: u.id, free_documents: newFree }),
+          body: JSON.stringify({ user_id: u.id, free_documents: newFree, permissions: newPerms }),
         }).catch(() => {});
       }
     }

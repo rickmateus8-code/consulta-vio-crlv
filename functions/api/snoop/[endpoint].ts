@@ -16,7 +16,7 @@ async function getUserFromSession(request: Request, env: Env): Promise<any | nul
   const match = cookie.match(/docmaster_session=([^;]+)/);
   if (!match) return null;
   const session = await env.DB.prepare(
-    'SELECT s.user_id, u.id, u.username, u.role, u.free_documents FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime(\'now\')'
+    'SELECT s.user_id, u.id, u.username, u.role, u.free_documents, u.permissions FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime(\'now\')'
   ).bind(match[1]).first<any>();
   return session || null;
 }
@@ -30,7 +30,16 @@ async function checkActivePlan(user: any, env: Env): Promise<boolean> {
       freeDocs = typeof user.free_documents === 'string' ? JSON.parse(user.free_documents) : user.free_documents;
     }
   } catch {}
-  if (Array.isArray(freeDocs) && freeDocs.includes('consultas')) return true;
+  if (Array.isArray(freeDocs) && (freeDocs.includes('consultas') || freeDocs.includes('atestado'))) return true;
+
+  let perms: any = {};
+  try {
+    if (user.permissions) {
+      perms = typeof user.permissions === 'string' ? JSON.parse(user.permissions) : user.permissions;
+    }
+  } catch {}
+  if (Array.isArray(perms?.ferramentas) && perms.ferramentas.includes('consultas')) return true;
+  if (Array.isArray(perms?.editaveis) && perms.editaveis.includes('consultas')) return true;
 
   try {
     const plan = await env.DB.prepare(

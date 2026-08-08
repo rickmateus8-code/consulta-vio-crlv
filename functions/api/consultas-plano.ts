@@ -21,7 +21,7 @@ async function getUserFromSession(request: Request, env: Env): Promise<any | nul
   const match = cookie.match(/docmaster_session=([^;]+)/);
   if (!match) return null;
   const session = await env.DB.prepare(
-    'SELECT s.user_id, u.id, u.username, u.role, u.balance, u.free_documents FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime(\'now\')'
+    'SELECT s.user_id, u.id, u.username, u.role, u.balance, u.free_documents, u.permissions FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime(\'now\')'
   ).bind(match[1]).first<any>();
   return session || null;
 }
@@ -38,7 +38,17 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     }
   } catch {}
 
-  const isFree = user.role === 'admin' || (Array.isArray(freeDocs) && freeDocs.includes('consultas'));
+  let perms: any = {};
+  try {
+    if (user.permissions) {
+      perms = typeof user.permissions === 'string' ? JSON.parse(user.permissions) : user.permissions;
+    }
+  } catch {}
+
+  const isFree = user.role === 'admin' ||
+    (Array.isArray(freeDocs) && freeDocs.includes('consultas')) ||
+    (Array.isArray(perms?.ferramentas) && perms.ferramentas.includes('consultas')) ||
+    (Array.isArray(perms?.editaveis) && perms.editaveis.includes('consultas'));
 
   const dbPlan = await env.DB.prepare(
     'SELECT * FROM consultas_planos WHERE user_id = ? AND expires_at > datetime(\'now\') ORDER BY expires_at DESC LIMIT 1'

@@ -142,6 +142,92 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   return new Response(JSON.stringify({ success: true, users }), { headers: corsHeaders });
 };
 
+async function handleUserUpdate(env: Env, admin: any, body: any, corsHeaders: any) {
+  const userId = String(body.user_id || body.userId || '');
+  if (!userId) {
+    return new Response(JSON.stringify({ success: false, error: 'user_id é obrigatório' }), { status: 400, headers: corsHeaders });
+  }
+
+  const user = await env.DB.prepare('SELECT id, username, balance, role, is_active FROM users WHERE id = ? LIMIT 1').bind(userId).first<any>();
+  if (!user) {
+    return new Response(JSON.stringify({ success: false, error: 'Usuário não encontrado' }), { status: 404, headers: corsHeaders });
+  }
+
+  const changes: Record<string, any> = {};
+
+  if (body.new_password) {
+    const passwordHash = await hashPassword(String(body.new_password));
+    await env.DB.prepare('UPDATE users SET password_hash = ?, plain_password = ?, updated_at = datetime("now") WHERE id = ?')
+      .bind(passwordHash, String(body.new_password), userId).run();
+    changes.password = 'updated';
+  }
+
+  if (body.display_name !== undefined) {
+    await env.DB.prepare('UPDATE users SET display_name = ?, updated_at = datetime("now") WHERE id = ?')
+      .bind(String(body.display_name || ''), userId).run();
+    changes.display_name = body.display_name;
+  }
+
+  if (body.email !== undefined) {
+    await env.DB.prepare('UPDATE users SET email = ?, updated_at = datetime("now") WHERE id = ?')
+      .bind(String(body.email || ''), userId).run();
+    changes.email = body.email;
+  }
+
+  if (body.role !== undefined) {
+    const role = body.role === 'admin' ? 'admin' : 'user';
+    await env.DB.prepare('UPDATE users SET role = ?, updated_at = datetime("now") WHERE id = ?').bind(role, userId).run();
+    changes.role = role;
+  }
+
+  if (body.is_active !== undefined) {
+    const isActive = body.is_active ? 1 : 0;
+    await env.DB.prepare('UPDATE users SET is_active = ?, updated_at = datetime("now") WHERE id = ?').bind(isActive, userId).run();
+    changes.is_active = isActive;
+  }
+
+  if (body.balance !== undefined) {
+    const fixedBalance = Number(body.balance || 0);
+    if (fixedBalance < 0) {
+      return new Response(JSON.stringify({ success: false, error: 'Saldo inválido' }), { status: 400, headers: corsHeaders });
+    }
+    await env.DB.prepare('UPDATE users SET balance = ?, updated_at = datetime("now") WHERE id = ?').bind(fixedBalance, userId).run();
+    changes.balance = { mode: 'fixed', value: fixedBalance };
+  }
+
+  if (body.free_documents !== undefined) {
+    const freeDocs = Array.isArray(body.free_documents) ? JSON.stringify(body.free_documents) : '[]';
+    await env.DB.prepare('UPDATE users SET free_documents = ?, updated_at = datetime("now") WHERE id = ?')
+      .bind(freeDocs, userId).run();
+    changes.free_documents = body.free_documents;
+  }
+
+  if (body.permissions !== undefined) {
+    const perms = typeof body.permissions === 'object' ? JSON.stringify(body.permissions) : String(body.permissions);
+    await env.DB.prepare('UPDATE users SET permissions = ?, updated_at = datetime("now") WHERE id = ?')
+      .bind(perms, userId).run();
+    changes.permissions = body.permissions;
+  }
+
+  const adjustment = Number(body.balance_adjustment || 0);
+  if (body.balance_adjustment !== undefined && Number.isFinite(adjustment) && adjustment !== 0) {
+    const currentBalance = Number(user.balance || 0);
+    const nextBalance = currentBalance + adjustment;
+    if (nextBalance < 0) {
+      return new Response(JSON.stringify({ success: false, error: 'Saldo insuficiente para débito manual' }), { status: 400, headers: corsHeaders });
+    }
+
+    await env.DB.prepare('UPDATE users SET balance = ?, updated_at = datetime("now") WHERE id = ?').bind(nextBalance, userId).run();
+    const type = adjustment > 0 ? 'credit' : 'debit';
+    const description = adjustment > 0 ? 'Crédito manual pelo administrador' : 'Débito manual pelo administrador';
+    await insertTransaction(env, userId, type, Math.abs(adjustment), description);
+    changes.balance_adjustment = { old: currentBalance, amount: adjustment, new: nextBalance };
+  }
+
+  await logAdminAction(env, admin.id, 'update_user', userId, { username: user.username, changes });
+  return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+}
+
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const corsHeaders = getCorsHeaders(request);
   const admin = await getAdminUser(request, env);
@@ -152,6 +238,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
     await ensureUserColumns(env);
     const body = await request.json<any>();
+
+    // Se user_id for passado no POST, retrata como atualização
+    if (body.user_id || body.userId) {
+      return await handleUserUpdate(env, admin, body, corsHeaders);
+    }
+
     const username = String(body.username || '').trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
     const password = String(body.password || '');
     const email = String(body.email || '').trim();
@@ -197,89 +289,7 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, env }) => {
   try {
     await ensureUserColumns(env);
     const body = await request.json<any>();
-    const userId = String(body.user_id || body.userId || '');
-    if (!userId) {
-      return new Response(JSON.stringify({ success: false, error: 'user_id é obrigatório' }), { status: 400, headers: corsHeaders });
-    }
-
-    const user = await env.DB.prepare('SELECT id, username, balance, role, is_active FROM users WHERE id = ? LIMIT 1').bind(userId).first<any>();
-    if (!user) {
-      return new Response(JSON.stringify({ success: false, error: 'Usuário não encontrado' }), { status: 404, headers: corsHeaders });
-    }
-
-    const changes: Record<string, any> = {};
-
-    if (body.new_password) {
-      const passwordHash = await hashPassword(String(body.new_password));
-      await env.DB.prepare('UPDATE users SET password_hash = ?, plain_password = ?, updated_at = datetime("now") WHERE id = ?')
-        .bind(passwordHash, String(body.new_password), userId).run();
-      changes.password = 'updated';
-    }
-
-    if (body.display_name !== undefined) {
-      await env.DB.prepare('UPDATE users SET display_name = ?, updated_at = datetime("now") WHERE id = ?')
-        .bind(String(body.display_name || ''), userId).run();
-      changes.display_name = body.display_name;
-    }
-
-    if (body.email !== undefined) {
-      await env.DB.prepare('UPDATE users SET email = ?, updated_at = datetime("now") WHERE id = ?')
-        .bind(String(body.email || ''), userId).run();
-      changes.email = body.email;
-    }
-
-    if (body.role !== undefined) {
-      const role = body.role === 'admin' ? 'admin' : 'user';
-      await env.DB.prepare('UPDATE users SET role = ?, updated_at = datetime("now") WHERE id = ?').bind(role, userId).run();
-      changes.role = role;
-    }
-
-    if (body.is_active !== undefined) {
-      const isActive = body.is_active ? 1 : 0;
-      await env.DB.prepare('UPDATE users SET is_active = ?, updated_at = datetime("now") WHERE id = ?').bind(isActive, userId).run();
-      changes.is_active = isActive;
-    }
-
-    if (body.balance !== undefined) {
-      const fixedBalance = Number(body.balance || 0);
-      if (fixedBalance < 0) {
-        return new Response(JSON.stringify({ success: false, error: 'Saldo inválido' }), { status: 400, headers: corsHeaders });
-      }
-      await env.DB.prepare('UPDATE users SET balance = ?, updated_at = datetime("now") WHERE id = ?').bind(fixedBalance, userId).run();
-      changes.balance = { mode: 'fixed', value: fixedBalance };
-    }
-
-    if (body.free_documents !== undefined) {
-      const freeDocs = Array.isArray(body.free_documents) ? JSON.stringify(body.free_documents) : '[]';
-      await env.DB.prepare('UPDATE users SET free_documents = ?, updated_at = datetime("now") WHERE id = ?')
-        .bind(freeDocs, userId).run();
-      changes.free_documents = body.free_documents;
-    }
-
-    if (body.permissions !== undefined) {
-      const perms = typeof body.permissions === 'object' ? JSON.stringify(body.permissions) : String(body.permissions);
-      await env.DB.prepare('UPDATE users SET permissions = ?, updated_at = datetime("now") WHERE id = ?')
-        .bind(perms, userId).run();
-      changes.permissions = body.permissions;
-    }
-
-    const adjustment = Number(body.balance_adjustment || 0);
-    if (body.balance_adjustment !== undefined && Number.isFinite(adjustment) && adjustment !== 0) {
-      const currentBalance = Number(user.balance || 0);
-      const nextBalance = currentBalance + adjustment;
-      if (nextBalance < 0) {
-        return new Response(JSON.stringify({ success: false, error: 'Saldo insuficiente para débito manual' }), { status: 400, headers: corsHeaders });
-      }
-
-      await env.DB.prepare('UPDATE users SET balance = ?, updated_at = datetime("now") WHERE id = ?').bind(nextBalance, userId).run();
-      const type = adjustment > 0 ? 'credit' : 'debit';
-      const description = adjustment > 0 ? 'Crédito manual pelo administrador' : 'Débito manual pelo administrador';
-      await insertTransaction(env, userId, type, Math.abs(adjustment), description);
-      changes.balance_adjustment = { old: currentBalance, amount: adjustment, new: nextBalance };
-    }
-
-    await logAdminAction(env, admin.id, 'update_user', userId, { username: user.username, changes });
-    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    return await handleUserUpdate(env, admin, body, corsHeaders);
   } catch (error: any) {
     return new Response(JSON.stringify({ success: false, error: error?.message || 'Erro interno' }), { status: 500, headers: corsHeaders });
   }

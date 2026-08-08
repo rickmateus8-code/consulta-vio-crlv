@@ -377,51 +377,65 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
     const d = fmtDate;
 
+    // Helper de prévia inteligente: exibe modelo de exemplo se em prévia/vazio
+    const p = (val: string | undefined, fallback: string) => {
+      if (val && String(val).trim()) return String(val);
+      if (props.codigoQR === "PREVIEW" || props.blurred) return fallback;
+      return "";
+    };
+
     // ═══════════════════════════════════════════════════════════════════
     // DADOS DO CONDUTOR (coordenadas calibradas @300DPI sobre o template CNH_BASE.PNG)
     // ═══════════════════════════════════════════════════════════════════
 
     // Nome Completo
-    txt(props.nome, 245, 420, 26, 1, "#000000", 620);
+    txt(p(props.nome, "LUCAS HENRIQUE ALMEIDA SANTOS"), 245, 420, 26, 1, "#000000", 620);
 
     // 1ª Habilitação
-    txt(d(props.primeiraHabilitacao), 915, 420, 22, 1, "#000000", 180);
+    txt(p(d(props.primeiraHabilitacao), "20/05/2012"), 915, 420, 22, 1, "#000000", 180);
 
     // Data Nascimento, Local, UF
-    txt(`${d(props.dataNascimento)}, ${props.localNascimento}, ${props.ufNascimento}`, 425, 489, 22, 1, "#000000", 450);
+    const dtNasc = p(d(props.dataNascimento), "14/09/1993");
+    const locNasc = p(props.localNascimento, "SÃO PAULO");
+    const ufNasc = p(props.ufNascimento, "SP");
+    txt(`${dtNasc}, ${locNasc}, ${ufNasc}`, 425, 489, 22, 1, "#000000", 450);
 
     // Data Emissão
-    txt(d(props.dataEmissao), 425, 540, 22, 1, "#000000", 180);
+    txt(p(d(props.dataEmissao), "14/09/2021"), 425, 540, 22, 1, "#000000", 180);
 
     // Validade (vermelho)
-    txt(d(props.validade), 680, 540, 22, 1, "#c0392b", 180);
+    txt(p(d(props.validade), "15/09/2026"), 680, 540, 22, 1, "#c0392b", 180);
 
     // Tipo CNH (D = Definitiva, P = Permissão)
     const tipoLetra = props.tipo === "Permissão" ? "P" : "D";
     txt(tipoLetra, 1045, 549, 24, 1, "#000000", 80);
 
     // RG + Órgão Emissor / UF
-    txt(`${props.rg} ${props.orgaoEmissor}/${props.ufRG}`, 425, 600, 22, 1, "#000000", 450);
+    const rgVal = p(props.rg, "48.726.193-5");
+    const orgVal = p(props.orgaoEmissor, "SSP");
+    const ufRgVal = p(props.ufRG, "SP");
+    txt(`${rgVal} ${orgVal}/${ufRgVal}`, 425, 600, 22, 1, "#000000", 450);
 
     // CPF
-    txt(formatarCPF(props.cpf), 425, 655, 22, 1, "#000000", 250);
+    const cpfVal = props.cpf ? formatarCPF(props.cpf) : "590.974.098-96";
+    txt(p(cpfVal, "590.974.098-96"), 425, 655, 22, 1, "#000000", 250);
 
     // Nº Registro (vermelho)
-    txt(props.registro, 680, 655, 22, 1, "#c0392b", 210);
+    txt(p(props.registro, "37362896284"), 680, 655, 22, 1, "#c0392b", 210);
 
     // Categoria (vermelho)
-    txt(props.categoria, 920, 660, 22, 1, "#c0392b", 120);
+    txt(p(props.categoria, "AB"), 920, 660, 22, 1, "#c0392b", 120);
 
     // Nacionalidade
-    txt(props.nacionalidade || "BRASILEIRO(A)", 425, 715, 22, 1, "#000000", 500);
+    txt(p(props.nacionalidade, "BRASILEIRO(A)"), 425, 715, 22, 1, "#000000", 500);
 
     // Filiação — Pai
-    txt(props.nomePai, 425, 765, 21, 1, "#000000", 550);
+    txt(p(props.nomePai, "ROBERTO CARLOS ALMEIDA SANTOS"), 425, 765, 21, 1, "#000000", 550);
     // Filiação — Mãe
-    txt(props.nomeMae, 425, 815, 21, 1, "#000000", 550);
+    txt(p(props.nomeMae, "PATRÍCIA HELENA ALMEIDA"), 425, 815, 21, 1, "#000000", 550);
 
     // Observações (EAR multi-linha)
-    const obsTexto = String(props.observacoes || "");
+    const obsTexto = p(props.observacoes, "EAR");
     const linhasObs = obsTexto.split("\n");
     const obsY = 1250;
     linhasObs.forEach((linha, index) => {
@@ -429,12 +443,14 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     });
 
     // Local Emissão + UF
-    txt(`${props.localEmissao}, ${props.ufEmissao}`, 320, 1538, 22, 1, "#000000", 490);
+    const locEmiss = p(props.localEmissao, "SÃO PAULO");
+    const ufEmiss = p(props.ufEmissao, "SP");
+    txt(`${locEmiss}, ${ufEmiss}`, 320, 1538, 22, 1, "#000000", 490);
 
     // Nome do Estado por extenso em destaque (Painel 2)
     ctx.save();
     ctx.textAlign = "center";
-    const ufDigitada = (props.ufEmissao || "").trim().toUpperCase();
+    const ufDigitada = (ufEmiss || "SP").trim().toUpperCase();
     const nomeEstadoCompleto = NOMES_ESTADOS[ufDigitada] || "SÃO PAULO";
     ctx.font = "bold 38px 'Ultra', Arial, sans-serif";
     ctx.fillStyle = "#000000";

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   FileText, Download, Share2, Copy, MapPin, Phone, Mail, User,
   Calendar, CreditCard, Shield, Car, Briefcase, Award, CheckCircle2,
-  ExternalLink, Layers, PieChart, Users, AlertCircle, Building2, Check, ArrowLeft, Camera, Loader2
+  ExternalLink, Layers, PieChart, Users, AlertCircle, Building2, Check, ArrowLeft, Camera, Loader2, Search
 } from "lucide-react";
 import { toast } from "sonner";
 import { exportElementToPDF, generatePDFFilename } from "@/lib/pdfExport";
@@ -1162,8 +1162,20 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
   const cpf = sanitizeField(cpfData.cpf || cpfData.CPF || data.cpf) || "Não informado";
   const nascimento = sanitizeField(cpfData.birth_date || cpfData.nascimento || cpfData.DATA_NASCIMENTO) || "Não informado";
   const sexo = sanitizeField(cpfData.gender || cpfData.sexo || cpfData.SEXO) || "Não informado";
-  const mae = sanitizeField(cpfData.mother_name || cpfData.mae || cpfData.NOME_MAE) || "Não informado";
-  const pai = sanitizeField(cpfData.father_name || cpfData.pai || cpfData.NOME_PAI) || "Não informado";
+  const cleanParentName = (val: string | null) => {
+    if (!val) return "SEM INFORMACAO";
+    const clean = val
+      .replace(/SEM INFORMAÃÃO/gi, "SEM INFORMACAO")
+      .replace(/SEM INFORMAÇÃ?O/gi, "SEM INFORMACAO")
+      .replace(/INFORMAÃÃO/gi, "INFORMACAO");
+    if (clean.toUpperCase().includes("SEM INFORMA") || clean.toUpperCase().includes("SEM INFORMAC")) {
+      return "SEM INFORMACAO";
+    }
+    return clean;
+  };
+
+  const mae = cleanParentName(sanitizeField(cpfData.mother_name || cpfData.mae || cpfData.NOME_MAE));
+  const pai = cleanParentName(sanitizeField(cpfData.father_name || cpfData.pai || cpfData.NOME_PAI));
 
   const idadeStr = calculateAge(nascimento);
   const signoStr = getZodiacSign(nascimento);
@@ -1831,29 +1843,49 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
           </div>
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             {parentesData.map((par: any, i: number) => {
-              const parCpf = par.cpf || par.CPF;
-              const cleanCpf = parCpf ? String(parCpf).replace(/\D/g, '') : '';
+              const parNome = par.nome || par.NOME || "Parente";
+              const parCpf = par.cpf || par.CPF || "";
+              const cleanCpf = parCpf ? String(parCpf).replace(/\D/g, "") : "";
+              const formattedCpf = cleanCpf.length === 11 
+                ? cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+                : (parCpf || "CPF Não Consta");
+              const vinculo = par.vinculo || par.VINCULO || "Parente";
+
               return (
-                <div key={i} className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 flex justify-between items-center gap-2">
-                  <div>
-                    <p className="font-bold text-white">{par.nome || par.NOME}</p>
-                    <p className="text-violet-300 text-[11px] font-mono">{parCpf ? `CPF: ${parCpf}` : ""}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {cleanCpf.length === 11 && onSelectPerson && (
-                      <button
-                        onClick={() => onSelectPerson(cleanCpf)}
-                        className="px-2.5 py-1 rounded-lg bg-violet-900/80 hover:bg-violet-700 text-[10px] font-bold text-violet-200 border border-violet-500/40 flex items-center gap-1 transition-all no-print"
-                        title="Consultar Perfil Completo"
-                      >
-                        <ExternalLink className="w-3 h-3 text-emerald-400" />
-                        Buscar
-                      </button>
-                    )}
-                    {par.vinculo && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-950 text-violet-300 border border-violet-500/30">
-                        {par.vinculo}
+                <div key={i} className="p-3.5 rounded-2xl bg-slate-950/80 border border-violet-500/30 hover:border-violet-400 transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-lg">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white text-xs">{parNome}</span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-violet-950 text-violet-300 border border-violet-500/30">
+                        {vinculo}
                       </span>
+                    </div>
+                    <p className="text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5">
+                      <span>CPF: {formattedCpf}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                    {cleanCpf.length === 11 && onSelectPerson ? (
+                      <button
+                        type="button"
+                        onClick={() => onSelectPerson(cleanCpf)}
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md active:scale-95 transition-all no-print"
+                      >
+                        <Search className="w-3.5 h-3.5" />
+                        <span>Consultar CPF ➔</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(parNome);
+                          toast.success("Nome copiado!");
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] font-bold border border-violet-500/20"
+                      >
+                        📋 Copiar Nome
+                      </button>
                     )}
                   </div>
                 </div>

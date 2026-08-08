@@ -111,6 +111,18 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     ORDER BY u.created_at DESC
   `).all<any>();
 
+  let activePlansMap: Record<string, any> = {};
+  try {
+    const plansRes = await env.DB.prepare(
+      "SELECT user_id, plano, expires_at FROM consultas_planos WHERE expires_at > datetime('now') ORDER BY expires_at DESC"
+    ).all<any>();
+    if (plansRes?.results) {
+      for (const p of plansRes.results) {
+        if (!activePlansMap[p.user_id]) activePlansMap[p.user_id] = p;
+      }
+    }
+  } catch {}
+
   const users = (result.results || []).map((user: any) => {
     let permissions = { editaveis: [], ferramentas: [] };
     try {
@@ -136,6 +148,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       is_active: Number(user.is_active || 0),
       free_documents: freeDocs,
       permissions: permissions,
+      consultas_plan: activePlansMap[user.id] || null,
     };
   });
 

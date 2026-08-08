@@ -188,6 +188,51 @@ export default function AdminDashboard() {
   const [userPermissions, setUserPermissions] = useState<any>({ editaveis: [], ferramentas: [] });
   const [userFreeDocs, setUserFreeDocs] = useState<string[]>([]);
 
+  // Modal de Concessão Manual de Tempo / Plano para /consultas
+  const [grantPlanModalUser, setGrantPlanModalUser] = useState<UserRow | null>(null);
+  const [grantPlanMode, setGrantPlanMode] = useState<"free" | "plan" | "revoke">("plan");
+  const [grantPlanDuration, setGrantPlanDuration] = useState<string>("1_mes");
+  const [grantPlanCustomDays, setGrantPlanCustomDays] = useState<number>(30);
+  const [grantPlanCustomDate, setGrantPlanCustomDate] = useState<string>("");
+  const [savingGrantPlan, setSavingGrantPlan] = useState<boolean>(false);
+
+  const handleGrantPlan = async () => {
+    if (!grantPlanModalUser) return;
+    setSavingGrantPlan(true);
+    try {
+      let customExpiresAt = null;
+      if (grantPlanDuration === "custom" && grantPlanCustomDate) {
+        customExpiresAt = new Date(grantPlanCustomDate + "T23:59:59").toISOString();
+      }
+
+      const res = await fetch("/api/admin/grant-consultas-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          user_id: grantPlanModalUser.id,
+          mode: grantPlanMode,
+          duration: grantPlanDuration,
+          custom_days: grantPlanCustomDays,
+          custom_expires_at: customExpiresAt
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || "Plano atualizado com sucesso!");
+        if (typeof (window as any).fetchUsers === 'function') (window as any).fetchUsers();
+        window.location.reload();
+        setGrantPlanModalUser(null);
+      } else {
+        toast.error(data.error || "Erro ao atualizar plano");
+      }
+    } catch (err: any) {
+      toast.error(`Falha: ${err.message || "Erro de conexão"}`);
+    } finally {
+      setSavingGrantPlan(false);
+    }
+  };
+
   const handleOpenPermissions = (user: any) => {
     setAclSelectedUser(user);
     setUserPermissions(user.permissions ? (typeof user.permissions === 'string' ? JSON.parse(user.permissions) : user.permissions) : { editaveis: [], ferramentas: [] });
@@ -1595,7 +1640,7 @@ export default function AdminDashboard() {
                         <div className="flex flex-wrap items-center justify-end gap-1.5">
                           <button
                             onClick={() => toggleConsultasAccess(u)}
-                            className={`flex items-center gap-1 px-2.5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 border shadow-sm ${
+                            className={`flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 border shadow-sm ${
                               Array.isArray(u.free_documents) && u.free_documents.includes("consultas")
                                 ? "bg-violet-600 text-white border-violet-500 hover:bg-violet-700"
                                 : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-violet-50 hover:text-violet-600"
@@ -1606,6 +1651,18 @@ export default function AdminDashboard() {
                             {Array.isArray(u.free_documents) && u.free_documents.includes("consultas")
                               ? "Buscas: Grátis"
                               : "Buscas: Pagas"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setGrantPlanModalUser(u);
+                              setGrantPlanMode(Array.isArray(u.free_documents) && u.free_documents.includes("consultas") ? "free" : u.consultas_plan ? "plan" : "plan");
+                              setGrantPlanDuration("1_mes");
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300 hover:bg-violet-600 hover:text-white transition-all active:scale-95 border border-violet-200 dark:border-violet-800 shadow-sm"
+                            title="Conceder tempo de uso ou plano manual em /consultas"
+                          >
+                            <Clock className="w-3.5 h-3.5" />
+                            {u.consultas_plan ? `Ativo até ${new Date(u.consultas_plan.expires_at).toLocaleDateString('pt-BR')}` : "Tempo / Plano"}
                           </button>
                           <button
                             onClick={() => { setBalanceModalUser(u); setBalanceModalValue(""); setBalanceModalType("credit"); }}
@@ -3602,6 +3659,150 @@ export default function AdminDashboard() {
                 }`}
               >
                 Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL DE CONCESSÃO MANUAL DE TEMPO DE USO DE /consultas */}
+      {grantPlanModalUser && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-violet-500/30 rounded-3xl w-full max-w-lg shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-violet-600 flex items-center justify-center text-white font-bold shadow-md">
+                  🔍
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 dark:text-white text-base">
+                    Gestão Manual de Tempo — Master Buscas
+                  </h3>
+                  <p className="text-xs text-violet-600 dark:text-violet-400 font-mono">
+                    Usuário: <span className="font-bold">{grantPlanModalUser.username}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setGrantPlanModalUser(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* SELEÇÃO DO MODO DE ACESSO */}
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                Modo de Concessão de Acesso
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setGrantPlanMode("free")}
+                  className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                    grantPlanMode === "free"
+                      ? "bg-emerald-600 text-white border-emerald-400 shadow-md font-bold"
+                      : "bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                  }`}
+                >
+                  <span className="text-base">🟢</span>
+                  <span className="text-[10px] uppercase font-black">Gratuito Ilimitado</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGrantPlanMode("plan")}
+                  className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                    grantPlanMode === "plan"
+                      ? "bg-violet-600 text-white border-violet-400 shadow-md font-bold"
+                      : "bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                  }`}
+                >
+                  <span className="text-base">⏳</span>
+                  <span className="text-[10px] uppercase font-black">Tempo Determinado</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGrantPlanMode("revoke")}
+                  className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                    grantPlanMode === "revoke"
+                      ? "bg-red-600 text-white border-red-400 shadow-md font-bold"
+                      : "bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                  }`}
+                >
+                  <span className="text-base">🔴</span>
+                  <span className="text-[10px] uppercase font-black">Revogar / Modo Pago</span>
+                </button>
+              </div>
+            </div>
+
+            {/* SE MODO FOR 'PLAN' (TEMPO DETERMINADO) */}
+            {grantPlanMode === "plan" && (
+              <div className="space-y-3 p-4 rounded-2xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800/50">
+                <label className="text-xs font-black text-violet-900 dark:text-violet-300 uppercase tracking-wider block">
+                  Escolha o Período Liberado
+                </label>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { id: "1_dia", label: "⚡ 1 Dia" },
+                    { id: "1_semana", label: "🗓️ 1 Semana" },
+                    { id: "1_mes", label: "🗓️ 1 Mês" },
+                    { id: "3_meses", label: "🗓️ 3 Meses" },
+                    { id: "6_meses", label: "🗓️ 6 Meses" },
+                    { id: "1_ano", label: "🗓️ 1 Ano" },
+                    { id: "custom", label: "📅 Data Específica" },
+                  ].map((dur) => (
+                    <button
+                      key={dur.id}
+                      type="button"
+                      onClick={() => setGrantPlanDuration(dur.id)}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
+                        grantPlanDuration === dur.id
+                          ? "bg-violet-600 text-white border-violet-400 shadow"
+                          : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-violet-400"
+                      }`}
+                    >
+                      {dur.label}
+                    </button>
+                  ))}
+                </div>
+
+                {grantPlanDuration === "custom" && (
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block">
+                      Selecione a Data Exata de Expiração:
+                    </label>
+                    <input
+                      type="date"
+                      value={grantPlanCustomDate}
+                      onChange={(e) => setGrantPlanCustomDate(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* BOTÕES DE AÇÃO */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setGrantPlanModalUser(null)}
+                className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-2xl text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                disabled={savingGrantPlan}
+                onClick={handleGrantPlan}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                {savingGrantPlan ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                Confirmar Concessão
               </button>
             </div>
           </div>

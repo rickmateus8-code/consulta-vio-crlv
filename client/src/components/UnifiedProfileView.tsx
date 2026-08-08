@@ -198,76 +198,88 @@ export function TeiaConexoesGraph({
   corporateShare: any;
   onSelectPerson?: (cpf: string) => void;
 }) {
-  const width = 860;
-  const height = 480;
+  const [activeCategory, setActiveCategory] = useState<string>("todos");
+  const [selectedNode, setSelectedNode] = useState<any | null>(null);
+  const [viewMode, setViewMode] = useState<"grafo" | "cards">("grafo");
+
+  const width = 900;
+  const height = 520;
   const centerX = width / 2;
   const centerY = height / 2;
-
-  const nodes: { id: string; label: string; sub: string; type: string; cpf?: string; color: string; bg: string; icon: string }[] = [];
 
   const safeParentes = Array.isArray(parentes) ? parentes : [];
   const safeVizinhos = Array.isArray(vizinhos) ? vizinhos : [];
   const safeTelefones = Array.isArray(telefones) ? telefones : [];
   const safeEnderecos = Array.isArray(enderecos) ? enderecos : [];
 
-  safeParentes.slice(0, 4).forEach((p, idx) => {
+  const allNodes: { id: string; label: string; sub: string; type: string; rawValue: string; cpf?: string; color: string; bg: string; icon: string }[] = [];
+
+  safeParentes.forEach((p, idx) => {
     if (!p || typeof p !== 'object') return;
-    nodes.push({
-      id: `p-${p.cpf || idx}`,
-      label: p.nome || p.NOME || "Parente",
+    const name = p.nome || p.NOME || "Parente";
+    const cpfVal = p.cpf || p.CPF || "";
+    allNodes.push({
+      id: `p-${cpfVal || idx}`,
+      label: name,
       sub: p.vinculo || "Parente Direto",
-      type: "parente",
-      cpf: p.cpf || p.CPF,
+      type: "parentes",
+      rawValue: cpfVal ? `CPF: ${cpfVal}` : name,
+      cpf: cpfVal,
       color: "#c084fc",
-      bg: "rgba(168, 85, 247, 0.15)",
+      bg: "rgba(168, 85, 247, 0.2)",
       icon: "👤"
     });
   });
 
-  safeVizinhos.slice(0, 4).forEach((v, idx) => {
+  safeVizinhos.forEach((v, idx) => {
     if (!v || typeof v !== 'object') return;
-    nodes.push({
-      id: `v-${v.cpf || idx}`,
-      label: v.nome || v.NOME || "Vizinho",
+    const name = v.nome || v.NOME || "Vizinho";
+    const cpfVal = v.cpf || v.CPF || "";
+    allNodes.push({
+      id: `v-${cpfVal || idx}`,
+      label: name,
       sub: "Vizinho / Entorno",
-      type: "vizinho",
-      cpf: v.cpf || v.CPF,
+      type: "vizinhos",
+      rawValue: cpfVal ? `CPF: ${cpfVal}` : name,
+      cpf: cpfVal,
       color: "#60a5fa",
-      bg: "rgba(59, 130, 246, 0.15)",
+      bg: "rgba(59, 130, 246, 0.2)",
       icon: "🏡"
     });
   });
 
-  safeTelefones.slice(0, 3).forEach((t, idx) => {
+  safeTelefones.forEach((t, idx) => {
     const rawNum = typeof t === 'object' && t ? (t.telefone || t.numero || String(t)) : String(t || '');
     const cleanNum = rawNum.replace(/\D/g, "");
     const formattedNum = cleanNum.length === 11 
       ? `(${cleanNum.substring(0, 2)}) ${cleanNum.substring(2, 7)}-${cleanNum.substring(7)}`
       : rawNum;
-    nodes.push({
+    allNodes.push({
       id: `t-${idx}`,
       label: formattedNum,
       sub: typeof t === 'object' && t && t.fonte ? `Tel (${t.fonte})` : "Contato Telefônico",
-      type: "telefone",
+      type: "telefones",
+      rawValue: formattedNum,
       color: "#34d399",
-      bg: "rgba(16, 185, 129, 0.15)",
+      bg: "rgba(16, 185, 129, 0.2)",
       icon: "📞"
     });
   });
 
   if (corporateShare) {
-    nodes.push({
+    allNodes.push({
       id: "emp-1",
       label: `${(nomeCentral || "").split(" ")[0]} Sociedade Empresarial`,
       sub: `Quadro Societário (${corporateShare}%)`,
-      type: "empresa",
+      type: "empresas",
+      rawValue: `Participação Societária: ${corporateShare}%`,
       color: "#fbbf24",
-      bg: "rgba(245, 158, 11, 0.15)",
+      bg: "rgba(245, 158, 11, 0.2)",
       icon: "🏢"
     });
   }
 
-  safeEnderecos.slice(0, 2).forEach((end, idx) => {
+  safeEnderecos.forEach((end, idx) => {
     let loc = "Residência Cadastrada";
     if (typeof end === 'object' && end) {
       const street = end.street || end.logradouro || "";
@@ -276,156 +288,289 @@ export function TeiaConexoesGraph({
       if (street) loc = `${street}${city ? `, ${city}` : ""}${state ? ` - ${state}` : ""}`;
       else if (city) loc = `${city} - ${state}`;
     }
-    nodes.push({
+    allNodes.push({
       id: `end-${idx}`,
-      label: loc.length > 25 ? loc.substring(0, 23) + "…" : loc,
+      label: loc,
       sub: idx === 0 ? "Endereço Principal" : "Endereço Secundário",
-      type: "endereco",
+      type: "enderecos",
+      rawValue: loc,
       color: "#f472b6",
-      bg: "rgba(236, 72, 153, 0.15)",
+      bg: "rgba(236, 72, 153, 0.2)",
       icon: "📍"
     });
   });
 
-  const total = nodes.length;
-  const rx = 310;
-  const ry = 180;
+  const filteredNodes = activeCategory === "todos" 
+    ? allNodes.slice(0, 10) 
+    : allNodes.filter(n => n.type === activeCategory);
+
+  const total = filteredNodes.length;
+  const rx = 330;
+  const ry = 195;
 
   return (
-    <div className="w-full overflow-hidden rounded-3xl bg-gradient-to-b from-slate-950 via-[#0a0c24] to-slate-950 border border-violet-500/40 p-6 shadow-2xl space-y-4 no-print relative">
+    <div className="w-full overflow-hidden rounded-3xl bg-gradient-to-b from-slate-950 via-[#0b0e2b] to-slate-950 border border-violet-500/40 p-5 md:p-6 shadow-2xl space-y-4 no-print relative">
       <style>{`
         @keyframes dashFlow {
           from { stroke-dashoffset: 24; }
           to { stroke-dashoffset: 0; }
         }
         .animate-dash-flow {
-          animation: dashFlow 2s linear infinite;
+          animation: dashFlow 1.8s linear infinite;
         }
       `}</style>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-violet-500/20 pb-3 gap-2">
+      {/* Cabeçalho Interativo & Filtros de Categoria */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between border-b border-violet-500/20 pb-4 gap-3">
         <div>
-          <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-sm md:text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-            Diagrama Avançado de Teia de Conexões (Link Analysis Graph)
+            Matriz Interativa de Teia de Conexões (Link Analysis)
           </h3>
-          <p className="text-[11px] text-violet-300/80 font-mono">
-            Mapeamento dinâmico de conexões interpessoais, telefônicas, imobiliárias e corporativas
+          <p className="text-[11px] text-violet-300 font-mono mt-0.5">
+            Clique em qualquer elemento para inspecionar, copiar dados ou disparar investigação direta
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-1 rounded-xl font-mono font-bold">
-            {total + 1} VÍNCULOS MAPEADOS
+
+        {/* Alternador de Visualização (Grafo vs Cards) */}
+        <div className="flex items-center gap-2 self-stretch lg:self-auto justify-between">
+          <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-violet-500/30">
+            <button
+              onClick={() => setViewMode("grafo")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === "grafo"
+                  ? "bg-violet-600 text-white shadow"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              🕸️ Grafo
+            </button>
+            <button
+              onClick={() => setViewMode("cards")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === "cards"
+                  ? "bg-violet-600 text-white shadow"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              🎴 Cards
+            </button>
+          </div>
+          <span className="text-[10px] text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-mono font-bold">
+            {allNodes.length + 1} CONEXÕES
           </span>
         </div>
       </div>
 
-      <div className="w-full overflow-x-auto flex justify-center py-4 bg-slate-950/60 rounded-2xl border border-violet-500/10 shadow-inner">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-[850px] h-auto font-sans select-none">
-          <defs>
-            <radialGradient id="centerPulse" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.6" />
-              <stop offset="60%" stopColor="#6366f1" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
-            </radialGradient>
-            <filter id="nodeShadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000000" floodOpacity="0.6" />
-            </filter>
-          </defs>
+      {/* Filtros por Categoria de Conexão */}
+      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar touch-pan-x">
+        {[
+          { id: "todos", label: "TODOS OS VÍNCULOS", count: allNodes.length, icon: "🎛️" },
+          { id: "parentes", label: "PARENTES", count: allNodes.filter(n => n.type === "parentes").length, icon: "👤" },
+          { id: "vizinhos", label: "VIZINHOS", count: allNodes.filter(n => n.type === "vizinhos").length, icon: "🏡" },
+          { id: "telefones", label: "TELEFONES", count: allNodes.filter(n => n.type === "telefones").length, icon: "📞" },
+          { id: "empresas", label: "SOCIETÁRIO", count: allNodes.filter(n => n.type === "empresas").length, icon: "🏢" },
+          { id: "enderecos", label: "ENDEREÇOS", count: allNodes.filter(n => n.type === "enderecos").length, icon: "📍" },
+        ].map((cat) => {
+          const isActive = activeCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 border ${
+                isActive
+                  ? "bg-violet-600 text-white border-violet-300 shadow-md shadow-violet-600/30"
+                  : "bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-900 border-violet-500/20"
+              }`}
+            >
+              <span>{cat.icon}</span>
+              <span>{cat.label}</span>
+              <span className="px-1.5 py-0.2 rounded-md bg-white/10 text-[10px]">
+                {cat.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-          <ellipse cx={centerX} cy={centerY} rx={rx} ry={ry} fill="none" stroke="#4c1d95" strokeWidth="1.5" strokeDasharray="6 6" opacity="0.3" />
+      {/* VISÃO 1: CANVAS DO GRAFO INTERATIVO */}
+      {viewMode === "grafo" && (
+        <div className="w-full overflow-x-auto flex justify-center py-4 bg-slate-950/80 rounded-2xl border border-violet-500/20 shadow-inner relative min-h-[380px]">
+          <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-[880px] h-auto font-sans select-none">
+            <defs>
+              <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#a855f7" stopOpacity="0.8" />
+                <stop offset="50%" stopColor="#6366f1" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#090d16" stopOpacity="0" />
+              </radialGradient>
+              <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#8b5cf6" floodOpacity="0.5" />
+              </filter>
+            </defs>
 
-          {nodes.map((node, i) => {
-            const angle = (i * 2 * Math.PI) / (total || 1) - Math.PI / 2;
-            const nx = centerX + rx * Math.cos(angle);
-            const ny = centerY + ry * Math.sin(angle);
-            return (
-              <line
-                key={`group-line-${node.id}`}
-                x1={centerX}
-                y1={centerY}
-                x2={nx}
-                y2={ny}
-                stroke={node.color}
-                strokeWidth="2"
-                strokeDasharray="6 4"
-                className="animate-dash-flow"
-                opacity="0.6"
-              />
-            );
-          })}
+            {/* Círculo de Orbitagem do Grafo */}
+            <ellipse cx={centerX} cy={centerY} rx={rx} ry={ry} fill="none" stroke="#4c1d95" strokeWidth="1.5" strokeDasharray="6 6" opacity="0.35" />
 
-          <g transform={`translate(${centerX}, ${centerY})`} filter="url(#nodeShadow)">
-            <circle r="75" fill="url(#centerPulse)" />
-            <rect x="-85" y="-32" width="170" height="64" rx="18" fill="#1e1b4b" stroke="#8b5cf6" strokeWidth="3" />
-            <text textAnchor="middle" y="-8" fill="#ffffff" fontSize="12" fontWeight="900" letterSpacing="0.5">
-              {nomeCentral.length > 18 ? nomeCentral.substring(0, 16) + "…" : nomeCentral}
-            </text>
-            <text textAnchor="middle" y="10" fill="#a7f3d0" fontSize="10" fontFamily="monospace" fontWeight="bold">
-              CPF: {cpfCentral}
-            </text>
-            <text textAnchor="middle" y="24" fill="#c084fc" fontSize="9" fontWeight="bold" letterSpacing="1">
-              [ INVESTIGADO PRINCIPAL ]
-            </text>
-          </g>
+            {/* Linhas de Conexão com Animação */}
+            {filteredNodes.map((node, i) => {
+              const angle = (i * 2 * Math.PI) / (total || 1) - Math.PI / 2;
+              const nx = centerX + rx * Math.cos(angle);
+              const ny = centerY + ry * Math.sin(angle);
+              const isSelected = selectedNode?.id === node.id;
 
-          {nodes.map((node, i) => {
-            const angle = (i * 2 * Math.PI) / (total || 1) - Math.PI / 2;
-            const nx = centerX + rx * Math.cos(angle);
-            const ny = centerY + ry * Math.sin(angle);
-
-            const cardWidth = 150;
-            const cardHeight = 44;
-            const isClickable = !!(node.cpf && onSelectPerson);
-
-            return (
-              <g
-                key={node.id}
-                transform={`translate(${nx}, ${ny})`}
-                filter="url(#nodeShadow)"
-                className={isClickable ? "cursor-pointer hover:scale-105 transition-transform" : ""}
-                onClick={() => node.cpf && onSelectPerson && onSelectPerson(node.cpf.replace(/\D/g, ''))}
-              >
-                <rect
-                  x={-cardWidth / 2}
-                  y={-cardHeight / 2}
-                  width={cardWidth}
-                  height={cardHeight}
-                  rx="14"
-                  fill="#090d16"
+              return (
+                <line
+                  key={`line-${node.id}`}
+                  x1={centerX}
+                  y1={centerY}
+                  x2={nx}
+                  y2={ny}
                   stroke={node.color}
-                  strokeWidth="2"
+                  strokeWidth={isSelected ? "3.5" : "2"}
+                  strokeDasharray={isSelected ? "none" : "6 4"}
+                  className={isSelected ? "" : "animate-dash-flow"}
+                  opacity={isSelected ? "1" : "0.7"}
                 />
-                <circle cx={-cardWidth / 2 + 20} cy="0" r="13" fill={node.bg} stroke={node.color} strokeWidth="1" />
-                <text x={-cardWidth / 2 + 20} y="4" textAnchor="middle" fontSize="12">
+              );
+            })}
+
+            {/* Nó Central (Investigado Principal) */}
+            <g transform={`translate(${centerX}, ${centerY})`} filter="url(#glowEffect)">
+              <circle r="80" fill="url(#centerGlow)" />
+              <rect x="-95" y="-35" width="190" height="70" rx="20" fill="#1e1b4b" stroke="#a855f7" strokeWidth="3" />
+              <text textAnchor="middle" y="-10" fill="#ffffff" fontSize="13" fontWeight="900" letterSpacing="0.5">
+                {nomeCentral.length > 20 ? nomeCentral.substring(0, 18) + "…" : nomeCentral}
+              </text>
+              <text textAnchor="middle" y="10" fill="#a7f3d0" fontSize="11" fontFamily="monospace" fontWeight="bold">
+                CPF: {cpfCentral}
+              </text>
+              <text textAnchor="middle" y="25" fill="#c084fc" fontSize="9" fontWeight="bold" letterSpacing="1">
+                [ INVESTIGADO PRINCIPAL ]
+              </text>
+            </g>
+
+            {/* Nós Conectados Radial */}
+            {filteredNodes.map((node, i) => {
+              const angle = (i * 2 * Math.PI) / (total || 1) - Math.PI / 2;
+              const nx = centerX + rx * Math.cos(angle);
+              const ny = centerY + ry * Math.sin(angle);
+
+              const cardWidth = 155;
+              const cardHeight = 46;
+              const isSelected = selectedNode?.id === node.id;
+
+              return (
+                <g
+                  key={node.id}
+                  transform={`translate(${nx}, ${ny})`}
+                  filter="url(#glowEffect)"
+                  className="cursor-pointer hover:scale-110 transition-all duration-300"
+                  onClick={() => setSelectedNode(node)}
+                >
+                  <rect
+                    x={-cardWidth / 2}
+                    y={-cardHeight / 2}
+                    width={cardWidth}
+                    height={cardHeight}
+                    rx="14"
+                    fill={isSelected ? "#1e1b4b" : "#0d111d"}
+                    stroke={isSelected ? "#ffffff" : node.color}
+                    strokeWidth={isSelected ? "3" : "2"}
+                  />
+                  <circle cx={-cardWidth / 2 + 22} cy="0" r="14" fill={node.bg} stroke={node.color} strokeWidth="1.5" />
+                  <text x={-cardWidth / 2 + 22} y="4" textAnchor="middle" fontSize="12">
+                    {node.icon}
+                  </text>
+
+                  <text x={-cardWidth / 2 + 42} y="-4" textAnchor="start" fill="#ffffff" fontSize="10" fontWeight="bold">
+                    {node.label.length > 13 ? node.label.substring(0, 12) + "…" : node.label}
+                  </text>
+                  <text x={-cardWidth / 2 + 42} y="11" textAnchor="start" fill={node.color} fontSize="8" fontWeight="bold">
+                    {node.sub}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      )}
+
+      {/* VISÃO 2: GRADE DE CARDS INTERATIVOS */}
+      {viewMode === "cards" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+          {filteredNodes.map((node) => (
+            <div
+              key={node.id}
+              onClick={() => setSelectedNode(node)}
+              className="p-4 rounded-2xl bg-slate-900/90 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.02] transition-all cursor-pointer shadow-lg flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-violet-950 flex items-center justify-center text-lg border border-violet-500/30">
                   {node.icon}
-                </text>
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-xs">{node.label}</h4>
+                  <p className="text-[10px] font-semibold mt-0.5" style={{ color: node.color }}>{node.sub}</p>
+                </div>
+              </div>
+              <button className="px-2.5 py-1 rounded-lg bg-violet-900/60 text-violet-200 text-[10px] font-bold hover:bg-violet-800">
+                Inspecionar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
-                <text x={-cardWidth / 2 + 40} y="-4" textAnchor="start" fill="#ffffff" fontSize="10" fontWeight="bold">
-                  {node.label.length > 14 ? node.label.substring(0, 13) + "…" : node.label}
-                </text>
-                <text x={-cardWidth / 2 + 40} y="11" textAnchor="start" fill={node.color} fontSize="8" fontWeight="bold">
-                  {node.sub}
-                </text>
+      {/* INSPECTOR DRAWER DA CONEXÃO SELECIONADA */}
+      {selectedNode && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-950/90 to-indigo-950/90 border-2 border-violet-400/60 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-slate-950 flex items-center justify-center text-2xl border border-violet-400/40">
+              {selectedNode.icon}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-black text-white text-sm tracking-tight">{selectedNode.label}</h4>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md text-white" style={{ backgroundColor: selectedNode.color }}>
+                  {selectedNode.sub}
+                </span>
+              </div>
+              <p className="text-xs font-mono text-purple-200 mt-1">{selectedNode.rawValue}</p>
+            </div>
+          </div>
 
-                {isClickable && (
-                  <circle cx={cardWidth / 2 - 12} cy="-12" r="7" fill="#10b981" stroke="#ffffff" strokeWidth="1">
-                    <title>Clique para buscar este perfil</title>
-                  </circle>
-                )}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(selectedNode.rawValue.replace(/^CPF:\s*/, ''));
+                toast.success("Dado copiado para a área de transferência!");
+              }}
+              className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-violet-500/30 text-white text-xs font-bold transition-all flex items-center gap-1.5"
+            >
+              📋 Copiar
+            </button>
 
-      <div className="flex flex-wrap items-center justify-center gap-5 text-xs text-slate-300 font-medium pt-1">
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-purple-500/20 border border-purple-400 inline-block" /> 👤 Parentes</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-blue-500/20 border border-blue-400 inline-block" /> 🏡 Vizinhos</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-emerald-500/20 border border-emerald-400 inline-block" /> 📞 Telefones</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-amber-500/20 border border-amber-400 inline-block" /> 🏢 Empresas (QSA)</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-pink-500/20 border border-pink-400 inline-block" /> 📍 Endereços</span>
-      </div>
+            {selectedNode.cpf && onSelectPerson && (
+              <button
+                onClick={() => {
+                  onSelectPerson(selectedNode.cpf.replace(/\D/g, ''));
+                  setSelectedNode(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-lg active:scale-95"
+              >
+                🔍 Investigar este Perfil em 1-Clique ➔
+              </button>
+            )}
+
+            <button
+              onClick={() => setSelectedNode(null)}
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

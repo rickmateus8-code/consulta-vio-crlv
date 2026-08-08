@@ -129,8 +129,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     let label = 'Plano 1 Mês';
     let expiresDate = new Date(now);
 
-    if (customExpiresAt && !isNaN(Date.parse(customExpiresAt))) {
-      expiresDate = new Date(customExpiresAt);
+    if (customExpiresAt && String(customExpiresAt).trim() !== '') {
+      const rawDateStr = String(customExpiresAt).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(rawDateStr)) {
+        // Se for data YYYY-MM-DD sem horário, definir expiração para 23:59:59 no final do dia
+        expiresDate = new Date(`${rawDateStr}T23:59:59.999Z`);
+      } else if (!isNaN(Date.parse(rawDateStr))) {
+        expiresDate = new Date(rawDateStr);
+      } else {
+        expiresDate.setMonth(expiresDate.getMonth() + 1);
+      }
       label = `Plano Concedido (Até ${expiresDate.toLocaleDateString('pt-BR')})`;
     } else if (duration === '1_dia') {
       expiresDate.setDate(expiresDate.getDate() + 1);

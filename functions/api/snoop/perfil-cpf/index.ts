@@ -43,7 +43,7 @@ async function checkActivePlan(user: any, env: Env): Promise<boolean> {
 
   try {
     const plan = await env.DB.prepare(
-      'SELECT id FROM consultas_planos WHERE user_id = ? AND expires_at > datetime(\'now\') LIMIT 1'
+      'SELECT id FROM consultas_planos WHERE user_id = ? AND datetime(expires_at) > datetime(\'now\') LIMIT 1'
     ).bind(user.id).first<any>();
     return !!plan;
   } catch { return false; }

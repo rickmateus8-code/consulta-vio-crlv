@@ -517,17 +517,36 @@ export default function Consultas() {
                     </div>
                   </div>
 
-                  {/* BANNER DE USO 24H (0 / 1000 | 1000 restantes) DESKTOP */}
+                  {/* BANNER DE PLANO ATIVO & USO 24H */}
                   <div className="hidden sm:flex items-center gap-4 px-5 py-2.5 rounded-2xl bg-[#0d0f26]/90 border border-violet-500/30 text-xs shadow-inner">
-                    <Clock className="w-5 h-5 text-violet-400" />
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-violet-400" />
+                      <div>
+                        <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
+                          {planStatus?.plan?.expires_at && !planStatus?.is_free ? "PLANO / EXPIRAÇÃO" : "MODO DE ACESSO"}
+                        </span>
+                        <span className="text-emerald-400 font-bold text-xs">
+                          {planStatus?.is_free || user?.role === "admin"
+                            ? "🟢 Gratuito / Liberado"
+                            : planStatus?.plan?.expires_at
+                            ? `Ativo até ${new Date(planStatus.plan.expires_at).toLocaleDateString('pt-BR')}`
+                            : "🔴 Requer Plano"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="h-7 w-px bg-violet-500/20" />
+
                     <div>
                       <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">CONSULTAS HOJE</span>
                       <span className="text-white font-black text-sm md:text-base">{usage24h} / 1000</span>
                     </div>
+
                     <div className="h-7 w-px bg-violet-500/20" />
+
                     <div>
                       <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">RESTANTES</span>
-                      <span className="text-emerald-400 font-black text-sm md:text-base">{usageRestantes} restantes</span>
+                      <span className="text-emerald-400 font-black text-sm md:text-base">{usageRestantes}</span>
                     </div>
                   </div>
                 </div>

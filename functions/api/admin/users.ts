@@ -114,7 +114,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   let activePlansMap: Record<string, any> = {};
   try {
     const plansRes = await env.DB.prepare(
-      "SELECT user_id, plano, expires_at FROM consultas_planos WHERE expires_at > datetime('now') ORDER BY expires_at DESC"
+      "SELECT user_id, plano, expires_at FROM consultas_planos WHERE datetime(expires_at) > datetime('now') ORDER BY datetime(expires_at) DESC"
     ).all<any>();
     if (plansRes?.results) {
       for (const p of plansRes.results) {

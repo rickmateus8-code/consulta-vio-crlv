@@ -51,7 +51,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     (Array.isArray(perms?.editaveis) && perms.editaveis.includes('consultas'));
 
   const dbPlan = await env.DB.prepare(
-    'SELECT * FROM consultas_planos WHERE user_id = ? AND expires_at > datetime(\'now\') ORDER BY expires_at DESC LIMIT 1'
+    'SELECT * FROM consultas_planos WHERE user_id = ? AND datetime(expires_at) > datetime(\'now\') ORDER BY datetime(expires_at) DESC LIMIT 1'
   ).bind(user.id).first<any>();
 
   const activePlan = isFree ? {

@@ -110,8 +110,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
         data = JSON.parse(text);
       } catch {
         const trimmed = text.trim();
-        if (trimmed.length > 50 && /^[A-Za-z0-9+/=]+$/.test(trimmed.replace(/\s+/g, ""))) {
-          data = { success: true, foto: trimmed };
+        const cleanB64 = trimmed.replace(/\s+/g, "");
+        if (cleanB64.length > 50 && /^[A-Za-z0-9+/=]+$/.test(cleanB64)) {
+          let mime = 'jpeg';
+          if (cleanB64.startsWith('iVBORw0KGgo')) mime = 'png';
+          else if (cleanB64.startsWith('R0lGOD')) mime = 'gif';
+          data = { success: true, foto: `data:image/${mime};base64,${cleanB64}` };
         } else {
           throw new Error('Not JSON or base64');
         }

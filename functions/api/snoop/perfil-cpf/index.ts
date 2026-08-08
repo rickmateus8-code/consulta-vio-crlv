@@ -119,41 +119,44 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     } catch {}
   }
 
-  // Agregação paralela bruta de todas as bases Snoop Intelligence
-  const [cpfData, fotoData, fotoCpfData, fotoSPData, fotoMAData, fotoROData, fotoAllData, parentes, vizinhos, score, profissionais, telefones, veiculos, geoData] = await Promise.all([
+  // Agregação paralela limpa sem requisições excessivas a endpoints inexistentes (prevenção de HTTP 429)
+  const [cpfData, fotoData, fotoAllData, parentes, vizinhos, score, profissionais, telefones, veiculos, geoData] = await Promise.all([
     snoopGet('generic/cpf', { cpf }, apiKey),
     snoopGet('foto', { cpf }, apiKey),
-    snoopGet('foto/cpf', { cpf }, apiKey),
-    snoopGet('foto/sp', { cpf }, apiKey).then(res => res || snoopGet('foto-sp', { cpf }, apiKey)),
-    snoopGet('foto/ma', { cpf }, apiKey).then(res => res || snoopGet('foto-ma', { cpf }, apiKey)),
-    snoopGet('foto/ro', { cpf }, apiKey).then(res => res || snoopGet('foto-ro', { cpf }, apiKey)),
-    snoopGet('foto/all', { cpf }, apiKey).then(res => res || snoopGet('foto-all', { cpf }, apiKey)),
+    snoopGet('foto/all', { cpf }, apiKey),
     snoopGet('parentes', { cpf }, apiKey),
     snoopGet('vizinhos', { cpf }, apiKey),
     snoopGet('score', { cpf }, apiKey),
     snoopGet('profissionais', { cpf }, apiKey),
     snoopGet('telefone/cpf', { cpf }, apiKey),
-    snoopGet('veiculos/jbr', { cpf }, apiKey).then(res => res || snoopGet('veiculos-jbr', { cpf }, apiKey)),
+    snoopGet('veiculos/jbr', { cpf }, apiKey),
     snoopGet('geo', { cpf }, apiKey),
   ]);
 
   const getValidPhoto = (obj: any): string | null => {
     if (!obj) return null;
-    if (obj.success === false) return null;
+    if (obj.success === false && !obj.foto && !obj.base64 && !obj.data && !obj.body) return null;
+
     if (typeof obj === 'string') {
       const trimmed = obj.trim();
-      if (trimmed.length > 50 || trimmed.startsWith('data:') || trimmed.startsWith('http')) {
+      if (!trimmed || trimmed === "null" || trimmed === "undefined") return null;
+      if (trimmed.startsWith('data:image/') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
         return trimmed;
+      }
+      const cleanB64 = trimmed.replace(/\s+/g, '');
+      if (cleanB64.length > 30 && /^[A-Za-z0-9+/=]+$/.test(cleanB64)) {
+        let mime = 'jpeg';
+        if (cleanB64.startsWith('iVBORw0KGgo')) mime = 'png';
+        else if (cleanB64.startsWith('R0lGOD')) mime = 'gif';
+        return `data:image/${mime};base64,${cleanB64}`;
       }
       return null;
     }
+
     if (typeof obj === 'object') {
-      const candidate = obj.foto ?? obj.url ?? obj.base64 ?? obj.data ?? obj.body;
-      if (candidate && typeof candidate === 'string') {
-        const trimmed = candidate.trim();
-        if (trimmed.length > 50 || trimmed.startsWith('data:') || trimmed.startsWith('http')) {
-          return trimmed;
-        }
+      const candidate = obj.foto ?? obj.url ?? obj.base64 ?? obj.data ?? obj.body ?? obj.nacional;
+      if (candidate && candidate !== obj) {
+        return getValidPhoto(candidate);
       }
     }
     return null;
@@ -161,10 +164,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   const rawCpf = cpfData?.body ?? cpfData?.data ?? cpfData ?? {};
 
-  const cleanFotoNacional = getValidPhoto(fotoData) ?? getValidPhoto(fotoCpfData) ?? getValidPhoto(fotoAllData?.nacional) ?? getValidPhoto(fotoAllData?.body?.nacional) ?? rawCpf.foto ?? rawCpf.fotos?.nacional ?? null;
-  const cleanFotoSP = getValidPhoto(fotoSPData) ?? getValidPhoto(fotoAllData?.sp) ?? getValidPhoto(fotoAllData?.body?.sp) ?? rawCpf.foto_sp ?? rawCpf.fotos?.sp ?? null;
-  const cleanFotoMA = getValidPhoto(fotoMAData) ?? getValidPhoto(fotoAllData?.ma) ?? getValidPhoto(fotoAllData?.body?.ma) ?? rawCpf.foto_ma ?? rawCpf.fotos?.ma ?? null;
-  const cleanFotoRO = getValidPhoto(fotoROData) ?? getValidPhoto(fotoAllData?.ro) ?? getValidPhoto(fotoAllData?.body?.ro) ?? rawCpf.foto_ro ?? rawCpf.fotos?.ro ?? null;
+  const cleanFotoNacional = getValidPhoto(fotoData) ?? getValidPhoto(fotoAllData?.nacional) ?? getValidPhoto(fotoAllData?.body?.nacional) ?? getValidPhoto(rawCpf.foto) ?? getValidPhoto(rawCpf.fotos?.nacional) ?? getValidPhoto(rawCpf.foto_nacional) ?? null;
+  const cleanFotoSP = getValidPhoto(fotoAllData?.sp) ?? getValidPhoto(fotoAllData?.body?.sp) ?? getValidPhoto(rawCpf.foto_sp) ?? getValidPhoto(rawCpf.fotos?.sp) ?? null;
+  const cleanFotoMA = getValidPhoto(fotoAllData?.ma) ?? getValidPhoto(fotoAllData?.body?.ma) ?? getValidPhoto(rawCpf.foto_ma) ?? getValidPhoto(rawCpf.fotos?.ma) ?? null;
+  const cleanFotoRO = getValidPhoto(fotoAllData?.ro) ?? getValidPhoto(fotoAllData?.body?.ro) ?? getValidPhoto(rawCpf.foto_ro) ?? getValidPhoto(rawCpf.fotos?.ro) ?? null;
+  const cleanFotoCNH = getValidPhoto(rawCpf.foto_cnh) ?? getValidPhoto(rawCpf.cnh_foto) ?? null;
+  const cleanFotoRG = getValidPhoto(rawCpf.foto_rg) ?? getValidPhoto(rawCpf.rg_foto) ?? null;
 
   const fontesConsultadas = {
     receita_federal: !!(rawCpf.name || rawCpf.nome || rawCpf.cpf),
@@ -182,11 +187,18 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const perfil: any = {
     cpf_dados: rawCpf,
     foto: cleanFotoNacional,
+    foto_sp: cleanFotoSP,
+    foto_ma: cleanFotoMA,
+    foto_ro: cleanFotoRO,
+    foto_cnh: cleanFotoCNH,
+    foto_rg: cleanFotoRG,
     fotos: {
       nacional: cleanFotoNacional,
       sp: cleanFotoSP,
       ma: cleanFotoMA,
       ro: cleanFotoRO,
+      cnh: cleanFotoCNH,
+      rg: cleanFotoRG,
       all: fotoAllData?.data ?? fotoAllData?.body ?? fotoAllData ?? null,
     },
     parentes: parentes?.data ?? parentes?.body ?? parentes ?? rawCpf.parentes ?? null,

@@ -359,9 +359,74 @@ export default function Consultas() {
   }, [activeCategoryFilter]);
 
   return (
-    <div className="fixed inset-0 z-50 w-full h-screen bg-[#070a19] text-white flex overflow-hidden font-sans select-text">
-      {/* ─── SIDEBAR ESQUERDA COMPATÍVEL COM IMAGENS ANEXADAS ─────────────────── */}
-      <aside className="w-64 bg-[#0c0f2a] border-r border-violet-500/20 flex flex-col justify-between p-4 flex-shrink-0">
+    <div className="fixed inset-0 z-50 w-full h-screen bg-[#070a19] text-white flex flex-col md:flex-row overflow-hidden font-sans select-text">
+      {/* ─── MOBILE HEADER & SUBMENU (APENAS DISPOSITIVOS MÓVEIS < md) ─────────────────── */}
+      <header className="md:hidden bg-[#0c0f2a] border-b border-violet-500/20 p-3.5 space-y-3 flex-shrink-0 z-10">
+        {/* Linha 1: Logo + Status + Botão Sair */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg">
+              <Search className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-black text-sm text-white tracking-tight">Master Buscas</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070a19] border border-violet-500/20 text-[10px] font-bold">
+              <Clock className="w-3 h-3 text-violet-400" />
+              <span className="text-emerald-400">{usageRestantes} rest.</span>
+            </div>
+            <button
+              onClick={() => setLocation("/dashboard")}
+              className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-violet-600/90 hover:bg-violet-500 text-white flex items-center gap-1 active:scale-95 transition-all shadow-md"
+            >
+              <LogOut className="w-3 h-3" /> Sair
+            </button>
+          </div>
+        </div>
+
+        {/* Linha 2: Submenu de Navegação Mobile Separado (Pesquisas | Módulos | Histórico) */}
+        <div className="grid grid-cols-3 gap-1.5 bg-[#070a19]/90 p-1 rounded-xl border border-violet-500/20">
+          <button
+            onClick={() => setViewMode("dashboard")}
+            className={`py-2 rounded-lg text-[11px] font-black transition-all flex items-center justify-center gap-1.5 ${
+              viewMode === "dashboard"
+                ? "bg-violet-600 text-white shadow-md shadow-violet-600/30 border border-violet-400/40"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Pesquisas</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode("modulos")}
+            className={`py-2 rounded-lg text-[11px] font-black transition-all flex items-center justify-center gap-1.5 ${
+              viewMode === "modulos"
+                ? "bg-violet-600 text-white shadow-md shadow-violet-600/30 border border-violet-400/40"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>Módulos</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode("historico")}
+            className={`py-2 rounded-lg text-[11px] font-black transition-all flex items-center justify-center gap-1.5 ${
+              viewMode === "historico"
+                ? "bg-violet-600 text-white shadow-md shadow-violet-600/30 border border-violet-400/40"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>Histórico</span>
+          </button>
+        </div>
+      </header>
+
+      {/* ─── SIDEBAR ESQUERDA DESKTOP (OCULTA NO MOBILE VIA hidden md:flex) ─────────────────── */}
+      <aside className="hidden md:flex w-64 bg-[#0c0f2a] border-r border-violet-500/20 flex-col justify-between p-4 flex-shrink-0">
         <div className="space-y-6">
           {/* Logo Topo */}
           <div className="flex items-center justify-between px-2 pt-2">
@@ -433,64 +498,73 @@ export default function Consultas() {
       </aside>
 
       {/* ─── ÁREA DE CONTEÚDO PRINCIPAL (DIREITA) ──────────────────────────────── */}
-      <main className="flex-1 h-screen overflow-y-auto p-6 space-y-6 bg-[#070a19]">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <main className="flex-1 h-full overflow-y-auto p-3.5 md:p-6 space-y-4 md:space-y-6 bg-[#070a19]">
+        <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
 
           {/* VISÃO 1: DASHBOARD DE BUSCA UNIFICADA */}
           {(viewMode === "dashboard" || result) && (
             <>
               {/* CARD DE CABEÇALHO ROXO (MODELO IMAGEM 1 & 2) */}
-              <div className="rounded-2xl p-6 bg-gradient-to-r from-purple-800 to-violet-900 border border-violet-500/30 shadow-2xl space-y-6">
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-950/80 border border-violet-500/30 flex items-center justify-center shadow-inner">
-                      <Search className="w-6 h-6 text-violet-300" />
+              <div className="rounded-2xl p-4 md:p-6 bg-gradient-to-r from-purple-800 to-violet-900 border border-violet-500/30 shadow-2xl space-y-4 md:space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-slate-950/80 border border-violet-500/30 flex items-center justify-center shadow-inner flex-shrink-0">
+                      <Search className="w-5 h-5 md:w-6 md:h-6 text-violet-300" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-white tracking-tight">{currentTab.headerTitle}</h2>
-                      <p className="text-xs text-purple-200 mt-0.5">{currentTab.headerDesc}</p>
+                      <h2 className="text-lg md:text-xl font-black text-white tracking-tight">{currentTab.headerTitle}</h2>
+                      <p className="text-[11px] md:text-xs text-purple-200 mt-0.5">{currentTab.headerDesc}</p>
                     </div>
                   </div>
 
-                  {/* BANNER DE USO 24H (0 / 1000 | 1000 restantes) */}
-                  <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-[#0d0f26]/90 border border-violet-500/30 text-xs shadow-inner">
+                  {/* BANNER DE USO 24H (0 / 1000 | 1000 restantes) DESKTOP */}
+                  <div className="hidden sm:flex items-center gap-4 px-5 py-2.5 rounded-2xl bg-[#0d0f26]/90 border border-violet-500/30 text-xs shadow-inner">
                     <Clock className="w-5 h-5 text-violet-400" />
                     <div>
                       <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">CONSULTAS HOJE</span>
-                      <span className="text-white font-black text-base">{usage24h} / 1000</span>
+                      <span className="text-white font-black text-sm md:text-base">{usage24h} / 1000</span>
                     </div>
-                    <div className="h-8 w-px bg-violet-500/20" />
+                    <div className="h-7 w-px bg-violet-500/20" />
                     <div>
                       <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">RESTANTES</span>
-                      <span className="text-emerald-400 font-black text-base">{usageRestantes} restantes</span>
+                      <span className="text-emerald-400 font-black text-sm md:text-base">{usageRestantes} restantes</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Sub-Abas ([CPF] [RG] [CEP] [Email] [Telefone] [Nome] [Placa] [Parentes] [Score] [Fotos]) */}
-                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                  {MAIN_TABS.map((tab) => {
-                    const isActive = tab.id === activeTabId;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => {
-                          setActiveTabId(tab.id);
-                          setQuickInput("");
-                          setResult(null);
-                          setError(null);
-                        }}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${
-                          isActive
-                            ? "bg-violet-600 text-white border border-violet-300 shadow-lg shadow-violet-600/40"
-                            : "bg-slate-900/60 text-slate-300 hover:text-white hover:bg-slate-900 border border-violet-500/20"
-                        }`}
-                      >
-                        <span>{tab.emoji}</span>
-                        <span>{tab.label}</span>
-                      </button>
-                    );
-                  })}
+                {/* Sub-Abas de Pesquisa Direta ([CPF] [RG] [CEP] [Email] [Telefone] [Nome] [Placa] [Parentes] [Score] [Fotos]) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black text-purple-200/80 uppercase tracking-widest block">
+                      SELECIONE A PESQUISA DIRETA
+                    </span>
+                    <span className="text-[10px] text-purple-300 font-medium sm:hidden">Deslize ➔</span>
+                  </div>
+
+                  <div className="flex gap-2 overflow-x-auto pb-1.5 no-scrollbar touch-pan-x snap-x">
+                    {MAIN_TABS.map((tab) => {
+                      const isActive = tab.id === activeTabId;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            setActiveTabId(tab.id);
+                            setQuickInput("");
+                            setResult(null);
+                            setError(null);
+                          }}
+                          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 snap-start ${
+                            isActive
+                              ? "bg-violet-600 text-white border border-violet-300 shadow-lg shadow-violet-600/40 scale-105"
+                              : "bg-slate-900/60 text-slate-300 hover:text-white hover:bg-slate-900 border border-violet-500/20"
+                          }`}
+                        >
+                          <span>{tab.emoji}</span>
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Input de Busca com Válido/Inválido + Botões */}
@@ -502,10 +576,10 @@ export default function Consultas() {
                       value={quickInput}
                       onChange={(e) => handleInputChange(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") handleQuickSearch(); }}
-                      className="w-full px-5 py-4 rounded-xl bg-slate-950/90 border border-violet-500/40 text-white text-sm outline-none focus:border-violet-400 transition-all font-mono select-text shadow-inner"
+                      className="w-full px-4 md:px-5 py-3.5 md:py-4 rounded-xl bg-slate-950/90 border border-violet-500/40 text-white text-xs md:text-sm outline-none focus:border-violet-400 transition-all font-mono select-text shadow-inner pr-20 md:pr-24"
                     />
                     {validation.status && (
-                      <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold px-2.5 py-0.5 rounded ${
+                      <span className={`absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded ${
                         validation.status === "valid" ? "bg-emerald-950 text-emerald-400 border border-emerald-500/30" : "bg-red-950 text-red-400 border border-red-500/30"
                       }`}>
                         {validation.label}
@@ -513,17 +587,17 @@ export default function Consultas() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center justify-between gap-2 pt-1">
                     <button
                       onClick={() => { setQuickInput(""); setResult(null); setError(null); }}
-                      className="px-5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-400 text-xs font-bold transition-all"
+                      className="px-4 md:px-5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-400 text-xs font-bold transition-all"
                     >
                       Limpar
                     </button>
                     <button
                       onClick={handleQuickSearch}
                       disabled={loading}
-                      className="px-8 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
+                      className="px-6 md:px-8 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 flex-1 sm:flex-initial"
                     >
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                       Consultar

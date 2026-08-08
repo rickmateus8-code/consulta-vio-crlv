@@ -36,6 +36,7 @@ const quickActionsRaw = [
   { key: "receita", icon: Pill, label: "Dr. Consulta", desc: "Emitir receituário médico", path: "/receitacria", color: "violet" },
   { key: "peticao-stj", icon: FileText, label: "STJ Petição", desc: "Emitir petição jurídica STJ", path: "/peticaocria", color: "indigo" },
   { key: "bot-adv", icon: Search, label: "Bot Adv", desc: "Consulta Judicial Inteligente", path: "/bot-adv", color: "blue" },
+  { key: "consultas", icon: Search, label: "Master Buscas", desc: "Pesquisa cadastral completa", path: "/consultas", color: "violet" },
   { key: "fgv", icon: Award, label: "Certificado FGV", desc: "Emitir certificado FGV", path: "/certificado-fgv", color: "blue" },
 ];
 
@@ -349,15 +350,28 @@ export default function Dashboard() {
   const allowedEditables = Array.isArray(perms.editaveis) ? perms.editaveis : [];
   const allowedTools = Array.isArray(perms.ferramentas) ? perms.ferramentas : [];
 
+  const freeDocs = (() => {
+    if (!user?.free_documents) return [];
+    if (Array.isArray(user.free_documents)) return user.free_documents;
+    try {
+      return JSON.parse(user.free_documents);
+    } catch {
+      return [];
+    }
+  })();
+
   const isToolAllowed = (key: string) => {
     if (user?.role === "admin") return true;
-    if (["bot-adv", "peticao-stj"].includes(key)) return allowedTools.includes(key);
-    if (key === "toxicria") return allowedEditables.includes("toxicologico");
-    return allowedEditables.includes(key);
+    if (freeDocs.includes(key) || (key === "consultas" && freeDocs.includes("consultas"))) return true;
+    if (["bot-adv", "peticao-stj", "consultas"].includes(key)) {
+      return allowedTools.includes(key) || freeDocs.includes(key);
+    }
+    if (key === "toxicria") return allowedEditables.includes("toxicologico") || freeDocs.includes("toxicologico");
+    return allowedEditables.includes(key) || freeDocs.includes(key);
   };
 
   const filteredQuickActions = quickActionsRaw.filter(action => isToolAllowed(action.key));
-  const hasAnyPermission = filteredQuickActions.length > 0;
+  const hasAnyPermission = user?.role === "admin" || filteredQuickActions.length > 0 || freeDocs.length > 0 || allowedEditables.length > 0 || allowedTools.length > 0;
   const hasEmissions = Object.values(stats).some(val => typeof val === 'number' && val > 0);
 
 const intelligentStats = [

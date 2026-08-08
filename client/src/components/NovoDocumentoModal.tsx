@@ -79,13 +79,25 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
   const allowedEditables = Array.isArray(perms.editaveis) ? perms.editaveis : [];
   const allowedTools = Array.isArray(perms.ferramentas) ? perms.ferramentas : [];
 
+  const freeDocs = (() => {
+    if (!user?.free_documents) return [];
+    if (Array.isArray(user.free_documents)) return user.free_documents;
+    try {
+      return JSON.parse(user.free_documents);
+    } catch {
+      return [];
+    }
+  })();
+
   const isToolAllowed = (key: string) => {
     if (user?.role === "admin") return true;
-    if (["bot-adv", "peticao-stj", "peticaocria"].includes(key)) {
-      return allowedTools.includes(key === "peticaocria" ? "peticao-stj" : key);
+    if (freeDocs.includes(key) || (key === "consultas" && freeDocs.includes("consultas"))) return true;
+    if (["bot-adv", "peticao-stj", "peticaocria", "consultas"].includes(key)) {
+      const toolKey = key === "peticaocria" ? "peticao-stj" : key;
+      return allowedTools.includes(toolKey) || freeDocs.includes(toolKey);
     }
-    if (key === "toxicria") return allowedEditables.includes("toxicologico");
-    return allowedEditables.includes(key);
+    if (key === "toxicria") return allowedEditables.includes("toxicologico") || freeDocs.includes("toxicologico");
+    return allowedEditables.includes(key) || freeDocs.includes(key);
   };
 
   useEffect(() => {

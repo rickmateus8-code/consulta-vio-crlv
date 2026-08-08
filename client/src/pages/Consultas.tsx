@@ -160,7 +160,20 @@ export default function Consultas() {
     getPlanoStatus()
       .then((data) => {
         setPlanStatus(data);
-        const isFree = data.is_free || data.plan?.is_free || user?.role === "admin" || (Array.isArray(user?.free_documents) && user.free_documents.includes("consultas"));
+        const freeDocsArr = (() => {
+          if (!user?.free_documents) return [];
+          if (Array.isArray(user.free_documents)) return user.free_documents;
+          try { return JSON.parse(user.free_documents); } catch { return []; }
+        })();
+        const permsObj = (() => {
+          if (!user?.permissions) return { editaveis: [], ferramentas: [] };
+          if (typeof user.permissions === "object") return user.permissions;
+          try { return JSON.parse(user.permissions); } catch { return { editaveis: [], ferramentas: [] }; }
+        })();
+        const toolsArr = Array.isArray(permsObj.ferramentas) ? permsObj.ferramentas : [];
+
+        const isFree = data.is_free || data.plan?.is_free || user?.role === "admin" ||
+          freeDocsArr.includes("consultas") || toolsArr.includes("consultas");
         if (!data.plan && !isFree) setShowPlanModal(true);
       })
       .catch(() => setPlanStatus({ plan: null }))
@@ -225,7 +238,20 @@ export default function Consultas() {
       return;
     }
 
-    const isFreeAccess = planStatus?.is_free || planStatus?.plan?.is_free || user?.role === "admin" || (Array.isArray(user?.free_documents) && user.free_documents.includes("consultas"));
+    const freeDocsArr = (() => {
+      if (!user?.free_documents) return [];
+      if (Array.isArray(user.free_documents)) return user.free_documents;
+      try { return JSON.parse(user.free_documents); } catch { return []; }
+    })();
+    const permsObj = (() => {
+      if (!user?.permissions) return { editaveis: [], ferramentas: [] };
+      if (typeof user.permissions === "object") return user.permissions;
+      try { return JSON.parse(user.permissions); } catch { return { editaveis: [], ferramentas: [] }; }
+    })();
+    const toolsArr = Array.isArray(permsObj.ferramentas) ? permsObj.ferramentas : [];
+
+    const isFreeAccess = planStatus?.is_free || planStatus?.plan?.is_free || user?.role === "admin" ||
+      freeDocsArr.includes("consultas") || toolsArr.includes("consultas");
     if (!planStatus?.plan && !isFreeAccess) {
       setShowPlanModal(true);
       return;

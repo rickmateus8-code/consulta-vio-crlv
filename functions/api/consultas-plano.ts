@@ -50,9 +50,33 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     (Array.isArray(perms?.ferramentas) && perms.ferramentas.includes('consultas')) ||
     (Array.isArray(perms?.editaveis) && perms.editaveis.includes('consultas'));
 
-  const dbPlan = await env.DB.prepare(
+  let dbPlan = await env.DB.prepare(
     'SELECT * FROM consultas_planos WHERE user_id = ? AND datetime(expires_at) > datetime(\'now\') ORDER BY datetime(expires_at) DESC LIMIT 1'
   ).bind(user.id).first<any>();
+
+  // Se o usuário não possui acesso ilimitado e nem plano ativo, e NUNCA teve qualquer registro em consultas_planos:
+  // Conceder automaticamente o Teste Grátis de 1 dia!
+  if (!isFree && !dbPlan) {
+    try {
+      const anyPlanEver = await env.DB.prepare(
+        'SELECT id FROM consultas_planos WHERE user_id = ? LIMIT 1'
+      ).bind(user.id).first<any>();
+
+      if (!anyPlanEver) {
+        const trialExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await env.DB.prepare(
+          'INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, 0, ?)'
+        ).bind(user.id, 'Teste Grátis 1 Dia', trialExpiresAt).run();
+
+        dbPlan = {
+          user_id: user.id,
+          plano: 'Teste Grátis 1 Dia',
+          valor: 0,
+          expires_at: trialExpiresAt
+        };
+      }
+    } catch {}
+  }
 
   const activePlan = isFree ? {
     id: 'free-admin-granted',

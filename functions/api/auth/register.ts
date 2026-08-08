@@ -41,6 +41,27 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       'INSERT INTO users (id, username, password_hash, email, display_name, role, balance, is_active, permissions, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(id, username.trim(), passwordHash, email || '', displayName || username, 'user', 0, 1, defaultPermissions, now).run();
 
+    // Conceder automaticamente o Teste Grátis de 1 dia para /consultas ao cadastrar novo usuário
+    try {
+      await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS consultas_planos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL,
+          plano TEXT NOT NULL,
+          valor REAL NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          expires_at TEXT NOT NULL
+        )
+      `).run();
+
+      const trialExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await env.DB.prepare(
+        'INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, 0, ?)'
+      ).bind(id, 'Teste Grátis 1 Dia', trialExpiresAt).run();
+    } catch (e) {
+      console.error('[Register] Erro ao criar plano de teste grátis 1 dia:', e);
+    }
+
     const sessionToken = generateToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 

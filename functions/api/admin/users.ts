@@ -285,6 +285,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, '[]', ?, datetime('now'), datetime('now'))
     `).bind(id, username, email, displayName, passwordHash, password, role, balance, defaultPermissions).run();
 
+    // Conceder automaticamente o Teste Grátis de 1 dia para /consultas ao cadastrar novo usuário pelo Admin
+    try {
+      const trialExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await env.DB.prepare(
+        'INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, 0, ?)'
+      ).bind(id, 'Teste Grátis 1 Dia', trialExpiresAt).run();
+    } catch (e) {
+      console.error('[AdminUsers] Erro ao criar teste grátis 1 dia:', e);
+    }
+
     await logAdminAction(env, admin.id, 'create_user', id, { username, email, role, balance });
     return new Response(JSON.stringify({ success: true, userId: id }), { status: 201, headers: corsHeaders });
   } catch (error: any) {

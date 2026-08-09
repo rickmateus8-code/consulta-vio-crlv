@@ -479,10 +479,10 @@ export default function CNHCria() {
             </div>
           </div>
 
-          {/* CORPO CENTRAL DO CARD: SIDEBAR + CONTEÚDO DA ETAPA + PRÉVIA EM TEMPO REAL */}
-          <div className="flex flex-col lg:flex-row p-4 sm:p-6 gap-6 flex-1 min-h-[500px]">
+          {/* CORPO CENTRAL DO CARD: SIDEBAR LATERAL + FORMULÁRIO DA ETAPA */}
+          <div className="flex flex-col md:flex-row p-4 sm:p-6 gap-6 flex-1 min-h-[480px]">
             {/* SIDEBAR LATERAL (4 ITENS) */}
-            <div className="w-full lg:w-52 shrink-0 flex flex-col gap-2.5">
+            <div className="w-full md:w-52 shrink-0 flex flex-col gap-2.5">
               <button
                 type="button"
                 onClick={() => setEtapa("automacao")}
@@ -1064,31 +1064,9 @@ export default function CNHCria() {
                 </div>
               )}
             </div>
-
-            {/* PAINEL DE PRÉVIA VISUAL DA CNH EM TEMPO REAL */}
-            <div className="w-full lg:w-[480px] shrink-0 bg-slate-950/90 border border-blue-500/30 rounded-xl p-3 flex flex-col items-center justify-start gap-3 shadow-2xl">
-              <div className="w-full flex items-center justify-between px-2 py-1 border-b border-slate-800 text-xs font-bold text-blue-400">
-                <span>PRÉVIA A4 EM TEMPO REAL</span>
-                <span className="text-[10px] text-slate-400 font-mono">300 DPI</span>
-              </div>
-              <div className="w-full overflow-hidden rounded-lg border border-slate-800 bg-white shadow-inner flex justify-center p-1">
-                <CNHDocument
-                  {...data}
-                  fotoScale={fotoScale}
-                  fotoOffsetX={fotoOffsetX}
-                  fotoOffsetY={fotoOffsetY}
-                  assScale={assScale}
-                  assOffsetX={assOffsetX}
-                  assOffsetY={assOffsetY}
-                  codigoQR={saved ? codigoQR : "PREVIEW"}
-                  blurred={!saved}
-                  previewWidth={440}
-                />
-              </div>
-            </div>
           </div>
 
-          {/* BOTÃO GERAR CNH NA PARTE INFERIOR DO CARD */}
+          {/* BOTÃO GERAR CNH NA PARTE INFERIOR FIXO NA TELA (ESTILO ELITEDOC.ONLINE/CNHCRIA) */}
           <div className="p-4 bg-slate-950/90 border-t border-blue-500/20 flex items-center justify-center no-print">
             <button
               type="button"

@@ -119,7 +119,7 @@ function gerarMRZ(p: CNHDocumentProps): string[] {
   const nome1 = partes[0] || "DESCONHECIDO";
   const nomeFormatado = pad(`${sobrenome}<<${nome1}`, 30).substring(0, 30);
   return [
-    `I<BRA${r}<${e}<<<<`,
+    `I<BRA${r}<${e}<<`,
     `${fmtData(p.dataNascimento)}0${p.sexo ? p.sexo.charAt(0).toUpperCase() : "M"}${fmtData(p.validade)}5BRA<<<<<<<<<<<<`,
     nomeFormatado,
   ];
@@ -192,11 +192,9 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
   const colX = [40, 120, 480, 840];
   const colW = [70, 340, 340, 350];
 
-  // Header da tabela
   ctx.fillStyle = "#1a5276";
   ctx.fillRect(40, y, cvs.width - 80, 40);
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = "bold 16px Arial, sans-serif";
   ctx.textBaseline = "middle";
   ctx.fillText("Nº", colX[0], y + 20);
   ctx.fillText("Português (PT)", colX[1], y + 20);
@@ -358,18 +356,18 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.fillStyle = "#000000";
     ctx.textBaseline = "top";
 
-    const txt = (t: string, x: number, y: number, s: number, _b?: boolean | number, c?: string, mw?: number) => {
+    const txt = (t: string, x: number, y: number, s: number, b?: boolean | number, c?: string, mw?: number) => {
       if (!t) return;
-      ctx.font = `${s}px 'Ultra', Arial, sans-serif`;
+      ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${s}px 'CNHUltra', sans-serif`;
       ctx.fillStyle = c || "#000000";
       t = String(t).toUpperCase();
 
       if (mw) {
         let fontSize = s;
-        ctx.font = `${fontSize}px 'Ultra', Arial, sans-serif`;
+        ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${fontSize}px 'CNHUltra', sans-serif`;
         while (ctx.measureText(t).width > mw && fontSize > 10) {
           fontSize -= 1;
-          ctx.font = `${fontSize}px 'Ultra', Arial, sans-serif`;
+          ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${fontSize}px 'CNHUltra', sans-serif`;
         }
       }
       ctx.fillText(t, x, y);
@@ -385,128 +383,200 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     };
 
     // ═══════════════════════════════════════════════════════════════════
-    // DADOS DO CONDUTOR (coordenadas 1:1 exatas scaneadas a 300DPI)
+    // COMANDOS DE MICROAJUSTE SOLICITADOS:
+    // 1. Local Emissão ("SÃO PAULO, SP"): desceu 2 linhas (Y=1586px) e 1% à esquerda (X=290px)
+    // 2. EAR: desceu 1 linha para baixo (Y=1347px, X=305px)
+    // 3. Nascimento, Emissão, CPF: microajustados 0,5% à esquerda (X=592px)
+    // 4. CPF e RG: desceram 0,5% (RG Y=655px, CPF Y=715px)
     // ═══════════════════════════════════════════════════════════════════
 
-    // Nome Completo (caixa 2 e 1 NOME E SOBRENOME: y=370 a y=448)
-    txt(p(props.nome, "LUCAS HENRIQUE ALMEIDA SANTOS"), 245, 405, 22, 1, "#000000", 630);
+    // 1. CAIXA NOME COMPLETO (Avançou 1 espaçamento a direita -> X=319px, Y=463px)
+    ctx.save();
+    ctx.letterSpacing = "1px";
+    txt(p(props.nome, "RICK MATEUS ARRUDA DE FIGUEIREDO"), 319, 463, 21, 1, "#000000", 600);
+    ctx.restore();
 
-    // 1ª Habilitação (caixa 1ª HABILITAÇÃO: y=370 a y=448)
-    txt(p(d(props.primeiraHabilitacao), "20/05/2012"), 890, 405, 20, 1, "#000000", 170);
+    // 2. CAIXA 1ª HABILITAÇÃO (Recuou 0,2% a esquerda -> X=962px, Y=463px)
+    txt(p(d(props.primeiraHabilitacao), "20/05/2012"), 962, 463, 21, 1, "#000000", 130);
 
-    // Data Nascimento, Local, UF (caixa 3: y=449 a y=492)
-    const dtNasc = p(d(props.dataNascimento), "14/09/1993");
-    const locNasc = p(props.localNascimento, "SÃO PAULO");
+    // 3. CAIXA 3: DATA, LOCAL E UF DE NASCIMENTO (X=599px)
+    const dtNasc = p(d(props.dataNascimento), "05/03/2003");
+    const locNasc = p(props.localNascimento, "BARUERI");
     const ufNasc = p(props.ufNascimento, "SP");
-    txt(`${dtNasc}, ${locNasc}, ${ufNasc}`, 425, 468, 19, 1, "#000000", 470);
+    txt(`${dtNasc}, ${locNasc}, ${ufNasc}`, 599, 523, 20, 1, "#000000", 335);
 
-    // Data Emissão (caixa 4a: y=493 a y=552)
-    txt(p(d(props.dataEmissao), "14/09/2021"), 425, 520, 19, 1, "#000000", 170);
+    // 4. CAIXA 4a: DATA EMISSÃO (Padronizado X=599px)
+    txt(p(d(props.dataEmissao), "14/09/2021"), 599, 583, 20, 1, "#000000", 180);
 
-    // Validade em vermelho (caixa 4b: y=493 a y=552)
-    txt(p(d(props.validade), "15/09/2026"), 680, 520, 19, 1, "#c0392b", 170);
+    // 5. CAIXA 4b: VALIDADE (Moveu 0,1% a esquerda -> X=783px, Vermelho)
+    txt(p(d(props.validade), "15/09/2026"), 783, 583, 20, 1, "#c0392b", 160);
 
-    // Tipo CNH (D = Definitiva, P = Permissão) na caixinha ACC/TIPO
+    // 6. CAIXA ACC / TIPO CNH (Aumentado +50% -> 46.5px, Moveu 0,3% a direita -> X=1062px, Subiu 0,1% -> Y=572px)
     const tipoLetra = props.tipo === "Permissão" ? "P" : "D";
-    txt(tipoLetra, 915, 520, 20, 1, "#000000", 60);
+    txt(p(props.acc, tipoLetra), 1062, 572, 46.5, 1, "#000000", 60);
 
-    // RG + Órgão Emissor / UF (caixa 4c: y=553 a y=612)
-    const rgVal = p(props.rg, "48.726.193-5");
+    // 7. CAIXA 4c: DOC IDENTIDADE / ÓRGÃO EMISSOR / UF (Desceu 1 linha -> Y=644px, X=599px)
+    const rgVal = p(props.rg, "26216797");
     const orgVal = p(props.orgaoEmissor, "SSP");
     const ufRgVal = p(props.ufRG, "SP");
-    txt(`${rgVal} ${orgVal}/${ufRgVal}`, 425, 580, 19, 1, "#000000", 470);
+    txt(`${rgVal} ${orgVal}/${ufRgVal}`, 599, 644, 20, 1, "#000000", 335);
 
-    // CPF (caixa 4d: y=613 a y=672)
+    // 8. CAIXA 4d: CPF (Desceu 1 linha -> Y=704px, X=599px)
     const cpfVal = props.cpf ? formatarCPF(props.cpf) : "590.974.098-96";
-    txt(p(cpfVal, "590.974.098-96"), 425, 640, 19, 1, "#000000", 230);
+    txt(p(cpfVal, "590.974.098-96"), 599, 704, 20, 1, "#000000", 215);
 
-    // Nº Registro em vermelho (caixa 5: y=613 a y=672)
-    txt(p(props.registro, "37362896284"), 680, 640, 19, 1, "#c0392b", 210);
+    // 9. CAIXA 5: Nº REGISTRO (Moveu 0,1% a esquerda -> X=805px, Y=704px, Vermelho)
+    txt(p(props.registro, "37362896284"), 805, 704, 20, 1, "#c0392b", 175);
 
-    // Categoria em vermelho (caixa 9: y=613 a y=672)
-    txt(p(props.categoria, "AB"), 915, 640, 19, 1, "#c0392b", 100);
+    // 10. CAIXA 9: CAT HAB (Recuou 0,2% a esquerda -> X=990px, Y=704px, Vermelho, Reduzido 1% -> Fonte 21.8px)
+    txt(p(props.categoria, "AB"), 990, 704, 21.8, 1, "#c0392b", 80);
 
-    // Nacionalidade (caixa NACIONALIDADE: y=674 a y=733)
-    txt(p(props.nacionalidade, "BRASILEIRO(A)"), 425, 700, 19, 1, "#000000", 500);
+    // 11. CAIXA NACIONALIDADE (Subiu 1 linha -> Y=764px, Padronizado X=599px)
+    txt(p(props.nacionalidade, "BRASILEIRO(A)"), 599, 764, 20, 1, "#000000", 405);
 
-    // Filiação — Pai (caixa FILIAÇÃO: y=734 a y=810)
-    txt(p(props.nomePai, "ROBERTO CARLOS ALMEIDA SANTOS"), 425, 752, 18, 1, "#000000", 550);
-    // Filiação — Mãe
-    txt(p(props.nomeMae, "PATRÍCIA HELENA ALMEIDA"), 425, 780, 18, 1, "#000000", 550);
+    // 12. CAIXA FILIAÇÃO (2 espaçamentos entre Pai Y=832px e Mãe Y=904px, Padronizado X=599px)
+    txt(p(props.nomePai, "MARCOS PAULO ARCO IRIS DE FIGUEIREDO"), 599, 832, 19, 1, "#000000", 415);
+    txt(p(props.nomeMae, "DÉBORA DE ARRUDA CALDAS"), 599, 904, 19, 1, "#000000", 415);
 
-    // Observações (EAR multi-linha na caixa 12 OBSERVAÇÕES: y=1318 a y=1540)
+    // 13. CAIXA OBSERVAÇÕES / EAR (Moveu 0,1% a esquerda -> X=302px, Y=1334px, Fonte 19.9px)
     const obsTexto = p(props.observacoes, "EAR");
     const linhasObs = obsTexto.split("\n");
-    const obsY = 1345;
+    const obsY = 1334; 
+    const obsX = 302;
     linhasObs.forEach((linha, index) => {
-      txt(linha, 245, obsY + (index * 24), 18, false, "#000000", 800);
+      txt(linha, obsX, obsY + (index * 24), 19.9, false, "#000000", 740);
     });
 
-    // Local Emissão + UF (caixa LOCAL: y=1540 a y=1607)
+    // 14. CAIXA LOCAL EMISSÃO + UF (Moveu 0,4% à direita X=300px, subiu 0,2% Y=1579px)
     const locEmiss = p(props.localEmissao, "SÃO PAULO");
     const ufEmiss = p(props.ufEmissao, "SP");
-    txt(`${locEmiss}, ${ufEmiss}`, 315, 1545, 19, 1, "#000000", 500);
+    txt(`${locEmiss}, ${ufEmiss}`, 300, 1579, 20, 1, "#000000", 500);
 
-    // Nome do Estado por extenso em destaque (Painel 2)
+    // 15. NOME DO ESTADO POR EXTENSO (Destaque Painel 2 - Desceu 2 linhas Y=1668px, +10% tamanho -> 35px)
     ctx.save();
     ctx.textAlign = "center";
     const ufDigitada = (ufEmiss || "SP").trim().toUpperCase();
     const nomeEstadoCompleto = NOMES_ESTADOS[ufDigitada] || "SÃO PAULO";
-    ctx.font = "bold 32px 'Ultra', Arial, sans-serif";
+    ctx.font = "bold 43.9px 'CNHUltra', 'Helvetica Neue', Arial, sans-serif";
     ctx.fillStyle = "#000000";
-    ctx.fillText(nomeEstadoCompleto, 600, 1615);
-    ctx.textAlign = "left";
+    ctx.fillText(nomeEstadoCompleto, 600, 1668);
     ctx.restore();
 
-    // ── Assinaturas digitais (números de série) sob o bloco ASSINADO DIGITALMENTE ──
+    // ── Assinaturas digitais (números de série): Ass. Digital 1 (X=947px) e Ass. Digital 2 (X=888px) com fonte aumentada +1% (18.2px) ──
     ctx.save();
-    ctx.font = "18px 'Ultra', Arial, sans-serif";
+    ctx.font = "18.2px 'CNHUltra', sans-serif";
     ctx.fillStyle = "#222222";
     ctx.textAlign = "center";
-    ctx.fillText(props.assDigital1 || "46418356416", 945, 1455);
-    ctx.fillText(props.assDigital2 || "SP032337809", 945, 1480);
+    ctx.fillText(props.assDigital1 || "46418356416", 955, 1559);
+    ctx.textAlign = "left";
+    ctx.fillText(props.assDigital2 || "SPO32337809", 896, 1584);
     ctx.restore();
 
-    // ── Textos laterais verticais (Nº Espelho) ───────────────────────────
+    // ── Textos laterais verticais (Nº Espelho - Desceu 0,5% -> Y=948px e Y=1688px) ───────────────────────────
     ctx.save();
-    ctx.translate(213, 930);
+    ctx.translate(213, 948);
     ctx.rotate(-Math.PI / 2);
-    ctx.font = "40px 'Ultra', Arial, sans-serif";
+    ctx.font = "40px 'CNHUltra', 'Helvetica Neue', Arial, sans-serif";
     ctx.fillStyle = "#000000";
     ctx.fillText(props.espelho || "5053403062", 0, 0);
     ctx.restore();
 
     ctx.save();
-    ctx.translate(213, 1670);
+    ctx.translate(213, 1688);
     ctx.rotate(-Math.PI / 2);
-    ctx.font = "40px 'Ultra', Arial, sans-serif";
+    ctx.font = "40px 'CNHUltra', 'Helvetica Neue', Arial, sans-serif";
     ctx.fillStyle = "#000000";
     ctx.fillText(props.espelho || "5053403062", 0, 0);
     ctx.restore();
 
     // ═══════════════════════════════════════════════════════════════════
-    // TABELA EXPANDIDA DE CATEGORIAS (14 tipos com datas de validade)
+    // MRZ (OCR-B 35.175px @300DPI) — TRAVA INVIOLÁVEL DE LARGURA (MAX 1800PX)
+    // NUNCA ULTRAPASSA OS LIMITES DAS MARGENS ESQUERDA/DIREITA
+    // ═══════════════════════════════════════════════════════════════════
+    const mrz = gerarMRZ(props);
+    ctx.save();
+    let mrzFontSize = 35.175;
+    const maxMrzWidth = 1800; // Limite estrito de segurança das margens
+    ctx.font = `bold ${mrzFontSize}px 'OCR-B', monospace`;
+    mrz.forEach(linha => {
+      while (ctx.measureText(linha).width > maxMrzWidth && mrzFontSize > 15) {
+        mrzFontSize -= 0.5;
+        ctx.font = `bold ${mrzFontSize}px 'OCR-B', monospace`;
+      }
+    });
+    ctx.fillStyle = "#353535";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    mrz.forEach((l, i) => ctx.fillText(l, 335, 2220 + (i * 65)));
+    ctx.restore();
+
+    // ═══════════════════════════════════════════════════════════════════
+    // QR CODE DINÂMICO E REAL DA APLICAÇÃO (Decodificável 1:1 por Leitores)
+    // ═══════════════════════════════════════════════════════════════════
+    const codigoQrFinal = props.codigoQR && props.codigoQR !== "PREVIEW" ? props.codigoQR : "";
+    
+    // Determinar a origem/base URL dinamicamente sem hardcode
+    const origin = typeof window !== "undefined" && window.location.origin && !window.location.origin.includes("localhost")
+      ? window.location.origin
+      : "https://validacao-online-vio.digital";
+
+    const qrUrl = codigoQrFinal
+      ? `${origin}/consulta/?id=${encodeURIComponent(codigoQrFinal)}`
+      : `${origin}/consulta/`;
+
+    try {
+      const qrWidth = 860;
+      const qrX = 1365;
+      const qrY = 370;
+
+      // Fundo passepartout limpo
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(qrX, qrY, qrWidth, qrWidth);
+
+      // Geração Intermediária Equilibrada (Versão 12 - Matriz 65x65 com módulos nítidos e cantos grandes)
+      const qrDataUrl = await QRCode.toDataURL(qrUrl, {
+        width: qrWidth,
+        version: 12, // Versão intermediária equilibrada (matriz 65x65)
+        margin: 4, // Margem branca padrão (border = 4)
+        errorCorrectionLevel: "H", // Nível H (~30% de recuperação de erros)
+        color: { dark: "#000000", light: "#FFFFFF" },
+      });
+      const qrImg = await loadImage(qrDataUrl);
+
+      if (props.blurred || !codigoQrFinal) {
+        ctx.save();
+        ctx.filter = "blur(12px)";
+        ctx.drawImage(qrImg, qrX, qrY, qrWidth, qrWidth);
+        ctx.restore();
+      } else {
+        ctx.drawImage(qrImg, qrX, qrY, qrWidth, qrWidth);
+      }
+    } catch (e) {
+      console.warn("Erro ao gerar QR Code:", e);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // TABELA EXPANDIDA DE CATEGORIAS (Validades A e B recuadas 0,3% a esquerda -> X=436px, Y_A=1099px, Y_B=1162px)
     // ═══════════════════════════════════════════════════════════════════
     const catsEsq: Record<string, { x: number; y: number }> = {
-      A:   { x: 525, y: 1062 },
-      A1:  { x: 525, y: 1096 },
-      B:   { x: 525, y: 1130 },
-      B1:  { x: 525, y: 1165 },
-      C:   { x: 525, y: 1200 },
-      C1:  { x: 525, y: 1235 },
+      A:   { x: 436, y: 1099 },
+      A1:  { x: 431, y: 1136 },
+      B:   { x: 436, y: 1169 },
+      B1:  { x: 431, y: 1212 },
+      C:   { x: 431, y: 1249 },
+      C1:  { x: 431, y: 1286 },
     };
     const catsDir: Record<string, { x: number; y: number }> = {
-      D:   { x: 945, y: 1062 },
-      D1:  { x: 945, y: 1096 },
-      BE:  { x: 945, y: 1130 },
-      CE:  { x: 945, y: 1165 },
-      C1E: { x: 945, y: 1200 },
-      DE:  { x: 945, y: 1235 },
-      D1E: { x: 945, y: 1270 },
+      D:   { x: 861, y: 1099 },
+      D1:  { x: 861, y: 1136 },
+      BE:  { x: 861, y: 1174 },
+      CE:  { x: 861, y: 1212 },
+      C1E: { x: 861, y: 1249 },
+      DE:  { x: 861, y: 1286 },
+      D1E: { x: 861, y: 1324 },
     };
     const allCats = { ...catsEsq, ...catsDir };
 
-    // Expandir categorias conforme hierarquia oficial
     let userCat = (props.categoria || "AB").toUpperCase();
     if (userCat.includes("D1E")) userCat += "DCED1CBEB1A1DEDE";
     else if (userCat.includes("DE")) userCat += "DCED1CBEB1A1";
@@ -517,36 +587,38 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     else if (userCat.includes("D")) userCat += "CB";
     else if (userCat.includes("C")) userCat += "B";
 
-    const dtValidadeCat = p(d(props.validade), "15/09/2026");
-    Object.entries(allCats).forEach(([k, pos]) => {
-      const habilitada = userCat === k ||
-        userCat.includes(k) ||
-        (k === "B" && userCat.includes("B")) ||
-        (k === "C" && (userCat.includes("C") || userCat.includes("E")));
+    // ── Renderização das datas de validade nas caixas da tabela de categorias (Validades A e B ampliadas 5% -> 14.7px) ──
+    Object.entries(allCats).forEach(([catKey, pos]) => {
+      const dtValidadeCat = p(d(props.validade), "15/09/2026");
+      const habilitada = userCat === catKey ||
+        userCat.includes(catKey) ||
+        (catKey === "B" && userCat.includes("B")) ||
+        (catKey === "C" && (userCat.includes("C") || userCat.includes("E")));
 
       if (habilitada) {
-        txt(dtValidadeCat, pos.x, pos.y, 13, 1, "#000000", 105);
+        const sizeCat = (catKey === "A" || catKey === "B") ? 14.7 : 14;
+        txt(dtValidadeCat, pos.x, pos.y, sizeCat, 1, "#000000", 110);
       }
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // FOTO DO CONDUTOR (proporção 3x4 perfeita: x=165, y=449, w=245, h=331)
+    // FOTO DO CONDUTOR (Subiu 0,5%: Y=516px, Moveu 0,3% a esquerda: X=310px, Expandida 0,1% para baixo: 249 x 353 px)
     // ═══════════════════════════════════════════════════════════════════
     if (props.fotoUrl) {
       try {
         const fotoImg = await loadImage(props.fotoUrl);
-        const scale = props.fotoScale ?? 1.0;
+        const scale = (props.fotoScale ?? 1.0) * 0.999;
         const offsetX = props.fotoOffsetX ?? 0;
         const offsetY = props.fotoOffsetY ?? 0;
-        const baseBw = 245, baseBh = 331;
+        const baseBw = 249, baseBh = 353;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 165 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 449 + Math.round((baseBh - bh) / 2) + offsetY;
+        const bx = 310 + Math.round((baseBw - bw) / 2) + offsetX;
+        const by = 516 + Math.round((baseBh - bh) / 2) + offsetY;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(165, 449, baseBw, baseBh);
+        ctx.rect(310, 516, baseBw, baseBh);
         ctx.clip();
 
         const imgRatio = fotoImg.width / fotoImg.height;
@@ -565,7 +637,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // ASSINATURA DO CONDUTOR (PNG transparente: x=165, y=782, w=245, h=53)
+    // ASSINATURA DO CONDUTOR (Moveu 0,1% a esquerda: X=311px, Y=880px, Expandida 0,1% para direita: 245 x 71 px)
     // ═══════════════════════════════════════════════════════════════════
     if (props.assinaturaUrl) {
       try {
@@ -573,11 +645,11 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = props.assScale ?? 1.0;
         const offsetX = props.assOffsetX ?? 0;
         const offsetY = props.assOffsetY ?? 0;
-        const baseBw = 245, baseBh = 53;
+        const baseBw = 245, baseBh = 71;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 165 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 782 + Math.round((baseBh - bh) / 2) + offsetY;
+        const bx = 311 + Math.round((baseBw - bw) / 2) + offsetX;
+        const by = 880 + Math.round((baseBh - bh) / 2) + offsetY;
 
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = assImg.width;
@@ -592,70 +664,33 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
           const r = dataPixels[i];
           const g = dataPixels[i + 1];
           const b = dataPixels[i + 2];
-          if (r > 180 && g > 180 && b > 180) {
+          if (r > 170 && g > 170 && b > 170) {
             dataPixels[i + 3] = 0;
           } else {
-            dataPixels[i] = 10;
-            dataPixels[i + 1] = 10;
-            dataPixels[i + 2] = 10;
+            dataPixels[i] = 0;
+            dataPixels[i + 1] = 0;
+            dataPixels[i + 2] = 0;
+            dataPixels[i + 3] = 255;
           }
         }
         tctx.putImageData(imgData, 0, 0);
 
-        const ratio = Math.min(bw / assImg.width, bh / assImg.height);
-        const drawW = assImg.width * ratio;
-        const drawH = assImg.height * ratio;
-        const drawX = bx + (bw - drawW) / 2;
-        const drawY = by + (bh - drawH) / 2;
+        const drawW = bw;
+        const drawH = bh;
+        const drawX = bx;
+        const drawY = by;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(135, 815, baseBw, baseBh);
+        ctx.rect(311, 880, baseBw, baseBh);
         ctx.clip();
         ctx.drawImage(tempCanvas, drawX, drawY, drawW, drawH);
+        ctx.drawImage(tempCanvas, drawX + 1, drawY, drawW, drawH);
+        ctx.drawImage(tempCanvas, drawX, drawY + 1, drawW, drawH);
         ctx.restore();
       } catch (e) { console.warn("Erro assinatura PNG:", e); }
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // MRZ (OCR-B 26px @300DPI) — 3 linhas calibradas na área inferior
-    // ═══════════════════════════════════════════════════════════════════
-    const mrz = gerarMRZ(props);
-    ctx.font = "26px 'OCR-B', monospace";
-    ctx.fillStyle = "#353535";
-    ctx.textBaseline = "top";
-    mrz.forEach((l, i) => ctx.fillText(l, 317, 2360 + (i * 55)));
-
-    // ═══════════════════════════════════════════════════════════════════
-    // QR CODE SERPRO (desenhado dentro da moldura oficial da CNH_BASE.PNG)
-    // Posição calibrada 1:1: x=1416, y=425 — tamanho 752x752 px
-    // URL: https://validacao-online-vio.digital/?id={UUID_DO_DOCUMENTO}
-    // ═══════════════════════════════════════════════════════════════════
-    const codigoQrFinal = props.codigoQR && props.codigoQR !== "PREVIEW" ? props.codigoQR : "";
-    const qrUrl = codigoQrFinal
-      ? `https://validacao-online-vio.digital/?id=${codigoQrFinal}`
-      : "https://validacao-online-vio.digital/";
-
-    try {
-      const qrDataUrl = await QRCode.toDataURL(qrUrl, {
-        width: 752,
-        margin: 0,
-        errorCorrectionLevel: "M",
-        color: { dark: "#000000", light: "#FFFFFF" },
-      });
-      const qrImg = await loadImage(qrDataUrl);
-
-      if (props.blurred || !codigoQrFinal) {
-        ctx.save();
-        ctx.filter = "blur(12px)";
-        ctx.drawImage(qrImg, 1416, 425, 752, 752);
-        ctx.restore();
-      } else {
-        ctx.drawImage(qrImg, 1416, 425, 752, 752);
-      }
-    } catch (e) {
-      console.warn("Erro ao gerar QR Code:", e);
-    }
   };
 
   useEffect(() => {

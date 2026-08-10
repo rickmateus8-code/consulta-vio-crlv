@@ -166,10 +166,12 @@ function CNHValidationRouter() {
   );
 }
 
-// ─── Roteador para validaratestado.digital (Apenas Validação) ──────────────────
+// ─── Roteador para validaratestado.digital / validacao-online-vio.digital ──────────────────
 function ValidationRouter() {
   return (
     <Switch>
+      <Route path="/consulta" component={Validation} />
+      <Route path="/consulta/" component={Validation} />
       <Route path="/validar" component={Validation} />
       <Route path="/v/:id" component={Validation} />
       <Route path="/verificar/atestado/:id" component={Validation} />

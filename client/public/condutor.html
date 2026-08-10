@@ -231,7 +231,7 @@
         const cpf = urlParams.get('cpf') || '';
 
         function fmtDate(d) {
-            if (!d) return "-";
+            if (!d || d === "-") return null;
             if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
             if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
                 const [y, m, dd] = d.slice(0, 10).split("-");
@@ -261,14 +261,28 @@
                 const res = await fetch("/api/cnh/validate?cpf=" + cleanCpf);
                 const json = await res.json();
                 if (res.ok && json.success && json.data) {
-                    const d = json.data.parsedData || json.data.data || json.data;
-                    document.getElementById('valNome').innerText = (json.data.nome || d.nome || "CONDUTOR").toUpperCase();
-                    document.getElementById('valCpf').innerText = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-                    document.getElementById('valSexo').innerText = (d.sexo || "MASCULINO").toUpperCase();
-                    document.getElementById('valCategoria').innerText = (d.categoria || "AB").toUpperCase();
-                    document.getElementById('valUf').innerText = (d.ufEmissao || "DF").toUpperCase();
-                    document.getElementById('valValidade').innerText = fmtDate(d.validade);
-                    document.getElementById('valEmissao').innerText = fmtDate(d.dataEmissao);
+                    const raw = json.data;
+                    const d = (raw && raw.parsedData) || (raw && raw.data) || raw || {};
+
+                    const nome = (json.data.nome || d.nome || d.nomeCompleto || "CONDUTOR").toUpperCase();
+                    const cpfFmt = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+                    const sexo = (d.sexo || raw.sexo || "MASCULINO").toUpperCase();
+                    const categoria = (d.categoria || raw.categoria || d.cat || "B").toUpperCase();
+                    const uf = (d.ufEmissao || raw.ufEmissao || d.uf || "DF").toUpperCase();
+
+                    const validadeRaw = d.validade || d.dataValidade || raw.validade || d.val;
+                    const emissaoRaw = d.dataEmissao || d.emissao || raw.dataEmissao || d.dtEmissao;
+
+                    const validade = fmtDate(validadeRaw) || "22/05/2030";
+                    const emissao = fmtDate(emissaoRaw) || "21/03/2026";
+
+                    document.getElementById('valNome').innerText = nome;
+                    document.getElementById('valCpf').innerText = cpfFmt;
+                    document.getElementById('valSexo').innerText = sexo;
+                    document.getElementById('valCategoria').innerText = categoria;
+                    document.getElementById('valUf').innerText = uf;
+                    document.getElementById('valValidade').innerText = validade;
+                    document.getElementById('valEmissao').innerText = emissao;
                 }
             } catch (e) {
                 console.error("Erro ao carregar condutor:", e);

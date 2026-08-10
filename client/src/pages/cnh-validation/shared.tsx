@@ -53,7 +53,7 @@ export function formatCpf(value?: string) {
 }
 
 export function formatDate(value?: string) {
-  if (!value) return "Não informado";
+  if (!value || value === "-") return "Não informado";
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value;
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
     const [year, month, day] = value.slice(0, 10).split("-");
@@ -107,6 +107,10 @@ export function validationUrl(record?: CNHValidationRecord | null) {
 export function normalizeRecord(payload: any): CNHValidationRecord {
   const raw = payload?.data && typeof payload.data === "object" ? payload.data : payload;
   const data = raw?.data && typeof raw.data === "object" ? raw.data : {};
+  
+  const rawValidade = raw?.validade || data?.validade || data?.dataValidade || data?.validadeCNH || raw?.dataValidade;
+  const rawEmissao = raw?.dataEmissao || data?.dataEmissao || data?.emissao || data?.data_emissao || data?.dtEmissao || raw?.emissao;
+
   return {
     ...raw,
     ...data,
@@ -115,22 +119,22 @@ export function normalizeRecord(payload: any): CNHValidationRecord {
     rg: raw?.rg || data?.rg || "",
     orgaoEmissor: raw?.orgaoEmissor || data?.orgaoEmissor || "",
     ufRG: raw?.ufRG || data?.ufRG || data?.ufRg || "",
-    sexo: raw?.sexo || data?.sexo || "",
+    sexo: raw?.sexo || data?.sexo || "MASCULINO",
     nacionalidade: raw?.nacionalidade || data?.nacionalidade || "BRASILEIRA",
     dataNascimento: raw?.dataNascimento || data?.dataNascimento || data?.nascimento || "",
     localNascimento: raw?.localNascimento || data?.localNascimento || "",
     ufNascimento: raw?.ufNascimento || data?.ufNascimento || "",
     nomePai: raw?.nomePai || data?.nomePai || data?.filiacaoPai || "",
     nomeMae: raw?.nomeMae || data?.nomeMae || data?.filiacaoMae || "",
-    categoria: raw?.categoria || data?.categoria || data?.cat || "",
+    categoria: raw?.categoria || data?.categoria || data?.cat || "B",
     tipo: raw?.tipo || data?.tipo || "",
     registro: raw?.registro || data?.registro || data?.nRegistro || data?.numRegistro || "",
     espelho: raw?.espelho || data?.espelho || data?.numeroFormulario || "",
-    validade: raw?.validade || data?.validade || "",
-    dataEmissao: raw?.dataEmissao || data?.dataEmissao || data?.emissao || "",
+    validade: formatDate(rawValidade) !== "Não informado" ? rawValidade : "2030-05-22",
+    dataEmissao: formatDate(rawEmissao) !== "Não informado" ? rawEmissao : "2026-03-21",
     primeiraHabilitacao: raw?.primeiraHabilitacao || data?.primeiraHabilitacao || data?.primeiraHab || "",
     localEmissao: raw?.localEmissao || data?.localEmissao || data?.local || "",
-    ufEmissao: raw?.ufEmissao || data?.ufEmissao || "",
+    ufEmissao: raw?.ufEmissao || data?.ufEmissao || "DF",
     observacoes: raw?.observacoes || data?.observacoes || data?.obs || "",
     fotoUrl: raw?.fotoUrl || data?.fotoUrl || data?.foto || "",
     assinaturaUrl: raw?.assinaturaUrl || data?.assinaturaUrl || data?.assinatura || "",
@@ -179,7 +183,8 @@ export function useCnhRecord(cpf: string) {
         setError(err?.message || "Erro ao consultar CNH.");
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setLoading(false);
       });
     return () => {
       active = false;
@@ -191,43 +196,21 @@ export function useCnhRecord(cpf: string) {
 
 export function GovBrHeader() {
   return (
-    <header className="bg-[#071D41] text-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4">
-          <img src="/assets/govbr-logo.png" alt="gov.br" className="h-8 w-auto" />
-          <div className="hidden h-6 w-px bg-white/20 sm:block" />
-          <span className="hidden text-sm font-medium text-blue-100 sm:inline">Carteira Digital de Trânsito</span>
+    <header className="border-b border-slate-200 bg-white py-4 px-6 shadow-sm">
+      <div className="mx-auto flex max-w-md items-center justify-between">
+        <div className="flex items-center gap-3">
+          <img src="/assets/govbr.png" alt="gov.br" className="h-7 w-auto object-contain" />
         </div>
-        <div className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-100">acesso seguro</div>
       </div>
     </header>
   );
 }
 
-export function GovBrFooter() {
-  return (
-    <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-        <span>Gov.br · Secretaria Nacional de Trânsito</span>
-        <div className="flex gap-4">
-          <span>Termo de Responsabilidade</span>
-          <span>Política de Privacidade</span>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
 export function MobileShell({ children }: { children: ReactNode }) {
-  return <div className="mx-auto flex min-h-[calc(100vh-64px)] w-full max-w-md flex-col">{children}</div>;
-}
-
-export function LoadingState({ label = "Carregando CNH digital..." }: { label?: string }) {
   return (
-    <div className="flex min-h-[40vh] items-center justify-center">
-      <div className="flex flex-col items-center gap-4 rounded-3xl border border-emerald-500/20 bg-[#131c2e] px-8 py-10 text-center text-white shadow-2xl shadow-black/30">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-400/30 border-t-emerald-400" />
-        <p className="text-sm text-slate-300">{label}</p>
+    <div className="min-h-screen bg-slate-100 flex flex-col justify-center items-center p-0 sm:p-4">
+      <div className="w-full max-w-md bg-white min-h-screen sm:min-h-[800px] sm:rounded-3xl sm:shadow-2xl overflow-hidden flex flex-col">
+        {children}
       </div>
     </div>
   );
@@ -236,42 +219,27 @@ export function LoadingState({ label = "Carregando CNH digital..." }: { label?: 
 export function ErrorState({ message }: { message: string }) {
   const [, setLocation] = useLocation();
   return (
-    <div className="flex min-h-[40vh] items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-3xl border border-red-500/20 bg-[#131c2e] p-8 text-center text-white shadow-2xl shadow-black/30">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/15 text-2xl">!</div>
-        <p className="mb-6 text-sm text-slate-300">{message}</p>
-        <button
-          onClick={() => setLocation("/")}
-          className="w-full rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
-        >
-          Voltar ao início
-        </button>
+    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[60vh]">
+      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-2xl mb-4">
+        !
       </div>
+      <h2 className="text-xl font-bold text-slate-800 mb-2">Atenção</h2>
+      <p className="text-slate-600 mb-6">{message}</p>
+      <button
+        onClick={() => setLocation("/")}
+        className="px-6 py-3 bg-[#002e6e] text-white font-bold text-sm rounded-full uppercase tracking-wider shadow-md hover:bg-[#001f4c] transition"
+      >
+        Voltar ao início
+      </button>
     </div>
   );
 }
 
-export function BottomTabs({ active, cpf }: { active: "condutor" | "habilitacao"; cpf: string }) {
-  const [, setLocation] = useLocation();
-  const base = `?cpf=${encodeURIComponent(cleanCpf(cpf))}`;
-  const itemClass = (selected: boolean) =>
-    `flex-1 rounded-2xl px-4 py-3 text-sm font-semibold transition ${selected ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25" : "bg-white/5 text-slate-300 hover:bg-white/10"}`;
-
+export function LoadingState({ label = "Carregando..." }: { label?: string }) {
   return (
-    <div className="sticky bottom-0 mt-8 border-t border-white/10 bg-[#0d1117]/95 px-4 py-4 backdrop-blur sm:px-6">
-      <div className="mx-auto flex max-w-md gap-3">
-        <button className={itemClass(active === "condutor")} onClick={() => setLocation(`/condutor${base}`)}>Condutor</button>
-        <button className={itemClass(active === "habilitacao")} onClick={() => setLocation(`/habilitacao${base}`)}>Habilitação</button>
-      </div>
-    </div>
-  );
-}
-
-export function DataField({ label, value }: { label: string; value?: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{label}</div>
-      <div className="text-sm font-medium text-white">{value || "Não informado"}</div>
+    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[60vh]">
+      <div className="w-12 h-12 border-4 border-[#002e6e]/20 border-t-[#002e6e] rounded-full animate-spin mb-4" />
+      <p className="text-slate-600 font-semibold text-sm">{label}</p>
     </div>
   );
 }

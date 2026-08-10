@@ -379,7 +379,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       }
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      const fontName = "'MyriadPro-Regular', sans-serif";
+      const fontName = "'MyriadPro-Regular'";
       ctx.font = `${s}px ${fontName}`;
       ctx.fillStyle = c || "#000000";
       t = String(t).toUpperCase();
@@ -505,14 +505,14 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.textAlign = "center";
     const ufDigitada = (ufEmiss || "SP").trim().toUpperCase();
     const nomeEstadoCompleto = NOMES_ESTADOS[ufDigitada] || "SÃO PAULO";
-    ctx.font = "43.9px 'MyriadPro-Regular', sans-serif";
+    ctx.font = "43.9px 'MyriadPro-Regular'";
     ctx.fillStyle = "#000000";
     ctx.fillText(nomeEstadoCompleto, 600, 1668);
     ctx.restore();
 
     // ── Assinaturas digitais (números de série): Ass. Digital 1 (X=947px) e Ass. Digital 2 (X=888px) com fonte aumentada +1% (18.2px) ──
     ctx.save();
-    ctx.font = "18.2px 'MyriadPro-Regular', sans-serif";
+    ctx.font = "18.2px 'MyriadPro-Regular'";
     ctx.fillStyle = "#222222";
     ctx.textAlign = "center";
     ctx.fillText(props.assDigital1 || "46418356416", 955, 1559);
@@ -524,7 +524,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.save();
     ctx.translate(213, 948);
     ctx.rotate(-Math.PI / 2);
-    ctx.font = "40px 'MyriadPro-Regular', sans-serif";
+    ctx.font = "40px 'MyriadPro-Regular'";
     ctx.fillStyle = "#000000";
     ctx.fillText(props.espelho || "5053403062", 0, 0);
     ctx.restore();
@@ -532,7 +532,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.save();
     ctx.translate(213, 1688);
     ctx.rotate(-Math.PI / 2);
-    ctx.font = "40px 'MyriadPro-Regular', sans-serif";
+    ctx.font = "40px 'MyriadPro-Regular'";
     ctx.fillStyle = "#000000";
     ctx.fillText(props.espelho || "5053403062", 0, 0);
     ctx.restore();

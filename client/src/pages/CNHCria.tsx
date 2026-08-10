@@ -456,9 +456,9 @@ export default function CNHCria() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070d1e] text-slate-100 font-sans flex flex-col justify-between select-text min-h-screen w-full p-4 sm:p-6">
-        {/* CONTAINER CARD CENTRALIZADO 1:1 COM IMAGEM DE REFERÊNCIA */}
-        <div className="w-full max-w-5xl mx-auto bg-[#0c142b] border border-blue-900/40 rounded-2xl shadow-2xl flex flex-col justify-between my-auto overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070d1e] text-slate-100 font-sans flex flex-col justify-start select-text min-h-screen w-full p-4 sm:p-6">
+        {/* CONTAINER CARD CENTRALIZADO 1:1 COM IMAGEM DE REFERÊNCIA ESPERADA */}
+        <div className="w-full max-w-5xl mx-auto bg-[#0c142b] border border-blue-900/40 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
           {/* HEADER SUPERIOR DO CARD */}
           <div className="p-4 sm:p-5 border-b border-blue-900/40 bg-[#091024] flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1159,22 +1159,22 @@ export default function CNHCria() {
               )}
             </div>
           </div>
+        </div>
 
-          {/* BOTÃO GERAR CNH NA PARTE INFERIOR FIXO NA TELA (RÉPLICA 1:1 DA IMAGEM DE REFERÊNCIA) */}
-          <div className="p-4 sm:p-5 bg-[#091024] border-t border-blue-900/40 flex items-center justify-center no-print">
-            <button
-              type="button"
-              onClick={handleRequestEmit}
-              disabled={loading}
-              className="w-full py-3.5 rounded-xl border border-blue-600/50 bg-[#0c1838] hover:bg-[#11224d] text-white font-bold text-sm tracking-wide shadow-2xl hover:scale-[1.005] transition-all flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <span>PROCESSANDO GERADOR...</span>
-              ) : (
-                <span>Gerar CNH</span>
-              )}
-            </button>
-          </div>
+        {/* BOTÃO GERAR CNH NA PARTE INFERIOR FIXO NA TELA (RÉPLICA 1:1 DA IMAGEM DE REFERÊNCIA ESPERADA) */}
+        <div className="w-full max-w-5xl mx-auto pt-6 pb-2 no-print">
+          <button
+            type="button"
+            onClick={handleRequestEmit}
+            disabled={loading}
+            className="w-full py-3.5 rounded-xl border border-blue-600/50 bg-[#09142f] hover:bg-[#0e1f48] text-white font-bold text-sm tracking-wide shadow-2xl hover:scale-[1.005] transition-all flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <span>PROCESSANDO GERADOR...</span>
+            ) : (
+              <span>Gerar CNH</span>
+            )}
+          </button>
         </div>
 
         {/* CANVAS OCULTO PARA EXPORTAÇÃO DE IMAGEM 1:1 */}

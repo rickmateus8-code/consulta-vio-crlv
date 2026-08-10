@@ -345,12 +345,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex items-center justify-between px-3 py-3 border-b border-gray-200 dark:border-gray-800 min-h-[64px]">
         {(!collapsed || mobile) && (
           <div className="flex items-center cursor-pointer" onClick={() => setLocation("/dashboard")}>
-            <img src="/assets/logo-text.webp" alt="DocMaster" className="h-9 w-auto object-contain" />
+            <img src="/assets/logo-text.webp" alt="DocMaster" className="h-9 w-auto object-contain" style={{ maxHeight: "36px", maxWidth: "180px", objectFit: "contain" }} />
           </div>
         )}
         {collapsed && !mobile && (
           <div className="flex items-center justify-center w-full cursor-pointer" onClick={() => setLocation("/dashboard")}>
-            <img src="/assets/logo-icon.png" alt="DM" className="h-9 w-9 object-contain" />
+            <img src="/assets/logo-icon.png" alt="DM" className="h-9 w-9 object-contain" style={{ maxHeight: "36px", maxWidth: "36px", objectFit: "contain" }} />
           </div>
         )}
         {!mobile && (
@@ -477,7 +477,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <header className="md:hidden flex items-center justify-between px-3 py-2.5 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm z-30">
           <div className="flex items-center gap-2">
             <button onClick={() => setMobileOpen(true)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><Menu className="w-5 h-5" /></button>
-            <img src="/assets/logo-text.webp" alt="DocMaster" className="h-6 w-auto object-contain" onClick={() => setLocation("/dashboard")} />
+            <img src="/assets/logo-text.webp" alt="DocMaster" className="h-6 w-auto object-contain" style={{ maxHeight: "24px", maxWidth: "140px", objectFit: "contain" }} onClick={() => setLocation("/dashboard")} />
           </div>
           <div className="flex items-center gap-1.5">
             <button onClick={() => setShowNovoDocModal(true)} className="flex items-center justify-center bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-lg transition-colors shadow-sm"><FilePlus className="w-4 h-4" /></button>

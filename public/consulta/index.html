@@ -308,11 +308,20 @@
             }
 
             try {
-                // Tenta buscar no endpoint da API
-                const res = await fetch('/api/validate/' + encodeURIComponent(id));
-                const json = await res.json();
+                let json = null;
+                try {
+                    const res = await fetch('/api/validate/' + encodeURIComponent(id));
+                    json = await res.json();
+                } catch (e1) {
+                    try {
+                        const res2 = await fetch('/api/validate?id=' + encodeURIComponent(id));
+                        json = await res2.json();
+                    } catch (e2) {
+                        json = null;
+                    }
+                }
 
-                if (!json || !json.success || !json.data) {
+                if (!json || (!json.success && !json.valid) || !json.data) {
                     document.getElementById('loading').innerText = "Dados não encontrados na base de dados oficial.";
                     return;
                 }

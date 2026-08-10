@@ -173,9 +173,9 @@ export default function CNHPainel() {
         </button>
       </main>
 
-      {/* --- FOOTER LOGOS --- */}
+      {/* --- FOOTER LOGOS USING IMG_2339.png --- */}
       <footer className="w-full max-w-[600px] mx-auto py-6 px-4 flex justify-center items-center">
-        <img src="/img/cnh-app/IMG_2343.png" alt="Serpro - CNH do Brasil - Ministério dos Transportes - Governo do Brasil" className="max-h-[55px] w-auto object-contain" />
+        <img src="/img/cnh-app/IMG_2339.png" alt="Serpro - CNH do Brasil - Ministério dos Transportes - Governo do Brasil" className="w-full max-w-[480px] h-auto object-contain block" />
       </footer>
 
       {/* --- MODAL WARNING OVERLAY --- */}

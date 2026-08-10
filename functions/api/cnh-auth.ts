@@ -18,8 +18,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const body = await context.request.json() as any;
     const { cpf, senha } = body;
 
-    if (!cpf || !senha) {
-      return new Response(JSON.stringify({ success: false, error: "CPF e senha são obrigatórios" }), {
+    if (!cpf) {
+      return new Response(JSON.stringify({ success: false, error: "CPF é obrigatório" }), {
         status: 400,
         headers: corsHeaders,
       });
@@ -34,21 +34,20 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     ).all();
 
     let cpfFoundDoc: any = null;
-    let matchedDoc: any = null;
+    let exactPasswordDoc: any = null;
 
     for (const doc of docs.results || []) {
       try {
         const data = typeof doc.data === "string" ? JSON.parse(doc.data as string) : (doc.data || {});
         const docCpf = (data.cpf || (doc as any).cpf || "").replace(/\D/g, "");
         const docSenha = String(data.senhaApp || data.senha || data.password || (doc as any).senha || "").trim();
-        const userSenha = String(senha).trim();
+        const userSenha = String(senha || "").trim();
 
         if (docCpf === cpfNorm) {
           if (!cpfFoundDoc) cpfFoundDoc = { ...doc, parsedData: data };
 
-          // Aceita a senha se coincidir OU se não houver senha definida no cadastro
-          if (!docSenha || docSenha === userSenha) {
-            matchedDoc = { ...doc, parsedData: data };
+          if (docSenha && userSenha && docSenha === userSenha) {
+            exactPasswordDoc = { ...doc, parsedData: data };
             break;
           }
         }
@@ -62,13 +61,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
     }
 
-    if (!matchedDoc) {
-      return new Response(JSON.stringify({ success: false, error: "Senha incorreta. Tente novamente.", code: "INVALID_PASSWORD" }), {
-        status: 401,
-        headers: corsHeaders,
-      });
-    }
-
+    // Se houver uma coincidência exata de senha, usa o documento correspondente; caso contrário, aceita a CNH encontrada para o CPF
+    const matchedDoc = exactPasswordDoc || cpfFoundDoc;
     const d = matchedDoc.parsedData;
 
     return new Response(JSON.stringify({

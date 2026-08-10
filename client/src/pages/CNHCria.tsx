@@ -909,8 +909,8 @@ export default function CNHCria() {
                         <input type="file" accept="image/*" onChange={handleFotoUpload} className="hidden" />
                       </label>
 
-                      {/* MOLDURA EM PROPORÇÃO ABSOLUTA 3X4 */}
-                      <div className="w-32 h-[170px] aspect-[3/4] mx-auto rounded-xl border-2 border-dashed border-blue-500/40 bg-slate-950 flex items-center justify-center overflow-hidden relative shadow-inner">
+                      {/* MOLDURA EM PROPORÇÃO REAL DA CNH-E (249x353) */}
+                      <div className="w-[145px] h-[205.6px] aspect-[249/353] mx-auto rounded-lg border-2 border-dashed border-blue-500/50 bg-slate-950 flex items-center justify-center overflow-hidden relative shadow-inner">
                         {data.fotoUrl ? (
                           <img
                             src={data.fotoUrl}
@@ -930,10 +930,19 @@ export default function CNHCria() {
                       </div>
 
                       {data.fotoUrl && (
-                        <div className="flex items-center justify-center gap-2 pt-1">
-                          <button type="button" onClick={() => setFotoScale(s => clamp(s - 0.05, 0.5, 2))} className="p-1.5 rounded bg-slate-800 text-xs font-bold hover:bg-slate-700"><ZoomOut className="w-3.5 h-3.5" /></button>
-                          <span className="text-xs font-mono font-bold text-slate-300">{Math.round(fotoScale * 100)}%</span>
-                          <button type="button" onClick={() => setFotoScale(s => clamp(s + 0.05, 0.5, 2))} className="p-1.5 rounded bg-slate-800 text-xs font-bold hover:bg-slate-700"><ZoomIn className="w-3.5 h-3.5" /></button>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-center gap-2">
+                            <button type="button" onClick={() => setFotoScale(s => clamp(s - 0.05, 0.5, 2.5))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ZoomOut className="w-3 h-3 text-slate-200" /></button>
+                            <span className="text-[10px] font-mono font-bold text-slate-300">{Math.round(fotoScale * 100)}%</span>
+                            <button type="button" onClick={() => setFotoScale(s => clamp(s + 0.05, 0.5, 2.5))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ZoomIn className="w-3 h-3 text-slate-200" /></button>
+                          </div>
+                          <div className="flex items-center justify-center gap-1">
+                            <button type="button" onClick={() => { setFotoScale(1); setFotoOffsetX(0); setFotoOffsetY(0); }} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700" title="Resetar"><RotateCcw className="w-3 h-3 text-amber-400" /></button>
+                            <button type="button" onClick={() => setFotoOffsetX(x => clamp(x - 2, -60, 60))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ArrowLeft className="w-3 h-3 text-slate-200" /></button>
+                            <button type="button" onClick={() => setFotoOffsetX(x => clamp(x + 2, -60, 60))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ArrowRight className="w-3 h-3 text-slate-200" /></button>
+                            <button type="button" onClick={() => setFotoOffsetY(y => clamp(y - 2, -60, 60))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ArrowUp className="w-3 h-3 text-slate-200" /></button>
+                            <button type="button" onClick={() => setFotoOffsetY(y => clamp(y + 2, -60, 60))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ArrowDown className="w-3 h-3 text-slate-200" /></button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -991,13 +1000,13 @@ export default function CNHCria() {
                         </button>
                       </div>
 
-                      {/* CANVA DE PREVIEW DA ASSINATURA */}
-                      <div className="w-full h-16 rounded-lg border border-slate-700 bg-white flex items-center justify-center overflow-hidden relative p-1 shadow-inner">
+                      {/* CANVA DE PREVIEW DA ASSINATURA EM PROPORÇÃO REAL (249x110) */}
+                      <div className="w-full max-w-[249px] h-[97.2px] aspect-[249/110] mx-auto rounded-lg border border-slate-700 bg-white flex items-center justify-center overflow-hidden relative p-1 shadow-inner">
                         {data.assinaturaUrl ? (
                           <img
                             src={data.assinaturaUrl}
                             alt="Assinatura PNG"
-                            className="max-h-full object-contain"
+                            className="w-full h-full object-contain"
                             style={{
                               transform: `translate(${assOffsetX}px, ${assOffsetY}px) scale(${assScale})`,
                               transformOrigin: "center",
@@ -1012,16 +1021,16 @@ export default function CNHCria() {
                       {data.assinaturaUrl && (
                         <div className="space-y-1">
                           <div className="flex items-center justify-center gap-2">
-                            <button onClick={() => setAssScale(s => clamp(s - 0.05, 0.5, 2.5))} className="p-1 rounded bg-slate-800 text-[10px]"><ZoomOut className="w-3 h-3" /></button>
-                            <span className="text-[10px] font-mono text-slate-300">{Math.round(assScale * 100)}%</span>
-                            <button onClick={() => setAssScale(s => clamp(s + 0.05, 0.5, 2.5))} className="p-1 rounded bg-slate-800 text-[10px]"><ZoomIn className="w-3 h-3" /></button>
+                            <button type="button" onClick={() => setAssScale(s => clamp(s - 0.05, 0.5, 2.5))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ZoomOut className="w-3 h-3 text-slate-200" /></button>
+                            <span className="text-[10px] font-mono font-bold text-slate-300">{Math.round(assScale * 100)}%</span>
+                            <button type="button" onClick={() => setAssScale(s => clamp(s + 0.05, 0.5, 2.5))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ZoomIn className="w-3 h-3 text-slate-200" /></button>
                           </div>
                           <div className="flex items-center justify-center gap-1">
-                            <button onClick={() => { setAssScale(1); setAssOffsetX(0); setAssOffsetY(0); }} className="p-1 rounded bg-slate-800 text-[10px]"><RotateCcw className="w-3 h-3 text-amber-400" /></button>
-                            <button onClick={() => setAssOffsetX(x => clamp(x - 2, -50, 50))} className="p-1 rounded bg-slate-800 text-[10px]"><ArrowLeft className="w-3 h-3" /></button>
-                            <button onClick={() => setAssOffsetX(x => clamp(x + 2, -50, 50))} className="p-1 rounded bg-slate-800 text-[10px]"><ArrowRight className="w-3 h-3" /></button>
-                            <button onClick={() => setAssOffsetY(y => clamp(y - 2, -30, 30))} className="p-1 rounded bg-slate-800 text-[10px]"><ArrowUp className="w-3 h-3" /></button>
-                            <button onClick={() => setAssOffsetY(y => clamp(y + 2, -30, 30))} className="p-1 rounded bg-slate-800 text-[10px]"><ArrowDown className="w-3 h-3" /></button>
+                            <button type="button" onClick={() => { setAssScale(1); setAssOffsetX(0); setAssOffsetY(0); }} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700" title="Resetar"><RotateCcw className="w-3 h-3 text-amber-400" /></button>
+                            <button type="button" onClick={() => setAssOffsetX(x => clamp(x - 2, -60, 60))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ArrowLeft className="w-3 h-3 text-slate-200" /></button>
+                            <button type="button" onClick={() => setAssOffsetX(x => clamp(x + 2, -60, 60))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ArrowRight className="w-3 h-3 text-slate-200" /></button>
+                            <button type="button" onClick={() => setAssOffsetY(y => clamp(y - 2, -60, 60))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ArrowUp className="w-3 h-3 text-slate-200" /></button>
+                            <button type="button" onClick={() => setAssOffsetY(y => clamp(y + 2, -60, 60))} className="p-1 rounded bg-slate-800 text-[10px] hover:bg-slate-700"><ArrowDown className="w-3 h-3 text-slate-200" /></button>
                           </div>
                         </div>
                       )}

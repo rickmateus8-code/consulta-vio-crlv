@@ -231,6 +231,146 @@ export default function CRLVCria() {
   const gerarCodigoCLA = () => setData(d => ({ ...d, codigoSegurancaCLA: gerarNumero(11) }));
   const gerarChassiField = () => setData(d => ({ ...d, chassi: gerarChassi() }));
 
+  // Gerador Inteligente de Motor por Padrão da Marca/Modelo
+  const gerarMotorField = (marcaModeloInput?: string) => {
+    const model = (marcaModeloInput || data.marcaModeloVersao || "").toUpperCase();
+    let prefix = "";
+    let digitsLen = 7;
+
+    if (model.includes("PEUGEOT") || model.includes("CITROEN") || model.includes("206") || model.includes("207") || model.includes("208")) {
+      prefix = "10FS01";
+      digitsLen = 6;
+    } else if (model.includes("GM/") || model.includes("CHEVROLET") || model.includes("OMEGA") || model.includes("CORSA") || model.includes("CELTA") || model.includes("ONIX")) {
+      const gmPrefixes = ["C20NE", "N14YF", "SPE4", "CSS"];
+      prefix = gmPrefixes[Math.floor(Math.random() * gmPrefixes.length)];
+      digitsLen = 7;
+    } else if (model.includes("FIAT") || model.includes("UNO") || model.includes("PALIO") || model.includes("STRADA") || model.includes("TORO")) {
+      prefix = "310A2000";
+      digitsLen = 7;
+    } else if (model.includes("VW/") || model.includes("VOLKSWAGEN") || model.includes("GOL") || model.includes("FOX") || model.includes("POLO")) {
+      prefix = "CCRA";
+      digitsLen = 6;
+    } else if (model.includes("FORD") || model.includes("KA") || model.includes("FIESTA") || model.includes("RANGER")) {
+      prefix = "SIGMA";
+      digitsLen = 6;
+    } else if (model.includes("TOYOTA") || model.includes("COROLLA") || model.includes("HILUX")) {
+      prefix = "2ZR";
+      digitsLen = 7;
+    } else if (model.includes("HONDA") || model.includes("CIVIC") || model.includes("FIT") || model.includes("HR-V")) {
+      prefix = "R18A1";
+      digitsLen = 7;
+    } else if (model.includes("HYUNDAI") || model.includes("KIA") || model.includes("HB20")) {
+      prefix = "G4FC";
+      digitsLen = 6;
+    } else if (model.includes("RENAULT") || model.includes("SANDERO") || model.includes("LOGAN")) {
+      prefix = "K4M";
+      digitsLen = 7;
+    } else {
+      prefix = "MOT";
+      digitsLen = 8;
+    }
+
+    const num = gerarNumero(digitsLen);
+    const motorGerado = `${prefix}${num}`;
+    setData((d) => ({ ...d, motor: motorGerado }));
+    toast.success(`Motor gerado no padrão ${prefix}: ${motorGerado}`);
+  };
+
+  // Auto-Completar Inteligente de Dados Técnicos por Modelo
+  const preencherDadosTecnicosPorModelo = (modeloInput: string) => {
+    const model = modeloInput.toUpperCase().trim();
+    if (!model || model.length < 3) return;
+
+    let specs: Partial<CRLVDocumentProps> = {};
+
+    if (/PEUGEOT.*206|PEUGEOT.*207|PEUGEOT.*208|206|207|208/i.test(model)) {
+      specs = {
+        potenciaCilindrada: "113CV/1587",
+        pesoBrutoTotal: "1.56",
+        cmt: "2.46",
+        combustivel: "ALCOOL/GASOLINA",
+        especieTipo: "PASSAGEIRO AUTOMOVEL",
+        carroceria: "NÃO APLICAVEL",
+        lotacao: "05",
+        eixos: "2",
+      };
+    } else if (/OMEGA|GM.*OMEGA|VECTRA|ASTRA/i.test(model)) {
+      specs = {
+        potenciaCilindrada: "116CV/2198",
+        pesoBrutoTotal: "1.29",
+        cmt: "3.05",
+        combustivel: "GASOLINA",
+        especieTipo: "PASSAGEIRO AUTOMOVEL",
+        carroceria: "NÃO APLICAVEL",
+        lotacao: "05",
+        eixos: "2",
+      };
+    } else if (/GOL|VW.*GOL|FOX|POLO|VOYAGE/i.test(model)) {
+      specs = {
+        potenciaCilindrada: "76CV/999",
+        pesoBrutoTotal: "1.42",
+        cmt: "2.10",
+        combustivel: "ALCOOL/GASOLINA",
+        especieTipo: "PASSAGEIRO AUTOMOVEL",
+        carroceria: "NÃO APLICAVEL",
+        lotacao: "05",
+        eixos: "2",
+      };
+    } else if (/ONIX|CELTA|CORSA|AGILE|PRISMA/i.test(model)) {
+      specs = {
+        potenciaCilindrada: "82CV/999",
+        pesoBrutoTotal: "1.41",
+        cmt: "2.15",
+        combustivel: "ALCOOL/GASOLINA",
+        especieTipo: "PASSAGEIRO AUTOMOVEL",
+        carroceria: "NÃO APLICAVEL",
+        lotacao: "05",
+        eixos: "2",
+      };
+    } else if (/UNO|PALIO|SIENA|MOBI|ARGO/i.test(model)) {
+      specs = {
+        potenciaCilindrada: "75CV/999",
+        pesoBrutoTotal: "1.38",
+        cmt: "2.00",
+        combustivel: "ALCOOL/GASOLINA",
+        especieTipo: "PASSAGEIRO AUTOMOVEL",
+        carroceria: "NÃO APLICAVEL",
+        lotacao: "05",
+        eixos: "2",
+      };
+    } else if (/STRADA|SAVEIRO|TORO|S10|HILUX|RANGER|AMAROK/i.test(model)) {
+      const isHilux = /HILUX|AMAROK|RANGER/i.test(model);
+      specs = {
+        potenciaCilindrada: isHilux ? "204CV/2755" : "109CV/1332",
+        pesoBrutoTotal: isHilux ? "3.05" : "1.85",
+        cmt: isHilux ? "5.50" : "3.00",
+        combustivel: isHilux ? "DIESEL" : "ALCOOL/GASOLINA",
+        especieTipo: "CARGA CAMINHONETE",
+        carroceria: "ABERTA",
+        lotacao: "05",
+        eixos: "2",
+      };
+    } else if (/COROLLA|CIVIC|CITY|FIT|HR-V|CRETA|HB20|KICKS|RENEGADE/i.test(model)) {
+      specs = {
+        potenciaCilindrada: "155CV/1997",
+        pesoBrutoTotal: "1.75",
+        cmt: "2.50",
+        combustivel: "ALCOOL/GASOLINA",
+        especieTipo: "PASSAGEIRO AUTOMOVEL",
+        carroceria: "NÃO APLICAVEL",
+        lotacao: "05",
+        eixos: "2",
+      };
+    }
+
+    if (Object.keys(specs).length > 0) {
+      setData((prev) => ({
+        ...prev,
+        ...specs,
+      }));
+    }
+  };
+
   // Snoop Intelligence / CPF Lookup
   const [isSnoopLoading, setIsSnoopLoading] = useState(false);
   const handleSnoopLookup = async () => {
@@ -650,11 +790,25 @@ export default function CRLVCria() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-300">Marca / Modelo</label>
+                      <div className="flex justify-between items-center">
+                        <label className="text-[11px] font-bold text-slate-300">Marca / Modelo</label>
+                        <button
+                          type="button"
+                          onClick={() => preencherDadosTecnicosPorModelo(data.marcaModeloVersao)}
+                          className="text-[10px] font-bold text-amber-400 hover:text-amber-300 uppercase flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30"
+                        >
+                          <Sparkles className="w-3 h-3" /> AUTO-SPECS
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={data.marcaModeloVersao}
-                        onChange={update("marcaModeloVersao")}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setData((d) => ({ ...d, marcaModeloVersao: val }));
+                          preencherDadosTecnicosPorModelo(val);
+                        }}
+                        placeholder="Ex: PEUGEOT/206 SW16 ESCA FX"
                         className="w-full px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase"
                       />
                     </div>
@@ -747,7 +901,12 @@ export default function CRLVCria() {
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-bold text-slate-300">Motor</label>
-                        <input type="text" value={data.motor} onChange={update("motor")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono uppercase" />
+                        <div className="flex gap-1">
+                          <input type="text" value={data.motor} onChange={update("motor")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono uppercase" />
+                          <button type="button" onClick={() => gerarMotorField(data.marcaModeloVersao)} className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
+                            GERAR
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-bold text-slate-300">CMT</label>

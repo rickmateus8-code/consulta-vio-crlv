@@ -221,10 +221,10 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.font = `bold 44px ${FONT_VAL}`;
   ctx.fillText(props.renavam || "00278581161", marginX, 453);
 
-  // 3. QR CODE PRINCIPAL DO DOCUMENTO (qrY=383px, qrX=690px)
+  // 3. QR CODE PRINCIPAL DO DOCUMENTO (Subir 0,3%: qrY=372px, qrX=690px)
   const qrSize = 425;
   const qrX = 690;
-  const qrY = 383;
+  const qrY = 372;
 
   const crlvBaseUrl = "https://consulta-vio-crlv.pages.dev";
   const qrVal = props.codigoQR && props.codigoQR !== "PREVIEW"

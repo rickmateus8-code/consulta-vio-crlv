@@ -154,8 +154,24 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
 
   // ─── SOBREPOSIÇÃO DOS VALORES DINÂMICOS ──────────────────────────────────────
 
-  // Extração inteligente da UF e Cidade a partir do campo LOCAL (Ex: "CURITIBA PR" -> "CURITIBA  PR", UF: "PR")
-  const rawLocal = (props.local || "CURITIBA PR").trim().toUpperCase().replace(/\s*-\s*/g, " ").replace(/\s+/g, " ");
+  // Dicionário Inteligente de Cidade -> UF para auto-identificação de Estado
+  const CIDADES_UF_MAP: Record<string, string> = {
+    MACEIO: "AL", ARAPIRACA: "AL",
+    CURITIBA: "PR", LONDRINA: "PR", MARINGA: "PR", CASCAVEL: "PR", "PONTA GROSSA": "PR", "FOZ DO IGUACU": "PR",
+    ARACAJU: "SE", "NOSSA SENHORA DO SOCORRO": "SE", LAGARTO: "SE",
+    "SAO PAULO": "SP", CAMPINAS: "SP", GUARULHOS: "SP", SANTOS: "SP", SOROCABA: "SP", "RIBEIRAO PRETO": "SP",
+    "RIO DE JANEIRO": "RJ", NITEROI: "RJ", "DUQUE DE CAXIAS": "RJ", GONCALO: "RJ",
+    SALVADOR: "BA", "FEIRA DE SANTANA": "BA", "VITORIA DA CONQUISTA": "BA",
+    FORTALEZA: "CE", CAUCAIA: "CE", "JUAZEIRO DO NORTE": "CE",
+    RECIFE: "PE", OLINDA: "PE", JABOATAO: "PE", TERESINA: "PI", NATAL: "RN",
+    "JOAO PESSOA": "PB", BELEM: "PA", MANAUS: "AM", "PORTO ALEGRE": "RS",
+    FLORIANOPOLIS: "SC", JOINVILLE: "SC", "BELO HORIZONTE": "MG", VITORIA: "ES",
+    GOIANIA: "GO", BRASILIA: "DF", CUIABA: "MT", "CAMPO GRANDE": "MS", PALMAS: "TO",
+    "PORTO VELHO": "RO", MACAPA: "AP", "BOA VISTA": "RR", "RIO BRANCO": "AC"
+  };
+
+  // Extração inteligente da UF e Cidade a partir do campo LOCAL
+  const rawLocal = (props.local || "CURITIBA   PR").trim().toUpperCase().replace(/\s*-\s*/g, " ").replace(/\s+/g, " ");
   const localParts = rawLocal.split(" ");
   let detectedUF = (props.detranUF || props.emissaoDetranUF || "PR").toUpperCase();
   let cidadeNome = rawLocal;
@@ -166,8 +182,12 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
       detectedUF = last;
       cidadeNome = localParts.slice(0, localParts.length - 1).join(" ");
     }
+  } else if (CIDADES_UF_MAP[rawLocal]) {
+    detectedUF = CIDADES_UF_MAP[rawLocal];
   }
-  const localFormattedLayout = `${cidadeNome}  ${detectedUF}`; // Exatamente 2 espaços entre cidade e UF
+
+  // O formato exigido no layout é exatamente "{LOCAL}   {UF}" (3 espaços)
+  const localFormattedLayout = `${cidadeNome}   ${detectedUF}`;
 
   // 1. DETRAN - {UF} (Máscara expandida cobrindo 100% de qualquer vestígio no topo esquerdo)
   const topDetranUF = (props.detranUF || detectedUF).toUpperCase();

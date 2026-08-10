@@ -265,7 +265,7 @@ export default function CRLVCria() {
     }
   };
 
-  // Importar / Copiar Texto WhatsApp
+  // Importar / Copiar Texto WhatsApp & PLACA MASTER
   const handleCopiarModelo = () => {
     navigator.clipboard.writeText(MODELO_TEXTO_CRLV);
     toast.success("Modelo de formulário copiado para a área de transferência!");
@@ -280,31 +280,95 @@ export default function CRLVCria() {
       }
       setImportText(clipboardText);
 
+      const cleanVal = (v: string) => {
+        return v
+          .replace(/\(código.*?\)/gi, "")
+          .replace(/\(codigo.*?\)/gi, "")
+          .trim();
+      };
+
       const linhas = clipboardText.split("\n");
       const extraido: Partial<CRLVDocumentProps> = {};
 
+      let potenciaTemp = "";
+      let cilindradaTemp = "";
+      let especieTemp = "";
+      let tipoTemp = "";
+
       linhas.forEach((linha) => {
+        if (!linha.includes(":")) return;
         const [chave, ...resto] = linha.split(":");
         if (!resto.length) return;
-        const val = resto.join(":").trim();
+        const rawVal = resto.join(":").trim();
+        const val = cleanVal(rawVal);
         const k = chave.toLowerCase().trim();
 
-        if (k.includes("renavam")) extraido.renavam = val;
-        else if (k.includes("placa")) extraido.placa = val.toUpperCase();
-        else if (k.includes("exercício") || k.includes("exercicio")) extraido.exercicio = val;
-        else if (k.includes("ano fab")) extraido.anoFabricacao = val;
-        else if (k.includes("ano mod")) extraido.anoModelo = val;
-        else if (k.includes("marca") || k.includes("modelo")) extraido.marcaModeloVersao = val.toUpperCase();
-        else if (k.includes("chassi")) extraido.chassi = val.toUpperCase();
-        else if (k.includes("cor")) extraido.corPredominante = val.toUpperCase();
-        else if (k.includes("combustível") || k.includes("combustivel")) extraido.combustivel = val.toUpperCase();
-        else if (k.includes("proprietário") || k.includes("proprietario") || k.includes("nome")) extraido.nome = val.toUpperCase();
-        else if (k.includes("cpf") || k.includes("cnpj")) extraido.cpfCnpj = formatarCPFInput(val);
-        else if (k.includes("local")) extraido.local = val.toUpperCase();
+        if (k.includes("renavam")) {
+          extraido.renavam = val;
+        } else if (k === "placa" || (k.includes("placa") && !k.includes("anterior") && !k.includes("master"))) {
+          extraido.placa = val.toUpperCase();
+        } else if (k.includes("exercício") || k.includes("exercicio")) {
+          extraido.exercicio = val;
+        } else if (k === "ano fabricação" || k === "ano fabricacao" || k.includes("ano fab")) {
+          extraido.anoFabricacao = val;
+        } else if (k === "ano modelo" || k.includes("ano mod")) {
+          extraido.anoModelo = val;
+        } else if ((k.includes("marca") || k.includes("modelo")) && !k.includes("ano")) {
+          extraido.marcaModeloVersao = val.toUpperCase();
+        } else if (k.includes("chassi")) {
+          extraido.chassi = val.toUpperCase();
+        } else if (k === "cor" || k.includes("predominante")) {
+          extraido.corPredominante = val.toUpperCase();
+        } else if (k.includes("combustível") || k.includes("combustivel")) {
+          extraido.combustivel = val.toUpperCase();
+        } else if (k.includes("proprietário") || k.includes("proprietario") || k.includes("nome")) {
+          if (!k.includes("tipo")) extraido.nome = val.toUpperCase();
+        } else if (k.includes("cpf") || k.includes("cnpj") || k.includes("documento")) {
+          extraido.cpfCnpj = formatarCPFInput(val);
+        } else if (k.includes("município") || k.includes("municipio") || k.includes("local")) {
+          extraido.local = val.replace("-", "").replace(/\s+/g, " ").toUpperCase();
+          const parts = val.split("-");
+          if (parts.length > 1) {
+            const uf = parts[parts.length - 1].trim().toUpperCase();
+            if (uf.length === 2) extraido.detranUF = uf;
+          }
+        } else if (k.includes("categoria")) {
+          extraido.categoria = val.toUpperCase();
+        } else if (k.includes("lotação") || k.includes("lotacao")) {
+          extraido.lotacao = val.padStart(2, "0");
+        } else if (k.includes("carroceria")) {
+          extraido.carroceria = val.toUpperCase();
+        } else if (k.includes("motor")) {
+          extraido.motor = val.toUpperCase();
+        } else if (k.includes("potência") || k.includes("potencia")) {
+          potenciaTemp = val;
+        } else if (k.includes("cilindrada")) {
+          cilindradaTemp = val;
+        } else if (k.includes("espécie") || k.includes("especie")) {
+          especieTemp = val.toUpperCase();
+        } else if (k.includes("tipo de veículo") || k.includes("tipo de veiculo")) {
+          tipoTemp = val.toUpperCase();
+        } else if (k === "cmt") {
+          extraido.cmt = val;
+        } else if (k === "pbt" || k.includes("peso bruto")) {
+          extraido.pesoBrutoTotal = val;
+        } else if (k.includes("eixos")) {
+          extraido.eixos = val;
+        }
       });
 
+      if (especieTemp || tipoTemp) {
+        if (especieTemp && tipoTemp) extraido.especieTipo = `${especieTemp} ${tipoTemp}`;
+        else extraido.especieTipo = especieTemp || tipoTemp;
+      }
+
+      if (potenciaTemp || cilindradaTemp) {
+        if (potenciaTemp && cilindradaTemp) extraido.potenciaCilindrada = `${potenciaTemp}CV/${cilindradaTemp}`;
+        else if (potenciaTemp) extraido.potenciaCilindrada = `${potenciaTemp}CV`;
+      }
+
       setData((prev) => ({ ...prev, ...extraido }));
-      toast.success("Dados preenchidos com sucesso a partir da área de transferência!");
+      toast.success("Dados da consulta PLACA MASTER importados com sucesso!");
       setEtapa("identificacao");
     } catch {
       toast.error("Não foi possível acessar a área de transferência.");

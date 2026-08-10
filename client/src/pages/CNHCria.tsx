@@ -575,10 +575,10 @@ export default function CNHCria() {
                 </div>
               )}
 
-              {/* ETAPA 2: 1. PESSOAIS */}
+              {/* ETAPA 2: 1. PESSOAIS (REPLICA 1:1 DA IMAGEM DE REFERÊNCIA) */}
               {etapa === "pessoais" && (
                 <div className="space-y-4">
-                  <div className="p-2.5 rounded-lg border border-purple-500/30 bg-purple-950/30 text-purple-300 text-xs font-bold flex items-center gap-2">
+                  <div className="p-3 rounded-lg border-t-2 border-t-purple-500 border-x border-b border-purple-950/60 bg-[#160b2b] text-purple-300 font-bold text-xs tracking-wide uppercase flex items-center gap-2">
                     <User className="w-4 h-4 text-purple-400" /> 1. DADOS PESSOAIS
                   </div>
 
@@ -590,7 +590,7 @@ export default function CNHCria() {
                         value={data.nome}
                         onChange={update("nome")}
                         placeholder="Nome completo do condutor"
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs uppercase font-bold focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs uppercase font-bold focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
@@ -600,7 +600,7 @@ export default function CNHCria() {
                         value={data.cpf}
                         onChange={update("cpf")}
                         placeholder="000.000.000-00"
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
@@ -608,7 +608,7 @@ export default function CNHCria() {
                       <select
                         value={data.sexo}
                         onChange={update("sexo")}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs focus:border-blue-500 focus:outline-none"
                       >
                         <option value="">ESCOLHA</option>
                         <option value="M">MASCULINO (M)</option>
@@ -625,7 +625,7 @@ export default function CNHCria() {
                         value={data.rg}
                         onChange={update("rg")}
                         placeholder="RG sem pontos"
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
@@ -635,7 +635,7 @@ export default function CNHCria() {
                         value={data.orgaoEmissor}
                         onChange={update("orgaoEmissor")}
                         placeholder="SSP"
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs uppercase focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs uppercase focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
@@ -643,7 +643,7 @@ export default function CNHCria() {
                       <select
                         value={data.ufRG}
                         onChange={update("ufRG")}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs focus:border-blue-500 focus:outline-none"
                       >
                         <option value="">UF</option>
                         {UFS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
@@ -658,7 +658,7 @@ export default function CNHCria() {
                         type="text"
                         value={data.nacionalidade}
                         onChange={update("nacionalidade")}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs uppercase focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs uppercase focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
@@ -667,7 +667,7 @@ export default function CNHCria() {
                         type="date"
                         value={data.dataNascimento}
                         onChange={update("dataNascimento")}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
@@ -677,7 +677,7 @@ export default function CNHCria() {
                         value={data.localNascimento}
                         onChange={update("localNascimento")}
                         placeholder="Local"
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs uppercase focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs uppercase focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
@@ -685,7 +685,7 @@ export default function CNHCria() {
                       <select
                         value={data.ufNascimento}
                         onChange={update("ufNascimento")}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs focus:border-blue-500 focus:outline-none"
                       >
                         <option value="">UF</option>
                         {UFS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
@@ -701,7 +701,7 @@ export default function CNHCria() {
                         value={data.nomePai}
                         onChange={update("nomePai")}
                         placeholder="Nome do Pai"
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs uppercase focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs uppercase focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                     <div className="space-y-1">
@@ -711,17 +711,17 @@ export default function CNHCria() {
                         value={data.nomeMae}
                         onChange={update("nomeMae")}
                         placeholder="Nome da Mãe"
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs uppercase focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs uppercase focus:border-blue-500 focus:outline-none"
                       />
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* ETAPA 3: 2. CNH */}
+              {/* ETAPA 3: 2. CNH (REPLICA 1:1 DA IMAGEM DE REFERÊNCIA) */}
               {etapa === "cnh" && (
                 <div className="space-y-4">
-                  <div className="p-2.5 rounded-lg border border-blue-500/30 bg-blue-950/30 text-blue-300 text-xs font-bold flex items-center gap-2">
+                  <div className="p-3 rounded-lg border-t-2 border-t-blue-500 border-x border-b border-blue-950/60 bg-[#091538] text-blue-300 font-bold text-xs tracking-wide uppercase flex items-center gap-2">
                     <Car className="w-4 h-4 text-blue-400" /> 2. DADOS DA CNH
                   </div>
 
@@ -734,9 +734,9 @@ export default function CNHCria() {
                           value={data.registro}
                           onChange={update("registro")}
                           placeholder="Digite ou clique em GERAR"
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs font-mono"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono"
                         />
-                        <button type="button" onClick={handleAutoRegistro} className="px-2 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px]">
+                        <button type="button" onClick={handleAutoRegistro} className="px-2 py-1.5 rounded-lg bg-[#1e40af] hover:bg-[#1d4ed8] text-blue-100 font-bold text-[10px] uppercase">
                           GERAR
                         </button>
                       </div>
@@ -750,9 +750,9 @@ export default function CNHCria() {
                           value={data.espelho}
                           onChange={update("espelho")}
                           placeholder="Digite ou clique em GERAR"
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs font-mono"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono"
                         />
-                        <button type="button" onClick={handleAutoEspelho} className="px-2 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px]">
+                        <button type="button" onClick={handleAutoEspelho} className="px-2 py-1.5 rounded-lg bg-[#1e40af] hover:bg-[#1d4ed8] text-blue-100 font-bold text-[10px] uppercase">
                           GERAR
                         </button>
                       </div>
@@ -765,7 +765,7 @@ export default function CNHCria() {
                         value={data.categoria}
                         onChange={update("categoria")}
                         placeholder="Ex: AB, A, D..."
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs uppercase font-bold"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs uppercase font-bold"
                       />
                     </div>
 
@@ -774,7 +774,7 @@ export default function CNHCria() {
                       <select
                         value={data.tipo}
                         onChange={update("tipo")}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs"
                       >
                         <option value="Definitiva">Definitiva (D)</option>
                         <option value="PPD">Permissão para Dirigir (P)</option>
@@ -783,7 +783,7 @@ export default function CNHCria() {
                   </div>
 
                   {/* CHECKBOXES DE CATEGORIAS */}
-                  <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 space-y-1.5">
+                  <div className="p-3 rounded-lg bg-[#050a17] border border-slate-800 space-y-1.5">
                     <span className="text-[11px] text-slate-300 font-bold">Campo de Categorias? (marque quantas categorias quiser)</span>
                     <div className="flex items-center gap-4 text-xs font-bold">
                       {["A", "B", "C", "D", "E"].map(cat => (
@@ -807,7 +807,7 @@ export default function CNHCria() {
                         type="date"
                         value={data.dataEmissao}
                         onChange={update("dataEmissao")}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
@@ -816,7 +816,7 @@ export default function CNHCria() {
                         type="date"
                         value={data.validade}
                         onChange={update("validade")}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
@@ -825,7 +825,7 @@ export default function CNHCria() {
                         type="date"
                         value={data.primeiraHabilitacao}
                         onChange={update("primeiraHabilitacao")}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs"
                       />
                     </div>
                   </div>
@@ -838,7 +838,7 @@ export default function CNHCria() {
                         value={data.localEmissao}
                         onChange={update("localEmissao")}
                         placeholder="Local Emissão"
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs uppercase"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs uppercase"
                       />
                     </div>
                     <div className="space-y-1">
@@ -846,7 +846,7 @@ export default function CNHCria() {
                       <select
                         value={data.ufEmissao}
                         onChange={update("ufEmissao")}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs"
                       >
                         {UFS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
                       </select>
@@ -862,9 +862,9 @@ export default function CNHCria() {
                           value={data.assDigital1}
                           onChange={update("assDigital1")}
                           placeholder="Digite ou clique em GERAR"
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs font-mono"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono"
                         />
-                        <button type="button" onClick={handleAutoAss1} className="px-2 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px]">
+                        <button type="button" onClick={handleAutoAss1} className="px-2 py-1.5 rounded-lg bg-[#1e40af] hover:bg-[#1d4ed8] text-blue-100 font-bold text-[10px] uppercase">
                           GERAR
                         </button>
                       </div>
@@ -878,9 +878,9 @@ export default function CNHCria() {
                           value={data.assDigital2}
                           onChange={update("assDigital2")}
                           placeholder="UF + 8 Dígitos (Auto ao digitar UF)"
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs font-mono uppercase"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono uppercase"
                         />
-                        <button type="button" onClick={handleAutoAss2} className="px-2 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px]">
+                        <button type="button" onClick={handleAutoAss2} className="px-2 py-1.5 rounded-lg bg-[#1e40af] hover:bg-[#1d4ed8] text-blue-100 font-bold text-[10px] uppercase">
                           GERAR
                         </button>
                       </div>
@@ -889,10 +889,10 @@ export default function CNHCria() {
                 </div>
               )}
 
-              {/* ETAPA 4: 3. FINALIZAÇÃO */}
+              {/* ETAPA 4: 3. FINALIZAÇÃO (REPLICA 1:1 DA IMAGEM DE REFERÊNCIA) */}
               {etapa === "finalizacao" && (
                 <div className="space-y-4">
-                  <div className="p-2.5 rounded-lg border border-teal-500/30 bg-teal-950/30 text-teal-300 text-xs font-bold flex items-center gap-2">
+                  <div className="p-3 rounded-lg border-t-2 border-t-teal-500 border-x border-b border-teal-950/60 bg-[#051a1a] text-teal-300 font-bold text-xs tracking-wide uppercase flex items-center gap-2">
                     <Camera className="w-4 h-4 text-teal-400" /> 4. FOTOS E FINALIZAÇÃO
                   </div>
 

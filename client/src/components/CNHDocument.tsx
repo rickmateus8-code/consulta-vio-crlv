@@ -113,13 +113,21 @@ function gerarMRZ(p: CNHDocumentProps): string[] {
     return "000000";
   };
   const r = (p.registro || "00000000000").replace(/\D/g, "").padEnd(11, "<").slice(0, 11);
-  const e = (p.espelho || "000000000").replace(/\D/g, "").padEnd(9, "<").slice(0, 9);
-  const partes = (p.nome || "").trim().split(" ");
-  const sobrenome = partes.slice(1).join("<") || "DESCONHECIDO";
-  const nome1 = partes[0] || "DESCONHECIDO";
-  const nomeFormatado = pad(`${sobrenome}<<${nome1}`, 30).substring(0, 30);
+  const e = (p.espelho || "0000000000").replace(/\D/g, "").padEnd(10, "<").slice(0, 10);
+  const partes = (p.nome || "").trim().split(/\s+/).filter(Boolean);
+  
+  let nomeFormatadoRaw = "";
+  if (partes.length > 1) {
+    const ultimoSobrenome = partes[partes.length - 1];
+    const nomesRestantes = partes.slice(0, partes.length - 1).join("<");
+    nomeFormatadoRaw = `${ultimoSobrenome}<<${nomesRestantes}`;
+  } else {
+    nomeFormatadoRaw = partes[0] || "DESCONHECIDO";
+  }
+  const nomeFormatado = pad(nomeFormatadoRaw, 30).substring(0, 30);
+
   return [
-    `I<BRA${r}<${e}<<`,
+    `I<BRA${r}<${e}<<<`,
     `${fmtData(p.dataNascimento)}0${p.sexo ? p.sexo.charAt(0).toUpperCase() : "M"}${fmtData(p.validade)}5BRA<<<<<<<<<<<<`,
     nomeFormatado,
   ];
@@ -331,9 +339,9 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     try {
       let bg: HTMLImageElement | null = null;
       const sources = [
-        "/assets/cnh_base_template.png",
         "/assets/cnh_base_template_300.png",
-        "assets/cnh_base_template.png",
+        "/assets/cnh_base_template.png",
+        "assets/cnh_base_template_300.png",
       ];
       for (const src of sources) {
         try {

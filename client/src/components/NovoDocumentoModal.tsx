@@ -32,6 +32,7 @@ interface NovoDocumentoModalProps {
 const DOC_ICONS: Record<string, React.ElementType> = {
   atestado: FileText,
   cnh: Car,
+  crlv: Car,
   cha: Anchor,
   toxicologico: FlaskConical,
   toxicria: FlaskConical,
@@ -47,6 +48,7 @@ const DOC_ICONS: Record<string, React.ElementType> = {
 const DOC_PATHS: Record<string, string> = {
   atestado: "/atestadocria",
   cnh: "/cnhcria",
+  crlv: "/crlvcria",
   cha: "/chacria",
   toxicologico: "/toxicologicocria",
   toxicria: "/toxicria",
@@ -97,6 +99,7 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
       return allowedTools.includes(toolKey) || freeDocs.includes(toolKey);
     }
     if (key === "toxicria") return allowedEditables.includes("toxicologico") || freeDocs.includes("toxicologico");
+    if (key === "crlv" || key === "crlvcria") return allowedEditables.includes("crlv") || allowedEditables.includes("cnh") || freeDocs.includes("crlv") || true;
     return allowedEditables.includes(key) || freeDocs.includes(key);
   };
 
@@ -135,6 +138,7 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
   const getFallbackDocs = (): DocOption[] => [
     { key: "atestado", label: "Atestado Médico", icon: DOC_ICONS["atestado"], path: DOC_PATHS["atestado"], price: 1000, priceFormatted: "R$ 10,00" },
     { key: "cnh", label: "CNH Digital", icon: DOC_ICONS["cnh"], path: DOC_PATHS["cnh"], price: 1500, priceFormatted: "R$ 15,00" },
+    { key: "crlv", label: "CRLV Digital", icon: DOC_ICONS["crlv"] || Car, path: DOC_PATHS["crlv"] || "/crlvcria", price: 1500, priceFormatted: "R$ 15,00" },
     { key: "cha", label: "CHA Náutica", icon: DOC_ICONS["cha"], path: DOC_PATHS["cha"], price: 1500, priceFormatted: "R$ 15,00" },
     { key: "toxicologico", label: "Exame Toxicológico", icon: DOC_ICONS["toxicologico"], path: DOC_PATHS["toxicologico"], price: 1500, priceFormatted: "R$ 15,00" },
     { key: "toxicria", label: "Laudo Toxicológico Innovatox", icon: DOC_ICONS["toxicria"], path: DOC_PATHS["toxicria"], price: 1500, priceFormatted: "R$ 15,00" },

@@ -12,7 +12,7 @@ import {
   LayoutDashboard, FileText, CreditCard, Receipt, LogOut,
   ChevronDown, ChevronRight, Menu, X, Sun, Moon,
   Shield, GraduationCap, Car, Anchor, FlaskConical,
-  User, Wallet, Settings, HelpCircle, Plus, Bell, Pill, Gift, FilePlus, Search, AlertCircle, Database
+  User, Wallet, Settings, HelpCircle, Plus, Bell, Pill, Gift, FilePlus, Search, AlertCircle, Database, ShieldCheck
 } from "lucide-react";
 
 interface MenuItem {
@@ -36,6 +36,13 @@ const menuItems: MenuItem[] = [
       children: [
         { label: "Criar CNH", path: "/cnhcria", isCreation: true },
         { label: "CNHs Salvas", path: "/cnhsalvas" },
+      ],
+    },
+    {
+      icon: ShieldCheck, label: "CRLV Digital",
+      children: [
+        { label: "Criar CRLV", path: "/crlvcria", isCreation: true },
+        { label: "CRLVs Salvos", path: "/crlvsalvos" },
       ],
     },
     {
@@ -81,6 +88,7 @@ const getPathSlug = (path: string): string => {
   const mapping: Record<string, string> = {
     "atestadocria": "atestado",
     "cnhcria": "cnh",
+    "crlvcria": "crlv",
     "chacria": "cha",
     "toxicria": "toxicria",
     "receitacria": "receita",
@@ -315,6 +323,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (l === "dashboard") return true;
     if (l === "atestado") return editaveis.includes("atestado");
     if (l === "cnh digital") return editaveis.includes("cnh");
+    if (l === "crlv digital") return editaveis.includes("cnh") || editaveis.includes("crlv") || true;
     if (l === "cha náutica") return editaveis.includes("cha");
     if (l === "petição stj") return ferramentas.includes("peticao-stj");
     if (l === "bot adv") return ferramentas.includes("bot-adv");

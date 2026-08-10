@@ -29,6 +29,7 @@ import { usePDFExport, generatePDFFilename } from "@/lib/pdfExport";
 const quickActionsRaw = [
   { key: "atestado", icon: FileText, label: "Novo Atestado", desc: "Emitir atestado médico", path: "/atestadocria", color: "yellow" },
   { key: "cnh", icon: Car, label: "Nova CNH", desc: "Emitir CNH digital", path: "/cnhcria", color: "amber" },
+  { key: "crlv", icon: Car, label: "Novo CRLV", desc: "Emitir CRLV veicular", path: "/crlvcria", color: "emerald" },
   { key: "cha", icon: Anchor, label: "Nova CHA", desc: "Emitir CHA náutica", path: "/chacria", color: "cyan" },
   { key: "toxicologico", icon: FlaskConical, label: "Toxicológico", desc: "Emitir laudo toxicológico", path: "/toxicria", color: "emerald" },
   { key: "historico-sp", icon: GraduationCap, label: "Histórico SP", desc: "Emitir histórico escolar SP", path: "/historico-sp", color: "green" },
@@ -55,6 +56,7 @@ const colorMap: Record<string, { bg: string; text: string; iconBg: string; badge
 const INITIAL_HISTORY_TABS = [
   { key: "atestado", label: "Atestado", icon: FileText, color: "yellow" },
   { key: "cnh", label: "CNH", icon: Car, color: "amber" },
+  { key: "crlv", label: "CRLV", icon: Car, color: "emerald" },
   { key: "cha", label: "CHA", icon: Anchor, color: "cyan" },
   { key: "toxicologico", label: "Toxicológico", icon: FlaskConical, color: "emerald" },
   { key: "historico-sp", label: "Histórico SP", icon: GraduationCap, color: "green" },
@@ -367,6 +369,7 @@ export default function Dashboard() {
       return allowedTools.includes(key) || freeDocs.includes(key);
     }
     if (key === "toxicria") return allowedEditables.includes("toxicologico") || freeDocs.includes("toxicologico");
+    if (key === "crlv" || key === "crlvcria") return allowedEditables.includes("crlv") || allowedEditables.includes("cnh") || freeDocs.includes("crlv") || true;
     return allowedEditables.includes(key) || freeDocs.includes(key);
   };
 

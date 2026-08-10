@@ -85,7 +85,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
       if (!config) {
         // Fallback robusto se não houver config no banco
         const defaults: Record<string, number> = {
-          'atestado': 1000, 'cnh': 1500, 'cha': 1500, 'toxicologico': 1500,
+          'atestado': 1000, 'cnh': 1500, 'crlv': 1500, 'crlvcria': 1500, 'cha': 1500, 'toxicologico': 1500,
           'toxicria': 1500, 'historico-sp': 1800, 'historico-uninter': 1800,
           'peticao-stj': 2000, 'peticaocria': 2000, 'receita': 1000,
           'diploma-uninter': 2500, 'fgv': 1800

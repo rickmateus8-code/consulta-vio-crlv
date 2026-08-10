@@ -97,6 +97,8 @@ import CNHSalvas from "./pages/CNHSalvas";
 import AtestadosSalvos from "./pages/AtestadosSalvos";
 import CHASalvas from "./pages/CHASalvas";
 import ReceitasSalvas from "./pages/ReceitasSalvas";
+import CRLVCria from "./pages/CRLVCria";
+import CRLVSalvos from "./pages/CRLVSalvos";
 
 import HistoricoSPSalvos from "./pages/HistoricoSPSalvos";
 import HistoricoUNINTERSalvos from "./pages/HistoricoUNINTERSalvos";
@@ -114,6 +116,8 @@ import CNHAutorizacao from "./pages/cnh-validation/CNHAutorizacao";
 import CNHPainel from "./pages/cnh-validation/CNHPainel";
 import CNHCondutor from "./pages/cnh-validation/CNHCondutor";
 import CNHHabilitacao from "./pages/cnh-validation/CNHHabilitacao";
+
+import ValidationCRLV from "./pages/ValidationCRLV";
 
 // ─── Detectar Domínio ──────────────────────────────────────────────────────────
 const isValidationDomain = typeof window !== 'undefined' && 
@@ -134,6 +138,25 @@ const isCNHValidationDomain = typeof window !== 'undefined' &&
   (window.location.hostname.includes('carteira-digital-transito-vio') ||
    window.location.hostname.includes('cnh-do-brasil') ||
    window.location.hostname.includes('cnh-digital'));
+
+const isCRLVValidationDomain = typeof window !== 'undefined' &&
+  (window.location.hostname.includes('consulta-crlv-vio') ||
+   window.location.hostname.includes('consulta-vio-crlv') ||
+   window.location.hostname.includes('validacao-crlv'));
+
+// ─── Roteador para consulta-crlv-vio.info (Validação de CRLV) ───────────────────
+function CRLVValidationRouter() {
+  return (
+    <Switch>
+      <Route path="/validar" component={ValidationCRLV} />
+      <Route path="/consulta" component={ValidationCRLV} />
+      <Route path="/v/:id" component={ValidationCRLV} />
+      <Route path="/" component={ValidationCRLV} />
+      <Route path="/:id" component={ValidationCRLV} />
+      <Route component={ValidationCRLV} />
+    </Switch>
+  );
+}
 
 // ─── Roteador para verificamed.digital (Validação de Receitas) ───────────────────
 function VerificaMedRouter() {
@@ -254,6 +277,17 @@ function DocMasterRouter() {
       </Route>
       <Route path="/cnhcria">
         <ProtectedRoute component={CNHCria} />
+      </Route>
+      <Route path="/crlvcria">
+        <ProtectedRoute component={CRLVCria} />
+      </Route>
+      <Route path="/crlv/editar/:id">
+        {(params) => <ProtectedRoute component={CRLVCria} params={params} />}
+      </Route>
+      <Route path="/validar-crlv" component={ValidationCRLV} />
+      <Route path="/crlv/validar" component={ValidationCRLV} />
+      <Route path="/crlvsalvos">
+        <ProtectedRoute component={CRLVSalvos} />
       </Route>
       <Route path="/chacria">
         <ProtectedRoute component={CHACria} />
@@ -378,13 +412,15 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <GlobalSupportWhatsappSync />
-            {isCNHValidationDomain
-              ? <CNHValidationRouter />
-              : isVerificaMedDomain
-                ? <VerificaMedRouter />
-                : isValidationDomain
-                  ? <ValidationRouter />
-                  : <DocMasterRouter />
+            {isCRLVValidationDomain
+              ? <CRLVValidationRouter />
+              : isCNHValidationDomain
+                ? <CNHValidationRouter />
+                : isVerificaMedDomain
+                  ? <VerificaMedRouter />
+                  : isValidationDomain
+                    ? <ValidationRouter />
+                    : <DocMasterRouter />
             }
           </TooltipProvider>
         </AuthProvider>

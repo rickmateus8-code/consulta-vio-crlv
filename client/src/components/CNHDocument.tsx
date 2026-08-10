@@ -644,7 +644,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // FOTO DO CONDUTOR (Subiu 0,5%: Y=516px, Moveu 0,3% a esquerda: X=310px, Expandida 0,1% para baixo: 249 x 353 px)
+    // FOTO DO CONDUTOR (Moldura de enquadramento 1:1 exata: 246 x 301 px)
     // ═══════════════════════════════════════════════════════════════════
     if (props.fotoUrl) {
       try {
@@ -652,7 +652,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = (props.fotoScale ?? 1.0) * 0.999;
         const offsetX = props.fotoOffsetX ?? 0;
         const offsetY = props.fotoOffsetY ?? 0;
-        const baseBw = 249, baseBh = 353;
+        const baseBw = 246, baseBh = 301;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
         const bx = 310 + Math.round((baseBw - bw) / 2) + offsetX;
@@ -679,7 +679,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // ASSINATURA DO CONDUTOR (Moveu 0,1% a esquerda: X=311px, Y=880px, Expandida 0,1% para direita: 245 x 71 px)
+    // ASSINATURA DO CONDUTOR (Moldura de enquadramento 1:1 exata: 246 x 71 px)
     // ═══════════════════════════════════════════════════════════════════
     if (props.assinaturaUrl) {
       try {
@@ -687,7 +687,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = props.assScale ?? 1.0;
         const offsetX = props.assOffsetX ?? 0;
         const offsetY = props.assOffsetY ?? 0;
-        const baseBw = 245, baseBh = 71;
+        const baseBw = 246, baseBh = 71;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
         const bx = 311 + Math.round((baseBw - bw) / 2) + offsetX;

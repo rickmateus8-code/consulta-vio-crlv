@@ -909,8 +909,8 @@ export default function CNHCria() {
                         <input type="file" accept="image/*" onChange={handleFotoUpload} className="hidden" />
                       </label>
 
-                      {/* MOLDURA EM PROPORÇÃO REAL DA CNH-E (249x353) */}
-                      <div className="w-[145px] h-[205.6px] aspect-[249/353] mx-auto rounded-lg border-2 border-dashed border-blue-500/50 bg-slate-950 flex items-center justify-center overflow-hidden relative shadow-inner">
+                      {/* MOLDURA EM PROPORÇÃO REAL DA CNH-E (246x301) */}
+                      <div className="w-[246px] h-[301px] aspect-[246/301] mx-auto rounded-lg border-2 border-dashed border-blue-500/50 bg-slate-950 flex items-center justify-center overflow-hidden relative shadow-inner">
                         {data.fotoUrl ? (
                           <img
                             src={data.fotoUrl}
@@ -1000,8 +1000,8 @@ export default function CNHCria() {
                         </button>
                       </div>
 
-                      {/* CANVA DE PREVIEW DA ASSINATURA EM PROPORÇÃO REAL (249x110) */}
-                      <div className="w-full max-w-[249px] h-[97.2px] aspect-[249/110] mx-auto rounded-lg border border-slate-700 bg-white flex items-center justify-center overflow-hidden relative p-1 shadow-inner">
+                      {/* CANVA DE PREVIEW DA ASSINATURA EM PROPORÇÃO REAL (246x71) */}
+                      <div className="w-[246px] h-[71px] aspect-[246/71] mx-auto rounded-lg border border-slate-700 bg-white flex items-center justify-center overflow-hidden relative p-1 shadow-inner">
                         {data.assinaturaUrl ? (
                           <img
                             src={data.assinaturaUrl}

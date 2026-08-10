@@ -2,7 +2,7 @@
  * CRLVDocument — Geração visual 1:1 baseada no Gabarito Vetorial PDF em Alta Definição (A4 @300DPI)
  *
  * Utiliza o modelo limpo vetorial 600DPI enviado pelo usuário como BACKGROUND PRINCIPAL ABSOLUTO
- * com todos os ajustes pontuais de tamanho e posicionamento solicitados.
+ * e aplica os ajustes finos de Y: PARTICULAR 0,5% para baixo (Y=336) e *.* 3% para cima (Y=325).
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import QRCode from "qrcode";
@@ -169,7 +169,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.font = `bold 44px ${FONT_VAL}`;
   ctx.fillText(props.renavam || "00278581161", marginX, 453);
 
-  // 3. QR CODE PRINCIPAL DO DOCUMENTO (Mover 4 linhas para baixo = ~140px, qrY=390px)
+  // 3. QR CODE PRINCIPAL DO DOCUMENTO (qrY=390px, qrX=690px)
   const qrSize = 425;
   const qrX = 690;
   const qrY = 390;
@@ -238,17 +238,17 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
 
   // ─── COLUNA DIREITA (ESPECIFICAÇÕES & PROPRIETÁRIO) ─────────────────────
 
-  // 14. CATEGORIA (Mover 1 linha acima: Y=318, Fonte: 42px) & CAPACIDADE (Mover 1 linha abaixo: Y=430, Fonte: 42px)
+  // 14. CATEGORIA (Mover 0,5% para baixo: Y=336, Fonte: 42px) & CAPACIDADE (Mover 3% para cima: Y=325, Fonte: 42px)
   ctx.font = `bold 42px ${FONT_VAL}`;
-  ctx.fillText((props.categoria || "PARTICULAR").toUpperCase(), rightX, 318);
-  ctx.fillText(props.capacidade || "*.*", 2127, 430);
+  ctx.fillText((props.categoria || "PARTICULAR").toUpperCase(), rightX, 336);
+  ctx.fillText(props.capacidade || "*.*", 2127, 325);
 
   // 15. POTÊNCIA/CILINDRADA & PESO BRUTO TOTAL (Valor Y=513, Fonte: 40px)
   ctx.font = `bold 40px ${FONT_VAL}`;
   ctx.fillText((props.potenciaCilindrada || "116CV/2198").toUpperCase(), rightX, 513);
   ctx.fillText(props.pesoBrutoTotal || "1.29", 2126, 513);
 
-  // 16. MOTOR (Aumentar em 6%: 38px -> 40px, Y=623), CMT, EIXOS, LOTAÇÃO
+  // 16. MOTOR (Aumentar em 6%: 40px, Y=623), CMT, EIXOS, LOTAÇÃO
   ctx.font = `bold 40px ${FONT_VAL}`;
   drawClippedText(ctx, (props.motor || "C20NE31022309V").toUpperCase(), rightX, 623, 520, 40, true, FONT_VAL);
   ctx.font = `bold 38px ${FONT_VAL}`;
@@ -263,11 +263,11 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   // 18. NOME DO PROPRIETÁRIO (Valor Y=838, Fonte: 40px)
   drawClippedText(ctx, (props.nome || "ANTONIO CAMILO ALMEIDA FREITAS JUNIOR").toUpperCase(), rightX, 838, rightW, 40, true, FONT_VAL);
 
-  // 19. CPF / CNPJ (Aumentar tamanho em 3%: 40px -> 41px, Valor Y=963)
+  // 19. CPF / CNPJ (Valor Y=963, Fonte: 41px)
   ctx.font = `bold 41px ${FONT_VAL}`;
   ctx.fillText(props.cpfCnpj || "042.512.909-84", 1928, 963);
 
-  // 20. LOCAL (Aumentar tamanho em 5%: 40px -> 42px, Y=1093) & DATA (Aumentar tamanho em 5%: 40px -> 42px, Y=1093)
+  // 20. LOCAL & DATA (Valor Y=1093, Fonte: 42px)
   drawClippedText(ctx, (props.local || "CURITIBA PR").toUpperCase(), rightX, 1093, 700, 42, true, FONT_VAL);
   ctx.font = `bold 42px ${FONT_VAL}`;
   ctx.fillText(props.dataEmissaoDoc || "21/01/2026", 2124, 1093);

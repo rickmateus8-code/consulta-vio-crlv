@@ -648,12 +648,15 @@ export default function Validation() {
             onChange={(e) => {
               let inputVal = e.target.value.toUpperCase();
               const isDeleting = inputVal.length < codigo.length;
-              let rawAlphaNum = inputVal.replace(/[^A-Z0-9]/g, "");
+              let rawAlphaNum = inputVal.replace(/[^A-Z0-9-]/g, "");
 
-              if (rawAlphaNum.length > 8) rawAlphaNum = rawAlphaNum.slice(0, 8);
+              // Se for um UUID (com hífens ou mais de 8 chars), preserva o UUID completo
+              if (rawAlphaNum.includes("-") || rawAlphaNum.length > 8) {
+                setCodigo(rawAlphaNum.slice(0, 36));
+                return;
+              }
 
               let formattedVal = rawAlphaNum;
-
               if (rawAlphaNum.length > 4) {
                 formattedVal = rawAlphaNum.slice(0, 4) + "." + rawAlphaNum.slice(4);
               } else if (rawAlphaNum.length === 4 && !isDeleting) {
@@ -664,8 +667,8 @@ export default function Validation() {
 
               setCodigo(formattedVal);
             }}
-            placeholder="XXXX.XXXX"
-            maxLength={9}
+            placeholder="XXXX.XXXX ou ID UUID"
+            maxLength={36}
             onKeyDown={(e) => e.key === "Enter" && handleValidate()}
             required
           />

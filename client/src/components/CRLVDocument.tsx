@@ -154,13 +154,28 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
 
   // ─── SOBREPOSIÇÃO DOS VALORES DINÂMICOS ──────────────────────────────────────
 
-  // 1. DETRAN - {UF} (Sobreposição completa da área de DETRAN- PR)
-  const detranUf = (props.detranUF || props.emissaoDetranUF || "PR").toUpperCase();
+  // Extração inteligente da UF e Cidade a partir do campo LOCAL (Ex: "CURITIBA PR" -> "CURITIBA  PR", UF: "PR")
+  const rawLocal = (props.local || "CURITIBA PR").trim().toUpperCase().replace(/\s*-\s*/g, " ").replace(/\s+/g, " ");
+  const localParts = rawLocal.split(" ");
+  let detectedUF = (props.detranUF || props.emissaoDetranUF || "PR").toUpperCase();
+  let cidadeNome = rawLocal;
+
+  if (localParts.length > 1) {
+    const last = localParts[localParts.length - 1];
+    if (last.length === 2 && /^[A-Z]{2}$/.test(last)) {
+      detectedUF = last;
+      cidadeNome = localParts.slice(0, localParts.length - 1).join(" ");
+    }
+  }
+  const localFormattedLayout = `${cidadeNome}  ${detectedUF}`; // Exatamente 2 espaços entre cidade e UF
+
+  // 1. DETRAN - {UF} (Sobreposição dinâmica no topo esquerdo)
+  const topDetranUF = (props.detranUF || detectedUF).toUpperCase();
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(125, 218, 220, 32); // Limpar área exata do topo esquerdo
   ctx.fillStyle = "#000000";
   ctx.font = `bold 18px ${FONT_LBL}`;
-  ctx.fillText(`DETRAN - ${detranUf}`, marginX, 245);
+  ctx.fillText(`DETRAN - ${topDetranUF}`, marginX, 245);
 
   // 2. CÓDIGO RENAVAM (Valor Y=453, Fonte: 44px)
   ctx.fillStyle = "#000000";
@@ -221,8 +236,8 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillText((props.corPredominante || "PRETA").toUpperCase(), marginX, 1683);
   ctx.fillText((props.combustivel || "GASOLINA").toUpperCase(), 426, 1683);
 
-  // 12. RODAPÉ DE EMISSÃO DETRAN (Y=1740) - COBRIR 100% COM FUNDO BRANCO ABSOLUTO A VERSÃO ESTÁTICA
-  const ufEmi = (props.emissaoDetranUF || props.detranUF || "SE").toUpperCase();
+  // 12. RODAPÉ DE EMISSÃO DETRAN (Y=1740)
+  const ufEmi = (props.emissaoDetranUF || topDetranUF).toUpperCase();
   const hashEmi = props.emissaoDetranHash || "D72C8C94ED88BF41";
   const dataEmiStr = props.emissaoDataHora || "30/06/2026 às 14:11:30";
   const emiText = `Documento emitido por DETRAN ${ufEmi} (${hashEmi}) em ${dataEmiStr}.`;
@@ -272,8 +287,8 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.font = `bold 41px ${FONT_VAL}`;
   ctx.fillText(props.cpfCnpj || "042.512.909-84", 1928, 963);
 
-  // 20. LOCAL & DATA (Y=1100, Fonte: 42px)
-  drawClippedText(ctx, (props.local || "CURITIBA PR").toUpperCase(), rightX, 1100, 700, 42, true, FONT_VAL);
+  // 20. LOCAL & DATA (Y=1100, Fonte: 42px) - FORMATO RIGOROSO "{CIDADE}  {UF}"
+  drawClippedText(ctx, localFormattedLayout, rightX, 1100, 700, 42, true, FONT_VAL);
   ctx.font = `bold 42px ${FONT_VAL}`;
   ctx.fillText(props.dataEmissaoDoc || "21/01/2026", 2124, 1100);
 

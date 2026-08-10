@@ -959,8 +959,27 @@ export default function CRLVCria() {
                         <input
                           type="text"
                           value={data.local}
-                          onChange={update("local")}
-                          placeholder="CURITIBA PR"
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setData((d) => {
+                              const clean = val.trim().toUpperCase().replace(/\s*-\s*/g, " ").replace(/\s+/g, " ");
+                              const parts = clean.split(" ");
+                              let updatedUf = d.detranUF;
+                              if (parts.length > 1) {
+                                const last = parts[parts.length - 1];
+                                if (last.length === 2 && /^[A-Z]{2}$/.test(last)) {
+                                  updatedUf = last;
+                                }
+                              }
+                              return {
+                                ...d,
+                                local: val,
+                                detranUF: updatedUf,
+                                emissaoDetranUF: updatedUf,
+                              };
+                            });
+                          }}
+                          placeholder="Ex: CURITIBA PR"
                           className="w-full px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase"
                         />
                       </div>

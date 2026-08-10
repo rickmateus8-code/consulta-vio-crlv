@@ -373,6 +373,12 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
     const txt = (t: string, x: number, y: number, s: number, b?: boolean | number, c?: string, mw?: number) => {
       if (!t) return;
+      ctx.save();
+      if ('letterSpacing' in ctx) {
+        (ctx as any).letterSpacing = "0px";
+      }
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
       const fontName = b && typeof b === 'number' && b > 1 ? "'MyriadPro-Bold', 'MyriadPro-Regular', sans-serif" : "'MyriadPro-Regular', sans-serif";
       ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${s}px ${fontName}`;
       ctx.fillStyle = c || "#000000";
@@ -387,6 +393,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         }
       }
       ctx.fillText(t, x, y);
+      ctx.restore();
     };
 
     const getVal = (primaryKey: keyof CNHDocumentProps, ...fallbackKeys: string[]) => {

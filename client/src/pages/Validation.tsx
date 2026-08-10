@@ -49,7 +49,11 @@ export default function Validation() {
   
   const isCNHValidationDomain = typeof window !== 'undefined' &&
     (window.location.hostname === 'carteira-digital-transito-vio.digital' ||
-     window.location.hostname === 'www.carteira-digital-transito-vio.digital');
+     window.location.hostname === 'www.carteira-digital-transito-vio.digital' ||
+     window.location.hostname.includes('validacao-online-vio') ||
+     window.location.hostname.includes('validacao-digital-vio') ||
+     window.location.hostname.includes('cnh-do-brasil') ||
+     window.location.hostname.includes('cnh-digital'));
 
   // ── Sincronia de Background Global ───────────────────────────────────────
   useEffect(() => {

@@ -28,20 +28,25 @@ async function parseRecord(row: any) {
 
 async function findByCpf(env: Env, cpf: string) {
   const clean = cpf.replace(/\D/g, "");
+  const formatted = clean.length === 11 
+    ? `${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9)}`
+    : cpf;
+
   try {
     const row = await env.DB.prepare(
-      "SELECT * FROM documents WHERE type = ? AND cpf = ? AND status != 'cancelado' ORDER BY created_at DESC LIMIT 1"
-    ).bind("cnh", clean).first<any>();
+      "SELECT * FROM documents WHERE (LOWER(type) = 'cnh' OR type = 'cnh_digital' OR type = 'cnhcria') AND (cpf = ? OR cpf = ? OR REPLACE(REPLACE(cpf, '.', ''), '-', '') = ?) AND status != 'cancelado' ORDER BY created_at DESC LIMIT 1"
+    ).bind(clean, formatted, clean).first<any>();
     if (row) return parseRecord(row);
   } catch {}
 
   const docs = await env.DB.prepare(
-    "SELECT * FROM documents WHERE type = ? AND status != 'cancelado' ORDER BY created_at DESC LIMIT 100"
-  ).bind("cnh").all<any>();
+    "SELECT * FROM documents WHERE (LOWER(type) = 'cnh' OR type = 'cnh_digital' OR type = 'cnhcria') AND status != 'cancelado' ORDER BY created_at DESC LIMIT 500"
+  ).all<any>();
 
   for (const row of docs.results || []) {
     const parsed = await parseRecord(row);
-    const candidate = String(parsed?.cpf || parsed?.data?.cpf || "").replace(/\D/g, "");
+    const d = parsed?.data || {};
+    const candidate = String(parsed?.cpf || d?.cpf || d?.data?.cpf || "").replace(/\D/g, "");
     if (candidate === clean) return parsed;
   }
 
@@ -53,32 +58,34 @@ async function findByCode(env: Env, code: string) {
   const rawCodeLower = code.trim().toLowerCase();
   
   const queries = [
-    { sql: "SELECT * FROM documents WHERE type = ? AND codigo_validacao = ? AND status != 'cancelado' LIMIT 1", bind: normalized },
-    { sql: "SELECT * FROM documents WHERE type = ? AND codigo_qr = ? AND status != 'cancelado' LIMIT 1", bind: normalized },
-    { sql: "SELECT * FROM documents WHERE type = ? AND id = ? AND status != 'cancelado' LIMIT 1", bind: rawCodeLower },
+    { sql: "SELECT * FROM documents WHERE (LOWER(type) = 'cnh' OR type = 'cnh_digital' OR type = 'cnhcria') AND codigo_validacao = ? AND status != 'cancelado' LIMIT 1", bind: normalized },
+    { sql: "SELECT * FROM documents WHERE (LOWER(type) = 'cnh' OR type = 'cnh_digital' OR type = 'cnhcria') AND codigo_qr = ? AND status != 'cancelado' LIMIT 1", bind: normalized },
+    { sql: "SELECT * FROM documents WHERE (LOWER(type) = 'cnh' OR type = 'cnh_digital' OR type = 'cnhcria') AND id = ? AND status != 'cancelado' LIMIT 1", bind: rawCodeLower },
   ];
 
   for (const query of queries) {
     try {
-      const row = await env.DB.prepare(query.sql).bind("cnh", query.bind).first<any>();
+      const row = await env.DB.prepare(query.sql).bind(query.bind).first<any>();
       if (row) return parseRecord(row);
     } catch {}
   }
 
   const docs = await env.DB.prepare(
-    "SELECT * FROM documents WHERE type = ? AND status != 'cancelado' ORDER BY created_at DESC LIMIT 100"
-  ).bind("cnh").all<any>();
+    "SELECT * FROM documents WHERE (LOWER(type) = 'cnh' OR type = 'cnh_digital' OR type = 'cnhcria') AND status != 'cancelado' ORDER BY created_at DESC LIMIT 500"
+  ).all<any>();
 
   for (const row of docs.results || []) {
     const parsed = await parseRecord(row);
+    const d = parsed?.data || {};
     const candidates = [
       parsed?.codigo_validacao,
       parsed?.codigo_qr,
       parsed?.codigoQR,
       parsed?.id,
-      parsed?.data?.codigo_validacao,
-      parsed?.data?.codigo_qr,
-      parsed?.data?.codigoQR,
+      d?.codigo_validacao,
+      d?.codigo_qr,
+      d?.codigoQR,
+      d?.id
     ]
       .filter(Boolean)
       .map((value: string) => String(value).trim().toUpperCase());

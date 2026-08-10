@@ -30,7 +30,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Buscar documento CNH com esse CPF
     const docs = await context.env.DB.prepare(
-      `SELECT * FROM documents WHERE (type = 'cnh' OR type = 'cnh_digital' OR type = 'cnh-e') AND status != 'cancelado' ORDER BY created_at DESC`
+      `SELECT * FROM documents WHERE (LOWER(type) = 'cnh' OR type = 'cnh_digital' OR type = 'cnh-e' OR type = 'cnhcria') AND status != 'cancelado' ORDER BY created_at DESC LIMIT 500`
     ).all();
 
     let cpfFoundDoc: any = null;
@@ -38,8 +38,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     for (const doc of docs.results || []) {
       try {
-        const data = typeof doc.data === "string" ? JSON.parse(doc.data as string) : (doc.data || {});
-        const docCpf = (data.cpf || (doc as any).cpf || "").replace(/\D/g, "");
+        let data = typeof doc.data === "string" ? JSON.parse(doc.data as string) : (doc.data || {});
+        if (data && typeof data === "object" && data.data && typeof data.data === "object") {
+          data = { ...data, ...data.data };
+        }
+
+        const docCpf = String(data.cpf || (doc as any).cpf || "").replace(/\D/g, "");
         const docSenha = String(data.senhaApp || data.senha || data.password || (doc as any).senha || "").trim();
         const userSenha = String(senha || "").trim();
 
@@ -63,30 +67,46 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Se houver uma coincidência exata de senha, usa o documento correspondente; caso contrário, aceita a CNH encontrada para o CPF
     const matchedDoc = exactPasswordDoc || cpfFoundDoc;
-    const d = matchedDoc.parsedData;
+    const d = matchedDoc.parsedData || {};
 
     return new Response(JSON.stringify({
       success: true,
       data: {
         id: matchedDoc.id,
         nome: matchedDoc.nome || d.nome || d.nomeCompleto || "",
-        cpf: d.cpf || "",
+        cpf: d.cpf || matchedDoc.cpf || "",
         rg: d.rg || "",
+        orgaoEmissor: d.orgaoEmissor || "",
+        ufRG: d.ufRG || d.ufRg || "",
+        sexo: (d.sexo || "").toUpperCase(),
         dataNascimento: d.dataNascimento || d.nascimento || "",
-        filiacao: d.filiacao || "",
-        nacionalidade: d.nacionalidade || "BRASILEIRA",
-        categoria: d.categoria || d.cat || "AB",
-        nRegistro: d.nRegistro || d.numRegistro || "",
-        validade: d.validade || "",
-        emissao: d.emissao || "",
-        primeiraHab: d.primeiraHab || "",
-        local: d.local || "",
+        localNascimento: d.localNascimento || "",
+        ufNascimento: (d.ufNascimento || "").toUpperCase(),
+        nomePai: d.nomePai || d.filiacaoPai || "",
+        nomeMae: d.nomeMae || d.filiacaoMae || "",
+        filiacao: d.filiacao || [d.nomeMae, d.nomePai].filter(Boolean).join(" / "),
+        nacionalidade: (d.nacionalidade || "BRASILEIRA").toUpperCase(),
+        categoria: (matchedDoc.categoria || d.categoria || d.cat || "B").toUpperCase(),
+        nRegistro: d.registro || d.nRegistro || d.numRegistro || "",
+        registro: d.registro || d.nRegistro || d.numRegistro || "",
+        espelho: d.espelho || d.nCnh || d.numCnh || d.numeroFormulario || "",
+        validade: d.validade || d.dataValidade || d.val || "",
+        emissao: d.dataEmissao || d.emissao || d.dtEmissao || "",
+        dataEmissao: d.dataEmissao || d.emissao || d.dtEmissao || "",
+        primeiraHab: d.primeiraHabilitacao || d.primeiraHab || "",
+        primeiraHabilitacao: d.primeiraHabilitacao || d.primeiraHab || "",
+        local: d.localEmissao || d.local || "",
+        localEmissao: d.localEmissao || d.local || "",
+        ufEmissao: (d.ufEmissao || d.uf || d.ufEmissor || "").toUpperCase(),
         observacoes: d.observacoes || d.obs || "",
-        foto: d.foto || d.fotoUrl || "",
-        assinatura: d.assinatura || d.assinaturaUrl || "",
-        nCnh: d.nCnh || d.numCnh || d.espelho || "",
+        foto: d.fotoUrl || d.foto || "",
+        fotoUrl: d.fotoUrl || d.foto || "",
+        assinatura: d.assinaturaUrl || d.assinatura || "",
+        assinaturaUrl: d.assinaturaUrl || d.assinatura || "",
+        nCnh: d.espelho || d.nCnh || d.numCnh || "",
         renach: d.assDigital2 || d.renach || "",
-        codigoSeguranca: d.codigoSeguranca || d.codigo_validacao || d.codigo_qr || "",
+        codigoSeguranca: matchedDoc.codigo_validacao || matchedDoc.codigo_qr || d.codigo_validacao || d.codigo_qr || d.codigoQR || matchedDoc.id || "",
+        codigo_validacao: matchedDoc.codigo_validacao || matchedDoc.codigo_qr || d.codigo_validacao || d.codigo_qr || "",
       },
     }), {
       status: 200,

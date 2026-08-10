@@ -23,6 +23,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import AttestationDocument from "@/components/AttestationDocument";
 import PrescricaoDocument from "@/components/PrescricaoDocument";
 import CNHDocument from "@/components/CNHDocument";
+import CNHValidationView from "@/components/CNHValidationView";
 import { useParams } from "wouter";
 import { exportElementToPDF, exportElementToPDFBlob, generatePDFFilename } from "@/lib/pdfExport";
 
@@ -38,7 +39,7 @@ function detectDocType(data: any): DocType {
   
   // Fallback por campos
   if (data.prescricao) return "receita";
-  if (data.categoria || data.registro) return "cnh";
+  if (data.categoria || data.registro || data.n_registro || data.espelho || data.n_cnh || data.renach || data.nomePai || data.filiacao_pai) return "cnh";
   if (data.textoAtestado || data.afastamento) return "atestado";
   return "unknown";
 }
@@ -577,15 +578,8 @@ export default function Validation() {
         );
       case "cnh":
         return (
-          <div style={hidden ? { position: "fixed", left: -9999, top: 0, visibility: "hidden" } : { display: "flex", justifyContent: "center", padding: 0 }}>
-            <CNHDocument
-              ref={cnhRef}
-              {...validDoc}
-              fotoUrl={validDoc.fotoUrl || validDoc.foto}
-              assinaturaUrl={validDoc.assinaturaUrl || validDoc.assinatura}
-              codigoQR={validDoc.codigo_qr || validDoc.codigo_validacao || validDoc.id || ""}
-              blurred={false}
-            />
+          <div style={hidden ? { position: "fixed", left: -9999, top: 0, visibility: "hidden" } : { width: "100%", display: "flex", justifyContent: "center", padding: 0 }}>
+            <CNHValidationView data={validDoc} />
           </div>
         );
       default:

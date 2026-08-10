@@ -389,73 +389,98 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       ctx.fillText(t, x, y);
     };
 
-    const d = fmtDate;
-
-    // Helper de prévia inteligente: exibe modelo de exemplo se em prévia/vazio
-    const p = (val: string | undefined, fallback: string) => {
-      if (val && String(val).trim()) return String(val);
-      if (props.codigoQR === "PREVIEW" || props.blurred) return fallback;
+    const getVal = (primaryKey: keyof CNHDocumentProps, ...fallbackKeys: string[]) => {
+      const v = props[primaryKey];
+      if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+      for (const fk of fallbackKeys) {
+        const fv = (props as any)[fk];
+        if (fv !== undefined && fv !== null && String(fv).trim() !== "") return String(fv).trim();
+      }
       return "";
     };
 
-    // ═══════════════════════════════════════════════════════════════════
-    // COMANDOS DE MICROAJUSTE SOLICITADOS:
-    // 1. Local Emissão ("SÃO PAULO, SP"): desceu 2 linhas (Y=1586px) e 1% à esquerda (X=290px)
-    // 2. EAR: desceu 1 linha para baixo (Y=1347px, X=305px)
-    // 3. Nascimento, Emissão, CPF: microajustados 0,5% à esquerda (X=592px)
-    // 4. CPF e RG: desceram 0,5% (RG Y=655px, CPF Y=715px)
-    // ═══════════════════════════════════════════════════════════════════
+    const d = fmtDate;
 
-    // 1. CAIXA NOME COMPLETO (Avançou 1 espaçamento a direita -> X=319px, Y=463px)
+    // Helper de prévia inteligente: garante exibição 100% preenchida preservando os fallbacks padrão
+    const p = (val: string | undefined, fallback: string) => {
+      if (val && String(val).trim()) return String(val).trim();
+      return fallback;
+    };
+
+    // Extração robusta com suporte a camelCase e snake_case
+    const nomeRaw = getVal("nome", "nome_completo");
+    const primHabRaw = getVal("primeiraHabilitacao", "primeira_habilitacao", "primeiraHab");
+    const dtNascRaw = getVal("dataNascimento", "data_nascimento", "dataNasc");
+    const locNascRaw = getVal("localNascimento", "local_nascimento");
+    const ufNascRaw = getVal("ufNascimento", "uf_nascimento");
+    const dtEmissRaw = getVal("dataEmissao", "data_emissao", "dataEmiss");
+    const validadeRaw = getVal("validade", "validade_cnh", "validade_ate");
+    const accRaw = getVal("acc", "acc_cnh");
+    const tipoRaw = getVal("tipo", "tipo_cnh");
+    const rgRaw = getVal("rg", "numero_rg", "doc_identidade");
+    const orgRaw = getVal("orgaoEmissor", "orgao_emissor");
+    const ufRgRaw = getVal("ufRG", "uf_rg");
+    const cpfRaw = getVal("cpf", "cpf_condutor");
+    const regRaw = getVal("registro", "numero_registro", "registro_cnh");
+    const catRaw = getVal("categoria", "categoria_cnh", "cat_hab");
+    const nacRaw = getVal("nacionalidade", "nacionalidade_condutor");
+    const paiRaw = getVal("nomePai", "nome_pai");
+    const maeRaw = getVal("nomeMae", "nome_mae");
+    const obsRaw = getVal("observacoes", "observacoes_cnh");
+    const locEmissRaw = getVal("localEmissao", "local_emissao");
+    const ufEmissRaw = getVal("ufEmissao", "uf_emissao");
+
+    // 1. CAIXA NOME COMPLETO (X=319px, Y=463px)
     ctx.save();
     ctx.letterSpacing = "1px";
-    txt(p(props.nome, "RICK MATEUS ARRUDA DE FIGUEIREDO"), 319, 463, 21, 1, "#000000", 600);
+    txt(p(nomeRaw, "RICK MATEUS ARRUDA DE FIGUEIREDO"), 319, 463, 21, 1, "#000000", 600);
     ctx.restore();
 
-    // 2. CAIXA 1ª HABILITAÇÃO (Recuou 0,2% a esquerda -> X=962px, Y=463px)
-    txt(p(d(props.primeiraHabilitacao), "20/05/2012"), 962, 463, 21, 1, "#000000", 130);
+    // 2. CAIXA 1ª HABILITAÇÃO (X=962px, Y=463px)
+    txt(p(d(primHabRaw), "20/05/2012"), 962, 463, 21, 1, "#000000", 130);
 
-    // 3. CAIXA 3: DATA, LOCAL E UF DE NASCIMENTO (X=599px)
-    const dtNasc = p(d(props.dataNascimento), "05/03/2003");
-    const locNasc = p(props.localNascimento, "BARUERI");
-    const ufNasc = p(props.ufNascimento, "SP");
+    // 3. CAIXA 3: DATA, LOCAL E UF DE NASCIMENTO (X=599px, Y=523px)
+    const dtNasc = p(d(dtNascRaw), "05/03/2003");
+    const locNasc = p(locNascRaw, "BARUERI");
+    const ufNasc = p(ufNascRaw, "SP");
     txt(`${dtNasc}, ${locNasc}, ${ufNasc}`, 599, 523, 20, 1, "#000000", 335);
 
-    // 4. CAIXA 4a: DATA EMISSÃO (Padronizado X=599px)
-    txt(p(d(props.dataEmissao), "14/09/2021"), 599, 583, 20, 1, "#000000", 180);
+    // 4. CAIXA 4a: DATA EMISSÃO (X=599px, Y=583px)
+    txt(p(d(dtEmissRaw), "14/09/2021"), 599, 583, 20, 1, "#000000", 180);
 
-    // 5. CAIXA 4b: VALIDADE (Moveu 0,1% a esquerda -> X=783px, Vermelho)
-    txt(p(d(props.validade), "15/09/2026"), 783, 583, 20, 1, "#c0392b", 160);
+    // 5. CAIXA 4b: VALIDADE (X=783px, Y=583px, Vermelho)
+    txt(p(d(validadeRaw), "15/09/2026"), 783, 583, 20, 1, "#c0392b", 160);
 
-    // 6. CAIXA ACC / TIPO CNH (Aumentado +50% -> 46.5px, Moveu 0,3% a direita -> X=1062px, Subiu 0,1% -> Y=572px)
-    const tipoLetra = props.tipo === "Permissão" ? "P" : "D";
-    txt(p(props.acc, tipoLetra), 1062, 572, 46.5, 1, "#000000", 60);
+    // 6. CAIXA ACC / TIPO CNH (X=1062px, Y=572px)
+    const tipoLetra = tipoRaw === "Permissão" ? "P" : "D";
+    txt(p(accRaw, tipoLetra), 1062, 572, 46.5, 1, "#000000", 60);
 
-    // 7. CAIXA 4c: DOC IDENTIDADE / ÓRGÃO EMISSOR / UF (Desceu 1 linha -> Y=644px, X=599px)
-    const rgVal = p(props.rg, "26216797");
-    const orgVal = p(props.orgaoEmissor, "SSP");
-    const ufRgVal = p(props.ufRG, "SP");
-    txt(`${rgVal} ${orgVal}/${ufRgVal}`, 599, 644, 20, 1, "#000000", 335);
+    // 7. CAIXA 4c: DOC IDENTIDADE / ÓRGÃO EMISSOR / UF (X=599px, Y=644px)
+    const rgFmt = p(rgRaw, "26216797");
+    const orgFmt = p(orgRaw, "SSP");
+    const ufRgFmt = p(ufRgRaw, "SP");
+    txt(`${rgFmt} ${orgFmt}/${ufRgFmt}`, 599, 644, 20, 1, "#000000", 335);
 
-    // 8. CAIXA 4d: CPF (Desceu 1 linha -> Y=704px, X=599px)
-    const cpfVal = props.cpf ? formatarCPF(props.cpf) : "590.974.098-96";
-    txt(p(cpfVal, "590.974.098-96"), 599, 704, 20, 1, "#000000", 215);
+    // 8. CAIXA 4d: CPF (X=599px, Y=704px)
+    const cpfFmt = cpfRaw ? formatarCPF(cpfRaw) : "590.974.098-96";
+    txt(p(cpfFmt, "590.974.098-96"), 599, 704, 20, 1, "#000000", 215);
 
-    // 9. CAIXA 5: Nº REGISTRO (Moveu 0,1% a esquerda -> X=805px, Y=704px, Vermelho)
-    txt(p(props.registro, "37362896284"), 805, 704, 20, 1, "#c0392b", 175);
+    // 9. CAIXA 5: Nº REGISTRO (X=805px, Y=704px, Vermelho)
+    txt(p(regRaw, "37362896284"), 805, 704, 20, 1, "#c0392b", 175);
 
-    // 10. CAIXA 9: CAT HAB (Recuou 0,2% a esquerda -> X=990px, Y=704px, Vermelho, Reduzido 1% -> Fonte 21.8px)
-    txt(p(props.categoria, "AB"), 990, 704, 21.8, 1, "#c0392b", 80);
+    // 10. CAIXA 9: CAT HAB (X=990px, Y=704px, Vermelho)
+    const catFmt = p(catRaw, "AB");
+    txt(catFmt, 990, 704, 21.8, 1, "#c0392b", 80);
 
-    // 11. CAIXA NACIONALIDADE (Subiu 1 linha -> Y=764px, Padronizado X=599px)
-    txt(p(props.nacionalidade, "BRASILEIRO(A)"), 599, 764, 20, 1, "#000000", 405);
+    // 11. CAIXA NACIONALIDADE (X=599px, Y=764px)
+    txt(p(nacRaw, "BRASILEIRO(A)"), 599, 764, 20, 1, "#000000", 405);
 
-    // 12. CAIXA FILIAÇÃO (2 espaçamentos entre Pai Y=832px e Mãe Y=904px, Padronizado X=599px)
-    txt(p(props.nomePai, "MARCOS PAULO ARCO IRIS DE FIGUEIREDO"), 599, 832, 19, 1, "#000000", 415);
-    txt(p(props.nomeMae, "DÉBORA DE ARRUDA CALDAS"), 599, 904, 19, 1, "#000000", 415);
+    // 12. CAIXA FILIAÇÃO (X=599px, Y=832px e Y=904px)
+    txt(p(paiRaw, "MARCOS PAULO ARCO IRIS DE FIGUEIREDO"), 599, 832, 19, 1, "#000000", 415);
+    txt(p(maeRaw, "DÉBORA DE ARRUDA CALDAS"), 599, 904, 19, 1, "#000000", 415);
 
-    // 13. CAIXA OBSERVAÇÕES / EAR (Moveu 0,1% a esquerda -> X=302px, Y=1334px, Fonte 19.9px)
-    const obsTexto = p(props.observacoes, "EAR");
+    // 13. CAIXA OBSERVAÇÕES / EAR (X=302px, Y=1334px)
+    const obsTexto = p(obsRaw, "EAR");
     const linhasObs = obsTexto.split("\n");
     const obsY = 1334; 
     const obsX = 302;
@@ -463,9 +488,9 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       txt(linha, obsX, obsY + (index * 24), 19.9, false, "#000000", 740);
     });
 
-    // 14. CAIXA LOCAL EMISSÃO + UF (Moveu 0,4% à direita X=300px, subiu 0,2% Y=1579px)
-    const locEmiss = p(props.localEmissao, "SÃO PAULO");
-    const ufEmiss = p(props.ufEmissao, "SP");
+    // 14. CAIXA LOCAL EMISSÃO + UF (X=300px, Y=1579px)
+    const locEmiss = p(locEmissRaw, "SÃO PAULO");
+    const ufEmiss = p(ufEmissRaw, "SP");
     txt(`${locEmiss}, ${ufEmiss}`, 300, 1579, 20, 1, "#000000", 500);
 
     // 15. NOME DO ESTADO POR EXTENSO (Destaque Painel 2 - Desceu 2 linhas Y=1668px, +10% tamanho -> 35px)
@@ -596,12 +621,13 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     else if (userCat.includes("C")) userCat += "B";
 
     // ── Renderização das datas de validade nas caixas da tabela de categorias (Validades A e B ampliadas 5% -> 14.7px) ──
+    const dtValidadeCat = p(d(validadeRaw), "15/09/2026");
     Object.entries(allCats).forEach(([catKey, pos]) => {
-      const dtValidadeCat = p(d(props.validade), "15/09/2026");
       const habilitada = userCat === catKey ||
         userCat.includes(catKey) ||
         (catKey === "B" && userCat.includes("B")) ||
-        (catKey === "C" && (userCat.includes("C") || userCat.includes("E")));
+        (catKey === "C" && (userCat.includes("C") || userCat.includes("E"))) ||
+        (catKey === "D" && (userCat.includes("D") || userCat.includes("E")));
 
       if (habilitada) {
         const sizeCat = (catKey === "A" || catKey === "B") ? 14.7 : 14;
@@ -713,13 +739,14 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
   const previewScale = targetW / PAGE_W;
 
   return (
-    <div style={{ width: targetW, overflow: "hidden" }}>
+    <div style={{ width: targetW, overflow: "hidden", margin: "0 auto", display: "flex", justifyContent: "center" }}>
       <canvas
         ref={canvasRef}
         style={{
           width: targetW,
           height: Math.round(PAGE_H * previewScale),
           display: "block",
+          margin: "0 auto",
         }}
       />
     </div>

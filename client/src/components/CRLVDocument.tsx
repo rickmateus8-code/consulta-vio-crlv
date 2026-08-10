@@ -2,7 +2,7 @@
  * CRLVDocument — Geração visual 1:1 baseada no Gabarito Vetorial PDF em Alta Definição (A4 @300DPI)
  *
  * Utiliza o modelo limpo vetorial 600DPI enviado pelo usuário como BACKGROUND PRINCIPAL ABSOLUTO
- * e aplica os ajustes finos de Y: PARTICULAR 0,5% para baixo (Y=336) e *.* 3% para cima (Y=325).
+ * com sobreposição dinâmica de DETRAN - {UF}, deslocamento de Não Aplicavel -0.2% e LOCAL, DATA +0.2%.
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import QRCode from "qrcode";
@@ -154,15 +154,13 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
 
   // ─── SOBREPOSIÇÃO DOS VALORES DINÂMICOS ──────────────────────────────────────
 
-  // 1. DETRAN - UF (Desenhado na barra superior se alterado)
+  // 1. DETRAN - {UF} (Sobreposição completa da área de DETRAN- PR)
   const detranUf = (props.detranUF || props.emissaoDetranUF || "PR").toUpperCase();
-  if (detranUf !== "PR") {
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(200, 220, 65, 26);
-    ctx.fillStyle = "#000000";
-    ctx.font = `bold 19px ${FONT_LBL}`;
-    ctx.fillText(detranUf, 200, 240);
-  }
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(125, 218, 220, 32); // Limpar área exata do topo esquerdo
+  ctx.fillStyle = "#000000";
+  ctx.font = `bold 18px ${FONT_LBL}`;
+  ctx.fillText(`DETRAN - ${detranUf}`, marginX, 245);
 
   // 2. CÓDIGO RENAVAM (Valor Y=453, Fonte: 44px)
   ctx.fillStyle = "#000000";
@@ -238,7 +236,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
 
   // ─── COLUNA DIREITA (ESPECIFICAÇÕES & PROPRIETÁRIO) ─────────────────────
 
-  // 14. CATEGORIA (Mover 0,5% para baixo: Y=336, Fonte: 42px) & CAPACIDADE (Mover 3% para cima: Y=325, Fonte: 42px)
+  // 14. CATEGORIA (Y=336, Fonte: 42px) & CAPACIDADE (Y=325, Fonte: 42px)
   ctx.font = `bold 42px ${FONT_VAL}`;
   ctx.fillText((props.categoria || "PARTICULAR").toUpperCase(), rightX, 336);
   ctx.fillText(props.capacidade || "*.*", 2127, 325);
@@ -248,7 +246,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillText((props.potenciaCilindrada || "116CV/2198").toUpperCase(), rightX, 513);
   ctx.fillText(props.pesoBrutoTotal || "1.29", 2126, 513);
 
-  // 16. MOTOR (Aumentar em 6%: 40px, Y=623), CMT, EIXOS, LOTAÇÃO
+  // 16. MOTOR (Fonte: 40px, Y=623), CMT, EIXOS, LOTAÇÃO
   ctx.font = `bold 40px ${FONT_VAL}`;
   drawClippedText(ctx, (props.motor || "C20NE31022309V").toUpperCase(), rightX, 623, 520, 40, true, FONT_VAL);
   ctx.font = `bold 38px ${FONT_VAL}`;
@@ -256,9 +254,9 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillText(props.eixos || "2", 2099, 623);
   ctx.fillText(props.lotacao || "05P", 2242, 623);
 
-  // 17. CARROCERIA (Valor Y=733, Fonte: 40px)
+  // 17. CARROCERIA (Mover 0,2% para cima: Y=726, Fonte: 40px)
   ctx.font = `bold 40px ${FONT_VAL}`;
-  ctx.fillText((props.carroceria || "NÃO APLICAVEL").toUpperCase(), rightX, 733);
+  ctx.fillText((props.carroceria || "NÃO APLICAVEL").toUpperCase(), rightX, 726);
 
   // 18. NOME DO PROPRIETÁRIO (Valor Y=838, Fonte: 40px)
   drawClippedText(ctx, (props.nome || "ANTONIO CAMILO ALMEIDA FREITAS JUNIOR").toUpperCase(), rightX, 838, rightW, 40, true, FONT_VAL);
@@ -267,10 +265,10 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.font = `bold 41px ${FONT_VAL}`;
   ctx.fillText(props.cpfCnpj || "042.512.909-84", 1928, 963);
 
-  // 20. LOCAL & DATA (Valor Y=1093, Fonte: 42px)
-  drawClippedText(ctx, (props.local || "CURITIBA PR").toUpperCase(), rightX, 1093, 700, 42, true, FONT_VAL);
+  // 20. LOCAL & DATA (Mover 0,2% para baixo: Y=1100, Fonte: 42px)
+  drawClippedText(ctx, (props.local || "CURITIBA PR").toUpperCase(), rightX, 1100, 700, 42, true, FONT_VAL);
   ctx.font = `bold 42px ${FONT_VAL}`;
-  ctx.fillText(props.dataEmissaoDoc || "21/01/2026", 2124, 1093);
+  ctx.fillText(props.dataEmissaoDoc || "21/01/2026", 2124, 1100);
 
   // 21. DPVAT VALORES (Se preenchidos diferentemente de *)
   const dpvatY = 1200;

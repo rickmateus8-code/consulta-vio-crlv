@@ -18,7 +18,7 @@ import EmissionModal from "@/components/EmissionModal";
 import {
   ArrowLeft, Save, Download, MessageCircle, Copy, Zap,
   Upload, Lock, Check, User, Camera, Car, RefreshCw, ZoomIn, ZoomOut,
-  RotateCcw, AlertTriangle, ArrowRight, ArrowUp, ArrowDown
+  RotateCcw, AlertTriangle, ArrowRight, ArrowUp, ArrowDown, Maximize2
 } from "lucide-react";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
@@ -910,8 +910,8 @@ export default function CNHCria() {
                         <input type="file" accept="image/*" onChange={handleFotoUpload} className="hidden" />
                       </label>
 
-                      {/* MOLDURA EM PROPORÇÃO REAL DA CNH-E (246x301) */}
-                      <div className="w-[246px] h-[301px] aspect-[246/301] mx-auto rounded-lg border-2 border-dashed border-blue-500/50 bg-slate-950 flex items-center justify-center overflow-hidden relative shadow-inner">
+                      {/* MOLDURA EM PROPORÇÃO REAL DA CNH-E (246x301) EM FUNDO BRANCO 1:1 */}
+                      <div className="w-[246px] h-[301px] aspect-[246/301] mx-auto rounded-lg border-2 border-dashed border-slate-400 bg-white flex items-center justify-center overflow-hidden relative shadow-inner">
                         {data.fotoUrl ? (
                           <img
                             src={data.fotoUrl}

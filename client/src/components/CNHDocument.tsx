@@ -551,14 +551,8 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       });
       const qrImg = await loadImage(qrDataUrl);
 
-      if (props.blurred || !codigoQrFinal) {
-        ctx.save();
-        ctx.filter = "blur(12px)";
-        ctx.drawImage(qrImg, qrX, qrY, qrWidth, qrWidth);
-        ctx.restore();
-      } else {
-        ctx.drawImage(qrImg, qrX, qrY, qrWidth, qrWidth);
-      }
+      // Renderização NÍTIDA do QR Code (SEM BLUR)
+      ctx.drawImage(qrImg, qrX, qrY, qrWidth, qrWidth);
     } catch (e) {
       console.warn("Erro ao gerar QR Code:", e);
     }
@@ -672,13 +666,17 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
           const r = dataPixels[i];
           const g = dataPixels[i + 1];
           const b = dataPixels[i + 2];
-          if (r > 170 && g > 170 && b > 170) {
-            dataPixels[i + 3] = 0;
+          const a = dataPixels[i + 3];
+
+          // Se a imagem já era transparente (alpha sutil) ou se o pixel é tom de papel/claro (R>150, G>150, B>150)
+          if (a < 50 || (r > 150 && g > 150 && b > 150)) {
+            dataPixels[i + 3] = 0; // 100% Transparente (SEM FUNDO PRETO)
           } else {
+            // Traço da assinatura: preserva opacidade sobre fundo transparente
             dataPixels[i] = 0;
             dataPixels[i + 1] = 0;
             dataPixels[i + 2] = 0;
-            dataPixels[i + 3] = 255;
+            dataPixels[i + 3] = a > 50 ? a : 255;
           }
         }
         tctx.putImageData(imgData, 0, 0);

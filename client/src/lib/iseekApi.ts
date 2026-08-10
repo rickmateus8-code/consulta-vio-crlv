@@ -27,8 +27,15 @@ async function request<T = any>(endpoint: string, method: 'GET' | 'POST' = 'GET'
   }
 
   const res = await fetch(url, options);
-  const json = await res.json();
-  if (!res.ok) {
+  const text = await res.text();
+  let json: any;
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch {
+    json = { success: false, error: 'PARSE_ERROR', message: 'Resposta inválida ou vazia do servidor iSeek Pro.' };
+  }
+
+  if (!res.ok || json.success === false) {
     throw Object.assign(new Error(json.message || json.error || 'Erro na consulta iSeek'), {
       status: res.status,
       code: json.error,

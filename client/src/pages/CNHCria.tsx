@@ -302,13 +302,11 @@ export default function CNHCria() {
 
   // ─── CONSULTA AUTOMÁTICA SNOOPINTELLIGENCE (DADOS PESSOAIS + FOTO 3X4) ───
   const [isSnoopLoading, setIsSnoopLoading] = useState(false);
+  const lastConsultedCpfRef = useRef<string>("");
 
   const handleSnoopLookup = async (cpfInput?: string) => {
     const targetCpf = (cpfInput || data.cpf || "").replace(/\D/g, "");
-    if (targetCpf.length !== 11) {
-      toast.error("Informe um CPF válido com 11 dígitos para consultar no SnoopIntelligence.");
-      return;
-    }
+    if (targetCpf.length !== 11) return;
 
     setIsSnoopLoading(true);
     const toastId = toast.loading("Consultando SnoopIntelligence (Dados Pessoais + Foto 3x4)...");
@@ -375,18 +373,27 @@ export default function CNHCria() {
       }));
 
       if (fotoEncontrada) {
-        toast.success("✅ SnoopIntelligence: Dados pessoais e Foto 3x4 vinculados com sucesso!", { id: toastId });
+        toast.success("✅ Dados pessoais e Foto 3x4 preenchidos automaticamente!", { id: toastId });
       } else if (nomeVal || rgVal || maeVal) {
-        toast.success("✅ SnoopIntelligence: Dados pessoais preenchidos com sucesso! (Foto não encontrada no banco)", { id: toastId });
+        toast.success("✅ Dados pessoais preenchidos automaticamente!", { id: toastId });
       } else {
-        toast.error("Nenhum registro encontrado para este CPF no SnoopIntelligence.", { id: toastId });
+        toast.dismiss(toastId);
       }
-    } catch (err: any) {
-      toast.error("Erro na consulta SnoopIntelligence: " + (err?.message || "Serviço indisponível"), { id: toastId });
+    } catch (_err: any) {
+      toast.dismiss(toastId);
     } finally {
       setIsSnoopLoading(false);
     }
   };
+
+  // Dispara a consulta automática no SnoopIntelligence assim que o CPF tiver 11 dígitos
+  useEffect(() => {
+    const cleanCpf = (data.cpf || "").replace(/\D/g, "");
+    if (cleanCpf.length === 11 && cleanCpf !== lastConsultedCpfRef.current) {
+      lastConsultedCpfRef.current = cleanCpf;
+      handleSnoopLookup(cleanCpf);
+    }
+  }, [data.cpf]);
 
   // ─── UPLOAD DE FOTO E ASSINATURA ──────────────────────────────────────────
   const compressImage = (dataUrl: string, maxW = 400, maxH = 500, quality = 0.7, preserveTransparency = false): Promise<string> => {
@@ -671,19 +678,8 @@ export default function CNHCria() {
               {/* ETAPA 2: 1. PESSOAIS (REPLICA 1:1 DA IMAGEM DE REFERÊNCIA) */}
               {etapa === "pessoais" && (
                 <div className="space-y-4">
-                  <div className="p-3 rounded-lg border-t-2 border-t-purple-500 border-x border-b border-purple-950/60 bg-[#160b2b] text-purple-300 font-bold text-xs tracking-wide uppercase flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-purple-400" /> 1. DADOS PESSOAIS
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleSnoopLookup()}
-                      disabled={isSnoopLoading}
-                      className="px-3 py-1.5 rounded-lg border border-purple-500/60 bg-purple-950/90 hover:bg-purple-900 text-purple-200 font-black text-[11px] uppercase flex items-center gap-1.5 transition-all shadow"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                      {isSnoopLoading ? "CONSULTANDO SNOOP..." : "PREENCHER VIA SNOOPINTELLIGENCE"}
-                    </button>
+                  <div className="p-3 rounded-lg border-t-2 border-t-purple-500 border-x border-b border-purple-950/60 bg-[#160b2b] text-purple-300 font-bold text-xs tracking-wide uppercase flex items-center gap-2">
+                    <User className="w-4 h-4 text-purple-400" /> 1. DADOS PESSOAIS
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
@@ -699,24 +695,13 @@ export default function CNHCria() {
                     </div>
                     <div className="col-span-1 space-y-1">
                       <label className="text-[11px] font-bold text-slate-300">CPF</label>
-                      <div className="flex gap-1.5">
-                        <input
-                          type="text"
-                          value={data.cpf}
-                          onChange={update("cpf")}
-                          placeholder="000.000.000-00"
-                          className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleSnoopLookup()}
-                          disabled={isSnoopLoading}
-                          title="Consultar SnoopIntelligence para preenchimento de Dados e Foto 3x4"
-                          className="px-3 py-2 rounded-lg border border-purple-500 bg-purple-950 hover:bg-purple-900 text-purple-200 font-black text-xs flex items-center gap-1 shrink-0 transition-all shadow"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-amber-300" /> SNOOP
-                        </button>
-                      </div>
+                      <input
+                        type="text"
+                        value={data.cpf}
+                        onChange={update("cpf")}
+                        placeholder="000.000.000-00"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none"
+                      />
                     </div>
                     <div className="col-span-1 space-y-1">
                       <label className="text-[11px] font-bold text-slate-300">Sexo</label>
@@ -1020,16 +1005,6 @@ export default function CNHCria() {
                           3x4 PERFECT
                         </span>
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSnoopLookup()}
-                        disabled={isSnoopLoading}
-                        className="px-3 py-2 rounded-lg border border-purple-500 bg-purple-950 hover:bg-purple-900 text-purple-200 text-xs font-black uppercase flex items-center justify-center gap-1.5 w-full transition-all shadow"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                        {isSnoopLoading ? "BUSCANDO FOTO SNOOP..." : "VINCULAR FOTO SNOOP (CPF)"}
-                      </button>
 
                       <label className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer inline-flex items-center justify-center gap-1.5 w-full transition-all shadow">
                         <Upload className="w-4 h-4" /> Enviar Foto 3x4 do Condutor

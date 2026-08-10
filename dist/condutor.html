@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Informações do Condutor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Open Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar-interna {
+            background-color: #002e6e;
+            padding: 40px 20px 20px 20px;
+            display: flex;
+            align-items: center;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-voltar {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: white;
+            margin-right: 15px;
+        }
+
+        .titulo-pagina {
+            font-weight: 700;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-container {
+            padding: 20px 15px;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .info-title {
+            color: #4a4a4a;
+            font-weight: 700;
+            font-size: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .label {
+            color: #333;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .value {
+            color: #555;
+            font-size: 13px;
+            font-weight: 500;
+            word-break: break-word;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 0 15px 30px 15px;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .menu-box {
+            background: white;
+            border-radius: 12px;
+            height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            text-decoration: none;
+            color: #002e6e;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+        }
+
+        .menu-box i {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #002e6e;
+        }
+
+        .circle-e-icon {
+            border: 2px solid #002e6e;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #002e6e;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar-interna">
+        <a id="btnVoltar" href="#" class="btn-voltar"><i class="fas fa-chevron-left"></i></a>
+        <div class="titulo-pagina">Condutor</div>
+    </div>
+
+    <div class="info-container">
+        <div class="info-card">
+            <div class="info-title">Informações do Condutor</div>
+            <div class="info-grid">
+                <div class="full-width">
+                    <div class="label">Nome</div>
+                    <div class="value" id="valNome">Carregando...</div>
+                </div>
+                <div>
+                    <div class="label">CPF</div>
+                    <div class="value" id="valCpf">...</div>
+                </div>
+                <div>
+                    <div class="label">Sexo</div>
+                    <div class="value" id="valSexo">MASCULINO</div>
+                </div>
+                <div>
+                    <div class="label">Categoria</div>
+                    <div class="value" id="valCategoria">AB</div>
+                </div>
+                <div>
+                    <div class="label">UF de Emissão</div>
+                    <div class="value" id="valUf">DF</div>
+                </div>
+                <div>
+                    <div class="label">Data de Validade</div>
+                    <div class="value" id="valValidade">...</div>
+                </div>
+                <div>
+                    <div class="label">Data de Emissão</div>
+                    <div class="value" id="valEmissao">...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="menu-grid">
+        <a id="btnHabilitacao" href="#" class="menu-box">
+            <i class="fas fa-id-card"></i>
+            <span>Habilitação</span>
+        </a>
+
+        <div class="menu-box" onclick="msgAviso('Cadastro Positivo')">
+            <i class="fas fa-user-check"></i>
+            <span>Cadastro Positivo</span>
+        </div>
+
+        <div class="menu-box" onclick="msgAviso('Exames Toxicológicos')">
+            <i class="fas fa-microscope"></i>
+            <span>Exames Toxicológicos</span>
+        </div>
+
+        <div class="menu-box" onclick="msgAviso('Cursos Especializados')">
+            <i class="fas fa-graduation-cap"></i>
+            <span>Cursos Especializados</span>
+        </div>
+
+        <a id="btnEstacionamento" href="#" class="menu-box">
+            <div class="circle-e-icon">E</div>
+            <span>Credencial de<br>Estacionamento</span>
+        </a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const cpf = urlParams.get('cpf') || '';
+
+        function fmtDate(d) {
+            if (!d) return "-";
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
+            if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
+                const [y, m, dd] = d.slice(0, 10).split("-");
+                return `${dd}/${m}/${y}`;
+            }
+            return d;
+        }
+
+        function msgAviso(nome) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atenção',
+                text: `É necessário baixar sua CNH-e antes de verificar ${nome.toLowerCase()}.`,
+                confirmButtonColor: '#155bcb'
+            });
+        }
+
+        async function carregarCondutor() {
+            const cleanCpf = cpf.replace(/\D/g, '');
+            document.getElementById('btnVoltar').href = "painel.html?cpf=" + encodeURIComponent(cleanCpf);
+            document.getElementById('btnHabilitacao').href = "habilitacao.html?cpf=" + encodeURIComponent(cleanCpf);
+            document.getElementById('btnEstacionamento').href = "habilitacao.html?cpf=" + encodeURIComponent(cleanCpf);
+
+            if (!cleanCpf) return;
+
+            try {
+                const res = await fetch("/api/cnh/validate?cpf=" + cleanCpf);
+                const json = await res.json();
+                if (res.ok && json.success && json.data) {
+                    const d = json.data.parsedData || json.data.data || json.data;
+                    document.getElementById('valNome').innerText = (json.data.nome || d.nome || "CONDUTOR").toUpperCase();
+                    document.getElementById('valCpf').innerText = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+                    document.getElementById('valSexo').innerText = (d.sexo || "MASCULINO").toUpperCase();
+                    document.getElementById('valCategoria').innerText = (d.categoria || "AB").toUpperCase();
+                    document.getElementById('valUf').innerText = (d.ufEmissao || "DF").toUpperCase();
+                    document.getElementById('valValidade').innerText = fmtDate(d.validade);
+                    document.getElementById('valEmissao').innerText = fmtDate(d.dataEmissao);
+                }
+            } catch (e) {
+                console.error("Erro ao carregar condutor:", e);
+            }
+        }
+
+        carregarCondutor();
+    </script>
+</body>
+
+</html>

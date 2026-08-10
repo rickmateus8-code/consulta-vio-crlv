@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Habilitação Digital - CNH</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Open Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+        }
+
+        .navbar-interna {
+            background-color: #002e6e;
+            padding: 40px 20px 20px 20px;
+            display: flex;
+            align-items: center;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-voltar {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: white;
+            margin-right: 15px;
+        }
+
+        .header-title-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .titulo-pagina {
+            font-weight: 700;
+            font-size: 15px;
+            text-transform: uppercase;
+        }
+
+        .sub-header-date {
+            font-size: 11px;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .sub-bar {
+            background: white;
+            padding: 12px 15px;
+            text-align: center;
+            font-size: 12px;
+            color: #444;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sub-bar span {
+            color: #155bcb;
+            font-weight: 700;
+        }
+
+        .carousel-wrapper {
+            width: 100%;
+            max-width: 420px;
+            margin: 20px auto 10px;
+            position: relative;
+            padding: 0 10px;
+        }
+
+        .canvas-card {
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+
+        .dots-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0 25px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #d0d4d9;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dot.active {
+            background: #002e6e;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .action-list {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            padding: 0 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: white;
+            border-radius: 14px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            color: #002e6e;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            text-align: left;
+            width: 100%;
+            transition: background 0.1s;
+        }
+
+        .action-btn:active {
+            background: #f8fafc;
+        }
+
+        .action-btn i {
+            font-size: 18px;
+            color: #002e6e;
+            width: 22px;
+            text-align: center;
+        }
+
+        .arrow-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            border: none;
+        }
+
+        .arrow-left { left: 18px; }
+        .arrow-right { right: 18px; }
+    </style>
+</head>
+
+<body>
+    <div class="navbar-interna">
+        <a id="btnVoltar" href="#" class="btn-voltar"><i class="fas fa-chevron-left"></i></a>
+        <div class="header-title-box">
+            <div class="titulo-pagina">Habilitação</div>
+            <div class="sub-header-date" id="headerDate">Atualizado em: ...</div>
+        </div>
+    </div>
+
+    <div class="sub-bar">
+        Verifique autenticidade do QR Code com o app <span>Vio</span>
+    </div>
+
+    <div class="carousel-wrapper">
+        <button class="arrow-nav arrow-left" id="btnPrev" onclick="mudarSlide(-1)"><i class="fas fa-chevron-left"></i></button>
+        <div class="canvas-card">
+            <canvas id="cnhCanvas"></canvas>
+        </div>
+        <button class="arrow-nav arrow-right" id="btnNext" onclick="mudarSlide(1)"><i class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <div class="dots-container">
+        <div class="dot active" onclick="setSlide(1)"></div>
+        <div class="dot" onclick="setSlide(2)"></div>
+        <div class="dot" onclick="setSlide(3)"></div>
+        <div class="dot" onclick="setSlide(4)"></div>
+    </div>
+
+    <div class="action-list">
+        <button class="action-btn" onclick="msgHistorico()">
+            <i class="fas fa-address-card"></i>
+            <span>Histórico de emissões da CNH</span>
+        </button>
+
+        <button class="action-btn" onclick="exportarLamina()">
+            <i class="fas fa-file-export"></i>
+            <span>Exportar</span>
+        </button>
+
+        <button class="action-btn" onclick="window.location.href='index.html'">
+            <i class="fas fa-trash-alt"></i>
+            <span>Remover</span>
+        </button>
+
+        <button class="action-btn" onclick="copiarQRCode()">
+            <i class="fas fa-copy"></i>
+            <span>Copiar QR Code</span>
+        </button>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const cpf = urlParams.get('cpf') || '';
+        let currentSlide = 1;
+        let cnhData = null;
+
+        const dateStr = new Date().toLocaleDateString("pt-BR") + " - " + new Date().toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('headerDate').innerText = "Atualizado em: " + dateStr;
+
+        function fmtDate(d) {
+            if (!d) return "";
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
+            if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
+                const [y, m, dd] = d.slice(0, 10).split("-");
+                return `${dd}/${m}/${y}`;
+            }
+            return d;
+        }
+
+        function fmtCPF(v) {
+            if (!v) return "";
+            const d = v.replace(/\D/g, "");
+            if (d.length !== 11) return v;
+            return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+        }
+
+        function gerarMRZ(d) {
+            const r = (d.registro || "00000000000").replace(/\D/g, "").padEnd(11, "<").slice(0, 11);
+            const e = (d.espelho || "0000000000").replace(/\D/g, "").padEnd(10, "<").slice(0, 10);
+            const partes = (d.nome || "CONDUTOR").trim().split(/\s+/).filter(Boolean);
+            let nomeRaw = partes.length > 1 ? `${partes[partes.length - 1]}<<${partes.slice(0, partes.length - 1).join("<")}` : partes[0];
+            const nomeFmt = (nomeRaw || "CONDUTOR").toUpperCase().replace(/[^A-Z0-9]/g, "<").padEnd(30, "<").substring(0, 30);
+            
+            const fmtData = (dt) => {
+                if (!dt) return "000000";
+                const p = dt.split("/");
+                if (p.length === 3) return `${p[2].slice(2)}${p[1]}${p[0]}`;
+                return "000000";
+            };
+
+            return [
+                `I<BRA${r}<${e}<<<`,
+                `${fmtData(fmtDate(d.dataNascimento))}0${d.sexo ? d.sexo.charAt(0).toUpperCase() : "M"}${fmtData(fmtDate(d.validade))}5BRA<<<<<<<<<<<<`,
+                nomeFmt
+            ];
+        }
+
+        function setSlide(n) {
+            currentSlide = n;
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, idx) => {
+                if (idx === n - 1) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+            renderSlide();
+        }
+
+        function mudarSlide(step) {
+            let next = currentSlide + step;
+            if (next < 1) next = 4;
+            if (next > 4) next = 1;
+            setSlide(next);
+        }
+
+        async function renderSlide() {
+            const canvas = document.getElementById('cnhCanvas');
+            const ctx = canvas.getContext('2d');
+            const W = 1000, H = 680;
+            canvas.width = W; canvas.height = H;
+
+            ctx.clearRect(0, 0, W, H);
+            const d = cnhData || {};
+
+            if (currentSlide === 1) {
+                // PARTE SUPERIOR (FRENTE)
+                const img = new Image();
+                img.src = "img/cnh-templates/parte_superior.jpg";
+                await new Promise(res => { img.onload = res; img.onerror = res; });
+                ctx.drawImage(img, 0, 0, W, H);
+
+                if (d.fotoUrl) {
+                    try {
+                        const foto = new Image();
+                        foto.crossOrigin = "anonymous";
+                        foto.src = d.fotoUrl;
+                        await new Promise(res => { foto.onload = res; foto.onerror = res; });
+                        ctx.drawImage(foto, 175, 190, 255, 340);
+                    } catch(e){}
+                }
+
+                if (d.assinaturaUrl) {
+                    try {
+                        const ass = new Image();
+                        ass.crossOrigin = "anonymous";
+                        ass.src = d.assinaturaUrl;
+                        await new Promise(res => { ass.onload = res; ass.onerror = res; });
+                        ctx.drawImage(ass, 185, 575, 235, 60);
+                    } catch(e){}
+                }
+
+                ctx.fillStyle = "#0f172a";
+                ctx.font = "bold 20px sans-serif";
+                ctx.fillText((d.nome || "").toUpperCase(), 460, 215);
+                ctx.fillText(fmtDate(d.primeiraHabilitacao || d.dataEmissao), 820, 215);
+                ctx.fillText(`${fmtDate(d.dataNascimento)} - ${d.localNascimento || "BRASÍLIA"} - ${d.ufNascimento || "DF"}`, 460, 280);
+                ctx.fillText(fmtDate(d.dataEmissao), 460, 345);
+                ctx.fillText(fmtDate(d.validade), 630, 345);
+                ctx.fillText(`${d.rg || "0000000"} ${d.orgaoEmissor || "SSP"} ${d.ufRG || d.ufEmissao || "DF"}`, 460, 410);
+                ctx.fillText(fmtCPF(d.cpf || cpf), 460, 475);
+                ctx.fillText(d.registro || "00000000000", 660, 475);
+                ctx.fillText((d.categoria || "AB").toUpperCase(), 860, 475);
+                ctx.fillText((d.nacionalidade || "BRASILEIRA").toUpperCase(), 460, 538);
+
+                ctx.font = "bold 17px sans-serif";
+                if (d.nomeMae) ctx.fillText(d.nomeMae.toUpperCase(), 460, 595);
+                if (d.nomePai) ctx.fillText(d.nomePai.toUpperCase(), 460, 625);
+
+            } else if (currentSlide === 2) {
+                // PARTE INFERIOR (VERSO)
+                const img = new Image();
+                img.src = "img/cnh-templates/parte_inferior.jpg";
+                await new Promise(res => { img.onload = res; img.onerror = res; });
+                ctx.drawImage(img, 0, 0, W, H);
+
+                ctx.fillStyle = "#0f172a";
+                ctx.font = "bold 19px sans-serif";
+                ctx.fillText((d.observacoes || "EXERCE ATIVIDADE REMUNERADA").toUpperCase(), 180, 460);
+                ctx.fillText(`${(d.localEmissao || "BRASÍLIA").toUpperCase()} - ${(d.ufEmissao || "DF").toUpperCase()}, ${fmtDate(d.dataEmissao)}`, 180, 605);
+
+            } else if (currentSlide === 3) {
+                // CÓDIGO MRZ
+                const img = new Image();
+                img.src = "img/cnh-templates/codigo_mrz.jpg";
+                await new Promise(res => { img.onload = res; img.onerror = res; });
+                ctx.drawImage(img, 0, 0, W, H);
+
+                const mrz = gerarMRZ(d);
+                ctx.fillStyle = "#0f172a";
+                ctx.font = "bold 26px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText(mrz[0], W / 2, 280);
+                ctx.fillText(mrz[1], W / 2, 350);
+                ctx.fillText(mrz[2], W / 2, 420);
+                ctx.textAlign = "left";
+
+            } else if (currentSlide === 4) {
+                // QR CODE VIO DA CNH
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, W, H);
+
+                ctx.fillStyle = "#002e6e";
+                ctx.fillRect(0, 0, W, 90);
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 24px sans-serif";
+                ctx.fillText("VALIDAÇÃO VIO - CNH DIGITAL", 50, 55);
+
+                const qrUrl = d.codigo_validacao || d.codigo_qr || `https://validacao-online-vio.digital/?cpf=${cpf}`;
+                try {
+                    const qrData = await QRCode.toDataURL(qrUrl, { margin: 1, width: 340 });
+                    const qrimg = new Image();
+                    qrimg.src = qrData;
+                    await new Promise(res => { qrimg.onload = res; qrimg.onerror = res; });
+                    ctx.drawImage(qrimg, (W - 340) / 2, 140, 340, 340);
+                } catch(e){}
+
+                ctx.fillStyle = "#1e293b";
+                ctx.font = "bold 20px sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText((d.nome || "").toUpperCase(), W / 2, 530);
+                ctx.font = "bold 16px sans-serif";
+                ctx.fillStyle = "#64748b";
+                ctx.fillText(`CPF: ${fmtCPF(d.cpf || cpf)}`, W / 2, 565);
+                ctx.fillText(`QR Code VIO Autêntico - Válido em todo território nacional`, W / 2, 600);
+                ctx.textAlign = "left";
+            }
+        }
+
+        function msgHistorico() {
+            const d = cnhData || {};
+            Swal.fire({
+                title: 'Histórico de Emissões',
+                html: `<div style="text-align: left; font-size: 13px; color: #333;">
+                    <p><strong>Status:</strong> Emitida e Válida</p>
+                    <p><strong>Data de Emissão:</strong> ${fmtDate(d.dataEmissao) || '-'}</p>
+                    <p><strong>Formulário/Espelho:</strong> ${d.espelho || d.registro || '-'}</p>
+                </div>`,
+                confirmButtonColor: '#002e6e'
+            });
+        }
+
+        function exportarLamina() {
+            const canvas = document.getElementById('cnhCanvas');
+            const link = document.createElement("a");
+            const nomeFmt = (cnhData && cnhData.nome ? cnhData.nome : "CNH").replace(/\s+/g, "_");
+            link.download = `CNH_Lamina_${currentSlide}_${nomeFmt}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            Swal.fire({ icon: 'success', title: 'Exportado!', text: 'Lâmina baixada com sucesso.', timer: 1500, showConfirmButton: false });
+        }
+
+        function copiarQRCode() {
+            const qrText = (cnhData && (cnhData.codigo_validacao || cnhData.codigo_qr)) || cpf;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(qrText);
+                Swal.fire({ icon: 'success', title: 'Copiado!', text: 'Código QR copiado para a área de transferência.', timer: 1500, showConfirmButton: false });
+            }
+        }
+
+        async function carregarHabilitacao() {
+            const cleanCpf = cpf.replace(/\D/g, '');
+            document.getElementById('btnVoltar').href = "condutor.html?cpf=" + encodeURIComponent(cleanCpf);
+
+            if (!cleanCpf) return;
+
+            try {
+                const res = await fetch("/api/cnh/validate?cpf=" + cleanCpf);
+                const json = await res.json();
+                if (res.ok && json.success && json.data) {
+                    cnhData = json.data.parsedData || json.data.data || json.data;
+                    renderSlide();
+                }
+            } catch (e) {
+                console.error("Erro ao carregar CNH:", e);
+            }
+        }
+
+        carregarHabilitacao();
+    </script>
+</body>
+
+</html>

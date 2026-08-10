@@ -2,7 +2,7 @@
  * CRLVDocument — Geração visual 1:1 baseada no Gabarito Vetorial PDF em Alta Definição (A4 @300DPI)
  *
  * Utiliza o modelo limpo vetorial 600DPI enviado pelo usuário como BACKGROUND PRINCIPAL ABSOLUTO
- * com sobreposição dinâmica de DETRAN - {UF}, deslocamento de Não Aplicavel -0.2% e LOCAL, DATA +0.2%.
+ * cobrindo 100% com fundo branco a área da legenda estática de emissão do DETRAN no rodapé esquerdo.
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import QRCode from "qrcode";
@@ -221,13 +221,20 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillText((props.corPredominante || "PRETA").toUpperCase(), marginX, 1683);
   ctx.fillText((props.combustivel || "GASOLINA").toUpperCase(), 426, 1683);
 
-  // 12. RODAPÉ DE EMISSÃO DETRAN (Y=1740)
+  // 12. RODAPÉ DE EMISSÃO DETRAN (Y=1740) - COBRIR 100% COM FUNDO BRANCO ABSOLUTO A VERSÃO ESTÁTICA
   const ufEmi = (props.emissaoDetranUF || props.detranUF || "SE").toUpperCase();
   const hashEmi = props.emissaoDetranHash || "D72C8C94ED88BF41";
   const dataEmiStr = props.emissaoDataHora || "30/06/2026 às 14:11:30";
+  const emiText = `Documento emitido por DETRAN ${ufEmi} (${hashEmi}) em ${dataEmiStr}.`;
+
+  // Preenchimento de fundo branco absoluto cobrindo toda a largura da linha estática (X: 125 a 1150)
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(125, 1715, leftW + 30, 35);
+
+  // Desenhar o texto dinâmico por cima
   ctx.font = `16px ${FONT_LBL}`;
   ctx.fillStyle = "#333333";
-  ctx.fillText(`Documento emitido por DETRAN ${ufEmi} (${hashEmi}) em ${dataEmiStr}.`, marginX, 1740);
+  ctx.fillText(emiText, marginX, 1740);
 
   // 13. OBSERVAÇÕES DO VEÍCULO (Valor Y=1890, Fonte: 36px - DENTRO DA CAIXA)
   ctx.font = `bold 36px ${FONT_VAL}`;
@@ -254,7 +261,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillText(props.eixos || "2", 2099, 623);
   ctx.fillText(props.lotacao || "05P", 2242, 623);
 
-  // 17. CARROCERIA (Mover 0,2% para cima: Y=726, Fonte: 40px)
+  // 17. CARROCERIA (Y=726, Fonte: 40px)
   ctx.font = `bold 40px ${FONT_VAL}`;
   ctx.fillText((props.carroceria || "NÃO APLICAVEL").toUpperCase(), rightX, 726);
 
@@ -265,7 +272,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.font = `bold 41px ${FONT_VAL}`;
   ctx.fillText(props.cpfCnpj || "042.512.909-84", 1928, 963);
 
-  // 20. LOCAL & DATA (Mover 0,2% para baixo: Y=1100, Fonte: 42px)
+  // 20. LOCAL & DATA (Y=1100, Fonte: 42px)
   drawClippedText(ctx, (props.local || "CURITIBA PR").toUpperCase(), rightX, 1100, 700, 42, true, FONT_VAL);
   ctx.font = `bold 42px ${FONT_VAL}`;
   ctx.fillText(props.dataEmissaoDoc || "21/01/2026", 2124, 1100);

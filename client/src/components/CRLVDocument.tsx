@@ -2,7 +2,7 @@
  * CRLVDocument — Geração visual 1:1 baseada no Gabarito Vetorial PDF em Alta Definição (A4 @300DPI)
  *
  * Utiliza o modelo limpo vetorial 600DPI enviado pelo usuário como BACKGROUND PRINCIPAL ABSOLUTO
- * e desenha os textos dinâmicos em Courier Prime Bold com ajuste de +0,5% para baixo (+18px em Y).
+ * com todos os ajustes pontuais de tamanho e posicionamento solicitados.
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import QRCode from "qrcode";
@@ -152,7 +152,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   const rightX = 1319;
   const rightW = PAGE_W - marginX - rightX;
 
-  // ─── SOBREPOSIÇÃO: AJUSTE DE +0,5% PARA BAIXO (+18px em Y) ─────────────────
+  // ─── SOBREPOSIÇÃO DOS VALORES DINÂMICOS ──────────────────────────────────────
 
   // 1. DETRAN - UF (Desenhado na barra superior se alterado)
   const detranUf = (props.detranUF || props.emissaoDetranUF || "PR").toUpperCase();
@@ -169,10 +169,10 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.font = `bold 44px ${FONT_VAL}`;
   ctx.fillText(props.renavam || "00278581161", marginX, 453);
 
-  // 3. QR CODE PRINCIPAL DO DOCUMENTO (Coordenadas exatas do gabarito)
+  // 3. QR CODE PRINCIPAL DO DOCUMENTO (Mover 4 linhas para baixo = ~140px, qrY=390px)
   const qrSize = 425;
   const qrX = 690;
-  const qrY = 265;
+  const qrY = 390;
 
   const crlvBaseUrl = "https://consulta-vio-crlv.pages.dev";
   const qrVal = props.codigoQR && props.codigoQR !== "PREVIEW"
@@ -238,19 +238,20 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
 
   // ─── COLUNA DIREITA (ESPECIFICAÇÕES & PROPRIETÁRIO) ─────────────────────
 
-  // 14. CATEGORIA & CAPACIDADE (Valor Y=353, Fonte: 42px)
+  // 14. CATEGORIA (Mover 1 linha acima: Y=318, Fonte: 42px) & CAPACIDADE (Mover 1 linha abaixo: Y=430, Fonte: 42px)
   ctx.font = `bold 42px ${FONT_VAL}`;
-  ctx.fillText((props.categoria || "PARTICULAR").toUpperCase(), rightX, 353);
-  ctx.fillText(props.capacidade || "*.*", 2127, 353);
+  ctx.fillText((props.categoria || "PARTICULAR").toUpperCase(), rightX, 318);
+  ctx.fillText(props.capacidade || "*.*", 2127, 430);
 
   // 15. POTÊNCIA/CILINDRADA & PESO BRUTO TOTAL (Valor Y=513, Fonte: 40px)
   ctx.font = `bold 40px ${FONT_VAL}`;
   ctx.fillText((props.potenciaCilindrada || "116CV/2198").toUpperCase(), rightX, 513);
   ctx.fillText(props.pesoBrutoTotal || "1.29", 2126, 513);
 
-  // 16. MOTOR, CMT, EIXOS, LOTAÇÃO (Valor Y=623, Fonte: 38px)
+  // 16. MOTOR (Aumentar em 6%: 38px -> 40px, Y=623), CMT, EIXOS, LOTAÇÃO
+  ctx.font = `bold 40px ${FONT_VAL}`;
+  drawClippedText(ctx, (props.motor || "C20NE31022309V").toUpperCase(), rightX, 623, 520, 40, true, FONT_VAL);
   ctx.font = `bold 38px ${FONT_VAL}`;
-  drawClippedText(ctx, (props.motor || "C20NE31022309V").toUpperCase(), rightX, 623, 520, 38, true, FONT_VAL);
   ctx.fillText(props.cmt || "3.05", 1887, 623);
   ctx.fillText(props.eixos || "2", 2099, 623);
   ctx.fillText(props.lotacao || "05P", 2242, 623);
@@ -262,13 +263,13 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   // 18. NOME DO PROPRIETÁRIO (Valor Y=838, Fonte: 40px)
   drawClippedText(ctx, (props.nome || "ANTONIO CAMILO ALMEIDA FREITAS JUNIOR").toUpperCase(), rightX, 838, rightW, 40, true, FONT_VAL);
 
-  // 19. CPF / CNPJ (Valor Y=963, Fonte: 40px)
-  ctx.font = `bold 40px ${FONT_VAL}`;
+  // 19. CPF / CNPJ (Aumentar tamanho em 3%: 40px -> 41px, Valor Y=963)
+  ctx.font = `bold 41px ${FONT_VAL}`;
   ctx.fillText(props.cpfCnpj || "042.512.909-84", 1928, 963);
 
-  // 20. LOCAL & DATA (Valor Y=1093, Fonte: 40px)
-  drawClippedText(ctx, (props.local || "CURITIBA PR").toUpperCase(), rightX, 1093, 700, 40, true, FONT_VAL);
-  ctx.font = `bold 40px ${FONT_VAL}`;
+  // 20. LOCAL (Aumentar tamanho em 5%: 40px -> 42px, Y=1093) & DATA (Aumentar tamanho em 5%: 40px -> 42px, Y=1093)
+  drawClippedText(ctx, (props.local || "CURITIBA PR").toUpperCase(), rightX, 1093, 700, 42, true, FONT_VAL);
+  ctx.font = `bold 42px ${FONT_VAL}`;
   ctx.fillText(props.dataEmissaoDoc || "21/01/2026", 2124, 1093);
 
   // 21. DPVAT VALORES (Se preenchidos diferentemente de *)

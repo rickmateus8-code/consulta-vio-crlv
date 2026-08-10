@@ -379,17 +379,17 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       }
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      const fontName = b && typeof b === 'number' && b > 1 ? "'MyriadPro-Bold', 'MyriadPro-Regular', sans-serif" : "'MyriadPro-Regular', sans-serif";
-      ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${s}px ${fontName}`;
+      const fontName = "'MyriadPro-Regular', sans-serif";
+      ctx.font = `${s}px ${fontName}`;
       ctx.fillStyle = c || "#000000";
       t = String(t).toUpperCase();
 
       if (mw) {
         let fontSize = s;
-        ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${fontSize}px ${fontName}`;
+        ctx.font = `${fontSize}px ${fontName}`;
         while (ctx.measureText(t).width > mw && fontSize > 10) {
           fontSize -= 1;
-          ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${fontSize}px ${fontName}`;
+          ctx.font = `${fontSize}px ${fontName}`;
         }
       }
       ctx.fillText(t, x, y);
@@ -505,7 +505,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.textAlign = "center";
     const ufDigitada = (ufEmiss || "SP").trim().toUpperCase();
     const nomeEstadoCompleto = NOMES_ESTADOS[ufDigitada] || "SÃO PAULO";
-    ctx.font = "bold 43.9px 'MyriadPro-Bold', 'MyriadPro-Regular', sans-serif";
+    ctx.font = "43.9px 'MyriadPro-Regular', sans-serif";
     ctx.fillStyle = "#000000";
     ctx.fillText(nomeEstadoCompleto, 600, 1668);
     ctx.restore();

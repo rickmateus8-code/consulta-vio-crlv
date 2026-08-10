@@ -353,6 +353,21 @@ function DocMasterRouter() {
 }
 
 function App() {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      if (host.includes("validacao-online-vio") || host.includes("validacao-digital-vio")) {
+        document.title = "Consulta Autenticidade CNH";
+      } else if (host.includes("carteira-digital-transito-vio") || host.includes("cnh-do-brasil")) {
+        document.title = "Carteira Digital de Trânsito";
+      } else if (host.includes("validaratestado.digital")) {
+        document.title = "Validador Oficial - IDAB";
+      } else if (host.includes("verificamed.digital")) {
+        document.title = "VerificaMed - Validação de Receitas";
+      }
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable={true}>

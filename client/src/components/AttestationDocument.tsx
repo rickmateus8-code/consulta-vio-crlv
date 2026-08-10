@@ -53,6 +53,7 @@ interface AttestationDocumentProps {
   hidePatientSignature?: boolean;
   hideAfastamentoText?: boolean;
   showStampInfo?: boolean;
+  modoCarimbo?: boolean;
   isExporting?: boolean;
 }
 

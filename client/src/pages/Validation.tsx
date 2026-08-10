@@ -676,29 +676,33 @@ export default function Validation() {
             required
           />
 
-          <label style={S.label}>Data de Emissão *</label>
-          <input
-            type="date"
-            style={S.inputDate}
-            value={(() => {
-              if (!dataEmissao) return "";
-              if (dataEmissao.includes("-")) return dataEmissao; // Já é YYYY-MM-DD
-              const [dd, mm, yyyy] = dataEmissao.split("/");
-              if (dd && mm && yyyy) return `${yyyy}-${mm}-${dd}`;
-              return "";
-            })()}
-            onChange={(e) => {
-              const val = e.target.value; // YYYY-MM-DD
-              if (!val) {
-                setDataEmissao("");
-                return;
-              }
-              const [yyyy, mm, dd] = val.split("-");
-              setDataEmissao(`${dd}/${mm}/${yyyy}`);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && handleValidate()}
-            required
-          />
+          {!isCNHValidationDomain && (
+            <>
+              <label style={S.label}>Data de Emissão *</label>
+              <input
+                type="date"
+                style={S.inputDate}
+                value={(() => {
+                  if (!dataEmissao) return "";
+                  if (dataEmissao.includes("-")) return dataEmissao; // Já é YYYY-MM-DD
+                  const [dd, mm, yyyy] = dataEmissao.split("/");
+                  if (dd && mm && yyyy) return `${yyyy}-${mm}-${dd}`;
+                  return "";
+                })()}
+                onChange={(e) => {
+                  const val = e.target.value; // YYYY-MM-DD
+                  if (!val) {
+                    setDataEmissao("");
+                    return;
+                  }
+                  const [yyyy, mm, dd] = val.split("-");
+                  setDataEmissao(`${dd}/${mm}/${yyyy}`);
+                }}
+                onKeyDown={(e) => e.key === "Enter" && handleValidate()}
+                required
+              />
+            </>
+          )}
 
           <button
             style={{ ...S.btnGreen, opacity: isValidating ? 0.7 : 1 }}

@@ -559,8 +559,13 @@ export default function CRLVCria() {
       const url = isEdit ? `/api/documents/${editId}` : "/api/documents/crlv";
       const method = isEdit ? "PUT" : "POST";
 
+      const agoraDataHora = getHojeDataHoraStr();
+      const agoraData = getHojeDataStr();
+
       const payload = {
         ...data,
+        emissaoDataHora: agoraDataHora,
+        dataEmissaoDoc: data.dataEmissaoDoc || agoraData,
         nome: data.nome.trim().toUpperCase(),
         cpf: data.cpfCnpj,
         type: "crlv",

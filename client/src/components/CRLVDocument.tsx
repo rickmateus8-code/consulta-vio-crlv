@@ -275,20 +275,24 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillText((props.corPredominante || "PRETA").toUpperCase(), marginX, 1683);
   ctx.fillText((props.combustivel || "GASOLINA").toUpperCase(), 426, 1683);
 
-  // 12. RODAPÉ DE EMISSÃO DETRAN (Máscara expandida cobrindo 100% da linha estática)
+  // 12. RODAPÉ DE EMISSÃO DETRAN (Y=1734) - Máscara elevada (Y: 1702..1745) para NÃO sobrepor a linha pontilhada inferior
   const ufEmi = (props.emissaoDetranUF || topDetranUF).toUpperCase();
   const hashEmi = props.emissaoDetranHash || "D72C8C94ED88BF41";
-  const dataEmiStr = props.emissaoDataHora || getHojeDataHoraStr();
+  
+  let dataEmiStr = props.emissaoDataHora;
+  if (!dataEmiStr || dataEmiStr.includes("30/06/2026")) {
+    dataEmiStr = getHojeDataHoraStr();
+  }
   const emiText = `Documento emitido por DETRAN ${ufEmi} (${hashEmi}) em ${dataEmiStr}.`;
 
-  // Preenchimento de fundo branco absoluto cobrindo toda a largura da linha estática (X: 115 a 1250)
+  // Preenchimento de fundo branco em Y: 1702..1745 (evita a linha pontilhada em Y=1750)
   ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(115, 1705, leftW + 80, 55);
+  ctx.fillRect(115, 1702, leftW + 80, 43);
 
-  // Desenhar o texto dinâmico por cima
+  // Desenhar o texto dinâmico em Y=1734
   ctx.font = `16px ${FONT_LBL}`;
   ctx.fillStyle = "#333333";
-  ctx.fillText(emiText, marginX, 1740);
+  ctx.fillText(emiText, marginX, 1734);
 
   // 13. OBSERVAÇÕES DO VEÍCULO (Valor Y=1890, Fonte: 36px - DENTRO DA CAIXA)
   ctx.font = `bold 36px ${FONT_VAL}`;

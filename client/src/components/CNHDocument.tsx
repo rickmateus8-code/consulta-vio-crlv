@@ -252,20 +252,14 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
   return cvs;
 }
 
-// ─── Export para PDF (2 páginas A4 Retrato: CNH+QR | Legenda Multilíngue) ─────
+// ─── Export para PDF (1 página A4 Retrato 210mm x 297mm: CNH + QR + MRZ) ──────
 async function exportToPdf(cnhCanvas: HTMLCanvasElement, props: CNHDocumentProps) {
   const { default: jsPDF } = await import("jspdf");
 
-  // ── PÁGINA 1: CNH-e Completa (A4 Retrato 210mm x 297mm) ─────────────────
+  // ── PÁGINA ÚNICA: CNH-e Completa (A4 Retrato 210mm x 297mm) ─────────────────
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const imgData1 = cnhCanvas.toDataURL("image/jpeg", 0.95);
+  const imgData1 = cnhCanvas.toDataURL("image/jpeg", 0.98);
   pdf.addImage(imgData1, "JPEG", 0, 0, 210, 297);
-
-  // ── PÁGINA 2: Legenda Multilíngue (A4 Retrato 210mm x 297mm) ────────────
-  pdf.addPage("a4", "portrait");
-  const pag2Canvas = gerarPaginaLegenda();
-  const imgData2 = pag2Canvas.toDataURL("image/jpeg", 0.92);
-  pdf.addImage(imgData2, "JPEG", 0, 0, 210, 297);
 
   // Salvar
   const nomeFormatado = (props.nome || "DOCUMENTO")

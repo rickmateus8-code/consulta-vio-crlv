@@ -140,9 +140,15 @@ async function loadFonts() {
   try {
     const ocrFont = new FontFace("OCR-B", "url(/assets/ocrbstd.otf)");
     const ultraFont = new FontFace("Ultra", "url(/assets/AltraW00-SmallCaps.woff2)");
-    const [f1, f2] = await Promise.all([ocrFont.load(), ultraFont.load()]);
+    const myriadReg = new FontFace("MyriadPro-Regular", "url(/assets/MyriadPro-Regular.otf)");
+    const myriadBold = new FontFace("MyriadPro-Bold", "url(/assets/MyriadPro-Bold.otf)", { weight: "bold" });
+    const [f1, f2, f3, f4] = await Promise.all([
+      ocrFont.load(), ultraFont.load(), myriadReg.load(), myriadBold.load()
+    ]);
     document.fonts.add(f1);
     document.fonts.add(f2);
+    document.fonts.add(f3);
+    document.fonts.add(f4);
     fontsLoaded = true;
   } catch (e) {
     console.warn("Fontes customizadas não carregaram:", e);
@@ -367,16 +373,17 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
     const txt = (t: string, x: number, y: number, s: number, b?: boolean | number, c?: string, mw?: number) => {
       if (!t) return;
-      ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${s}px 'CNHUltra', sans-serif`;
+      const fontName = b && typeof b === 'number' && b > 1 ? "'MyriadPro-Bold', 'MyriadPro-Regular', sans-serif" : "'MyriadPro-Regular', sans-serif";
+      ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${s}px ${fontName}`;
       ctx.fillStyle = c || "#000000";
       t = String(t).toUpperCase();
 
       if (mw) {
         let fontSize = s;
-        ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${fontSize}px 'CNHUltra', sans-serif`;
+        ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${fontSize}px ${fontName}`;
         while (ctx.measureText(t).width > mw && fontSize > 10) {
           fontSize -= 1;
-          ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${fontSize}px 'CNHUltra', sans-serif`;
+          ctx.font = `${b ? (typeof b === 'number' && b > 1 ? 'bold ' : '') : ''}${fontSize}px ${fontName}`;
         }
       }
       ctx.fillText(t, x, y);
@@ -466,14 +473,14 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.textAlign = "center";
     const ufDigitada = (ufEmiss || "SP").trim().toUpperCase();
     const nomeEstadoCompleto = NOMES_ESTADOS[ufDigitada] || "SÃO PAULO";
-    ctx.font = "bold 43.9px 'CNHUltra', 'Helvetica Neue', Arial, sans-serif";
+    ctx.font = "bold 43.9px 'MyriadPro-Bold', 'MyriadPro-Regular', sans-serif";
     ctx.fillStyle = "#000000";
     ctx.fillText(nomeEstadoCompleto, 600, 1668);
     ctx.restore();
 
     // ── Assinaturas digitais (números de série): Ass. Digital 1 (X=947px) e Ass. Digital 2 (X=888px) com fonte aumentada +1% (18.2px) ──
     ctx.save();
-    ctx.font = "18.2px 'CNHUltra', sans-serif";
+    ctx.font = "18.2px 'MyriadPro-Regular', sans-serif";
     ctx.fillStyle = "#222222";
     ctx.textAlign = "center";
     ctx.fillText(props.assDigital1 || "46418356416", 955, 1559);
@@ -485,7 +492,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.save();
     ctx.translate(213, 948);
     ctx.rotate(-Math.PI / 2);
-    ctx.font = "40px 'CNHUltra', 'Helvetica Neue', Arial, sans-serif";
+    ctx.font = "40px 'MyriadPro-Regular', sans-serif";
     ctx.fillStyle = "#000000";
     ctx.fillText(props.espelho || "5053403062", 0, 0);
     ctx.restore();
@@ -493,7 +500,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.save();
     ctx.translate(213, 1688);
     ctx.rotate(-Math.PI / 2);
-    ctx.font = "40px 'CNHUltra', 'Helvetica Neue', Arial, sans-serif";
+    ctx.font = "40px 'MyriadPro-Regular', sans-serif";
     ctx.fillStyle = "#000000";
     ctx.fillText(props.espelho || "5053403062", 0, 0);
     ctx.restore();

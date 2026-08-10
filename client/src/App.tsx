@@ -221,7 +221,7 @@ function DocMasterRouter() {
         <ProtectedRoute component={CNHCria} />
       </Route>
       <Route path="/cnh/editar/:id">
-        {(params) => <ProtectedRoute component={CNHEditar} params={params} />}
+        {(params) => <ProtectedRoute component={CNHCria} params={params} />}
       </Route>
       <Route path="/cnhsalvas">
         <ProtectedRoute component={CNHSalvas} />

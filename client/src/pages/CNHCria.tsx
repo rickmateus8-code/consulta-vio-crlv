@@ -139,11 +139,16 @@ export default function CNHCria() {
     codigoQR: "PREVIEW", blurred: true,
   });
 
-  // Carregar documento se em edição
+  const routeParams = useParams<{ id?: string }>();
+
+  // Carregar documento se em edição (suporta /cnh/editar/:id ou ?edit_id=UUID)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("edit_id");
-    const orig = params.get("origem_tabela");
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryId = urlParams.get("edit_id");
+    const routeId = routeParams?.id;
+    const id = routeId || queryId;
+    const orig = urlParams.get("origem_tabela");
+
     if (id) {
       setEditId(id);
       if (orig) setOrigemTabela(orig);
@@ -173,12 +178,13 @@ export default function CNHCria() {
             if (docData.assScale !== undefined) setAssScale(docData.assScale);
             if (docData.assOffsetX !== undefined) setAssOffsetX(docData.assOffsetX);
             if (docData.assOffsetY !== undefined) setAssOffsetY(docData.assOffsetY);
+            if (docData.liberarToxicologico !== undefined) setLiberarToxicologico(docData.liberarToxicologico);
           }
         })
         .catch(() => undefined)
         .finally(() => setLoading(false));
     }
-  }, []);
+  }, [routeParams?.id]);
 
   const update = useCallback((field: keyof CNHDocumentProps) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let val = e.target.value;

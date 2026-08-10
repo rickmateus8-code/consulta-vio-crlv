@@ -524,14 +524,12 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // ═══════════════════════════════════════════════════════════════════
     const codigoQrFinal = props.codigoQR && props.codigoQR !== "PREVIEW" ? props.codigoQR : "";
     
-    // Determinar a origem/base URL dinamicamente sem hardcode
-    const origin = typeof window !== "undefined" && window.location.origin && !window.location.origin.includes("localhost")
-      ? window.location.origin
-      : "https://validacao-online-vio.digital";
+    // O validador oficial de CNH é EXCLUSIVAMENTE https://validacao-online-vio.digital
+    const cnhValidationBase = "https://validacao-online-vio.digital";
 
     const qrUrl = codigoQrFinal
-      ? `${origin}/consulta/?id=${encodeURIComponent(codigoQrFinal)}`
-      : `${origin}/consulta/`;
+      ? `${cnhValidationBase}/consulta/?id=${encodeURIComponent(codigoQrFinal)}`
+      : `${cnhValidationBase}/consulta/`;
 
     try {
       const qrWidth = 860;

@@ -94,7 +94,7 @@ export function categoryRows(category = "", validade?: string) {
   });
   return ["ACC", "A", "B", "C", "D", "E"].map((item) => ({
     categoria: item,
-    validade: enabled.has(item) ? (formatDate(validade) || "—") : "—",
+    validade: enabled.has(item) ? (formatDate(validade) || validade || "—") : "—",
   }));
 }
 
@@ -113,46 +113,33 @@ export function normalizeRecord(payload: any): CNHValidationRecord {
   const raw = payload?.data && typeof payload.data === "object" ? payload.data : payload;
   const data = raw?.data && typeof raw.data === "object" ? raw.data : {};
   
-  // Resolving raw values from emission payload
-  const rawEmissao = data?.dataEmissao || data?.emissao || data?.data_emissao || data?.dtEmissao || data?.primeiraHabilitacao || raw?.dataEmissao || raw?.created_at;
-  const formattedEmissao = formatDate(rawEmissao) || formatDate(new Date().toISOString().slice(0, 10));
-
-  let rawValidade = data?.validade || data?.dataValidade || data?.validadeCNH || data?.validadeCNH2 || data?.val || raw?.validade;
-  let formattedValidade = formatDate(rawValidade);
-
-  // If validade was left empty during /cnhcria emission, calculate 10 years from emission date
-  if (!formattedValidade && formattedEmissao) {
-    const parts = formattedEmissao.split("/");
-    if (parts.length === 3) {
-      const year = parseInt(parts[2], 10) + 10;
-      formattedValidade = `${parts[0]}/${parts[1]}/${year}`;
-    }
-  }
+  const rawValidade = data?.validade || data?.dataValidade || data?.validadeCNH || data?.validadeCNH2 || data?.val || raw?.validade || "";
+  const rawEmissao = data?.dataEmissao || data?.emissao || data?.data_emissao || data?.dtEmissao || raw?.dataEmissao || "";
 
   return {
     ...raw,
     ...data,
-    nome: raw?.nome || data?.nome || data?.nomeCompleto || "",
-    cpf: raw?.cpf || data?.cpf || "",
-    rg: raw?.rg || data?.rg || "",
-    orgaoEmissor: raw?.orgaoEmissor || data?.orgaoEmissor || "",
-    ufRG: raw?.ufRG || data?.ufRG || data?.ufRg || "",
-    sexo: (data?.sexo || raw?.sexo || "MASCULINO").toUpperCase(),
-    nacionalidade: (data?.nacionalidade || raw?.nacionalidade || "BRASILEIRA").toUpperCase(),
-    dataNascimento: formatDate(data?.dataNascimento || raw?.dataNascimento || data?.nascimento),
+    nome: data?.nome || raw?.nome || data?.nomeCompleto || "",
+    cpf: data?.cpf || raw?.cpf || "",
+    rg: data?.rg || raw?.rg || "",
+    orgaoEmissor: data?.orgaoEmissor || raw?.orgaoEmissor || "",
+    ufRG: data?.ufRG || raw?.ufRG || data?.ufRg || "",
+    sexo: (data?.sexo || raw?.sexo || "").toUpperCase(),
+    nacionalidade: (data?.nacionalidade || raw?.nacionalidade || "").toUpperCase(),
+    dataNascimento: formatDate(data?.dataNascimento || raw?.dataNascimento || data?.nascimento) || data?.dataNascimento || "",
     localNascimento: data?.localNascimento || raw?.localNascimento || "",
     ufNascimento: data?.ufNascimento || raw?.ufNascimento || "",
     nomePai: data?.nomePai || raw?.nomePai || data?.filiacaoPai || "",
     nomeMae: data?.nomeMae || raw?.nomeMae || data?.filiacaoMae || "",
-    categoria: (data?.categoria || raw?.categoria || data?.cat || "B").toUpperCase(),
-    tipo: data?.tipo || raw?.tipo || "Definitiva",
+    categoria: (data?.categoria || raw?.categoria || data?.cat || "").toUpperCase(),
+    tipo: data?.tipo || raw?.tipo || "",
     registro: data?.registro || raw?.registro || data?.nRegistro || data?.numRegistro || "",
     espelho: data?.espelho || raw?.espelho || data?.numeroFormulario || "",
-    validade: formattedValidade,
-    dataEmissao: formattedEmissao,
-    primeiraHabilitacao: formatDate(data?.primeiraHabilitacao || raw?.primeiraHabilitacao || data?.primeiraHab) || formattedEmissao,
-    localEmissao: data?.localEmissao || raw?.localEmissao || data?.local || "BRASÍLIA",
-    ufEmissao: (data?.ufEmissao || raw?.ufEmissao || data?.uf || "DF").toUpperCase(),
+    validade: formatDate(rawValidade) || rawValidade || "",
+    dataEmissao: formatDate(rawEmissao) || rawEmissao || "",
+    primeiraHabilitacao: formatDate(data?.primeiraHabilitacao || raw?.primeiraHabilitacao || data?.primeiraHab) || data?.primeiraHabilitacao || "",
+    localEmissao: data?.localEmissao || raw?.localEmissao || data?.local || "",
+    ufEmissao: (data?.ufEmissao || raw?.ufEmissao || data?.uf || "").toUpperCase(),
     observacoes: data?.observacoes || raw?.observacoes || data?.obs || "",
     fotoUrl: data?.fotoUrl || raw?.fotoUrl || data?.foto || "",
     assinaturaUrl: data?.assinaturaUrl || raw?.assinaturaUrl || data?.assinatura || "",

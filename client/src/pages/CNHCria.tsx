@@ -15,10 +15,11 @@ import CNHDocument, { type CNHDocumentHandle, type CNHDocumentProps } from "../c
 import { toast } from "sonner";
 import { validarCPF, formatarCPF as formatarCPFUtil, displayDateToHtml } from "@/lib/utils";
 import EmissionModal from "@/components/EmissionModal";
+import { snoopPerfilCPF } from "@/lib/snoopApi";
 import {
   ArrowLeft, Save, Download, MessageCircle, Copy, Zap,
   Upload, Lock, Check, User, Camera, Car, RefreshCw, ZoomIn, ZoomOut,
-  RotateCcw, AlertTriangle, ArrowRight, ArrowUp, ArrowDown, Maximize2
+  RotateCcw, AlertTriangle, ArrowRight, ArrowUp, ArrowDown, Maximize2, Sparkles, Search
 } from "lucide-react";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
@@ -290,8 +291,101 @@ export default function CNHCria() {
       senhaApp: get("Senha App") || get("Senha") || String(Math.floor(1000 + Math.random() * 9000)),
       observacoes: get("Observa[çc][oõ]es") || d.observacoes,
     }));
+    const parsedCpf = get("CPF").replace(/\D/g, "");
     setEtapa("pessoais");
     toast.success("Dados colados e preenchidos com sucesso!");
+
+    if (parsedCpf.length === 11) {
+      handleSnoopLookup(parsedCpf);
+    }
+  };
+
+  // ─── CONSULTA AUTOMÁTICA SNOOPINTELLIGENCE (DADOS PESSOAIS + FOTO 3X4) ───
+  const [isSnoopLoading, setIsSnoopLoading] = useState(false);
+
+  const handleSnoopLookup = async (cpfInput?: string) => {
+    const targetCpf = (cpfInput || data.cpf || "").replace(/\D/g, "");
+    if (targetCpf.length !== 11) {
+      toast.error("Informe um CPF válido com 11 dígitos para consultar no SnoopIntelligence.");
+      return;
+    }
+
+    setIsSnoopLoading(true);
+    const toastId = toast.loading("Consultando SnoopIntelligence (Dados Pessoais + Foto 3x4)...");
+
+    try {
+      const [lookupRes, perfilData] = await Promise.all([
+        fetch(`/api/cpf-lookup?cpf=${targetCpf}`, { credentials: "include" }).then(r => r.json()).catch(() => null),
+        snoopPerfilCPF(targetCpf).catch(() => null)
+      ]);
+
+      const d = lookupRes?.success ? lookupRes?.data || {} : {};
+      const perfil = perfilData?.perfil || {};
+      const cpfDados = perfil.cpf_dados || {};
+
+      const nomeVal = d.nome || cpfDados.nome || cpfDados.name || cpfDados.nome_completo;
+      const sexoVal = (d.sexo === "M" || d.sexo === "MALE" || cpfDados.sexo === "M") ? "M" : ((d.sexo === "F" || d.sexo === "FEMALE" || cpfDados.sexo === "F") ? "F" : "");
+      const rgVal = d.rg || cpfDados.rg;
+      const orgaoEmissorVal = d.orgaoEmissor || cpfDados.orgao_emissor || cpfDados.orgaoEmissor;
+      const ufRgVal = d.uf || d.ufRG || cpfDados.uf || cpfDados.uf_rg;
+      const nacVal = d.nacionalidade || cpfDados.nacionalidade || "BRASILEIRA";
+      const nascDateVal = d.nascimento || cpfDados.nascimento || cpfDados.data_nascimento || cpfDados.birth_date;
+      const localNascVal = d.cidade || cpfDados.cidade || cpfDados.municipio;
+      const ufNascVal = d.uf || cpfDados.uf;
+      const paiVal = d.nomePai || cpfDados.pai || cpfDados.nome_pai;
+      const maeVal = d.nomeMae || cpfDados.mae || cpfDados.nome_mae;
+
+      // Extração automática da Foto no SnoopIntelligence (CNH, Nacional, SP, RG, MA, RO)
+      const fotoEncontrada = 
+        perfil.foto_cnh || 
+        perfil.foto || 
+        perfil.foto_sp || 
+        perfil.foto_rg || 
+        perfil.foto_ma || 
+        perfil.foto_ro || 
+        perfil.fotos?.cnh || 
+        perfil.fotos?.nacional || 
+        perfil.fotos?.sp || 
+        cpfDados.foto_cnh || 
+        cpfDados.foto || null;
+
+      const formatDateForInput = (val?: string) => {
+        if (!val) return "";
+        const clean = val.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(clean)) return displayDateToHtml(clean);
+        return clean;
+      };
+
+      setData(prev => ({
+        ...prev,
+        nome: nomeVal ? String(nomeVal).toUpperCase() : prev.nome,
+        cpf: formatarCPFUtil(targetCpf),
+        sexo: sexoVal || prev.sexo,
+        rg: rgVal ? String(rgVal).replace(/\D/g, "") : prev.rg,
+        orgaoEmissor: orgaoEmissorVal ? String(orgaoEmissorVal).toUpperCase() : prev.orgaoEmissor,
+        ufRG: ufRgVal ? String(ufRgVal).toUpperCase() : prev.ufRG,
+        nacionalidade: nacVal ? String(nacVal).toUpperCase() : prev.nacionalidade,
+        dataNascimento: formatDateForInput(nascDateVal) || prev.dataNascimento,
+        localNascimento: localNascVal ? String(localNascVal).toUpperCase() : prev.localNascimento,
+        ufNascimento: ufNascVal ? String(ufNascVal).toUpperCase() : prev.ufNascimento,
+        nomePai: paiVal ? String(paiVal).toUpperCase() : prev.nomePai,
+        nomeMae: maeVal ? String(maeVal).toUpperCase() : prev.nomeMae,
+        fotoUrl: fotoEncontrada || prev.fotoUrl,
+      }));
+
+      if (fotoEncontrada) {
+        toast.success("✅ SnoopIntelligence: Dados pessoais e Foto 3x4 vinculados com sucesso!", { id: toastId });
+      } else if (nomeVal || rgVal || maeVal) {
+        toast.success("✅ SnoopIntelligence: Dados pessoais preenchidos com sucesso! (Foto não encontrada no banco)", { id: toastId });
+      } else {
+        toast.error("Nenhum registro encontrado para este CPF no SnoopIntelligence.", { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error("Erro na consulta SnoopIntelligence: " + (err?.message || "Serviço indisponível"), { id: toastId });
+    } finally {
+      setIsSnoopLoading(false);
+    }
   };
 
   // ─── UPLOAD DE FOTO E ASSINATURA ──────────────────────────────────────────
@@ -577,8 +671,19 @@ export default function CNHCria() {
               {/* ETAPA 2: 1. PESSOAIS (REPLICA 1:1 DA IMAGEM DE REFERÊNCIA) */}
               {etapa === "pessoais" && (
                 <div className="space-y-4">
-                  <div className="p-3 rounded-lg border-t-2 border-t-purple-500 border-x border-b border-purple-950/60 bg-[#160b2b] text-purple-300 font-bold text-xs tracking-wide uppercase flex items-center gap-2">
-                    <User className="w-4 h-4 text-purple-400" /> 1. DADOS PESSOAIS
+                  <div className="p-3 rounded-lg border-t-2 border-t-purple-500 border-x border-b border-purple-950/60 bg-[#160b2b] text-purple-300 font-bold text-xs tracking-wide uppercase flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-purple-400" /> 1. DADOS PESSOAIS
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSnoopLookup()}
+                      disabled={isSnoopLoading}
+                      className="px-3 py-1.5 rounded-lg border border-purple-500/60 bg-purple-950/90 hover:bg-purple-900 text-purple-200 font-black text-[11px] uppercase flex items-center gap-1.5 transition-all shadow"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                      {isSnoopLoading ? "CONSULTANDO SNOOP..." : "PREENCHER VIA SNOOPINTELLIGENCE"}
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
@@ -594,13 +699,24 @@ export default function CNHCria() {
                     </div>
                     <div className="col-span-1 space-y-1">
                       <label className="text-[11px] font-bold text-slate-300">CPF</label>
-                      <input
-                        type="text"
-                        value={data.cpf}
-                        onChange={update("cpf")}
-                        placeholder="000.000.000-00"
-                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none"
-                      />
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={data.cpf}
+                          onChange={update("cpf")}
+                          placeholder="000.000.000-00"
+                          className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSnoopLookup()}
+                          disabled={isSnoopLoading}
+                          title="Consultar SnoopIntelligence para preenchimento de Dados e Foto 3x4"
+                          className="px-3 py-2 rounded-lg border border-purple-500 bg-purple-950 hover:bg-purple-900 text-purple-200 font-black text-xs flex items-center gap-1 shrink-0 transition-all shadow"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" /> SNOOP
+                        </button>
+                      </div>
                     </div>
                     <div className="col-span-1 space-y-1">
                       <label className="text-[11px] font-bold text-slate-300">Sexo</label>
@@ -904,6 +1020,16 @@ export default function CNHCria() {
                           3x4 PERFECT
                         </span>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSnoopLookup()}
+                        disabled={isSnoopLoading}
+                        className="px-3 py-2 rounded-lg border border-purple-500 bg-purple-950 hover:bg-purple-900 text-purple-200 text-xs font-black uppercase flex items-center justify-center gap-1.5 w-full transition-all shadow"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        {isSnoopLoading ? "BUSCANDO FOTO SNOOP..." : "VINCULAR FOTO SNOOP (CPF)"}
+                      </button>
 
                       <label className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer inline-flex items-center justify-center gap-1.5 w-full transition-all shadow">
                         <Upload className="w-4 h-4" /> Enviar Foto 3x4 do Condutor

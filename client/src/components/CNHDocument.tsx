@@ -133,22 +133,21 @@ function gerarMRZ(p: CNHDocumentProps): string[] {
   ];
 }
 
-// ─── Carregamento de Fontes ──────────────────────────────────────────────────
+import { MYRIAD_REGULAR_BASE64, OCRB_BASE64 } from "./cnhFontsBase64";
+
+// ─── Carregamento de Fontes (100% Embutidas em Base64 para Garantia de Exibição Instantânea) ─────
 let fontsLoaded = false;
 async function loadFonts() {
   if (fontsLoaded) return;
   try {
-    const ocrFont = new FontFace("OCR-B", "url(/assets/ocrbstd.otf)");
-    const ultraFont = new FontFace("Ultra", "url(/assets/AltraW00-SmallCaps.woff2)");
-    const myriadReg = new FontFace("MyriadPro-Regular", "url(/assets/MyriadPro-Regular.otf)");
-    const myriadBold = new FontFace("MyriadPro-Bold", "url(/assets/MyriadPro-Bold.otf)", { weight: "bold" });
-    const [f1, f2, f3, f4] = await Promise.all([
-      ocrFont.load(), ultraFont.load(), myriadReg.load(), myriadBold.load()
+    const ocrFont = new FontFace("OCR-B", `url(${OCRB_BASE64})`);
+    const myriadReg = new FontFace("MyriadPro-Regular", `url(${MYRIAD_REGULAR_BASE64})`);
+    const [f1, f2] = await Promise.all([
+      ocrFont.load(), myriadReg.load()
     ]);
     document.fonts.add(f1);
     document.fonts.add(f2);
-    document.fonts.add(f3);
-    document.fonts.add(f4);
+    await document.fonts.ready;
     fontsLoaded = true;
   } catch (e) {
     console.warn("Fontes customizadas não carregaram:", e);

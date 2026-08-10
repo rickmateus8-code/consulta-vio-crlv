@@ -283,37 +283,40 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
   useImperativeHandle(ref, () => ({
     exportAsBlob: async () => {
-      await renderCanvas();
-      const cvs = canvasRef.current;
-      if (!cvs) return null;
+      const fullCvs = document.createElement("canvas");
+      fullCvs.width = PAGE_W;
+      fullCvs.height = PAGE_H;
+      await drawCNHToCanvas(fullCvs, props);
       const whiteCvs = document.createElement("canvas");
-      whiteCvs.width = cvs.width;
-      whiteCvs.height = cvs.height;
+      whiteCvs.width = PAGE_W;
+      whiteCvs.height = PAGE_H;
       const wctx = whiteCvs.getContext("2d")!;
       wctx.fillStyle = "#FFFFFF";
-      wctx.fillRect(0, 0, cvs.width, cvs.height);
-      wctx.drawImage(cvs, 0, 0);
+      wctx.fillRect(0, 0, PAGE_W, PAGE_H);
+      wctx.drawImage(fullCvs, 0, 0);
       return new Promise<Blob | null>((resolve) => {
         whiteCvs.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
       });
     },
     exportAsPdf: async () => {
-      await renderCanvas();
-      const cvs = canvasRef.current;
-      if (!cvs) return;
-      await exportToPdf(cvs, props);
+      const fullCvs = document.createElement("canvas");
+      fullCvs.width = PAGE_W;
+      fullCvs.height = PAGE_H;
+      await drawCNHToCanvas(fullCvs, props);
+      await exportToPdf(fullCvs, props);
     },
     getCanvas: () => canvasRef.current,
     exportCropBlob: async (x, y, w, h) => {
-      await renderCanvas();
-      const cvs = canvasRef.current;
-      if (!cvs) return null;
+      const fullCvs = document.createElement("canvas");
+      fullCvs.width = PAGE_W;
+      fullCvs.height = PAGE_H;
+      await drawCNHToCanvas(fullCvs, props);
       const crop = document.createElement("canvas");
       crop.width = w; crop.height = h;
       const cctx = crop.getContext("2d")!;
       cctx.fillStyle = "#FFFFFF";
       cctx.fillRect(0, 0, w, h);
-      cctx.drawImage(cvs, x, y, w, h, 0, 0, w, h);
+      cctx.drawImage(fullCvs, x, y, w, h, 0, 0, w, h);
       return new Promise<Blob | null>((resolve) => {
         crop.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
       });
@@ -323,6 +326,10 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
   const renderCanvas = async () => {
     const cvs = canvasRef.current;
     if (!cvs) return;
+    await drawCNHToCanvas(cvs, props);
+  };
+
+  const drawCNHToCanvas = async (cvs: HTMLCanvasElement, props: CNHDocumentProps) => {
     const ctx = cvs.getContext("2d");
     if (!ctx) return;
 

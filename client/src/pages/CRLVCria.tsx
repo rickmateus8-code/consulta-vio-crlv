@@ -71,6 +71,25 @@ function formatarCPFInput(v: string): string {
   return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
 }
 
+function getHojeDataStr(): string {
+  const agora = new Date();
+  const dia = String(agora.getDate()).padStart(2, "0");
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const ano = agora.getFullYear();
+  return `${dia}/${mes}/${ano}`;
+}
+
+function getHojeDataHoraStr(): string {
+  const agora = new Date();
+  const dia = String(agora.getDate()).padStart(2, "0");
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const ano = agora.getFullYear();
+  const hora = String(agora.getHours()).padStart(2, "0");
+  const min = String(agora.getMinutes()).padStart(2, "0");
+  const seg = String(agora.getSeconds()).padStart(2, "0");
+  return `${dia}/${mes}/${ano} às ${hora}:${min}:${seg}`;
+}
+
 export default function CRLVCria() {
   const { user, updateBalance } = useAuth();
   const [, setLocation] = useLocation();
@@ -117,7 +136,7 @@ export default function CRLVCria() {
     detranUF: "PR",
     emissaoDetranUF: "SE",
     emissaoDetranHash: "D72C8C94ED88BF41",
-    emissaoDataHora: "30/06/2026 às 14:11:30",
+    emissaoDataHora: getHojeDataHoraStr(),
 
     categoria: "PARTICULAR",
     capacidade: "*.*",
@@ -131,7 +150,7 @@ export default function CRLVCria() {
     nome: "ANTONIO CAMILO ALMEIDA FREITAS JUNIOR",
     cpfCnpj: "042.512.909-84",
     local: "CURITIBA PR",
-    dataEmissaoDoc: "21/01/2026",
+    dataEmissaoDoc: getHojeDataStr(),
 
     dpvatCatTarif: "*",
     dpvatDataQuitacao: "*",
@@ -208,10 +227,10 @@ export default function CRLVCria() {
       numeroCRV: "", codigoSegurancaCLA: "", cat: "***", marcaModeloVersao: "",
       especieTipo: "PASSAGEIRO", placaAnteriorUF: "*******/**", chassi: "",
       corPredominante: "", combustivel: "GASOLINA", detranUF: "PR", emissaoDetranUF: "PR",
-      emissaoDetranHash: "D72C8C94ED88BF41", emissaoDataHora: "30/06/2026 às 14:11:30",
+      emissaoDetranHash: "D72C8C94ED88BF41", emissaoDataHora: getHojeDataHoraStr(),
       categoria: "PARTICULAR", capacidade: "*.*", potenciaCilindrada: "", pesoBrutoTotal: "",
       motor: "", cmt: "", eixos: "2", lotacao: "05", carroceria: "NÃO APLICAVEL",
-      nome: "", cpfCnpj: "", local: "", dataEmissaoDoc: "",
+      nome: "", cpfCnpj: "", local: "", dataEmissaoDoc: getHojeDataStr(),
       dpvatCatTarif: "*", dpvatDataQuitacao: "*", dpvatPagamento: "COTA ÚNICA",
       dpvatRepasseFns: "*", dpvatCustoBilhete: "*", dpvatCustoEfetivo: "*",
       dpvatRepasseDenatran: "*", dpvatValorIof: "*", dpvatValorTotal: "*",

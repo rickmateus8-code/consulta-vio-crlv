@@ -91,6 +91,25 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+function getHojeDataStr(): string {
+  const agora = new Date();
+  const dia = String(agora.getDate()).padStart(2, "0");
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const ano = agora.getFullYear();
+  return `${dia}/${mes}/${ano}`;
+}
+
+function getHojeDataHoraStr(): string {
+  const agora = new Date();
+  const dia = String(agora.getDate()).padStart(2, "0");
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const ano = agora.getFullYear();
+  const hora = String(agora.getHours()).padStart(2, "0");
+  const min = String(agora.getMinutes()).padStart(2, "0");
+  const seg = String(agora.getSeconds()).padStart(2, "0");
+  return `${dia}/${mes}/${ano} às ${hora}:${min}:${seg}`;
+}
+
 function drawClippedText(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -259,7 +278,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   // 12. RODAPÉ DE EMISSÃO DETRAN (Máscara expandida cobrindo 100% da linha estática)
   const ufEmi = (props.emissaoDetranUF || topDetranUF).toUpperCase();
   const hashEmi = props.emissaoDetranHash || "D72C8C94ED88BF41";
-  const dataEmiStr = props.emissaoDataHora || "30/06/2026 às 14:11:30";
+  const dataEmiStr = props.emissaoDataHora || getHojeDataHoraStr();
   const emiText = `Documento emitido por DETRAN ${ufEmi} (${hashEmi}) em ${dataEmiStr}.`;
 
   // Preenchimento de fundo branco absoluto cobrindo toda a largura da linha estática (X: 115 a 1250)
@@ -307,10 +326,10 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.font = `bold 41px ${FONT_VAL}`;
   ctx.fillText(props.cpfCnpj || "042.512.909-84", 1928, 963);
 
-  // 20. LOCAL & DATA (Y=1100, Fonte: 42px) - FORMATO RIGOROSO "{CIDADE}  {UF}"
+  // 20. LOCAL & DATA (Y=1100, Fonte: 42px) - FORMATO RIGOROSO "{CIDADE}   {UF}"
   drawClippedText(ctx, localFormattedLayout, rightX, 1100, 700, 42, true, FONT_VAL);
   ctx.font = `bold 42px ${FONT_VAL}`;
-  ctx.fillText(props.dataEmissaoDoc || "21/01/2026", 2124, 1100);
+  ctx.fillText(props.dataEmissaoDoc || getHojeDataStr(), 2124, 1100);
 
   // 21. DPVAT VALORES (Se preenchidos diferentemente de *)
   const dpvatY = 1200;

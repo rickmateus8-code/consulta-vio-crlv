@@ -128,12 +128,12 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-  // 2. Carregar Imagem BASE Principal Original do Gabarito Vetorial (600DPI - V3 Sem Textos Estáticos DETRAN)
+  // 2. Carregar Imagem BASE Principal Original do Gabarito Vetorial (600DPI - V5 Sem Textos Estáticos DETRAN)
   let bgImg: HTMLImageElement | null = null;
   try {
-    bgImg = await loadImage("/assets/crlv_template_clean_v3.png?v=20260810_v3");
+    bgImg = await loadImage("/assets/crlv_template_clean_v3.png?v=20260810_v5");
   } catch {
-    try { bgImg = await loadImage("/assets/crlv_template_clean_v2.png?v=20260810_v3"); } catch {}
+    try { bgImg = await loadImage("/assets/crlv_template_clean_v2.png?v=20260810_v5"); } catch {}
   }
 
   if (bgImg) {
@@ -169,10 +169,10 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   }
   const localFormattedLayout = `${cidadeNome}  ${detectedUF}`; // Exatamente 2 espaços entre cidade e UF
 
-  // 1. DETRAN - {UF} (Sobreposição dinâmica no topo esquerdo)
+  // 1. DETRAN - {UF} (Máscara expandida cobrindo 100% de qualquer vestígio no topo esquerdo)
   const topDetranUF = (props.detranUF || detectedUF).toUpperCase();
   ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(125, 218, 220, 32); // Limpar área exata do topo esquerdo
+  ctx.fillRect(115, 200, 330, 58); // Máscara de limpeza absoluta
   ctx.fillStyle = "#000000";
   ctx.font = `bold 18px ${FONT_LBL}`;
   ctx.fillText(`DETRAN - ${topDetranUF}`, marginX, 245);
@@ -236,15 +236,15 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillText((props.corPredominante || "PRETA").toUpperCase(), marginX, 1683);
   ctx.fillText((props.combustivel || "GASOLINA").toUpperCase(), 426, 1683);
 
-  // 12. RODAPÉ DE EMISSÃO DETRAN (Y=1740)
+  // 12. RODAPÉ DE EMISSÃO DETRAN (Máscara expandida cobrindo 100% da linha estática)
   const ufEmi = (props.emissaoDetranUF || topDetranUF).toUpperCase();
   const hashEmi = props.emissaoDetranHash || "D72C8C94ED88BF41";
   const dataEmiStr = props.emissaoDataHora || "30/06/2026 às 14:11:30";
   const emiText = `Documento emitido por DETRAN ${ufEmi} (${hashEmi}) em ${dataEmiStr}.`;
 
-  // Preenchimento de fundo branco absoluto cobrindo toda a largura da linha estática (X: 125 a 1150)
+  // Preenchimento de fundo branco absoluto cobrindo toda a largura da linha estática (X: 115 a 1250)
   ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(125, 1715, leftW + 30, 35);
+  ctx.fillRect(115, 1705, leftW + 80, 55);
 
   // Desenhar o texto dinâmico por cima
   ctx.font = `16px ${FONT_LBL}`;

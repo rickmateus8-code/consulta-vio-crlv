@@ -2,7 +2,7 @@
  * CRLVDocument — Geração visual 1:1 baseada no Gabarito Vetorial PDF em Alta Definição (A4 @300DPI)
  *
  * Utiliza o modelo limpo vetorial 600DPI enviado pelo usuário como BACKGROUND PRINCIPAL ABSOLUTO
- * cobrindo 100% com fundo branco a área da legenda estática de emissão do DETRAN no rodapé esquerdo.
+ * com o QR Code ajustado 0,2% para cima (qrY = 383px).
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import QRCode from "qrcode";
@@ -167,10 +167,10 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.font = `bold 44px ${FONT_VAL}`;
   ctx.fillText(props.renavam || "00278581161", marginX, 453);
 
-  // 3. QR CODE PRINCIPAL DO DOCUMENTO (qrY=390px, qrX=690px)
+  // 3. QR CODE PRINCIPAL DO DOCUMENTO (Mover 0,2% para cima: qrY=383px, qrX=690px)
   const qrSize = 425;
   const qrX = 690;
-  const qrY = 390;
+  const qrY = 383;
 
   const crlvBaseUrl = "https://consulta-vio-crlv.pages.dev";
   const qrVal = props.codigoQR && props.codigoQR !== "PREVIEW"

@@ -34,7 +34,7 @@ Sexo:
 RG: 
 Orgão Emissor: 
 UF RG: 
-Nacionalidade: BRASILEIRA
+Nacionalidade: BRASILEIRO(A)
 Data Nascimento: 
 Local Nascimento: 
 UF Nasc: 
@@ -328,7 +328,7 @@ export default function CNHCria() {
       const rgVal = d.rg || cpfDados.rg;
       const orgaoEmissorVal = d.orgaoEmissor || cpfDados.orgao_emissor || cpfDados.orgaoEmissor;
       const ufRgVal = d.uf || d.ufRG || cpfDados.uf || cpfDados.uf_rg;
-      const nacVal = d.nacionalidade || cpfDados.nacionalidade || "BRASILEIRA";
+      const nacVal = d.nacionalidade || cpfDados.nacionalidade || "BRASILEIRO(A)";
       const nascDateVal = d.nascimento || cpfDados.nascimento || cpfDados.data_nascimento || cpfDados.birth_date;
       const localNascVal = d.cidade || cpfDados.cidade || cpfDados.municipio;
       const ufNascVal = d.uf || cpfDados.uf;
@@ -365,7 +365,7 @@ export default function CNHCria() {
         rg: rgVal ? String(rgVal).replace(/\D/g, "") : prev.rg,
         orgaoEmissor: orgaoEmissorVal ? String(orgaoEmissorVal).toUpperCase() : prev.orgaoEmissor,
         ufRG: ufRgVal ? String(ufRgVal).toUpperCase() : prev.ufRG,
-        nacionalidade: nacVal ? String(nacVal).toUpperCase() : prev.nacionalidade,
+        nacionalidade: (nacVal && (nacVal.toUpperCase().includes("BRASIL") || nacVal === "BRASILEIRO(A)")) ? "BRASILEIRO(A)" : (nacVal ? String(nacVal).toUpperCase() : "BRASILEIRO(A)"),
         dataNascimento: formatDateForInput(nascDateVal) || prev.dataNascimento,
         localNascimento: localNascVal ? String(localNascVal).toUpperCase() : prev.localNascimento,
         ufNascimento: ufNascVal ? String(ufNascVal).toUpperCase() : prev.ufNascimento,

@@ -456,69 +456,69 @@ export default function CNHCria() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0f172a] text-slate-100 font-sans flex flex-col select-text min-h-screen w-full p-5">
-      <div className="w-full max-w-[1400px] mx-auto bg-[#1e293b] border border-slate-700/60 rounded-xl p-6 shadow-2xl flex flex-col mt-[2vh] mb-24">
-          {/* HEADER SUPERIOR DO CARD (1:1 ELITEDOC HTML) */}
-          <div className="bg-[#0f172a] border border-[#1d4ed8] rounded-xl p-3.5 px-4 mb-6 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070d1e] text-slate-100 font-sans flex flex-col select-text min-h-screen w-full p-5">
+      <div className="w-full max-w-[1280px] mx-auto bg-[#0b1226] border border-[#1e293b] rounded-2xl p-5 shadow-2xl flex flex-col mt-[2vh] mb-24">
+          {/* HEADER SUPERIOR DO CARD (1:1 COM IMAGEM DE REFERÊNCIA) */}
+          <div className="bg-[#070e22] border border-[#1e3a8a]/60 rounded-xl p-4 flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <span className="text-lg font-black tracking-wide text-white">
-                <span className="text-[#60a5fa]">DOCMASTER</span>.STORE Gerador de <span className="text-[#60a5fa]">CNH</span>
+              <span className="text-base sm:text-lg font-black tracking-wide text-white">
+                <span className="text-white">DOCMASTER</span><span className="text-[#3b82f6]">.STORE</span> Gerador de CNH
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 onClick={limparFormulario}
-                className="px-4 py-2 rounded-lg border border-[#60a5fa] bg-transparent hover:bg-slate-800 text-[#93c5fd] text-xs font-black uppercase transition-all"
+                className="px-4 py-2 rounded-lg border border-[#2563eb]/80 bg-[#070e22] hover:bg-[#0f1d47] text-white text-xs font-black uppercase transition-all shadow-sm"
               >
                 LIMPAR FORMULÁRIO
               </button>
               <button
                 type="button"
                 onClick={() => setLocation("/dashboard")}
-                className="px-4 py-2 rounded-lg border border-[#60a5fa] bg-transparent hover:bg-slate-800 text-[#93c5fd] text-xs font-black uppercase transition-all"
+                className="px-4 py-2 rounded-lg border border-[#2563eb]/80 bg-[#070e22] hover:bg-[#0f1d47] text-white text-xs font-black uppercase transition-all shadow-sm"
               >
                 VOLTAR
               </button>
             </div>
           </div>
 
-          {/* CORPO CENTRAL DO CARD: SIDEBAR LATERAL 170px + FORMULÁRIO DA ETAPA */}
-          <div className="flex flex-col md:flex-row gap-4 items-start relative">
-            {/* SIDEBAR LATERAL (170px ESTILO ELITEDOC HTML) */}
-            <div className="w-full md:w-[170px] shrink-0 flex flex-col gap-2 sticky top-5">
+          {/* CORPO CENTRAL DO CARD: SIDEBAR LATERAL + FORMULÁRIO DA ETAPA */}
+          <div className="flex flex-col md:flex-row gap-5 items-start relative">
+            {/* SIDEBAR LATERAL (4 ITENS 1:1 COM IMAGEM DE REFERÊNCIA) */}
+            <div className="w-full md:w-48 shrink-0 flex flex-col gap-2.5">
               <button
                 type="button"
                 onClick={() => setEtapa("automacao")}
-                className={`w-full min-h-[38px] px-3 py-2 rounded-lg border text-left text-[11px] font-black tracking-wide uppercase transition-all ${
+                className={`w-full px-4 py-3 rounded-xl border text-left text-xs font-bold uppercase tracking-wide transition-all ${
                   etapa === "automacao"
-                    ? "border-[#3b82f6] border-l-4 border-l-[#60a5fa] bg-[#0f172a] text-[#93c5fd]"
-                    : "border-slate-700/80 bg-[#1e293b] text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                    ? "border-2 border-blue-500 bg-[#09173d] text-white font-black shadow-lg shadow-blue-500/20"
+                    : "border border-slate-800 bg-[#070e22] text-slate-400 hover:border-slate-700 hover:text-slate-200"
                 }`}
               >
-                Automação
+                AUTOMAÇÃO
               </button>
 
               <button
                 type="button"
                 onClick={() => setEtapa("pessoais")}
-                className={`w-full min-h-[38px] px-3 py-2 rounded-lg border text-left text-[11px] font-black tracking-wide uppercase transition-all ${
+                className={`w-full px-4 py-3 rounded-xl border text-left text-xs font-bold uppercase tracking-wide transition-all ${
                   etapa === "pessoais"
-                    ? "border-[#3b82f6] border-l-4 border-l-[#60a5fa] bg-[#0f172a] text-[#93c5fd]"
-                    : "border-slate-700/80 bg-[#1e293b] text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                    ? "border-2 border-blue-500 bg-[#09173d] text-white font-black shadow-lg shadow-blue-500/20"
+                    : "border border-slate-800 bg-[#070e22] text-slate-400 hover:border-slate-700 hover:text-slate-200"
                 }`}
               >
-                1. Pessoais
+                1. PESSOAIS
               </button>
 
               <button
                 type="button"
                 onClick={() => setEtapa("cnh")}
-                className={`w-full min-h-[38px] px-3 py-2 rounded-lg border text-left text-[11px] font-black tracking-wide uppercase transition-all ${
+                className={`w-full px-4 py-3 rounded-xl border text-left text-xs font-bold uppercase tracking-wide transition-all ${
                   etapa === "cnh"
-                    ? "border-[#3b82f6] border-l-4 border-l-[#60a5fa] bg-[#0f172a] text-[#93c5fd]"
-                    : "border-slate-700/80 bg-[#1e293b] text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                    ? "border-2 border-blue-500 bg-[#09173d] text-white font-black shadow-lg shadow-blue-500/20"
+                    : "border border-slate-800 bg-[#070e22] text-slate-400 hover:border-slate-700 hover:text-slate-200"
                 }`}
               >
                 2. CNH
@@ -527,18 +527,18 @@ export default function CNHCria() {
               <button
                 type="button"
                 onClick={() => setEtapa("finalizacao")}
-                className={`w-full min-h-[38px] px-3 py-2 rounded-lg border text-left text-[11px] font-black tracking-wide uppercase transition-all ${
+                className={`w-full px-4 py-3 rounded-xl border text-left text-xs font-bold uppercase tracking-wide transition-all ${
                   etapa === "finalizacao"
-                    ? "border-[#3b82f6] border-l-4 border-l-[#60a5fa] bg-[#0f172a] text-[#93c5fd]"
-                    : "border-slate-700/80 bg-[#1e293b] text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                    ? "border-2 border-blue-500 bg-[#09173d] text-white font-black shadow-lg shadow-blue-500/20"
+                    : "border border-slate-800 bg-[#070e22] text-slate-400 hover:border-slate-700 hover:text-slate-200"
                 }`}
               >
-                3. Finalização
+                3. FINALIZAÇÃO
               </button>
             </div>
 
             {/* CONTEÚDO PRINCIPAL DA ETAPA SELECIONADA */}
-            <div className="flex-1 w-full min-w-0">
+            <div className="flex-1 bg-[#070e22] border border-[#1e3a8a]/40 rounded-xl p-5 relative flex flex-col justify-between min-h-[360px] w-full min-w-0">
               {/* ETAPA 1: AUTOMAÇÃO (REPLICA 1:1 DA IMAGEM DE REFERÊNCIA ESPERADA) */}
               {etapa === "automacao" && (
                 <div className="p-5 rounded-xl border border-slate-700/80 border-t-4 border-t-[#22c55e] bg-[#0f172a] max-w-[380px] space-y-3.5">

@@ -270,12 +270,12 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillText((props.placaAnteriorUF || "*******/**").toUpperCase(), marginX, 1536);
   drawClippedText(ctx, (props.chassi || "9BGVP19BPPB233276").toUpperCase(), 543, 1536, leftW - 420, 38, true, FONT_VAL);
 
-  // 11. COR PREDOMINANTE & COMBUSTÍVEL (Valor Y=1683, Fonte: 40px)
+  // 11. COR PREDOMINANTE & COMBUSTÍVEL (Valor Y=1660, Fonte: 40px)
   ctx.font = `bold 40px ${FONT_VAL}`;
-  ctx.fillText((props.corPredominante || "PRETA").toUpperCase(), marginX, 1683);
-  ctx.fillText((props.combustivel || "GASOLINA").toUpperCase(), 426, 1683);
+  ctx.fillText((props.corPredominante || "PRETA").toUpperCase(), marginX, 1660);
+  ctx.fillText((props.combustivel || "GASOLINA").toUpperCase(), 426, 1660);
 
-  // 12. RODAPÉ DE EMISSÃO DETRAN (Y=1734) - Máscara elevada (Y: 1702..1745) para NÃO sobrepor a linha pontilhada inferior
+  // 12. RODAPÉ DE EMISSÃO DETRAN (Y=1712) - Máscara compacta (Y: 1692..1718) afastada 63px da linha inferior
   const ufEmi = (props.emissaoDetranUF || topDetranUF).toUpperCase();
   const hashEmi = props.emissaoDetranHash || "D72C8C94ED88BF41";
   
@@ -285,14 +285,15 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   }
   const emiText = `Documento emitido por DETRAN ${ufEmi} (${hashEmi}) em ${dataEmiStr}.`;
 
-  // Preenchimento de fundo branco em Y: 1702..1745 (evita a linha pontilhada em Y=1750)
+  // Preenchimento de fundo branco ultra compacto (Y: 1692..1718, altura 26px)
+  // Preserva mais de 60px de distância da linha inferior base (Y=1781)
   ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(115, 1702, leftW + 80, 43);
+  ctx.fillRect(115, 1692, leftW + 80, 26);
 
-  // Desenhar o texto dinâmico em Y=1734
-  ctx.font = `16px ${FONT_LBL}`;
+  // Desenhar o texto dinâmico elevado em Y=1712
+  ctx.font = `15px ${FONT_LBL}`;
   ctx.fillStyle = "#333333";
-  ctx.fillText(emiText, marginX, 1734);
+  ctx.fillText(emiText, marginX, 1712);
 
   // 13. OBSERVAÇÕES DO VEÍCULO (Valor Y=1890, Fonte: 36px - DENTRO DA CAIXA)
   ctx.font = `bold 36px ${FONT_VAL}`;

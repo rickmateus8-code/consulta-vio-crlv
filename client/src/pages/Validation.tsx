@@ -601,6 +601,11 @@ export default function Validation() {
     }
   };
 
+  // ── Renderização direta para CNH (1:1 com validacao-digital-vio.online) ──────
+  if (showViewer && validDoc && (docType === "cnh" || validDoc.categoria || validDoc.registro || validDoc.n_registro || validDoc.renach)) {
+    return <CNHValidationView data={validDoc} />;
+  }
+
   return (
     <div style={S.page}>
       {/* 🛡️ FORCE BRUTE CSS PARA ELIMINAR BORDAS BRANCAS */}

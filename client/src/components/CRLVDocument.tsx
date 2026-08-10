@@ -1,8 +1,8 @@
 /**
- * CRLVDocument — Geração visual 1:1 baseada no PDF Oficial do SENATRAN / DETRAN (A4 @300DPI)
+ * CRLVDocument — Geração visual 1:1 baseada no Gabarito Base Oficial fornecido pelo Usuário (A4 @300DPI)
  *
- * Utiliza o modelo limpo oficial 600DPI como BACKGROUND PRINCIPAL
- * e desenha os textos dinâmicos em Courier Prime Bold nas COORDENADAS VETORIAIS EXATAS de cada célula.
+ * Utiliza o modelo limpo oficial fornecido como BACKGROUND PRINCIPAL
+ * e desenha os textos dinâmicos em Courier Prime Bold nas COORDENADAS EXATAS das células do gabarito.
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import QRCode from "qrcode";
@@ -128,7 +128,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-  // 2. Carregar Imagem BASE Principal Original do Template (600DPI)
+  // 2. Carregar Imagem BASE Principal enviada pelo usuário
   let bgImg: HTMLImageElement | null = null;
   try {
     bgImg = await loadImage("/assets/crlv_template_clean.png");
@@ -137,7 +137,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   }
 
   if (bgImg) {
-    // DESENHAR O MODELO BASE ORIGINAL COMO BACKGROUND PRINCIPAL (1:1)
+    // DESENHAR O MODELO BASE FORNECIDO PELO USUÁRIO COMO BACKGROUND PRINCIPAL (1:1)
     ctx.drawImage(bgImg, 0, 0, PAGE_W, PAGE_H);
   }
 
@@ -152,27 +152,23 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   const rightX = 1317;
   const rightW = PAGE_W - marginX - rightX;
 
-  // ─── SOBREPOSIÇÃO NAS COORDENADAS EXATAS DO PDF (Courier Prime Bold) ─────────
+  // ─── SOBREPOSIÇÃO NAS COORDENADAS EXATAS DA BASE DO USUÁRIO ───────────────────
 
-  // 1. DETRAN - UF (Se alterado pelo usuário)
+  // 1. DETRAN - UF (Desenhado na barra superior)
   const detranUf = (props.detranUF || props.emissaoDetranUF || "PR").toUpperCase();
-  if (detranUf !== "PR") {
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(200, 220, 60, 24);
-    ctx.fillStyle = "#000000";
-    ctx.font = `bold 18px ${FONT_LBL}`;
-    ctx.fillText(detranUf, 200, 240);
-  }
+  ctx.fillStyle = "#000000";
+  ctx.font = `bold 18px ${FONT_LBL}`;
+  ctx.fillText(`DETRAN- ${detranUf}`, marginX, 175);
 
-  // 2. CÓDIGO RENAVAM (Rótulo Y=405 | Valor Y=471)
+  // 2. CÓDIGO RENAVAM (Rótulo Y=270 | Valor Y=305)
   ctx.fillStyle = "#000000";
   ctx.font = `bold 42px ${FONT_VAL}`;
-  ctx.fillText(props.renavam || "00278581161", marginX, 471);
+  ctx.fillText(props.renavam || "00278581161", marginX, 305);
 
-  // 3. QR CODE PRINCIPAL DO DOCUMENTO (Coordenadas exatas do gabarito)
-  const qrSize = 425;
-  const qrX = 690;
-  const qrY = 265;
+  // 3. QR CODE PRINCIPAL DO DOCUMENTO (Coordenadas do gabarito)
+  const qrSize = 420;
+  const qrX = 700;
+  const qrY = 270;
 
   const crlvBaseUrl = "https://consulta-vio-crlv.pages.dev";
   const qrVal = props.codigoQR && props.codigoQR !== "PREVIEW"
@@ -188,91 +184,91 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
     ctx.strokeRect(qrX, qrY, qrSize, qrSize);
   }
 
-  // 4. PLACA (Rótulo Y=515 | Valor Y=580) & EXERCÍCIO (Valor Y=580)
+  // 4. PLACA (Rótulo Y=405 | Valor Y=440) & EXERCÍCIO (Valor Y=440)
   ctx.font = `bold 40px ${FONT_VAL}`;
-  ctx.fillText((props.placa || "MPK5502").toUpperCase(), marginX, 580);
-  ctx.fillText(props.exercicio || "2026", 427, 580);
+  ctx.fillText((props.placa || "MPK5502").toUpperCase(), marginX, 440);
+  ctx.fillText(props.exercicio || "2026", 427, 440);
 
-  // 5. ANO FABRICAÇÃO (Rótulo Y=625 | Valor Y=689) & ANO MODELO (Valor Y=689)
+  // 5. ANO FABRICAÇÃO (Rótulo Y=515 | Valor Y=550) & ANO MODELO (Valor Y=550)
   ctx.font = `bold 40px ${FONT_VAL}`;
-  ctx.fillText(props.anoFabricacao || "1993", marginX, 689);
-  ctx.fillText(props.anoModelo || "1993", 427, 689);
+  ctx.fillText(props.anoFabricacao || "1993", marginX, 550);
+  ctx.fillText(props.anoModelo || "1993", 427, 550);
 
-  // 6. NÚMERO DO CRV (Rótulo Y=733 | Valor Y=798)
+  // 6. NÚMERO DO CRV (Rótulo Y=625 | Valor Y=660)
   ctx.font = `bold 40px ${FONT_VAL}`;
-  ctx.fillText(props.numeroCRV || "***", marginX, 798);
+  ctx.fillText(props.numeroCRV || "***", marginX, 660);
 
-  // 7. CÓDIGO DE SEGURANÇA DO CLA (Rótulo Y=1019 | Valor Y=1122) & CAT (Valor Y=1122)
+  // 7. CÓDIGO DE SEGURANÇA DO CLA (Rótulo Y=735 | Valor Y=770) & CAT (Valor Y=770)
   ctx.font = `bold 38px ${FONT_VAL}`;
-  ctx.fillText(props.codigoSegurancaCLA || "66545815734", marginX, 1122);
-  ctx.fillText(props.cat || "***", 676, 1122);
+  ctx.fillText(props.codigoSegurancaCLA || "66545815734", marginX, 770);
+  ctx.fillText(props.cat || "***", 676, 770);
 
-  // 8. MARCA / MODELO / VERSÃO (Rótulo Y=1166 | Valor Y=1269)
-  drawClippedText(ctx, (props.marcaModeloVersao || "GM/OMEGA GLS").toUpperCase(), marginX, 1269, leftW, 38, true, FONT_VAL);
+  // 8. MARCA / MODELO / VERSÃO (Rótulo Y=835 | Valor Y=875)
+  drawClippedText(ctx, (props.marcaModeloVersao || "GM/OMEGA GLS").toUpperCase(), marginX, 875, leftW, 38, true, FONT_VAL);
 
-  // 9. ESPÉCIE / TIPO (Rótulo Y=1314 | Valor Y=1415)
-  drawClippedText(ctx, (props.especieTipo || "PASSAGEIRO AUTOMOVEL").toUpperCase(), marginX, 1415, leftW, 38, true, FONT_VAL);
+  // 9. ESPÉCIE / TIPO (Rótulo Y=940 | Valor Y=980)
+  drawClippedText(ctx, (props.especieTipo || "PASSAGEIRO AUTOMOVEL").toUpperCase(), marginX, 980, leftW, 38, true, FONT_VAL);
 
-  // 10. PLACA ANTERIOR / UF (Rótulo Y=1460 | Valor Y=1562) & CHASSI (Valor Y=1562)
+  // 10. PLACA ANTERIOR / UF (Rótulo Y=1045 | Valor Y=1085) & CHASSI (Valor Y=1085)
   ctx.font = `bold 36px ${FONT_VAL}`;
-  ctx.fillText((props.placaAnteriorUF || "*******/**").toUpperCase(), marginX, 1562);
-  drawClippedText(ctx, (props.chassi || "9BGVP19BPPB233276").toUpperCase(), 544, 1562, leftW - 420, 36, true, FONT_VAL);
+  ctx.fillText((props.placaAnteriorUF || "*******/**").toUpperCase(), marginX, 1085);
+  drawClippedText(ctx, (props.chassi || "9BGVP19BPPB233276").toUpperCase(), 544, 1085, leftW - 420, 36, true, FONT_VAL);
 
-  // 11. COR PREDOMINANTE (Rótulo Y=1607 | Valor Y=1709) & COMBUSTÍVEL (Valor Y=1709)
+  // 11. COR PREDOMINANTE (Rótulo Y=1150 | Valor Y=1190) & COMBUSTÍVEL (Valor Y=1190)
   ctx.font = `bold 38px ${FONT_VAL}`;
-  ctx.fillText((props.corPredominante || "PRETA").toUpperCase(), marginX, 1709);
-  ctx.fillText((props.combustivel || "GASOLINA").toUpperCase(), 427, 1709);
+  ctx.fillText((props.corPredominante || "PRETA").toUpperCase(), marginX, 1190);
+  ctx.fillText((props.combustivel || "GASOLINA").toUpperCase(), 427, 1190);
 
-  // 12. RODAPÉ DE EMISSÃO DETRAN (Y=1742)
+  // 12. RODAPÉ DE EMISSÃO DETRAN (Y=1260)
   const ufEmi = (props.emissaoDetranUF || props.detranUF || "SE").toUpperCase();
   const hashEmi = props.emissaoDetranHash || "D72C8C94ED88BF41";
   const dataEmiStr = props.emissaoDataHora || "30/06/2026 às 14:11:30";
   ctx.font = `15px ${FONT_LBL}`;
   ctx.fillStyle = "#333333";
-  ctx.fillText(`Documento emitido por DETRAN ${ufEmi} (${hashEmi}) em ${dataEmiStr}.`, marginX, 1742);
+  ctx.fillText(`Documento emitido por DETRAN ${ufEmi} (${hashEmi}) em ${dataEmiStr}.`, marginX, 1260);
 
-  // 13. OBSERVAÇÕES DO VEÍCULO (Rótulo Y=1808 | Valor Y=1893 - DENTRO DA CAIXA)
+  // 13. OBSERVAÇÕES DO VEÍCULO (Dentro da caixa arredondada Y=1320 a 2420)
   ctx.font = `bold 34px ${FONT_VAL}`;
   ctx.fillStyle = "#000000";
-  ctx.fillText(props.observacoesVeiculo || "SEM OBSERVAÇÕES", marginX, 1893);
+  ctx.fillText(props.observacoesVeiculo || "SEM OBSERVAÇÕES", marginX + 30, 1420);
 
   // ─── COLUNA DIREITA (ESPECIFICAÇÕES & PROPRIETÁRIO) ─────────────────────
 
-  // 14. CATEGORIA (Rótulo Y=298 | Valor Y=351) & CAPACIDADE (Valor Y=412)
+  // 14. CATEGORIA (Rótulo Y=270 | Valor Y=305) & CAPACIDADE (Valor Y=305)
   ctx.font = `bold 40px ${FONT_VAL}`;
-  ctx.fillText((props.categoria || "PARTICULAR").toUpperCase(), rightX, 351);
-  ctx.fillText(props.capacidade || "*.*", 2123, 412);
+  ctx.fillText((props.categoria || "PARTICULAR").toUpperCase(), rightX, 305);
+  ctx.fillText(props.capacidade || "*.*", 2123, 305);
 
-  // 15. POTÊNCIA/CILINDRADA (Rótulo Y=457 | Valor Y=522) & PESO BRUTO TOTAL (Valor Y=522)
+  // 15. POTÊNCIA/CILINDRADA (Rótulo Y=375 | Valor Y=410) & PESO BRUTO TOTAL (Valor Y=410)
   ctx.font = `bold 38px ${FONT_VAL}`;
-  ctx.fillText((props.potenciaCilindrada || "116CV/2198").toUpperCase(), rightX, 522);
-  ctx.fillText(props.pesoBrutoTotal || "1.29", 2123, 522);
+  ctx.fillText((props.potenciaCilindrada || "116CV/2198").toUpperCase(), rightX, 410);
+  ctx.fillText(props.pesoBrutoTotal || "1.29", 2123, 410);
 
-  // 16. MOTOR (Rótulo Y=566 | Valor Y=631), CMT (Y=631), EIXOS (Y=631), LOTAÇÃO (Y=631)
+  // 16. MOTOR (Rótulo Y=480 | Valor Y=515), CMT (Y=515), EIXOS (Y=515), LOTAÇÃO (Y=515)
   ctx.font = `bold 36px ${FONT_VAL}`;
-  drawClippedText(ctx, (props.motor || "C20NE31022309V").toUpperCase(), rightX, 631, 520, 36, true, FONT_VAL);
-  ctx.fillText(props.cmt || "3.05", 1889, 631);
-  ctx.fillText(props.eixos || "2", 2101, 631);
-  ctx.fillText(props.lotacao || "05P", 2242, 631);
+  drawClippedText(ctx, (props.motor || "C20NE31022309V").toUpperCase(), rightX, 515, 520, 36, true, FONT_VAL);
+  ctx.fillText(props.cmt || "3.05", 1889, 515);
+  ctx.fillText(props.eixos || "2", 2101, 515);
+  ctx.fillText(props.lotacao || "05P", 2242, 515);
 
-  // 17. CARROCERIA (Rótulo Y=675 | Valor Y=740)
+  // 17. CARROCERIA (Rótulo Y=585 | Valor Y=620)
   ctx.font = `bold 38px ${FONT_VAL}`;
-  ctx.fillText((props.carroceria || "NÃO APLICAVEL").toUpperCase(), rightX, 740);
+  ctx.fillText((props.carroceria || "NÃO APLICAVEL").toUpperCase(), rightX, 620);
 
-  // 18. NOME DO PROPRIETÁRIO (Rótulo Y=785 | Valor Y=843)
-  drawClippedText(ctx, (props.nome || "ANTONIO CAMILO ALMEIDA FREITAS JUNIOR").toUpperCase(), rightX, 843, rightW, 38, true, FONT_VAL);
+  // 18. NOME DO PROPRIETÁRIO (Rótulo Y=690 | Valor Y=730)
+  drawClippedText(ctx, (props.nome || "ANTONIO CAMILO ALMEIDA FREITAS JUNIOR").toUpperCase(), rightX, 730, rightW, 38, true, FONT_VAL);
 
-  // 19. CPF / CNPJ (Rótulo Y=909 | Valor Y=974)
+  // 19. CPF / CNPJ (Rótulo Y=800 | Valor Y=840)
   ctx.font = `bold 38px ${FONT_VAL}`;
-  ctx.fillText(props.cpfCnpj || "042.512.909-84", 1928, 974);
+  ctx.fillText(props.cpfCnpj || "042.512.909-84", 1928, 840);
 
-  // 20. LOCAL (Rótulo Y=1019 | Valor Y=1122) & DATA (Valor Y=1122)
-  drawClippedText(ctx, (props.local || "CURITIBA PR").toUpperCase(), rightX, 1122, 700, 38, true, FONT_VAL);
+  // 20. LOCAL (Rótulo Y=910 | Valor Y=950) & DATA (Valor Y=950)
+  drawClippedText(ctx, (props.local || "CURITIBA PR").toUpperCase(), rightX, 950, 700, 38, true, FONT_VAL);
   ctx.font = `bold 38px ${FONT_VAL}`;
-  ctx.fillText(props.dataEmissaoDoc || "21/01/2026", 2123, 1122);
+  ctx.fillText(props.dataEmissaoDoc || "21/01/2026", 2123, 950);
 
   // 21. DPVAT VALORES (Se preenchidos diferentemente de *)
-  const dpvatY = 1200;
+  const dpvatY = 1060;
   if (props.dpvatCatTarif && props.dpvatCatTarif !== "*") {
     ctx.font = `bold 24px ${FONT_VAL}`;
     ctx.fillText(props.dpvatCatTarif, rightX + 20, dpvatY + 85);
@@ -292,7 +288,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   }
 
   // 22. INFORMAÇÕES DO SEGURO DPVAT (Linhas adicionais)
-  const infY = 1800;
+  const infY = 1520;
   if (props.informacoesDpvat) {
     ctx.font = `24px ${FONT_VAL}`;
     ctx.fillStyle = "#000000";

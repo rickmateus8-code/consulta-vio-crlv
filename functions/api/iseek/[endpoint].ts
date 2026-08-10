@@ -65,6 +65,19 @@ async function handleProxy(request: Request, env: Env, params: any, method: stri
 
   const cookieStr = (env as any).ISEEK_COOKIE || '';
   const csrfToken = (env as any).ISEEK_CSRF_TOKEN || '';
+
+  if (!cookieStr) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        provider: 'iseek',
+        error: 'ISEEK_COOKIE_MISSING',
+        message: 'Requer Cookie de sessão do iSeek Pro. Configure a variável ISEEK_COOKIE no Cloudflare.',
+      }),
+      { status: 403, headers: CORS }
+    );
+  }
+
   const endpointParts = Array.isArray(params.endpoint) ? params.endpoint : [params.endpoint];
   const endpointPath = endpointParts.join('/');
   const url = new URL(request.url);
@@ -74,9 +87,9 @@ async function handleProxy(request: Request, env: Env, params: any, method: stri
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     'Accept': 'application/json, text/plain, */*',
     'X-Requested-With': 'XMLHttpRequest',
+    'Cookie': cookieStr,
   };
 
-  if (cookieStr) headers['Cookie'] = cookieStr;
   if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
 
   let reqInit: RequestInit = { method, headers };
@@ -104,20 +117,21 @@ async function handleProxy(request: Request, env: Env, params: any, method: stri
       await env.DB.prepare('INSERT INTO consultas_logs (user_id, modulo) VALUES (?, ?)').bind(user.id, `iseek/${endpointPath}`).run();
     } catch {}
 
-    if (!resp.ok && resp.status === 403) {
+    if (!resp.ok) {
+      const errorMsg = data?.message || data?.error || (resp.status === 403 ? 'Acesso negado pelo iSeek Pro (Sessão expirada ou Cloudflare Challenge).' : `Erro HTTP ${resp.status} no iSeek Pro`);
       return new Response(
         JSON.stringify({
           success: false,
           provider: 'iseek',
-          error: 'ISEEK_AUTH_REQUIRED',
-          message: 'iSeek Pro exige autenticacao de sessao ativa. Configure o ISEEK_COOKIE.',
+          error: data?.error || `HTTP_${resp.status}`,
+          message: errorMsg,
           details: data
         }),
-        { status: 403, headers: CORS }
+        { status: resp.status, headers: CORS }
       );
     }
 
-    return new Response(JSON.stringify({ success: true, provider: 'iseek', data }), { status: resp.status, headers: CORS });
+    return new Response(JSON.stringify({ success: true, provider: 'iseek', data }), { status: 200, headers: CORS });
   } catch (err: any) {
     return new Response(
       JSON.stringify({ success: false, provider: 'iseek', error: err.message || 'Erro na conexao com iSeek Pro' }),

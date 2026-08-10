@@ -36,10 +36,12 @@ async function request<T = any>(endpoint: string, method: 'GET' | 'POST' = 'GET'
   }
 
   if (!res.ok || json.success === false) {
-    throw Object.assign(new Error(json.message || json.error || 'Erro na consulta iSeek'), {
+    const errorMsg = json.message || json.error || (typeof json.details === 'string' ? json.details : json.details?.message) || 'Erro na consulta iSeek Pro';
+    throw Object.assign(new Error(errorMsg), {
       status: res.status,
       code: json.error,
       provider: 'iseek',
+      details: json.details,
     });
   }
   return json;

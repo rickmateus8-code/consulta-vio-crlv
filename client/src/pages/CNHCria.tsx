@@ -457,7 +457,7 @@ export default function CNHCria() {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0f172a] text-slate-100 font-sans flex flex-col select-text min-h-screen w-full p-5">
-      <div className="w-full max-w-[1400px] mx-auto bg-[#1e293b] border border-slate-700/60 rounded-xl p-6 shadow-2xl flex flex-col my-auto">
+      <div className="w-full max-w-[1400px] mx-auto bg-[#1e293b] border border-slate-700/60 rounded-xl p-6 shadow-2xl flex flex-col mt-[2vh] mb-24">
           {/* HEADER SUPERIOR DO CARD (1:1 ELITEDOC HTML) */}
           <div className="bg-[#0f172a] border border-[#1d4ed8] rounded-xl p-3.5 px-4 mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">

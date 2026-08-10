@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { ErrorState, LoadingState, formatCpf, queryCpf, useCnhRecord } from "./shared";
-import { Menu, Bell, Mail, UserCheck, FileText, Smile, Settings, BookOpen, HelpCircle, Info, LogOut, X, Car, ShieldAlert, GraduationCap } from "lucide-react";
+import { Menu, Bell, Mail, UserCheck, FileText, Smile, Settings, BookOpen, HelpCircle, Info, LogOut, X } from "lucide-react";
 
 export default function CNHPainel() {
   const [, setLocation] = useLocation();
@@ -138,97 +138,44 @@ export default function CNHPainel() {
         </div>
       </header>
 
-      {/* --- MAIN APP CARDS CONTENT --- */}
-      <main className="flex-1 w-full max-w-[600px] mx-auto p-4 py-5 space-y-4">
-        {/* CARD 1: CONDUTOR (GREEN) */}
+      {/* --- MAIN APP CARDS CONTENT USING PNGs FROM CNH-APP --- */}
+      <main className="flex-1 w-full max-w-[600px] mx-auto p-4 py-5 space-y-4 flex flex-col items-center">
+        {/* CARD 1: CONDUTOR (IMG_CONDUTOR.png) */}
         <button
           onClick={() => setLocation(`/condutor?cpf=${encodeURIComponent(record.cpf || cpf)}`)}
-          className="w-full h-[110px] rounded-2xl shadow-md transition transform active:scale-[0.98] text-left p-5 text-white flex items-center justify-between cursor-pointer"
-          style={{
-            background: "linear-gradient(135deg, #00a859 0%, #008543 100%)",
-          }}
+          className="w-full transition transform active:scale-[0.98] cursor-pointer rounded-2xl overflow-hidden shadow-sm"
         >
-          <div>
-            <div className="text-xl font-extrabold tracking-tight uppercase">CONDUTOR</div>
-            <div className="text-xs font-medium text-emerald-100 mt-1">
-              Gerencie sua habilitação
-            </div>
-          </div>
-          <div className="p-2.5 bg-white/10 rounded-xl">
-            <Car className="w-8 h-8 text-white" />
-          </div>
+          <img src="/img/cnh-app/IMG_CONDUTOR.png" alt="CONDUTOR" className="w-full h-auto block" />
         </button>
 
-        {/* CARD 2: VEÍCULOS (YELLOW) */}
+        {/* CARD 2: VEÍCULOS (IMG_VEICULOS.png) */}
         <button
           onClick={() => setLocation(`/condutor?cpf=${encodeURIComponent(record.cpf || cpf)}`)}
-          className="w-full h-[110px] rounded-2xl shadow-md transition transform active:scale-[0.98] text-left p-5 text-slate-950 flex items-center justify-between cursor-pointer"
-          style={{
-            background: "linear-gradient(135deg, #f5a623 0%, #e09010 100%)",
-          }}
+          className="w-full transition transform active:scale-[0.98] cursor-pointer rounded-2xl overflow-hidden shadow-sm"
         >
-          <div>
-            <div className="text-xl font-extrabold tracking-tight uppercase">VEÍCULOS</div>
-            <div className="text-xs font-medium text-slate-900/80 mt-1">
-              Acesso ao CRLV-e, venda digital
-            </div>
-          </div>
-          <div className="p-2.5 bg-black/10 rounded-xl">
-            <Car className="w-8 h-8 text-slate-950" />
-          </div>
+          <img src="/img/cnh-app/IMG_VEICULOS.png" alt="VEÍCULOS" className="w-full h-auto block" />
         </button>
 
-        {/* CARD 3: INFRAÇÕES (NAVY) */}
+        {/* CARD 3: INFRAÇÕES (IMG_INFRACOES.png) */}
         <button
           onClick={() => setModalMsg("É necessário baixar sua CNH-e antes de verificar as infrações")}
-          className="w-full h-[110px] rounded-2xl shadow-md transition transform active:scale-[0.98] text-left p-5 text-white flex items-center justify-between cursor-pointer"
-          style={{
-            background: "linear-gradient(135deg, #203468 0%, #132247 100%)",
-          }}
+          className="w-full transition transform active:scale-[0.98] cursor-pointer rounded-2xl overflow-hidden shadow-sm"
         >
-          <div>
-            <div className="text-xl font-extrabold tracking-tight uppercase">INFRAÇÕES</div>
-            <div className="text-xs font-medium text-blue-200 mt-1">
-              Visualize e pague infrações com até 40% de desconto
-            </div>
-          </div>
-          <div className="p-2.5 bg-white/10 rounded-xl">
-            <ShieldAlert className="w-8 h-8 text-white" />
-          </div>
+          <img src="/img/cnh-app/IMG_INFRACOES.png" alt="INFRAÇÕES" className="w-full h-auto block" />
         </button>
 
-        {/* CARD 4: EDUCAÇÃO (LIGHT BLUE) */}
+        {/* CARD 4: EDUCAÇÃO (IMG_EDUCACAO.png) */}
         <button
-          onClick={() => setModalMsg("É necessário baixar sua CNH-e antes de verificar os cursos de educação")}
-          className="w-full h-[110px] rounded-2xl shadow-md transition transform active:scale-[0.98] text-left p-5 text-white flex items-center justify-between cursor-pointer"
-          style={{
-            background: "linear-gradient(135deg, #4aa0e6 0%, #2980b9 100%)",
-          }}
+          onClick={() => setModalMsg("É necessário baixar sua CNH-e antes de verificar a plataforma de cursos")}
+          className="w-full transition transform active:scale-[0.98] cursor-pointer rounded-2xl overflow-hidden shadow-sm"
         >
-          <div>
-            <div className="text-xl font-extrabold tracking-tight uppercase">EDUCAÇÃO</div>
-            <div className="text-xs font-medium text-sky-100 mt-1">
-              Conheça nossa plataforma de cursos
-            </div>
-          </div>
-          <div className="p-2.5 bg-white/10 rounded-xl">
-            <GraduationCap className="w-8 h-8 text-white" />
-          </div>
+          <img src="/img/cnh-app/IMG_EDUCACAO.png" alt="EDUCAÇÃO" className="w-full h-auto block" />
         </button>
       </main>
 
       {/* --- FOOTER LOGOS --- */}
-      <footer className="w-full max-w-[600px] mx-auto px-4 py-6 flex items-center justify-between gap-2 bg-[#f5f7fa]">
-        <div className="shrink-0">
-          <img src="/img/logo_serpro.png" onError={(e) => { e.currentTarget.style.display = 'none'; }} alt="Serpro" className="w-[75px] h-auto block" />
-        </div>
-        <div className="text-[#001b3a] text-xs font-normal whitespace-nowrap">
-          CNH do <strong className="text-black font-extrabold">BRASIL</strong>
-        </div>
-        <div className="flex items-center justify-end gap-1 shrink-0">
-          <img src="/img/logo_transportes.png" onError={(e) => { e.currentTarget.style.display = 'none'; }} alt="Ministério dos Transportes" className="w-[85px] h-auto block" />
-          <span className="text-base">🇧🇷</span>
-        </div>
+      <footer className="w-full max-w-[600px] mx-auto py-6 px-4 flex justify-center items-center">
+        <img src="/img/cnh-app/IMG_2343.png" alt="Serpro - CNH do Brasil - Ministério dos Transportes - Governo do Brasil" className="max-h-[55px] w-auto object-contain" />
       </footer>
 
       {/* --- MODAL WARNING OVERLAY --- */}
@@ -253,4 +200,3 @@ export default function CNHPainel() {
     </div>
   );
 }
-

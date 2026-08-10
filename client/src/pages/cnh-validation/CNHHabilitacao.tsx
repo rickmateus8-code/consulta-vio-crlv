@@ -79,8 +79,8 @@ export default function CNHHabilitacao() {
 
       {/* --- MAIN CNH DISPLAY & ACTIONS --- */}
       <div className="flex-1 flex flex-col items-center pt-4 overflow-y-auto pb-6 w-full max-w-[600px] mx-auto">
-        {/* CAROUSEL SLIDE CONTAINER WITH PREV/NEXT CONTROLS */}
-        <div className="w-full max-w-[380px] relative px-2">
+        {/* CAROUSEL SLIDE CONTAINER WITH PREV/NEXT CONTROLS - DISPLAY BOX 396x680px */}
+        <div className="w-full max-w-[396px] relative px-2">
           {activeSlide > 1 && (
             <button
               onClick={() => setActiveSlide((prev) => (prev - 1) as 1 | 2 | 3 | 4)}
@@ -94,9 +94,10 @@ export default function CNHHabilitacao() {
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex justify-center p-2 cursor-grab active:cursor-grabbing touch-pan-y"
+            className="w-[396px] h-[680px] max-w-full aspect-[396/680] mx-auto bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex justify-center items-center p-1 cursor-grab active:cursor-grabbing touch-pan-y"
           >
             <CNH3PartDocument
+              id={record.id}
               slide={activeSlide}
               nome={record.nome || ""}
               cpf={record.cpf || ""}
@@ -122,7 +123,7 @@ export default function CNHHabilitacao() {
               fotoUrl={record.fotoUrl || ""}
               assinaturaUrl={record.assinaturaUrl || ""}
               codigoQR={record.codigo_validacao || record.codigo_qr || record.codigoQR || ""}
-              previewWidth={350}
+              previewWidth={396}
             />
           </div>
 

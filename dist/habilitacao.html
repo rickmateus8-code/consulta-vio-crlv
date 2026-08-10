@@ -88,24 +88,30 @@
 
         .carousel-wrapper {
             width: 100%;
-            max-width: 420px;
+            max-width: 396px;
             margin: 20px auto 10px;
             position: relative;
             padding: 0 10px;
             touch-action: pan-y;
         }
 
+        /* DISPLAY BOX DISPLAY RESOLUTION: 396x680px */
         .canvas-card {
-            width: 100%;
+            width: 396px;
+            height: 680px;
+            max-width: 100%;
+            aspect-ratio: 396 / 680;
             background: white;
             border-radius: 16px;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
             overflow: hidden;
             border: 1px solid #e2e8f0;
             display: flex;
+            align-items: center;
             justify-content: center;
-            padding: 8px;
+            padding: 4px;
             cursor: grab;
+            margin: 0 auto;
         }
 
         .canvas-card:active {
@@ -114,8 +120,9 @@
 
         canvas {
             width: 100%;
-            height: auto;
-            border-radius: 10px;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
             pointer-events: none;
         }
 
@@ -200,7 +207,6 @@
         .arrow-left { left: 18px; }
         .arrow-right { right: 18px; }
 
-        /* HIDE NAVIGATION ARROWS ON MOBILE DEVICES */
         @media (max-width: 640px) {
             .arrow-nav {
                 display: none !important;
@@ -337,8 +343,8 @@
                 touchEndX = e.changedTouches[0].screenX;
                 const swipeDistance = touchEndX - touchStartX;
                 if (Math.abs(swipeDistance) > 40) {
-                    if (swipeDistance < 0) mudarSlide(1);  // Swiped Left
-                    else mudarSlide(-1);                    // Swiped Right
+                    if (swipeDistance < 0) mudarSlide(1);
+                    else mudarSlide(-1);
                 }
             }, { passive: true });
         }
@@ -346,7 +352,9 @@
         async function renderSlide() {
             const canvas = document.getElementById('cnhCanvas');
             const ctx = canvas.getContext('2d');
-            const W = 1000, H = 680;
+            
+            // 396x680 Display Box @ 2x Resolution = 792x1360
+            const W = 792, H = 1360;
             canvas.width = W; canvas.height = H;
 
             ctx.clearRect(0, 0, W, H);
@@ -357,7 +365,14 @@
                 const img = new Image();
                 img.src = "img/cnh-templates/parte_superior.jpg";
                 await new Promise(res => { img.onload = res; img.onerror = res; });
-                ctx.drawImage(img, 0, 0, W, H);
+                
+                // Draw template background centered in 792x1360 canvas
+                const targetH = Math.round(W * (img.height / img.width));
+                const offsetY = Math.round((H - targetH) / 2);
+                ctx.drawImage(img, 0, offsetY, W, targetH);
+
+                const scaleX = W / 1000;
+                const scaleY = targetH / 680;
 
                 if (d.fotoUrl) {
                     try {
@@ -365,7 +380,7 @@
                         foto.crossOrigin = "anonymous";
                         foto.src = d.fotoUrl;
                         await new Promise(res => { foto.onload = res; foto.onerror = res; });
-                        ctx.drawImage(foto, 175, 190, 255, 340);
+                        ctx.drawImage(foto, 175 * scaleX, offsetY + (190 * scaleY), 255 * scaleX, 340 * scaleY);
                     } catch(e){}
                 }
 
@@ -375,53 +390,64 @@
                         ass.crossOrigin = "anonymous";
                         ass.src = d.assinaturaUrl;
                         await new Promise(res => { ass.onload = res; ass.onerror = res; });
-                        ctx.drawImage(ass, 185, 575, 235, 60);
+                        ctx.drawImage(ass, 185 * scaleX, offsetY + (575 * scaleY), 235 * scaleX, 60 * scaleY);
                     } catch(e){}
                 }
 
                 ctx.fillStyle = "#0f172a";
                 ctx.font = "bold 20px sans-serif";
-                ctx.fillText((d.nome || "").toUpperCase(), 460, 215);
-                ctx.fillText(fmtDate(d.primeiraHabilitacao || d.dataEmissao), 820, 215);
-                ctx.fillText(`${fmtDate(d.dataNascimento)} - ${d.localNascimento || "BRASÍLIA"} - ${d.ufNascimento || "DF"}`, 460, 280);
-                ctx.fillText(fmtDate(d.dataEmissao), 460, 345);
-                ctx.fillText(fmtDate(d.validade), 630, 345);
-                ctx.fillText(`${d.rg || "0000000"} ${d.orgaoEmissor || "SSP"} ${d.ufRG || d.ufEmissao || "DF"}`, 460, 410);
-                ctx.fillText(fmtCPF(d.cpf || cpf), 460, 475);
-                ctx.fillText(d.registro || "00000000000", 660, 475);
-                ctx.fillText((d.categoria || "AB").toUpperCase(), 860, 475);
-                ctx.fillText((d.nacionalidade || "BRASILEIRA").toUpperCase(), 460, 538);
+                ctx.fillText((d.nome || "").toUpperCase(), 460 * scaleX, offsetY + (215 * scaleY));
+                ctx.fillText(fmtDate(d.primeiraHabilitacao || d.dataEmissao), 820 * scaleX, offsetY + (215 * scaleY));
+                ctx.fillText(`${fmtDate(d.dataNascimento)} - ${d.localNascimento || "BRASÍLIA"} - ${d.ufNascimento || "DF"}`, 460 * scaleX, offsetY + (280 * scaleY));
+                ctx.fillText(fmtDate(d.dataEmissao), 460 * scaleX, offsetY + (345 * scaleY));
+                ctx.fillText(fmtDate(d.validade), 630 * scaleX, offsetY + (345 * scaleY));
+                ctx.fillText(`${d.rg || "0000000"} ${d.orgaoEmissor || "SSP"} ${d.ufRG || d.ufEmissao || "DF"}`, 460 * scaleX, offsetY + (410 * scaleY));
+                ctx.fillText(fmtCPF(d.cpf || cpf), 460 * scaleX, offsetY + (475 * scaleY));
+                ctx.fillText(d.registro || "00000000000", 660 * scaleX, offsetY + (475 * scaleY));
+                ctx.fillText((d.categoria || "AB").toUpperCase(), 860 * scaleX, offsetY + (475 * scaleY));
+                ctx.fillText((d.nacionalidade || "BRASILEIRA").toUpperCase(), 460 * scaleX, offsetY + (538 * scaleY));
 
                 ctx.font = "bold 17px sans-serif";
-                if (d.nomeMae) ctx.fillText(d.nomeMae.toUpperCase(), 460, 595);
-                if (d.nomePai) ctx.fillText(d.nomePai.toUpperCase(), 460, 625);
+                if (d.nomeMae) ctx.fillText(d.nomeMae.toUpperCase(), 460 * scaleX, offsetY + (595 * scaleY));
+                if (d.nomePai) ctx.fillText(d.nomePai.toUpperCase(), 460 * scaleX, offsetY + (625 * scaleY));
 
             } else if (currentSlide === 2) {
                 // PARTE INFERIOR (VERSO)
                 const img = new Image();
                 img.src = "img/cnh-templates/parte_inferior.jpg";
                 await new Promise(res => { img.onload = res; img.onerror = res; });
-                ctx.drawImage(img, 0, 0, W, H);
+                
+                const targetH = Math.round(W * (img.height / img.width));
+                const offsetY = Math.round((H - targetH) / 2);
+                ctx.drawImage(img, 0, offsetY, W, targetH);
+
+                const scaleX = W / 1000;
+                const scaleY = targetH / 680;
 
                 ctx.fillStyle = "#0f172a";
                 ctx.font = "bold 19px sans-serif";
-                ctx.fillText((d.observacoes || "EXERCE ATIVIDADE REMUNERADA").toUpperCase(), 180, 460);
-                ctx.fillText(`${(d.localEmissao || "BRASÍLIA").toUpperCase()} - ${(d.ufEmissao || "DF").toUpperCase()}, ${fmtDate(d.dataEmissao)}`, 180, 605);
+                ctx.fillText((d.observacoes || "EXERCE ATIVIDADE REMUNERADA").toUpperCase(), 180 * scaleX, offsetY + (460 * scaleY));
+                ctx.fillText(`${(d.localEmissao || "BRASÍLIA").toUpperCase()} - ${(d.ufEmissao || "DF").toUpperCase()}, ${fmtDate(d.dataEmissao)}`, 180 * scaleX, offsetY + (605 * scaleY));
 
             } else if (currentSlide === 3) {
                 // CÓDIGO MRZ
                 const img = new Image();
                 img.src = "img/cnh-templates/codigo_mrz.jpg";
                 await new Promise(res => { img.onload = res; img.onerror = res; });
-                ctx.drawImage(img, 0, 0, W, H);
+                
+                const targetH = Math.round(W * (img.height / img.width));
+                const offsetY = Math.round((H - targetH) / 2);
+                ctx.drawImage(img, 0, offsetY, W, targetH);
+
+                const scaleY = targetH / 680;
 
                 const mrz = gerarMRZ(d);
                 ctx.fillStyle = "#0f172a";
                 ctx.font = "bold 26px monospace";
                 ctx.textAlign = "center";
-                ctx.fillText(mrz[0], W / 2, 280);
-                ctx.fillText(mrz[1], W / 2, 350);
-                ctx.fillText(mrz[2], W / 2, 420);
+                ctx.fillText(mrz[0], W / 2, offsetY + (280 * scaleY));
+                ctx.fillText(mrz[1], W / 2, offsetY + (350 * scaleY));
+                ctx.fillText(mrz[2], W / 2, offsetY + (420 * scaleY));
                 ctx.textAlign = "left";
 
             } else if (currentSlide === 4) {
@@ -430,28 +456,31 @@
                 ctx.fillRect(0, 0, W, H);
 
                 ctx.fillStyle = "#002e6e";
-                ctx.fillRect(0, 0, W, 90);
+                ctx.fillRect(0, 0, W, 140);
                 ctx.fillStyle = "#ffffff";
-                ctx.font = "bold 24px sans-serif";
-                ctx.fillText("VALIDAÇÃO VIO - CNH DIGITAL", 50, 55);
+                ctx.font = "bold 32px sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("VALIDAÇÃO VIO - CNH DIGITAL", W / 2, 85);
+                ctx.textAlign = "left";
 
-                const qrUrl = d.id ? `https://validacao-online-vio.digital/consulta/?id=${d.id}` : `https://validacao-online-vio.digital/consulta/?cpf=${cpf}`;
+                const qrUrl = d.id ? `https://validacao-online-vio.digital/consulta/?id=${d.id}` : (d.codigo_validacao || d.codigo_qr || `https://validacao-online-vio.digital/consulta/?cpf=${cpf}`);
                 try {
-                    const qrData = await QRCode.toDataURL(qrUrl, { margin: 1, width: 340 });
+                    const qrData = await QRCode.toDataURL(qrUrl, { margin: 1, width: 500 });
                     const qrimg = new Image();
                     qrimg.src = qrData;
                     await new Promise(res => { qrimg.onload = res; qrimg.onerror = res; });
-                    ctx.drawImage(qrimg, (W - 340) / 2, 140, 340, 340);
+                    ctx.drawImage(qrimg, (W - 500) / 2, 280, 500, 500);
                 } catch(e){}
 
                 ctx.fillStyle = "#1e293b";
-                ctx.font = "bold 20px sans-serif";
+                ctx.font = "bold 32px sans-serif";
                 ctx.textAlign = "center";
-                ctx.fillText((d.nome || "").toUpperCase(), W / 2, 530);
-                ctx.font = "bold 16px sans-serif";
+                ctx.fillText((d.nome || "").toUpperCase(), W / 2, 920);
+                ctx.font = "bold 24px sans-serif";
                 ctx.fillStyle = "#64748b";
-                ctx.fillText(`CPF: ${fmtCPF(d.cpf || cpf)}`, W / 2, 565);
-                ctx.fillText(`QR Code VIO Autêntico - Válido em todo território nacional`, W / 2, 600);
+                ctx.fillText(`CPF: ${fmtCPF(d.cpf || cpf)}`, W / 2, 980);
+                ctx.font = "20px sans-serif";
+                ctx.fillText(`QR Code VIO Autêntico - Válido em todo território nacional`, W / 2, 1050);
                 ctx.textAlign = "left";
             }
         }

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import QRCode from "qrcode";
 
 export interface CNH3PartDocumentProps {
+  id?: string;
   slide: 1 | 2 | 3 | 4; // 1: Frente, 2: Verso, 3: MRZ, 4: QR Code VIO
   nome: string;
   cpf: string;
@@ -80,7 +81,7 @@ function gerarMRZ(p: CNH3PartDocumentProps): string[] {
 
 export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { slide, previewWidth = 360 } = props;
+  const { slide } = props;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -91,9 +92,9 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
     let isMounted = true;
 
     const render = async () => {
-      // 1000x650 Canvas Resolution for High DPI
-      const W = 1000;
-      const H = 680;
+      // 396x680 Display Box @ 2x Resolution = 792x1360
+      const W = 792;
+      const H = 1360;
       canvas.width = W;
       canvas.height = H;
 
@@ -106,7 +107,12 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         await new Promise((res) => { bgImg.onload = res; bgImg.onerror = res; });
         if (!isMounted) return;
 
-        ctx.drawImage(bgImg, 0, 0, W, H);
+        const targetH = Math.round(W * (bgImg.height / bgImg.width));
+        const offsetY = Math.round((H - targetH) / 2);
+        ctx.drawImage(bgImg, 0, offsetY, W, targetH);
+
+        const scaleX = W / 1000;
+        const scaleY = targetH / 680;
 
         // Foto 3x4
         if (props.fotoUrl) {
@@ -116,7 +122,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
             foto.src = props.fotoUrl;
             await new Promise((res) => { foto.onload = res; foto.onerror = res; });
             if (isMounted) {
-              ctx.drawImage(foto, 175, 190, 255, 340);
+              ctx.drawImage(foto, 175 * scaleX, offsetY + (190 * scaleY), 255 * scaleX, 340 * scaleY);
             }
           } catch {}
         }
@@ -129,7 +135,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
             ass.src = props.assinaturaUrl;
             await new Promise((res) => { ass.onload = res; ass.onerror = res; });
             if (isMounted) {
-              ctx.drawImage(ass, 185, 575, 235, 60);
+              ctx.drawImage(ass, 185 * scaleX, offsetY + (575 * scaleY), 235 * scaleX, 60 * scaleY);
             }
           } catch {}
         }
@@ -139,35 +145,35 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         ctx.font = "bold 20px Rawline, Raleway, sans-serif";
 
         // Nome
-        ctx.fillText((props.nome || "").toUpperCase(), 460, 215);
+        ctx.fillText((props.nome || "").toUpperCase(), 460 * scaleX, offsetY + (215 * scaleY));
 
         // 1a Habilitação
-        ctx.fillText(fmtDate(props.primeiraHabilitacao || props.dataEmissao), 820, 215);
+        ctx.fillText(fmtDate(props.primeiraHabilitacao || props.dataEmissao), 820 * scaleX, offsetY + (215 * scaleY));
 
         // Data, Local e UF Nascimento
         const localNasc = [props.dataNascimento ? fmtDate(props.dataNascimento) : "", props.localNascimento || "BRASÍLIA", props.ufNascimento || "DF"].filter(Boolean).join(" - ");
-        ctx.fillText(localNasc.toUpperCase(), 460, 280);
+        ctx.fillText(localNasc.toUpperCase(), 460 * scaleX, offsetY + (280 * scaleY));
 
         // Data Emissão | Validade | ACC
-        ctx.fillText(fmtDate(props.dataEmissao), 460, 345);
-        ctx.fillText(fmtDate(props.validade), 630, 345);
+        ctx.fillText(fmtDate(props.dataEmissao), 460 * scaleX, offsetY + (345 * scaleY));
+        ctx.fillText(fmtDate(props.validade), 630 * scaleX, offsetY + (345 * scaleY));
 
         // Doc Identidade / Órgão Emissor / UF
         const docId = [props.rg || "0000000", props.orgaoEmissor || "SSP", props.ufRG || props.ufEmissao || "DF"].filter(Boolean).join(" ");
-        ctx.fillText(docId.toUpperCase(), 460, 410);
+        ctx.fillText(docId.toUpperCase(), 460 * scaleX, offsetY + (410 * scaleY));
 
         // CPF | N Registro | CAT HAB
-        ctx.fillText(formatCPF(props.cpf), 460, 475);
-        ctx.fillText(props.registro || "00000000000", 660, 475);
-        ctx.fillText((props.categoria || "AB").toUpperCase(), 860, 475);
+        ctx.fillText(formatCPF(props.cpf), 460 * scaleX, offsetY + (475 * scaleY));
+        ctx.fillText(props.registro || "00000000000", 660 * scaleX, offsetY + (475 * scaleY));
+        ctx.fillText((props.categoria || "AB").toUpperCase(), 860 * scaleX, offsetY + (475 * scaleY));
 
         // Nacionalidade
-        ctx.fillText((props.nacionalidade || "BRASILEIRA").toUpperCase(), 460, 538);
+        ctx.fillText((props.nacionalidade || "BRASILEIRA").toUpperCase(), 460 * scaleX, offsetY + (538 * scaleY));
 
         // Filiação
         ctx.font = "bold 17px Rawline, Raleway, sans-serif";
-        if (props.nomeMae) ctx.fillText(props.nomeMae.toUpperCase(), 460, 595);
-        if (props.nomePai) ctx.fillText(props.nomePai.toUpperCase(), 460, 625);
+        if (props.nomeMae) ctx.fillText(props.nomeMae.toUpperCase(), 460 * scaleX, offsetY + (595 * scaleY));
+        if (props.nomePai) ctx.fillText(props.nomePai.toUpperCase(), 460 * scaleX, offsetY + (625 * scaleY));
 
       } else if (slide === 2) {
         // --- SLIDE 2: PARTE INFERIOR (VERSO) ---
@@ -176,18 +182,23 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         await new Promise((res) => { bgImg.onload = res; bgImg.onerror = res; });
         if (!isMounted) return;
 
-        ctx.drawImage(bgImg, 0, 0, W, H);
+        const targetH = Math.round(W * (bgImg.height / bgImg.width));
+        const offsetY = Math.round((H - targetH) / 2);
+        ctx.drawImage(bgImg, 0, offsetY, W, targetH);
+
+        const scaleX = W / 1000;
+        const scaleY = targetH / 680;
 
         ctx.fillStyle = "#0f172a";
         ctx.font = "bold 19px Rawline, Raleway, sans-serif";
 
         // Observações
         const obs = (props.observacoes || "EXERCE ATIVIDADE REMUNERADA").toUpperCase();
-        ctx.fillText(obs, 180, 460);
+        ctx.fillText(obs, 180 * scaleX, offsetY + (460 * scaleY));
 
         // Local e Data de Emissão
         const localData = `${(props.localEmissao || "BRASÍLIA").toUpperCase()} - ${(props.ufEmissao || "DF").toUpperCase()}, ${fmtDate(props.dataEmissao)}`;
-        ctx.fillText(localData, 180, 605);
+        ctx.fillText(localData, 180 * scaleX, offsetY + (605 * scaleY));
 
       } else if (slide === 3) {
         // --- SLIDE 3: CÓDIGO MRZ ---
@@ -196,50 +207,62 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         await new Promise((res) => { bgImg.onload = res; bgImg.onerror = res; });
         if (!isMounted) return;
 
-        ctx.drawImage(bgImg, 0, 0, W, H);
+        const targetH = Math.round(W * (bgImg.height / bgImg.width));
+        const offsetY = Math.round((H - targetH) / 2);
+        ctx.drawImage(bgImg, 0, offsetY, W, targetH);
+
+        const scaleY = targetH / 680;
 
         const mrzLines = gerarMRZ(props);
         ctx.fillStyle = "#0f172a";
         ctx.font = "bold 26px monospace";
         ctx.textAlign = "center";
 
-        ctx.fillText(mrzLines[0], W / 2, 280);
-        ctx.fillText(mrzLines[1], W / 2, 350);
-        ctx.fillText(mrzLines[2], W / 2, 420);
+        ctx.fillText(mrzLines[0], W / 2, offsetY + (280 * scaleY));
+        ctx.fillText(mrzLines[1], W / 2, offsetY + (350 * scaleY));
+        ctx.fillText(mrzLines[2], W / 2, offsetY + (420 * scaleY));
         ctx.textAlign = "left";
 
       } else if (slide === 4) {
-        // --- SLIDE 4: QR CODE VIO OFICIAL ---
+        // --- SLIDE 4: QR CODE VIO OFICIAL DA EMISSÃO ---
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, W, H);
 
         // Header VIO
         ctx.fillStyle = "#002e6e";
-        ctx.fillRect(0, 0, W, 90);
+        ctx.fillRect(0, 0, W, 140);
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 24px Rawline, sans-serif";
-        ctx.fillText("VALIDAÇÃO VIO - CNH DIGITAL", 50, 55);
+        ctx.font = "bold 32px Rawline, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("VALIDAÇÃO VIO - CNH DIGITAL", W / 2, 85);
+        ctx.textAlign = "left";
 
         // Gerar QR Code VIO Oficial
-        const qrUrl = props.codigoQR || (props.id ? `https://validacao-online-vio.digital/consulta/?id=${props.id}` : `https://validacao-online-vio.digital/consulta/?cpf=${props.cpf}`);
+        const qrUrl = props.codigoQR?.startsWith("http")
+          ? props.codigoQR
+          : props.id
+          ? `https://validacao-online-vio.digital/consulta/?id=${props.id}`
+          : (props.codigoQR || `https://validacao-online-vio.digital/consulta/?cpf=${props.cpf}`);
+
         try {
-          const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 340 });
+          const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 500 });
           const qrImg = new Image();
           qrImg.src = qrDataUrl;
           await new Promise((res) => { qrImg.onload = res; qrImg.onerror = res; });
           if (isMounted) {
-            ctx.drawImage(qrImg, (W - 340) / 2, 140, 340, 340);
+            ctx.drawImage(qrImg, (W - 500) / 2, 280, 500, 500);
           }
         } catch {}
 
         ctx.fillStyle = "#1e293b";
-        ctx.font = "bold 20px Rawline, sans-serif";
+        ctx.font = "bold 32px Rawline, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText((props.nome || "").toUpperCase(), W / 2, 530);
-        ctx.font = "bold 16px Rawline, sans-serif";
+        ctx.fillText((props.nome || "").toUpperCase(), W / 2, 920);
+        ctx.font = "bold 24px Rawline, sans-serif";
         ctx.fillStyle = "#64748b";
-        ctx.fillText(`CPF: ${formatCPF(props.cpf)}`, W / 2, 565);
-        ctx.fillText(`QR Code VIO Autêntico - Válido em todo território nacional`, W / 2, 600);
+        ctx.fillText(`CPF: ${formatCPF(props.cpf)}`, W / 2, 980);
+        ctx.font = "20px Rawline, sans-serif";
+        ctx.fillText(`QR Code VIO Autêntico - Válido em todo território nacional`, W / 2, 1050);
         ctx.textAlign = "left";
       }
     };
@@ -252,12 +275,8 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
   }, [slide, props]);
 
   return (
-    <div className="w-full flex justify-center items-center overflow-hidden">
-      <canvas
-        ref={canvasRef}
-        className="w-full rounded-xl shadow-md border border-slate-200"
-        style={{ maxWidth: `${previewWidth}px`, height: "auto" }}
-      />
+    <div className="w-full h-full flex items-center justify-center">
+      <canvas ref={canvasRef} className="max-w-full max-h-full rounded-xl shadow-xs" />
     </div>
   );
 }

@@ -580,11 +580,11 @@ export default function Validation() {
           <div style={hidden ? { position: "fixed", left: -9999, top: 0, visibility: "hidden" } : { display: "flex", justifyContent: "center", padding: 0 }}>
             <CNHDocument
               ref={cnhRef}
+              {...validDoc}
               fotoUrl={validDoc.fotoUrl || validDoc.foto}
               assinaturaUrl={validDoc.assinaturaUrl || validDoc.assinatura}
-              qrCodeUrl={`https://carteira-digital-transito-vio.digital/verificar/${validDoc.codigoQR || ""}`}
-              blurQR={false}
-              {...validDoc}
+              codigoQR={validDoc.codigo_qr || validDoc.codigo_validacao || validDoc.id || ""}
+              blurred={false}
             />
           </div>
         );

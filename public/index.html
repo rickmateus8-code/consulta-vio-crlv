@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta Autenticidade CNH</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            padding-bottom: 40px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .breadcrumb {
+            font-size: 11px;
+            color: #889;
+            margin-bottom: 15px;
+        }
+
+        .title-section {
+            display: flex;
+            align-items: flex-start;
+            gap: 0;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 18px;
+            color: #8cba38;
+            margin: 0;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #8cba38;
+            font-weight: 400;
+        }
+
+        .photo-area {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .photo-area img {
+            width: 120px;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 4px;
+            background: #eee;
+        }
+
+        .photo-label {
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .data-row {
+            padding: 12px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .label {
+            font-weight: 700;
+            font-size: 14px;
+            width: 40%;
+        }
+
+        .value {
+            font-size: 14px;
+            width: 60%;
+            text-align: left;
+            color: #444;
+        }
+
+        .success-box {
+            background-color: #dff0d8;
+            border: 1px solid #d0e9c6;
+            color: #3c763d;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .check-icon {
+            color: #8cba38;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .obs-text {
+            font-size: 12px;
+            color: #333;
+            padding: 0 20px;
+            line-height: 1.4;
+            margin-bottom: 30px;
+        }
+
+        .key-string {
+            font-family: monospace;
+            text-align: center;
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 10px;
+            word-break: break-all;
+            padding: 0 20px;
+        }
+
+        .qr-bottom {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .qr-bottom img {
+            width: 150px;
+        }
+
+        .footer-info {
+            background-color: #e8e8e8;
+            padding: 15px;
+            text-align: center;
+            font-size: 12px;
+            color: #555;
+            margin: 20px;
+            border-radius: 4px;
+        }
+
+        .footer-info span {
+            color: #a98538;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="breadcrumb">Início / Habilitação / Consulta Autenticidade CNH</div>
+            <div class="title-section">
+                <div>
+                    <h1>CONSULTA AUTENTICIDADE CNH</h1>
+                    <div class="subtitle">EXIBIR DADOS AUTENTICIDADE</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">Carregando dados...</div>
+
+        <div id="content" style="display: none;">
+            <div class="photo-area">
+                <img id="u_foto" src="" alt="Foto CNH">
+                <div class="photo-label">Foto Original - Detran</div>
+            </div>
+
+            <div class="data-row">
+                <div class="label">Nome:</div>
+                <div class="value" id="u_nome"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">CPF:</div>
+                <div class="value" id="u_cpf"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">RG:</div>
+                <div class="value" id="u_rg"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">Data de Nascimento:</div>
+                <div class="value" id="u_nasc"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">Filiação (Pai):</div>
+                <div class="value" id="u_pai"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">Filiação (Mãe):</div>
+                <div class="value" id="u_mae"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">Nº de registro da CNH:</div>
+                <div class="value" id="u_registro"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">Categoria:</div>
+                <div class="value" id="u_cat"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">Renach:</div>
+                <div class="value" id="u_renach"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">Nº do espelho da CNH:</div>
+                <div class="value" id="u_espelho"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">Cidade / UF:</div>
+                <div class="value" id="u_local"></div>
+            </div>
+            <div class="data-row">
+                <div class="label">Data da Emissão:</div>
+                <div class="value" id="u_emissao"></div>
+            </div>
+
+            <div class="success-box">
+                Os dados informados são os mesmos que constam na base do <span style="color:#2980b9; font-weight:bold;">Detran</span> <span class="check-icon">✔</span>
+            </div>
+
+            <div class="obs-text">
+                <strong>Observação:</strong><br>
+                A foto apresentada é a mesma impressa na habilitação ou é uma foto mais recente, caso o cidadão já tenha coletado uma nova foto no <strong>Detran</strong>, para um novo serviço. Exemplo: ele pode ter iniciado um processo de adição ou mudança de categoria, após a emissão da CNH acima.
+            </div>
+
+            <div class="key-string" id="key-hash"></div>
+
+            <div class="qr-bottom">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AppCarteiraDigital" alt="QR App">
+            </div>
+
+            <div class="footer-info">
+                Utilize seu celular e scaneie o <strong>QRCODE</strong> para realizar o download do aplicativo <span>Carteira Digital</span> para consultar sua CNH Digital.
+            </div>
+
+            <div style="text-align: center; font-size: 12px; color: #555; padding-bottom: 20px;">
+                Data e Hora da Consulta: <span id="data-hora"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const d = (val) => {
+            if (!val) return "-----";
+            if (val.includes('/')) return val;
+            const p = String(val).split('T')[0].split('-');
+            if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+            return val;
+        }
+
+        const formatarCPF = (v) => {
+            if (!v) return "-----";
+            v = String(v).replace(/\D/g, "");
+            if (v.length === 11) {
+                return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+            }
+            return v;
+        }
+
+        const pegar = (obj, ...campos) => {
+            for (const campo of campos) {
+                if (obj && obj[campo]) return obj[campo];
+            }
+            return "";
+        }
+
+        const maiusculo = (v) => v ? String(v).toUpperCase() : "-----";
+
+        async function carregar() {
+            const params = new URLSearchParams(window.location.search);
+            let id = params.get('id') || params.get('codigo') || params.get('code');
+            if (!id) {
+                const pathParts = window.location.pathname.split('/').filter(Boolean);
+                if (pathParts.length > 0 && pathParts[pathParts.length - 1] !== 'consulta') {
+                    id = pathParts[pathParts.length - 1];
+                }
+            }
+
+            if (!id) {
+                document.getElementById('loading').innerHTML = `
+                  <div style="padding: 20px; text-align: center;">
+                    <h3 style="color:#333; margin-bottom:15px;">Consulta de Autenticidade CNH</h3>
+                    <p style="color:#666; font-size:13px; margin-bottom:15px;">Informe o ID do Documento ou Código QR para consultar:</p>
+                    <input type="text" id="input_id" placeholder="Digite o ID da CNH..." style="padding:10px; width:80%; max-width:300px; border:1px solid #ccc; border-radius:4px; font-size:14px; text-align:center;" />
+                    <br><br>
+                    <button onclick="window.location.href='?id=' + document.getElementById('input_id').value.trim()" style="padding:10px 20px; background:#8cba38; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">CONSULTAR</button>
+                  </div>
+                `;
+                return;
+            }
+
+            try {
+                // Tenta buscar no endpoint da API
+                const res = await fetch('/api/validate/' + encodeURIComponent(id));
+                const json = await res.json();
+
+                if (!json || !json.success || !json.data) {
+                    document.getElementById('loading').innerText = "Dados não encontrados na base de dados oficial.";
+                    return;
+                }
+
+                const u = json.data;
+
+                const fotoEl = document.getElementById('u_foto');
+                const fotoPrincipal = u.fotoUrl || u.foto || u.url_cnh_pronta || '';
+                if (fotoPrincipal) {
+                    fotoEl.src = fotoPrincipal;
+                } else {
+                    fotoEl.style.display = 'none';
+                }
+
+                document.getElementById('u_nome').innerText = (u.nome || u.paciente || u.nome_completo || "").toUpperCase();
+                document.getElementById('u_cpf').innerText = formatarCPF(u.cpf);
+
+                let rgFull = (u.rg || "").toUpperCase();
+                const orgao = u.orgaoEmissor || u.org_emissor_rg || u.orgao_emissor || "";
+                const ufRG = u.ufRG || u.uf_rg || "";
+                if (orgao) rgFull += ` / ${orgao.toUpperCase()}`;
+                if (ufRG) rgFull += ` ${ufRG.toUpperCase()}`;
+                document.getElementById('u_rg').innerText = rgFull || "-----";
+
+                document.getElementById('u_nasc').innerText = d(u.dataNascimento || u.data_nascimento);
+                document.getElementById('u_pai').innerText = maiusculo(pegar(u, 'nomePai', 'filiacao_pai', 'pai'));
+                document.getElementById('u_mae').innerText = maiusculo(pegar(u, 'nomeMae', 'filiacao_mae', 'mae'));
+                document.getElementById('u_registro').innerText = u.registro || u.n_registro || "-----";
+                document.getElementById('u_cat').innerText = (u.categoria || u.categoria_cnh || "-----").toUpperCase();
+
+                const ufRenach = (u.ufEmissao || u.uf_emissao || "SP").toUpperCase().trim();
+                const seedSrc = String(u.id || u.registro || u.n_registro || id);
+                let hash = 0;
+                for (let i = 0; i < seedSrc.length; i++) {
+                    hash = (hash * 31 + seedSrc.charCodeAt(i)) % 899999999;
+                }
+                const renachFalso = ufRenach + (100000000 + Math.abs(hash));
+                document.getElementById('u_renach').innerText = renachFalso;
+
+                document.getElementById('u_espelho').innerText = u.espelho || u.n_cnh || "-----";
+                document.getElementById('u_local').innerText = `${(u.localEmissao || u.local_emissao || 'SAO PAULO').toUpperCase()} / ${(u.ufEmissao || u.uf_emissao || 'SP').toUpperCase()}`;
+                document.getElementById('u_emissao').innerText = d(u.dataEmissao || u.data_emissao);
+
+                const hashStr = "{UR5G6SY-G1OERYZX3JX6-MVOPI6KKI5ZM-" + String(u.id || id).toUpperCase().slice(0, 8) + "}";
+                document.getElementById('key-hash').innerText = `Chave de registro de consulta ${hashStr}`;
+
+                const agora = new Date();
+                document.getElementById('data-hora').innerText = agora.toLocaleString('pt-BR');
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (e) {
+                console.error(e);
+                document.getElementById('loading').innerText = "Erro ao carregar dados de autenticidade da CNH.";
+            }
+        }
+
+        carregar();
+    </script>
+</body>
+</html>

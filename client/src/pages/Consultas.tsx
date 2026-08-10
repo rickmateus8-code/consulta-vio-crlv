@@ -5,6 +5,7 @@ import ConsultasPlanModal from "@/components/ConsultasPlanModal";
 import UnifiedProfileView, { isValidCPF } from "@/components/UnifiedProfileView";
 import { getPlanoStatus } from "@/lib/snoopApi";
 import * as SnoopAPI from "@/lib/snoopApi";
+import * as iseekAPI from "@/lib/iseekApi";
 import { toast } from "sonner";
 import {
   Search, X, Loader2, Star, StarOff, Radar,
@@ -151,6 +152,7 @@ export default function Consultas() {
   // Estado da busca
   const [activeTabId, setActiveTabId] = useState("cpf");
   const [quickInput, setQuickInput] = useState("");
+  const [provider, setProvider] = useState<"auto" | "snoop" | "iseek">("auto");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -264,44 +266,60 @@ export default function Consultas() {
     const val = quickInput.trim();
     const cleanVal = val.replace(/\D/g, "");
 
-    try {
-      let data: any;
-      if (activeTabId === "placa") {
-        data = await SnoopAPI.snoopPlaca(val.replace(/[^a-zA-Z0-9]/g, ""));
-      } else if (activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto") {
-        data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
-      } else if (activeTabId === "parentes") {
-        data = await SnoopAPI.snoopParentes(cleanVal || val);
-      } else if (activeTabId === "vizinhos") {
-        data = await SnoopAPI.snoopVizinhos(cleanVal || val);
-      } else if (activeTabId === "score") {
-        data = await SnoopAPI.snoopScore(cleanVal || val);
-      } else if (activeTabId === "rg") {
-        data = await SnoopAPI.snoopRG(val);
-      } else if (activeTabId === "cep") {
-        data = await SnoopAPI.snoopCEP(cleanVal || val);
-      } else if (activeTabId === "email") {
-        data = await SnoopAPI.snoopEmail(val);
-      } else if (activeTabId === "telefone") {
-        data = await SnoopAPI.snoopTelefoneFull(cleanVal || val);
-      } else if (activeTabId === "operadora") {
-        data = await SnoopAPI.snoopOperadora(cleanVal || val);
-      } else if (activeTabId === "banco") {
-        data = await SnoopAPI.snoopBanco(val);
-      } else if (activeTabId === "titulo") {
-        data = await SnoopAPI.snoopTitulo(val);
-      } else if (activeTabId === "pis") {
-        data = await SnoopAPI.snoopPIS(val);
-      } else if (activeTabId === "endereco") {
+    const executeSnoop = async () => {
+      if (activeTabId === "placa") return await SnoopAPI.snoopPlaca(val.replace(/[^a-zA-Z0-9]/g, ""));
+      if (activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto") return await SnoopAPI.snoopPerfilCPF(cleanVal || val);
+      if (activeTabId === "parentes") return await SnoopAPI.snoopParentes(cleanVal || val);
+      if (activeTabId === "vizinhos") return await SnoopAPI.snoopVizinhos(cleanVal || val);
+      if (activeTabId === "score") return await SnoopAPI.snoopScore(cleanVal || val);
+      if (activeTabId === "rg") return await SnoopAPI.snoopRG(val);
+      if (activeTabId === "cep") return await SnoopAPI.snoopCEP(cleanVal || val);
+      if (activeTabId === "email") return await SnoopAPI.snoopEmail(val);
+      if (activeTabId === "telefone") return await SnoopAPI.snoopTelefoneFull(cleanVal || val);
+      if (activeTabId === "operadora") return await SnoopAPI.snoopOperadora(cleanVal || val);
+      if (activeTabId === "banco") return await SnoopAPI.snoopBanco(val);
+      if (activeTabId === "titulo") return await SnoopAPI.snoopTitulo(val);
+      if (activeTabId === "pis") return await SnoopAPI.snoopPIS(val);
+      if (activeTabId === "endereco") {
         const parts = val.split(";");
         const uf = parts[0].trim().toUpperCase();
-        const logradouro = parts[1].trim();
-        data = await SnoopAPI.snoopEndereco(uf, logradouro);
-      } else if (activeTabId === "nome") {
+        const logradouro = parts[1]?.trim() || "";
+        return await SnoopAPI.snoopEndereco(uf, logradouro);
+      }
+      if (activeTabId === "nome") {
         const sanitizedNome = val.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
-        data = await SnoopAPI.snoopNome(sanitizedNome);
+        return await SnoopAPI.snoopNome(sanitizedNome);
+      }
+      return await SnoopAPI.snoopPerfilCPF(cleanVal || val);
+    };
+
+    const executeIseek = async () => {
+      if (activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto") return await iseekAPI.iseekCPF(cleanVal || val);
+      if (activeTabId === "rg") return await iseekAPI.iseekRG(val);
+      if (activeTabId === "cep") return await iseekAPI.iseekCEP(cleanVal || val);
+      if (activeTabId === "email") return await iseekAPI.iseekEmail(val);
+      if (activeTabId === "telefone" || activeTabId === "operadora") return await iseekAPI.iseekTelefone(cleanVal || val);
+      if (activeTabId === "nome") {
+        const sanitizedNome = val.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+        return await iseekAPI.iseekNome({ nome: sanitizedNome });
+      }
+      return await iseekAPI.iseekCPF(cleanVal || val);
+    };
+
+    try {
+      let data: any;
+      if (provider === "iseek") {
+        data = await executeIseek();
+      } else if (provider === "snoop") {
+        data = await executeSnoop();
       } else {
-        data = await SnoopAPI.snoopPerfilCPF(cleanVal || val);
+        try {
+          data = await executeSnoop();
+        } catch (e: any) {
+          if (e.code === "PLANO_INATIVO") throw e;
+          console.warn("Snoop Intelligence indisponível/erro, tentando fallback iSeek Pro:", e);
+          data = await executeIseek();
+        }
       }
       setResult(data);
       fetchStatus();
@@ -606,21 +624,54 @@ export default function Consultas() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <button
-                      onClick={() => { setQuickInput(""); setResult(null); setError(null); }}
-                      className="px-4 md:px-5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-400 text-xs font-bold transition-all"
-                    >
-                      Limpar
-                    </button>
-                    <button
-                      onClick={handleQuickSearch}
-                      disabled={loading}
-                      className="px-6 md:px-8 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 flex-1 sm:flex-initial"
-                    >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                      Consultar
-                    </button>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-violet-500/30 text-xs text-white overflow-x-auto">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 pl-2 pr-1 hidden sm:inline">PROVEDOR:</span>
+                      <button
+                        type="button"
+                        onClick={() => setProvider("auto")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                          provider === "auto" ? "bg-violet-600 text-white shadow" : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        ⚡ Auto (Fallback)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProvider("snoop")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                          provider === "snoop" ? "bg-violet-600 text-white shadow" : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        🔍 SnoopIntelligence
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProvider("iseek")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                          provider === "iseek" ? "bg-purple-600 text-white shadow" : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        🌐 iSeek Pro
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => { setQuickInput(""); setResult(null); setError(null); }}
+                        className="px-4 md:px-5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-400 text-xs font-bold transition-all"
+                      >
+                        Limpar
+                      </button>
+                      <button
+                        onClick={handleQuickSearch}
+                        disabled={loading}
+                        className="px-6 md:px-8 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 flex-1 sm:flex-initial"
+                      >
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                        Consultar
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

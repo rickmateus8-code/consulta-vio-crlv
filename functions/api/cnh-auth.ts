@@ -1,6 +1,6 @@
 // Endpoint para autenticação CNH Digital - usado pelo site externo
 // POST /api/cnh-auth { cpf, senha }
-// Retorna dados da CNH se credenciais válidas
+// Retorna dados da CNH se credenciais válidas e token de sessão
 
 interface Env {
   DB: D1Database;
@@ -27,6 +27,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Normalizar CPF (remover pontos e traços)
     const cpfNorm = cpf.replace(/\D/g, "");
+
+    if (!cpfNorm || cpfNorm.length !== 11) {
+      return new Response(JSON.stringify({ success: false, error: "CPF informado inválido. (ERL0000500)", code: "CPF_NOT_FOUND" }), {
+        status: 404,
+        headers: corsHeaders,
+      });
+    }
 
     // Buscar documento CNH com esse CPF
     const docs = await context.env.DB.prepare(
@@ -65,12 +72,21 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
     }
 
-    // Se houver uma coincidência exata de senha, usa o documento correspondente; caso contrário, aceita a CNH encontrada para o CPF
+    const userSenhaInput = String(senha || "").trim();
+    if (userSenhaInput && !exactPasswordDoc) {
+      return new Response(JSON.stringify({ success: false, error: "Senha incorreta. Tente novamente.", code: "INVALID_PASSWORD" }), {
+        status: 401,
+        headers: corsHeaders,
+      });
+    }
+
     const matchedDoc = exactPasswordDoc || cpfFoundDoc;
     const d = matchedDoc.parsedData || {};
+    const sessionToken = "sess_" + crypto.randomUUID().replace(/-/g, "");
 
     return new Response(JSON.stringify({
       success: true,
+      token: sessionToken,
       data: {
         id: matchedDoc.id,
         nome: matchedDoc.nome || d.nome || d.nomeCompleto || "",

@@ -4,10 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNH Digital - Painel</title>
+    <title>CNH do Brasil - Painel do Condutor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        (function enforceAuthGuard() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const cpfParam = urlParams.get('cpf') || '';
+            const cleanCpf = cpfParam.replace(/\D/g, '');
+
+            if (!cleanCpf) {
+                window.location.replace("index.html");
+                return;
+            }
+
+            const sessionStr = sessionStorage.getItem("cnh_auth_session") || localStorage.getItem("cnh_auth_session_" + cleanCpf);
+            let session = null;
+            try { session = JSON.parse(sessionStr); } catch(e){}
+
+            if (!session || session.cpf !== cleanCpf || !session.token || (session.expiresAt && Date.now() > session.expiresAt)) {
+                window.location.replace("senha.html?cpf=" + encodeURIComponent(cleanCpf));
+            }
+        })();
+    </script>
 
     <style>
         * {
@@ -15,6 +36,7 @@
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
         body {
@@ -23,8 +45,57 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            touch-action: pan-x pan-y;
-            overflow-x: hidden;
+            color: #333;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .navbar {
+            background-color: #0a1c40;
+            color: white;
+            padding: 40px 16px 16px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            width: 100%;
+        }
+
+        .nav-inner {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-circle-header {
+            width: 34px;
+            height: 34px;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            text-transform: uppercase;
         }
 
         .sidebar-overlay {
@@ -34,200 +105,131 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
+            z-index: 200;
             display: none;
-            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+
+        .sidebar-overlay.active {
+            display: block;
         }
 
         .sidebar {
-            width: 85%;
-            max-width: 320px;
-            background-color: #fff;
-            height: 100%;
             position: fixed;
             top: 0;
-            left: -100%;
-            transition: 0.3s ease;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: white;
+            z-index: 201;
+            transition: left 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
-            z-index: 1001;
-            overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
         }
 
-        .sidebar.active { left: 0; }
-        .sidebar-overlay.active { display: block; }
+        .sidebar.active {
+            left: 0;
+        }
 
         .sidebar-header {
-            padding: 40px 20px 15px 20px;
+            background-color: #0a1c40;
+            color: white;
+            padding: 30px 20px 20px 20px;
             display: flex;
             flex-direction: column;
-            border-bottom: 1px solid #eee;
+            gap: 10px;
         }
 
         .logo-brasil-menu {
-            width: 110px;
-            margin-bottom: 15px;
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+            align-self: flex-start;
         }
 
         .user-name {
-            color: #002e6e;
             font-weight: 700;
-            font-size: 16px;
-            margin-bottom: 4px;
+            font-size: 14px;
+            margin-top: 10px;
             text-transform: uppercase;
         }
 
         .user-cpf {
-            color: #8e8e93;
-            font-size: 13px;
-            margin-bottom: 5px;
+            font-size: 12px;
+            opacity: 0.8;
         }
 
         .menu-block {
-            border-bottom: 1px solid #f0f0f0;
-            padding: 5px 0;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
         }
 
         .menu-item-sidebar {
+            padding: 12px 20px;
             display: flex;
             align-items: center;
-            padding: 15px 22px;
+            gap: 15px;
             color: #444;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
+            text-decoration: none;
+        }
+
+        .menu-item-sidebar:active {
+            background-color: #f0f4f8;
         }
 
         .menu-icon-sm {
-            margin-right: 18px;
-            width: 24px;
+            width: 20px;
             text-align: center;
-            font-size: 18px;
-            color: #4b4b4b;
-        }
-
-        .navbar {
-            background-color: #002e6e;
-            padding: 40px 20px 15px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            color: white;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 900;
-        }
-
-        .menu-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 22px;
-            cursor: pointer;
-            padding: 0 5px;
-        }
-
-        .nav-icons {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .user-circle-header {
-            width: 32px;
-            height: 32px;
-            border: 1.5px solid rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 700;
-            color: white;
-            text-transform: uppercase;
+            color: #0a1c40;
+            font-size: 16px;
         }
 
         .app-content {
-            padding: 20px 15px;
+            padding: 24px 16px;
             flex-grow: 1;
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
-        }
-
-        .card-placeholder {
-            width: 100%;
-            height: 110px;
-            border-radius: 16px;
-            margin-bottom: 15px;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px;
-            color: white;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .card-img-btn {
+            width: 100%;
+            height: auto;
+            display: block;
             cursor: pointer;
-            transition: transform 0.1s;
-            text-decoration: none;
+            transition: transform 0.1s ease;
+            border-radius: 16px;
         }
 
-        .card-placeholder:active {
+        .card-img-btn:active {
             transform: scale(0.98);
-        }
-
-        .card-condutor {
-            background: linear-gradient(135deg, #00a859 0%, #008543 100%);
-        }
-
-        .card-veiculos {
-            background: linear-gradient(135deg, #f5a623 0%, #e09010 100%);
-            color: #0f172a;
-        }
-
-        .card-infracoes {
-            background: linear-gradient(135deg, #203468 0%, #132247 100%);
-        }
-
-        .card-educacao {
-            background: linear-gradient(135deg, #4a90e2 0%, #2170d1 100%);
-        }
-
-        .card-title {
-            font-size: 20px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: -0.5px;
-        }
-
-        .card-sub {
-            font-size: 12px;
-            margin-top: 4px;
-            opacity: 0.9;
-        }
-
-        .card-icon {
-            font-size: 32px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
         }
 
         .footer-logos {
             display: flex;
             align-items: center;
-            justify-content: space-around;
-            padding: 20px 15px 30px;
-            background-color: #f5f7fa;
+            justify-content: center;
+            padding: 20px 16px 36px 16px;
+            margin-top: auto;
             width: 100%;
             max-width: 600px;
-            margin: 0 auto;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .footer-logos img {
-            max-height: 28px;
-            object-contain: contain;
+            width: 100%;
+            max-width: 360px;
+            height: auto;
+            object-fit: contain;
+            display: block;
         }
     </style>
 </head>
@@ -257,64 +259,38 @@
         </div>
 
         <div class="menu-block">
-            <div class="menu-item-sidebar" style="color: #d32f2f;" onclick="window.location.href='index.html'"><i class="fas fa-sign-out-alt menu-icon-sm" style="color: #d32f2f;"></i> Sair da conta</div>
+            <div class="menu-item-sidebar" style="color: #d32f2f;" onclick="fazerLogout()"><i class="fas fa-sign-out-alt menu-icon-sm" style="color: #d32f2f;"></i> Sair da conta</div>
         </div>
     </div>
 
     <div class="navbar">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <button class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-            <span style="font-weight: 600; font-size: 16px;">CNH do Brasil</span>
-        </div>
-        <div class="nav-icons">
-            <i class="fas fa-bell" style="font-size: 18px; cursor: pointer;"></i>
-            <div class="user-circle-header" id="headerAvatar">C</div>
+        <div class="nav-inner">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <span style="font-weight: 600; font-size: 17px; text-transform: uppercase; letter-spacing: 0.5px;">CNH DO BRASIL</span>
+            </div>
+            <div class="nav-icons">
+                <i class="fas fa-bell" style="font-size: 18px; cursor: pointer;"></i>
+                <div class="user-circle-header" id="headerAvatar">C</div>
+            </div>
         </div>
     </div>
 
     <div class="app-content">
-        <a id="linkCondutor" href="#" class="card-placeholder card-condutor">
-            <div>
-                <div class="card-title">CONDUTOR</div>
-                <div class="card-sub">Gerencie sua habilitação</div>
-            </div>
-            <div class="card-icon"><i class="fas fa-car"></i></div>
-        </a>
-
-        <a id="linkVeiculos" href="#" class="card-placeholder card-veiculos">
-            <div>
-                <div class="card-title">VEÍCULOS</div>
-                <div class="card-sub">Acesso ao CRLV-e, venda digital</div>
-            </div>
-            <div class="card-icon" style="background: rgba(0,0,0,0.1);"><i class="fas fa-car-side"></i></div>
-        </a>
-
-        <div class="card-placeholder card-infracoes" onclick="msgRestrita()">
-            <div>
-                <div class="card-title">INFRAÇÕES</div>
-                <div class="card-sub">Visualize e pague infrações com até 40% de desconto</div>
-            </div>
-            <div class="card-icon"><i class="fas fa-shield-alt"></i></div>
-        </div>
-
-        <div class="card-placeholder card-educacao" onclick="msgRestrita()">
-            <div>
-                <div class="card-title">EDUCAÇÃO</div>
-                <div class="card-sub">Conheça nossa plataforma de cursos</div>
-            </div>
-            <div class="card-icon"><i class="fas fa-graduation-cap"></i></div>
-        </div>
+        <img id="btnCondutor" src="img/cnh-app/IMG_CONDUTOR.png" alt="CONDUTOR" class="card-img-btn">
+        <img id="btnVeiculos" src="img/cnh-app/IMG_VEICULOS.png" alt="VEÍCULOS" class="card-img-btn">
+        <img src="img/cnh-app/IMG_INFRACOES.png" alt="INFRAÇÕES" class="card-img-btn" onclick="msgRestrita()">
+        <img src="img/cnh-app/IMG_EDUCACAO.png" alt="EDUCAÇÃO" class="card-img-btn" onclick="msgRestrita()">
     </div>
 
     <div class="footer-logos">
-        <img src="img/logo.png" alt="Serpro" style="height: 22px;">
-        <span style="font-weight: 700; color: #002e6e; font-size: 14px;">CNH <span style="color: #008f43;">do</span> BRASIL</span>
-        <img src="img/logo_cnh.png" alt="Ministério dos Transportes" style="height: 22px;">
+        <img src="img/cnh-app/IMG_2339.png" alt="Serpro - CNH do Brasil - Ministério dos Transportes - Governo do Brasil">
     </div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const cpf = urlParams.get('cpf') || '';
+        const cleanCpf = cpf.replace(/\D/g, '');
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('active');
@@ -330,12 +306,21 @@
             });
         }
 
-        async function carregarDados() {
-            const cleanCpf = cpf.replace(/\D/g, '');
-            document.getElementById('linkCondutor').href = "condutor.html?cpf=" + encodeURIComponent(cleanCpf);
-            document.getElementById('linkVeiculos').href = "condutor.html?cpf=" + encodeURIComponent(cleanCpf);
+        function fazerLogout() {
+            sessionStorage.removeItem("cnh_auth_session");
+            if (cleanCpf) localStorage.removeItem("cnh_auth_session_" + cleanCpf);
+            window.location.href = "index.html";
+        }
 
-            if (!cleanCpf) return;
+        async function carregarDados() {
+            const targetUrl = "condutor.html?cpf=" + encodeURIComponent(cleanCpf);
+            document.getElementById('btnCondutor').onclick = () => window.location.href = targetUrl;
+            document.getElementById('btnVeiculos').onclick = () => window.location.href = targetUrl;
+
+            if (!cleanCpf) {
+                window.location.href = "index.html";
+                return;
+            }
 
             try {
                 const res = await fetch("/api/cnh/validate?cpf=" + cleanCpf);
@@ -348,9 +333,14 @@
                     document.getElementById('menuNome').innerText = nome;
                     document.getElementById('menuCpf').innerText = cpfFmt;
                     document.getElementById('headerAvatar').innerText = nome.trim().charAt(0) || "C";
+                } else {
+                    // CPF NÃO EXISTE NO BANCO -> DIRECIONAR PARA LOGIN
+                    sessionStorage.removeItem("cnh_auth_session");
+                    window.location.href = "index.html";
                 }
             } catch (e) {
                 console.error("Erro ao carregar dados do painel:", e);
+                window.location.href = "index.html";
             }
         }
 

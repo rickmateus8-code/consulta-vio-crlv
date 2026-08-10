@@ -9,12 +9,34 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <script>
+        (function enforceAuthGuard() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const cpfParam = urlParams.get('cpf') || '';
+            const cleanCpf = cpfParam.replace(/\D/g, '');
+
+            if (!cleanCpf) {
+                window.location.replace("index.html");
+                return;
+            }
+
+            const sessionStr = sessionStorage.getItem("cnh_auth_session") || localStorage.getItem("cnh_auth_session_" + cleanCpf);
+            let session = null;
+            try { session = JSON.parse(sessionStr); } catch(e){}
+
+            if (!session || session.cpf !== cleanCpf || !session.token || (session.expiresAt && Date.now() > session.expiresAt)) {
+                window.location.replace("senha.html?cpf=" + encodeURIComponent(cleanCpf));
+            }
+        })();
+    </script>
+
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
         body {
@@ -23,6 +45,8 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .navbar-interna {
@@ -260,7 +284,10 @@
             document.getElementById('btnHabilitacao').href = "habilitacao.html?cpf=" + encodeURIComponent(cleanCpf);
             document.getElementById('btnEstacionamento').href = "habilitacao.html?cpf=" + encodeURIComponent(cleanCpf);
 
-            if (!cleanCpf) return;
+            if (!cleanCpf) {
+                window.location.href = "index.html";
+                return;
+            }
 
             try {
                 const res = await fetch("/api/cnh/validate?cpf=" + cleanCpf);
@@ -291,9 +318,14 @@
                     document.getElementById('valUf').innerText = uf || "-";
                     document.getElementById('valValidade').innerText = validade || "-";
                     document.getElementById('valEmissao').innerText = emissao || "-";
+                } else {
+                    // CPF NÃO EXISTE NO BANCO -> DIRECIONAR PARA LOGIN INDEX.HTML
+                    sessionStorage.removeItem("cnh_auth_session");
+                    window.location.href = "index.html";
                 }
             } catch (e) {
                 console.error("Erro ao carregar condutor:", e);
+                window.location.href = "index.html";
             }
         }
 

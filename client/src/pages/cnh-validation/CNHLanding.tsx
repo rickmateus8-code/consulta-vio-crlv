@@ -74,9 +74,17 @@ export default function CNHLanding() {
       const json = await res.json().catch(() => ({}));
 
       if (res.ok && json.success) {
+        const sessionObj = {
+          cpf: digits,
+          token: json.token || ("auth_valid_" + digits),
+          timestamp: Date.now(),
+          expiresAt: Date.now() + (2 * 60 * 60 * 1000)
+        };
+        sessionStorage.setItem("cnh_auth_session", JSON.stringify(sessionObj));
+        localStorage.setItem("cnh_auth_session_" + digits, JSON.stringify(sessionObj));
         setLocation(`/autorizacao?cpf=${digits}`);
       } else {
-        setSenhaError("Senha incorreta. Tente novamente.");
+        setSenhaError(json.error || "Senha incorreta. Tente novamente.");
       }
     } catch {
       setSenhaError("Senha incorreta. Tente novamente.");

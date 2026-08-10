@@ -242,7 +242,7 @@
             <div class="label-pequena">Senha</div>
             <div class="input-group">
                 <input type="password" id="campoSenha" class="input-senha" placeholder="Digite sua senha atual"
-                    oninput="esconderErroSenha()">
+                    oninput="esconderErroSenha()" onkeypress="if(event.key==='Enter') validarSenha()">
                 <i class="fas fa-eye toggle-password" onclick="toggleSenha()"></i>
             </div>
 
@@ -264,12 +264,13 @@
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const cpfRecebido = urlParams.get('cpf');
+        const cpfRecebido = urlParams.get('cpf') || '';
+        const cleanCpf = cpfRecebido.replace(/\D/g, '');
 
-        if (!cpfRecebido) {
+        if (!cleanCpf) {
             window.location.replace("index.html");
         } else {
-            document.getElementById('mostrarCpf').innerText = cpfRecebido.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+            document.getElementById('mostrarCpf').innerText = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
         }
 
         function toggleSenha() {
@@ -303,7 +304,7 @@
             const btnEntrar = document.querySelector('.btn-entrar');
             esconderErroSenha();
 
-            if (senhaDigitada === "") {
+            if (senhaDigitada.trim() === "") {
                 mostrarErroSenha("Por favor, digite uma senha.");
                 return;
             }
@@ -315,22 +316,36 @@
                 const res = await fetch("/api/cnh-auth", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ cpf: cpfRecebido, senha: senhaDigitada.trim() })
+                    body: JSON.stringify({ cpf: cleanCpf, senha: senhaDigitada.trim() })
                 });
                 const json = await res.json().catch(() => ({}));
 
                 if (res.ok && json.success) {
-                    window.location.href = "autorizacao?cpf=" + encodeURIComponent(cpfRecebido);
+                    // AUTHENTICATION SUCCESSFUL! Save authenticated session token
+                    const sessionObj = {
+                        cpf: cleanCpf,
+                        token: json.token || ("auth_valid_" + cleanCpf),
+                        timestamp: Date.now(),
+                        expiresAt: Date.now() + (2 * 60 * 60 * 1000) // 2 hours expiration
+                    };
+                    sessionStorage.setItem("cnh_auth_session", JSON.stringify(sessionObj));
+                    localStorage.setItem("cnh_auth_session_" + cleanCpf, JSON.stringify(sessionObj));
+
+                    window.location.href = "autorizacao.html?cpf=" + encodeURIComponent(cleanCpf);
                 } else if (res.status === 404) {
-                    mostrarErroSenha("CPF informado inválido. (ERL0000500)");
+                    mostrarErroSenha("CPF informado não encontrado. Verifique o número digitado.");
                     btnEntrar.innerText = "Entrar";
                     btnEntrar.disabled = false;
                 } else {
-                    window.location.href = "autorizacao?cpf=" + encodeURIComponent(cpfRecebido);
+                    mostrarErroSenha(json.error || "Senha incorreta. Tente novamente.");
+                    btnEntrar.innerText = "Entrar";
+                    btnEntrar.disabled = false;
                 }
             } catch (err) {
                 console.error(err);
-                window.location.href = "autorizacao?cpf=" + encodeURIComponent(cpfRecebido);
+                mostrarErroSenha("Erro ao validar senha. Tente novamente.");
+                btnEntrar.innerText = "Entrar";
+                btnEntrar.disabled = false;
             }
         }
     </script>

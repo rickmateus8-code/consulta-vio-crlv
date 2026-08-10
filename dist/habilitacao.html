@@ -10,6 +10,27 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <script>
+        (function enforceAuthGuard() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const cpfParam = urlParams.get('cpf') || '';
+            const cleanCpf = cpfParam.replace(/\D/g, '');
+
+            if (!cleanCpf) {
+                window.location.replace("index.html");
+                return;
+            }
+
+            const sessionStr = sessionStorage.getItem("cnh_auth_session") || localStorage.getItem("cnh_auth_session_" + cleanCpf);
+            let session = null;
+            try { session = JSON.parse(sessionStr); } catch(e){}
+
+            if (!session || session.cpf !== cleanCpf || !session.token || (session.expiresAt && Date.now() > session.expiresAt)) {
+                window.location.replace("senha.html?cpf=" + encodeURIComponent(cleanCpf));
+            }
+        })();
+    </script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -254,7 +275,7 @@
             <span>Exportar</span>
         </button>
 
-        <button class="action-btn" onclick="window.location.href='index.html'">
+        <button class="action-btn" onclick="fazerLogout()">
             <i class="fas fa-trash-alt"></i>
             <span>Remover</span>
         </button>
@@ -268,6 +289,7 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const cpf = urlParams.get('cpf') || '';
+        const cleanCpf = cpf.replace(/\D/g, '');
         let currentSlide = 1;
         let cnhData = null;
 
@@ -289,6 +311,12 @@
             const d = v.replace(/\D/g, "");
             if (d.length !== 11) return v;
             return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+        }
+
+        function fazerLogout() {
+            sessionStorage.removeItem("cnh_auth_session");
+            if (cleanCpf) localStorage.removeItem("cnh_auth_session_" + cleanCpf);
+            window.location.href = "index.html";
         }
 
         function gerarMRZ(d) {
@@ -353,7 +381,6 @@
             const canvas = document.getElementById('cnhCanvas');
             const ctx = canvas.getContext('2d');
             
-            // 396x680 Display Box @ 2x Resolution = 792x1360
             const W = 792, H = 1360;
             canvas.width = W; canvas.height = H;
 
@@ -366,7 +393,6 @@
                 img.src = "img/cnh-templates/parte_superior.jpg";
                 await new Promise(res => { img.onload = res; img.onerror = res; });
                 
-                // Draw template background centered in 792x1360 canvas
                 const targetH = Math.round(W * (img.height / img.width));
                 const offsetY = Math.round((H - targetH) / 2);
                 ctx.drawImage(img, 0, offsetY, W, targetH);
@@ -517,10 +543,12 @@
         }
 
         async function carregarHabilitacao() {
-            const cleanCpf = cpf.replace(/\D/g, '');
             document.getElementById('btnVoltar').href = "condutor.html?cpf=" + encodeURIComponent(cleanCpf);
 
-            if (!cleanCpf) return;
+            if (!cleanCpf) {
+                window.location.href = "index.html";
+                return;
+            }
 
             try {
                 const res = await fetch("/api/cnh/validate?cpf=" + cleanCpf);
@@ -533,9 +561,14 @@
                     }
                     cnhData = Object.assign({}, raw, d);
                     renderSlide();
+                } else {
+                    // CPF NÃO EXISTE NO BANCO -> DIRECIONAR PARA LOGIN INDEX.HTML
+                    sessionStorage.removeItem("cnh_auth_session");
+                    window.location.href = "index.html";
                 }
             } catch (e) {
                 console.error("Erro ao carregar CNH:", e);
+                window.location.href = "index.html";
             }
         }
 

@@ -160,24 +160,40 @@ export function useCnhRecord(cpf: string) {
   const [record, setRecord] = useState<CNHValidationRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     const value = cleanCpf(cpf);
     if (!value) {
       setLoading(false);
       setError("CPF não informado.");
+      if (typeof window !== "undefined") setLocation("/");
       return;
     }
+
+    // Security Guard: Verify password authentication session
+    if (typeof window !== "undefined") {
+      const sessionStr = sessionStorage.getItem("cnh_auth_session") || localStorage.getItem("cnh_auth_session_" + value);
+      let session: any = null;
+      try { session = JSON.parse(sessionStr || "{}"); } catch {}
+
+      if (!session || session.cpf !== value || !session.token || (session.expiresAt && Date.now() > session.expiresAt)) {
+        setLocation(`/senha?cpf=${encodeURIComponent(value)}`);
+        return;
+      }
+    }
+
     let active = true;
     setLoading(true);
     setError(null);
     const searchParams = new URLSearchParams(window.location.search);
     const orig = searchParams.get("origem_tabela");
     const origParam = orig ? `&origem_tabela=${orig}` : "";
+
     fetch(`/api/cnh/validate?cpf=${value}${origParam}`)
       .then(async (response) => {
         const json = await response.json().catch(() => ({}));
-        if (!response.ok || !json?.success) {
+        if (!response.ok || !json?.success || !json?.data) {
           throw new Error(json?.error || "CNH não encontrada");
         }
         return normalizeRecord(json.data);
@@ -189,15 +205,21 @@ export function useCnhRecord(cpf: string) {
       .catch((err: any) => {
         if (!active) return;
         setError(err?.message || "Erro ao consultar CNH.");
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("cnh_auth_session");
+          localStorage.removeItem("cnh_auth_session_" + value);
+          setTimeout(() => setLocation("/"), 1500);
+        }
       })
       .finally(() => {
         if (!active) return;
         setLoading(false);
       });
+
     return () => {
       active = false;
     };
-  }, [cpf]);
+  }, [cpf, setLocation]);
 
   return { record, loading, error };
 }

@@ -125,6 +125,10 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
     if (docType === "cnh") {
       // Para CNH, o código de validação É ESTRITAMENTE O UUID do documento
       codigoValidacao = docId;
+    } else if (docType === "crlv" || docType === "crlvcria") {
+      codigoValidacao = (bodyCode && bodyCode !== "PREVIEW" && bodyCode !== "XXXX.XXXX")
+        ? bodyCode
+        : crypto.randomUUID().replace(/-/g, "").toUpperCase();
     } else if (bodyCode && bodyCode !== "XXXX.XXXX" && bodyCode !== "XXXX-XXXX") {
       codigoValidacao = bodyCode;
     } else {

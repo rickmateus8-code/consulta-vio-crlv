@@ -208,10 +208,10 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   const qrY = 330;
 
   // Gerar QR Code Canvas
-  const crlvBaseUrl = "https://consulta-crlv-vio.info";
+  const crlvBaseUrl = "https://consulta-vio-crlv.pages.dev";
   const qrVal = props.codigoQR && props.codigoQR !== "PREVIEW"
     ? (props.codigoQR.startsWith("http") ? props.codigoQR : `${crlvBaseUrl}/?codigo=${encodeURIComponent(props.codigoQR)}`)
-    : `${crlvBaseUrl}/?codigo=00278581161`;
+    : `${crlvBaseUrl}/?codigo=BDC8CA0686D839EE1CB1CB2E84D05F63`;
 
   try {
     const qrDataUrl = await QRCode.toDataURL(qrVal, { margin: 1, width: qrSize, errorCorrectionLevel: "M" });

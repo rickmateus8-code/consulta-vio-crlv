@@ -146,6 +146,10 @@ export async function onRequest(context: { request: Request; env: Env; params: {
       let codigoValidacao = "";
       if (docType === "cnh") {
         codigoValidacao = docId;
+      } else if (docType === "crlv" || docType === "crlvcria") {
+        codigoValidacao = (bodyCode && bodyCode !== "PREVIEW" && bodyCode !== "XXXX.XXXX")
+          ? bodyCode
+          : crypto.randomUUID().replace(/-/g, "").toUpperCase();
       } else if (bodyCode && bodyCode !== "XXXX.XXXX" && bodyCode !== "XXXX-XXXX") {
         codigoValidacao = bodyCode;
       } else {

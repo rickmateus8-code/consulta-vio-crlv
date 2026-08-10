@@ -232,12 +232,17 @@
 
         function fmtDate(d) {
             if (!d || d === "-") return null;
-            if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
-            if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
-                const [y, m, dd] = d.slice(0, 10).split("-");
+            let str = String(d).trim();
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return str;
+            if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+                const [y, m, dd] = str.slice(0, 10).split("-");
                 return `${dd}/${m}/${y}`;
             }
-            return d;
+            if (/^\d{4}\/\d{2}\/\d{2}/.test(str)) {
+                const [y, m, dd] = str.slice(0, 10).split("/");
+                return `${dd}/${m}/${y}`;
+            }
+            return str;
         }
 
         function msgAviso(nome) {
@@ -270,19 +275,27 @@
                     const categoria = (d.categoria || raw.categoria || d.cat || "B").toUpperCase();
                     const uf = (d.ufEmissao || raw.ufEmissao || d.uf || "DF").toUpperCase();
 
-                    const validadeRaw = d.validade || d.dataValidade || raw.validade || d.val;
-                    const emissaoRaw = d.dataEmissao || d.emissao || raw.dataEmissao || d.dtEmissao;
+                    const emissaoRaw = d.dataEmissao || d.emissao || d.data_emissao || d.dtEmissao || d.primeiraHabilitacao || raw.dataEmissao || raw.created_at;
+                    let emissao = fmtDate(emissaoRaw) || fmtDate(new Date().toISOString().slice(0, 10));
 
-                    const validade = fmtDate(validadeRaw) || "22/05/2030";
-                    const emissao = fmtDate(emissaoRaw) || "21/03/2026";
+                    const validadeRaw = d.validade || d.dataValidade || d.validadeCNH || d.validadeCNH2 || d.val || raw.validade;
+                    let validade = fmtDate(validadeRaw);
+
+                    if (!validade && emissao) {
+                        const parts = emissao.split("/");
+                        if (parts.length === 3) {
+                            const year = parseInt(parts[2], 10) + 10;
+                            validade = `${parts[0]}/${parts[1]}/${year}`;
+                        }
+                    }
 
                     document.getElementById('valNome').innerText = nome;
                     document.getElementById('valCpf').innerText = cpfFmt;
                     document.getElementById('valSexo').innerText = sexo;
                     document.getElementById('valCategoria').innerText = categoria;
                     document.getElementById('valUf').innerText = uf;
-                    document.getElementById('valValidade').innerText = validade;
-                    document.getElementById('valEmissao').innerText = emissao;
+                    document.getElementById('valValidade').innerText = validade || "-";
+                    document.getElementById('valEmissao').innerText = emissao || "-";
                 }
             } catch (e) {
                 console.error("Erro ao carregar condutor:", e);

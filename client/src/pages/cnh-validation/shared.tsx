@@ -52,14 +52,19 @@ export function formatCpf(value?: string) {
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
-export function formatDate(value?: string) {
-  if (!value || value === "-") return "Não informado";
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value;
-  if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
-    const [year, month, day] = value.slice(0, 10).split("-");
+export function formatDate(value?: string): string {
+  if (!value || value === "-") return "";
+  const str = String(value).trim();
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return str;
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const [year, month, day] = str.slice(0, 10).split("-");
     return `${day}/${month}/${year}`;
   }
-  return value;
+  if (/^\d{4}\/\d{2}\/\d{2}/.test(str)) {
+    const [year, month, day] = str.slice(0, 10).split("/");
+    return `${day}/${month}/${year}`;
+  }
+  return str;
 }
 
 export function isExpired(value?: string) {
@@ -89,7 +94,7 @@ export function categoryRows(category = "", validade?: string) {
   });
   return ["ACC", "A", "B", "C", "D", "E"].map((item) => ({
     categoria: item,
-    validade: enabled.has(item) ? formatDate(validade) : "—",
+    validade: enabled.has(item) ? (formatDate(validade) || "—") : "—",
   }));
 }
 
@@ -108,8 +113,21 @@ export function normalizeRecord(payload: any): CNHValidationRecord {
   const raw = payload?.data && typeof payload.data === "object" ? payload.data : payload;
   const data = raw?.data && typeof raw.data === "object" ? raw.data : {};
   
-  const rawValidade = raw?.validade || data?.validade || data?.dataValidade || data?.validadeCNH || raw?.dataValidade;
-  const rawEmissao = raw?.dataEmissao || data?.dataEmissao || data?.emissao || data?.data_emissao || data?.dtEmissao || raw?.emissao;
+  // Resolving raw values from emission payload
+  const rawEmissao = data?.dataEmissao || data?.emissao || data?.data_emissao || data?.dtEmissao || data?.primeiraHabilitacao || raw?.dataEmissao || raw?.created_at;
+  const formattedEmissao = formatDate(rawEmissao) || formatDate(new Date().toISOString().slice(0, 10));
+
+  let rawValidade = data?.validade || data?.dataValidade || data?.validadeCNH || data?.validadeCNH2 || data?.val || raw?.validade;
+  let formattedValidade = formatDate(rawValidade);
+
+  // If validade was left empty during /cnhcria emission, calculate 10 years from emission date
+  if (!formattedValidade && formattedEmissao) {
+    const parts = formattedEmissao.split("/");
+    if (parts.length === 3) {
+      const year = parseInt(parts[2], 10) + 10;
+      formattedValidade = `${parts[0]}/${parts[1]}/${year}`;
+    }
+  }
 
   return {
     ...raw,
@@ -119,25 +137,25 @@ export function normalizeRecord(payload: any): CNHValidationRecord {
     rg: raw?.rg || data?.rg || "",
     orgaoEmissor: raw?.orgaoEmissor || data?.orgaoEmissor || "",
     ufRG: raw?.ufRG || data?.ufRG || data?.ufRg || "",
-    sexo: raw?.sexo || data?.sexo || "MASCULINO",
-    nacionalidade: raw?.nacionalidade || data?.nacionalidade || "BRASILEIRA",
-    dataNascimento: raw?.dataNascimento || data?.dataNascimento || data?.nascimento || "",
-    localNascimento: raw?.localNascimento || data?.localNascimento || "",
-    ufNascimento: raw?.ufNascimento || data?.ufNascimento || "",
-    nomePai: raw?.nomePai || data?.nomePai || data?.filiacaoPai || "",
-    nomeMae: raw?.nomeMae || data?.nomeMae || data?.filiacaoMae || "",
-    categoria: raw?.categoria || data?.categoria || data?.cat || "B",
-    tipo: raw?.tipo || data?.tipo || "",
-    registro: raw?.registro || data?.registro || data?.nRegistro || data?.numRegistro || "",
-    espelho: raw?.espelho || data?.espelho || data?.numeroFormulario || "",
-    validade: formatDate(rawValidade) !== "Não informado" ? rawValidade : "2030-05-22",
-    dataEmissao: formatDate(rawEmissao) !== "Não informado" ? rawEmissao : "2026-03-21",
-    primeiraHabilitacao: raw?.primeiraHabilitacao || data?.primeiraHabilitacao || data?.primeiraHab || "",
-    localEmissao: raw?.localEmissao || data?.localEmissao || data?.local || "",
-    ufEmissao: raw?.ufEmissao || data?.ufEmissao || "DF",
-    observacoes: raw?.observacoes || data?.observacoes || data?.obs || "",
-    fotoUrl: raw?.fotoUrl || data?.fotoUrl || data?.foto || "",
-    assinaturaUrl: raw?.assinaturaUrl || data?.assinaturaUrl || data?.assinatura || "",
+    sexo: (data?.sexo || raw?.sexo || "MASCULINO").toUpperCase(),
+    nacionalidade: (data?.nacionalidade || raw?.nacionalidade || "BRASILEIRA").toUpperCase(),
+    dataNascimento: formatDate(data?.dataNascimento || raw?.dataNascimento || data?.nascimento),
+    localNascimento: data?.localNascimento || raw?.localNascimento || "",
+    ufNascimento: data?.ufNascimento || raw?.ufNascimento || "",
+    nomePai: data?.nomePai || raw?.nomePai || data?.filiacaoPai || "",
+    nomeMae: data?.nomeMae || raw?.nomeMae || data?.filiacaoMae || "",
+    categoria: (data?.categoria || raw?.categoria || data?.cat || "B").toUpperCase(),
+    tipo: data?.tipo || raw?.tipo || "Definitiva",
+    registro: data?.registro || raw?.registro || data?.nRegistro || data?.numRegistro || "",
+    espelho: data?.espelho || raw?.espelho || data?.numeroFormulario || "",
+    validade: formattedValidade,
+    dataEmissao: formattedEmissao,
+    primeiraHabilitacao: formatDate(data?.primeiraHabilitacao || raw?.primeiraHabilitacao || data?.primeiraHab) || formattedEmissao,
+    localEmissao: data?.localEmissao || raw?.localEmissao || data?.local || "BRASÍLIA",
+    ufEmissao: (data?.ufEmissao || raw?.ufEmissao || data?.uf || "DF").toUpperCase(),
+    observacoes: data?.observacoes || raw?.observacoes || data?.obs || "",
+    fotoUrl: data?.fotoUrl || raw?.fotoUrl || data?.foto || "",
+    assinaturaUrl: data?.assinaturaUrl || raw?.assinaturaUrl || data?.assinatura || "",
     assDigital1: data?.assDigital1 || raw?.assDigital1 || "",
     assDigital2: data?.assDigital2 || raw?.assDigital2 || data?.renach || raw?.renach || "",
     renach: data?.renach || raw?.renach || data?.assDigital2 || raw?.assDigital2 || "",

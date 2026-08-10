@@ -412,7 +412,7 @@ export default function CNHCria() {
         },
       };
 
-      const url = editId ? `/api/documents/${editId}` : "/api/documents";
+      const url = editId ? `/api/documents/${editId}` : "/api/documents/cnh";
       const method = editId ? "PUT" : "POST";
 
       const res = await fetch(url, {

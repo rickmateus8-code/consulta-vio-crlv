@@ -8,7 +8,7 @@
  * 4. 3. FINALIZAÇÃO (Foto 3x4 + Controles, Assinatura por Texto/Foto + Posição/Zoom, Senha App & Observações EAR)
  */
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import CNHDocument, { type CNHDocumentHandle, type CNHDocumentProps } from "../components/CNHDocument";

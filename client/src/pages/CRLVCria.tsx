@@ -388,16 +388,16 @@ export default function CRLVCria() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans select-none">
-        {/* HEADER BAR SUPREMO (Estilo ELITEDOC.STORE / DocMaster) */}
-        <header className="h-16 border-b border-amber-500/20 bg-[#050a17]/95 px-5 flex items-center justify-between sticky top-0 z-40">
-          <div className="flex items-center gap-3">
-            <h1 className="text-sm font-bold tracking-wide flex items-center gap-2">
-              <span className="text-amber-400 font-extrabold">ELITEDOC.STORE</span>
-              <span className="text-slate-300">Gerador de CRLV</span>
-            </h1>
-          </div>
+    <div className="fixed inset-0 z-50 h-screen w-full bg-[#020617] text-white flex flex-col font-sans select-none overflow-hidden">
+      {/* HEADER BAR SUPREMO (Estilo DOCMASTER.STORE) */}
+      <header className="h-16 border-b border-amber-500/20 bg-[#050a17]/95 px-5 flex items-center justify-between sticky top-0 z-40 shrink-0">
+        <div className="flex items-center gap-3">
+          <h1 className="text-sm font-bold tracking-wide flex items-center gap-2">
+            <span className="text-white font-black text-base">DOCMASTER</span>
+            <span className="text-[#005CA9] font-black text-base">.STORE</span>
+            <span className="text-amber-400 font-bold ml-1">Gerador de CRLV</span>
+          </h1>
+        </div>
 
           <div className="flex items-center gap-2">
             <button
@@ -844,6 +844,5 @@ export default function CRLVCria() {
           historyPath="/crlvsalvos"
         />
       </div>
-    </DashboardLayout>
   );
 }

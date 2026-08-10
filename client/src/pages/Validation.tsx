@@ -203,14 +203,46 @@ export default function Validation() {
     setShowViewer(false);
     setPdfBlobUrl(null);
     try {
-      // Usar API do docmaster.store para validação (funciona para todos os domínios)
-      const apiBase = window.location.hostname === "localhost"
-        ? ""
-        : "https://docmaster.store";
-      const res = await fetch(`${apiBase}/api/validate/${encodeURIComponent(code)}`);
-      const json = await res.json();
-      
-      if (json.valid && json.data) {
+      let json: any = null;
+      const encodedCode = encodeURIComponent(code);
+
+      // 1. Tentar endpoint local /api/validate/:code
+      try {
+        const res = await fetch(`/api/validate/${encodedCode}`);
+        if (res.ok) json = await res.json();
+      } catch {}
+
+      // 2. Tentar endpoint local /api/cnh/validate?id=:code
+      if (!json || (!json.valid && !json.success)) {
+        try {
+          const res2 = await fetch(`/api/cnh/validate?id=${encodedCode}`);
+          if (res2.ok) {
+            const data2 = await res2.json();
+            if (data2.success && data2.data) json = { valid: true, data: data2.data };
+          }
+        } catch {}
+      }
+
+      // 3. Fallback para docmaster.store se estiver em domínio de validação isolado
+      if (!json || (!json.valid && !json.success)) {
+        try {
+          const res3 = await fetch(`https://docmaster.store/api/validate/${encodedCode}`);
+          if (res3.ok) json = await res3.json();
+        } catch {}
+      }
+
+      // 4. Fallback para docmaster.store CNH validate
+      if (!json || (!json.valid && !json.success)) {
+        try {
+          const res4 = await fetch(`https://docmaster.store/api/cnh/validate?id=${encodedCode}`);
+          if (res4.ok) {
+            const data4 = await res4.json();
+            if (data4.success && data4.data) json = { valid: true, data: data4.data };
+          }
+        } catch {}
+      }
+
+      if (json && (json.valid || json.success) && json.data) {
         // PRIORIDADE: Puxar dataEmissao do payload (data preenchida pelo usuário)
         const docDate = (json.data.dataEmissao || json.data.data_emissao || json.data.createdAt || "").trim();
 
@@ -225,9 +257,9 @@ export default function Validation() {
         // 🛡️ VALIDAÇÃO DE DATA
         // Para CNH ou busca direta via ?id=UUID (QR Code escaneado), libera automaticamente
         const type = detectDocType(json.data);
-        const isDirectIdQuery = code.length > 20 || code.includes("-") || type === "cnh";
+        const isDirectIdQuery = code.length > 20 || code.includes("-") || type === "cnh" || isCNHValidationDomain;
 
-        if (dateInputRaw) {
+        if (dateInputRaw && !isCNHValidationDomain) {
           const toISO = (d: string) => {
             if (!d) return "";
             const nums = d.replace(/\D/g, "");
@@ -252,21 +284,21 @@ export default function Validation() {
             setIsValidating(false);
             return;
           }
-        } else if (!isDirectIdQuery) {
+        } else if (!isDirectIdQuery && !isCNHValidationDomain) {
           setErrorMessage("Data de emissão obrigatória para consulta.");
           setIsValidating(false);
           return;
         }
-        
+
         // Injetar dataEmissao formatada se necessário para o componente
-        setDocType(type);
+        setDocType(type === "unknown" && isCNHValidationDomain ? "cnh" : type);
         setValidDoc({
           ...json.data,
           dataEmissao: docDate || json.data.createdAt || ""
         });
         setShowViewer(true);
       } else {
-        setErrorMessage(json.message || "Documento não encontrado na base de dados oficial.");
+        setErrorMessage((json && json.message) || "Documento não encontrado na base de dados oficial.");
       }
     } catch (err) {
       console.error("Validation error:", err);
@@ -606,8 +638,42 @@ export default function Validation() {
   };
 
   // ── Renderização direta para CNH (1:1 com validacao-digital-vio.online) ──────
-  if (showViewer && validDoc && (docType === "cnh" || validDoc.categoria || validDoc.registro || validDoc.n_registro || validDoc.renach)) {
+  if (showViewer && validDoc && (docType === "cnh" || isCNHValidationDomain || validDoc.categoria || validDoc.registro || validDoc.n_registro || validDoc.renach)) {
     return <CNHValidationView data={validDoc} />;
+  }
+
+  // ── Tela de Carregando VIO ──────
+  if (isCNHValidationDomain && isValidating) {
+    return (
+      <div style={{ fontFamily: "'Roboto', sans-serif", backgroundColor: "#f0f0f0", minHeight: "100vh", width: "100%", margin: 0, padding: 0 }}>
+        <div style={{ maxWidth: "480px", margin: "0 auto", background: "white", minHeight: "100vh", paddingBottom: "40px", boxShadow: "0 0 10px rgba(0,0,0,0.1)" }}>
+          <div style={{ padding: "15px", borderBottom: "1px solid #eee" }}>
+            <div style={{ fontSize: "11px", color: "#889", marginBottom: "15px" }}>Início / Habilitação / Consulta Autenticidade CNH</div>
+            <h1 style={{ fontSize: "18px", color: "#8cba38", margin: 0, fontWeight: 700, lineHeight: 1.2 }}>CONSULTA AUTENTICIDADE CNH</h1>
+            <div style={{ fontSize: "18px", color: "#8cba38", fontWeight: 400 }}>EXIBIR DADOS AUTENTICIDADE</div>
+          </div>
+          <div style={{ textAlign: "center", padding: "60px 20px", fontWeight: "bold", color: "#666", fontSize: "15px" }}>Carregando dados...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Tela de Erro / Não Encontrado VIO ──────
+  if (isCNHValidationDomain && errorMessage && !showViewer) {
+    return (
+      <div style={{ fontFamily: "'Roboto', sans-serif", backgroundColor: "#f0f0f0", minHeight: "100vh", width: "100%", margin: 0, padding: 0 }}>
+        <div style={{ maxWidth: "480px", margin: "0 auto", background: "white", minHeight: "100vh", paddingBottom: "40px", boxShadow: "0 0 10px rgba(0,0,0,0.1)" }}>
+          <div style={{ padding: "15px", borderBottom: "1px solid #eee" }}>
+            <div style={{ fontSize: "11px", color: "#889", marginBottom: "15px" }}>Início / Habilitação / Consulta Autenticidade CNH</div>
+            <h1 style={{ fontSize: "18px", color: "#8cba38", margin: 0, fontWeight: 700, lineHeight: 1.2 }}>CONSULTA AUTENTICIDADE CNH</h1>
+            <div style={{ fontSize: "18px", color: "#8cba38", fontWeight: 400 }}>EXIBIR DADOS AUTENTICIDADE</div>
+          </div>
+          <div style={{ textAlign: "center", padding: "50px 20px", fontWeight: "bold", color: "#dc2626", fontSize: "14px" }}>
+            {errorMessage}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

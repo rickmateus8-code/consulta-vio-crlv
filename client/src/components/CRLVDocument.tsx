@@ -150,9 +150,9 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   // 2. Carregar Imagem BASE Principal Original do Gabarito Vetorial (600DPI - V5 Sem Textos Estáticos DETRAN)
   let bgImg: HTMLImageElement | null = null;
   try {
-    bgImg = await loadImage("/assets/crlv_template_clean_v3.png?v=20260810_v5");
+    bgImg = await loadImage("/assets/crlv_template_clean_v3.png?v=20260810_v6");
   } catch {
-    try { bgImg = await loadImage("/assets/crlv_template_clean_v2.png?v=20260810_v5"); } catch {}
+    try { bgImg = await loadImage("/assets/crlv_template_clean_v2.png?v=20260810_v6"); } catch {}
   }
 
   if (bgImg) {

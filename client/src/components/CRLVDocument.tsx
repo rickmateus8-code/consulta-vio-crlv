@@ -336,18 +336,18 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.font = `bold 42px ${FONT_VAL}`;
   ctx.fillText(props.dataEmissaoDoc || getHojeDataStr(), 2124, 1100);
 
-  // 21. DPVAT VALORES (Se preenchidos diferentemente de *)
+  // 21. DPVAT VALORES (Apenas se expressamente preenchidos e válidos)
   const dpvatY = 1200;
-  if (props.dpvatCatTarif && props.dpvatCatTarif !== "*") {
+  if (props.dpvatCatTarif && props.dpvatCatTarif.trim() !== "*" && props.dpvatCatTarif.trim() !== "") {
     ctx.font = `bold 25px ${FONT_VAL}`;
     ctx.fillText(props.dpvatCatTarif, rightX + 20, dpvatY + 85);
   }
-  if (props.dpvatDataQuitacao && props.dpvatDataQuitacao !== "*") {
+  if (props.dpvatDataQuitacao && props.dpvatDataQuitacao.trim() !== "*" && props.dpvatDataQuitacao.trim() !== "") {
     ctx.font = `bold 25px ${FONT_VAL}`;
     ctx.fillText(props.dpvatDataQuitacao, rightX + 240, dpvatY + 85);
   }
 
-  // Checkboxes DPVAT
+  // Checkboxes DPVAT (Apenas se expressamente selecionado COTA ÚNICA ou PARCELADO)
   if (props.dpvatPagamento === "COTA ÚNICA") {
     ctx.font = `bold 21px ${FONT_VAL}`;
     ctx.fillText("X", rightX + 554, dpvatY + 86);

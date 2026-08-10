@@ -111,45 +111,48 @@ export function validationUrl(record?: CNHValidationRecord | null) {
 
 export function normalizeRecord(payload: any): CNHValidationRecord {
   const raw = payload?.data && typeof payload.data === "object" ? payload.data : payload;
-  const data = raw?.data && typeof raw.data === "object" ? raw.data : {};
+  let data = raw?.data && typeof raw.data === "object" ? raw.data : {};
+  if (data?.data && typeof data.data === "object") {
+    data = { ...data, ...data.data };
+  }
+  const merged = { ...raw, ...data };
   
-  const rawValidade = data?.validade || data?.dataValidade || data?.validadeCNH || data?.validadeCNH2 || data?.val || raw?.validade || "";
-  const rawEmissao = data?.dataEmissao || data?.emissao || data?.data_emissao || data?.dtEmissao || raw?.dataEmissao || "";
+  const rawValidade = merged.validade || merged.dataValidade || merged.validadeCNH || merged.validadeCNH2 || merged.val || "";
+  const rawEmissao = merged.dataEmissao || merged.emissao || merged.data_emissao || merged.dtEmissao || "";
 
   return {
-    ...raw,
-    ...data,
-    nome: data?.nome || raw?.nome || data?.nomeCompleto || "",
-    cpf: data?.cpf || raw?.cpf || "",
-    rg: data?.rg || raw?.rg || "",
-    orgaoEmissor: data?.orgaoEmissor || raw?.orgaoEmissor || "",
-    ufRG: data?.ufRG || raw?.ufRG || data?.ufRg || "",
-    sexo: (data?.sexo || raw?.sexo || "").toUpperCase(),
-    nacionalidade: (data?.nacionalidade || raw?.nacionalidade || "").toUpperCase(),
-    dataNascimento: formatDate(data?.dataNascimento || raw?.dataNascimento || data?.nascimento) || data?.dataNascimento || "",
-    localNascimento: data?.localNascimento || raw?.localNascimento || "",
-    ufNascimento: data?.ufNascimento || raw?.ufNascimento || "",
-    nomePai: data?.nomePai || raw?.nomePai || data?.filiacaoPai || "",
-    nomeMae: data?.nomeMae || raw?.nomeMae || data?.filiacaoMae || "",
-    categoria: (data?.categoria || raw?.categoria || data?.cat || "").toUpperCase(),
-    tipo: data?.tipo || raw?.tipo || "",
-    registro: data?.registro || raw?.registro || data?.nRegistro || data?.numRegistro || "",
-    espelho: data?.espelho || raw?.espelho || data?.numeroFormulario || "",
+    ...merged,
+    nome: merged.nome || merged.nomeCompleto || "",
+    cpf: merged.cpf || "",
+    rg: merged.rg || "",
+    orgaoEmissor: merged.orgaoEmissor || "",
+    ufRG: merged.ufRG || merged.ufRg || "",
+    sexo: (merged.sexo || "").toUpperCase(),
+    nacionalidade: (merged.nacionalidade || "").toUpperCase(),
+    dataNascimento: formatDate(merged.dataNascimento || merged.nascimento) || merged.dataNascimento || "",
+    localNascimento: merged.localNascimento || "",
+    ufNascimento: merged.ufNascimento || "",
+    nomePai: merged.nomePai || merged.filiacaoPai || "",
+    nomeMae: merged.nomeMae || merged.filiacaoMae || "",
+    categoria: (merged.categoria || merged.cat || "").toUpperCase(),
+    tipo: merged.tipo || "",
+    registro: merged.registro || merged.nRegistro || merged.numRegistro || "",
+    espelho: merged.espelho || merged.numeroFormulario || "",
     validade: formatDate(rawValidade) || rawValidade || "",
     dataEmissao: formatDate(rawEmissao) || rawEmissao || "",
-    primeiraHabilitacao: formatDate(data?.primeiraHabilitacao || raw?.primeiraHabilitacao || data?.primeiraHab) || data?.primeiraHabilitacao || "",
-    localEmissao: data?.localEmissao || raw?.localEmissao || data?.local || "",
-    ufEmissao: (data?.ufEmissao || raw?.ufEmissao || data?.uf || "").toUpperCase(),
-    observacoes: data?.observacoes || raw?.observacoes || data?.obs || "",
-    fotoUrl: data?.fotoUrl || raw?.fotoUrl || data?.foto || "",
-    assinaturaUrl: data?.assinaturaUrl || raw?.assinaturaUrl || data?.assinatura || "",
-    assDigital1: data?.assDigital1 || raw?.assDigital1 || "",
-    assDigital2: data?.assDigital2 || raw?.assDigital2 || data?.renach || raw?.renach || "",
-    renach: data?.renach || raw?.renach || data?.assDigital2 || raw?.assDigital2 || "",
-    codigoQR: raw?.codigo_validacao || raw?.codigo_qr || raw?.codigoQR || data?.codigo_validacao || data?.codigo_qr || data?.codigoQR || "",
-    codigo_qr: raw?.codigo_qr || data?.codigo_qr || "",
-    codigo_validacao: raw?.codigo_validacao || data?.codigo_validacao || "",
-    status: raw?.status || data?.status || "emitido",
+    primeiraHabilitacao: formatDate(merged.primeiraHabilitacao || merged.primeiraHab) || merged.primeiraHabilitacao || "",
+    localEmissao: merged.localEmissao || merged.local || "",
+    ufEmissao: (merged.ufEmissao || merged.uf || merged.ufEmissor || "").toUpperCase(),
+    observacoes: merged.observacoes || merged.obs || "",
+    fotoUrl: merged.fotoUrl || merged.foto || "",
+    assinaturaUrl: merged.assinaturaUrl || merged.assinatura || "",
+    assDigital1: merged.assDigital1 || "",
+    assDigital2: merged.assDigital2 || merged.renach || "",
+    renach: merged.renach || merged.assDigital2 || "",
+    codigoQR: merged.codigo_validacao || merged.codigo_qr || merged.codigoQR || merged.id || "",
+    codigo_qr: merged.codigo_qr || "",
+    codigo_validacao: merged.codigo_validacao || "",
+    status: merged.status || "emitido",
   };
 }
 

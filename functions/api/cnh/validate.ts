@@ -17,6 +17,12 @@ async function parseRecord(row: any) {
       data = {};
     }
   }
+
+  // Unwrap double-nested payload data ({ tipo: 'cnh', data: { ... } })
+  if (data && typeof data === "object" && data.data && typeof data.data === "object") {
+    data = { ...data, ...data.data };
+  }
+
   return { ...row, data: data || {} };
 }
 
@@ -113,8 +119,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     return new Response(JSON.stringify({ success: true, data: result }), { status: 200, headers });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error?.message || "Internal error" }), { status: 500, headers });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers });
   }
 };
-
-export const onRequestOptions: PagesFunction = async () => new Response(null, { status: 204, headers });

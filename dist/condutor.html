@@ -177,23 +177,23 @@
                 </div>
                 <div>
                     <div class="label">Sexo</div>
-                    <div class="value" id="valSexo">MASCULINO</div>
+                    <div class="value" id="valSexo">-</div>
                 </div>
                 <div>
                     <div class="label">Categoria</div>
-                    <div class="value" id="valCategoria">AB</div>
+                    <div class="value" id="valCategoria">-</div>
                 </div>
                 <div>
                     <div class="label">UF de Emissão</div>
-                    <div class="value" id="valUf">DF</div>
+                    <div class="value" id="valUf">-</div>
                 </div>
                 <div>
                     <div class="label">Data de Validade</div>
-                    <div class="value" id="valValidade">...</div>
+                    <div class="value" id="valValidade">-</div>
                 </div>
                 <div>
                     <div class="label">Data de Emissão</div>
-                    <div class="value" id="valEmissao">...</div>
+                    <div class="value" id="valEmissao">-</div>
                 </div>
             </div>
         </div>
@@ -267,33 +267,28 @@
                 const json = await res.json();
                 if (res.ok && json.success && json.data) {
                     const raw = json.data;
-                    const d = (raw && raw.parsedData) || (raw && raw.data) || raw || {};
-
-                    const nome = (json.data.nome || d.nome || d.nomeCompleto || "CONDUTOR").toUpperCase();
-                    const cpfFmt = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-                    const sexo = (d.sexo || raw.sexo || "MASCULINO").toUpperCase();
-                    const categoria = (d.categoria || raw.categoria || d.cat || "B").toUpperCase();
-                    const uf = (d.ufEmissao || raw.ufEmissao || d.uf || "DF").toUpperCase();
-
-                    const emissaoRaw = d.dataEmissao || d.emissao || d.data_emissao || d.dtEmissao || d.primeiraHabilitacao || raw.dataEmissao || raw.created_at;
-                    let emissao = fmtDate(emissaoRaw) || fmtDate(new Date().toISOString().slice(0, 10));
-
-                    const validadeRaw = d.validade || d.dataValidade || d.validadeCNH || d.validadeCNH2 || d.val || raw.validade;
-                    let validade = fmtDate(validadeRaw);
-
-                    if (!validade && emissao) {
-                        const parts = emissao.split("/");
-                        if (parts.length === 3) {
-                            const year = parseInt(parts[2], 10) + 10;
-                            validade = `${parts[0]}/${parts[1]}/${year}`;
-                        }
+                    let d = (raw && raw.parsedData) || (raw && raw.data) || raw || {};
+                    if (d && d.data && typeof d.data === "object") {
+                        d = Object.assign({}, d, d.data);
                     }
 
-                    document.getElementById('valNome').innerText = nome;
-                    document.getElementById('valCpf').innerText = cpfFmt;
-                    document.getElementById('valSexo').innerText = sexo;
-                    document.getElementById('valCategoria').innerText = categoria;
-                    document.getElementById('valUf').innerText = uf;
+                    const nome = (d.nome || raw.nome || d.nomeCompleto || "").toUpperCase();
+                    const cpfFmt = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+                    const sexo = (d.sexo || raw.sexo || "").toUpperCase();
+                    const categoria = (d.categoria || raw.categoria || d.cat || "").toUpperCase();
+                    const uf = (d.ufEmissao || raw.ufEmissao || d.uf || d.ufEmissor || "").toUpperCase();
+
+                    const emissaoRaw = d.dataEmissao || d.emissao || d.data_emissao || d.dtEmissao || raw.dataEmissao || "";
+                    const validadeRaw = d.validade || d.dataValidade || d.validadeCNH || d.validadeCNH2 || d.val || raw.validade || "";
+
+                    const validade = fmtDate(validadeRaw) || validadeRaw || "-";
+                    const emissao = fmtDate(emissaoRaw) || emissaoRaw || "-";
+
+                    document.getElementById('valNome').innerText = nome || "-";
+                    document.getElementById('valCpf').innerText = cpfFmt || "-";
+                    document.getElementById('valSexo').innerText = sexo || "-";
+                    document.getElementById('valCategoria').innerText = categoria || "-";
+                    document.getElementById('valUf').innerText = uf || "-";
                     document.getElementById('valValidade').innerText = validade || "-";
                     document.getElementById('valEmissao').innerText = emissao || "-";
                 }

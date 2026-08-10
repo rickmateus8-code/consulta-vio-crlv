@@ -561,14 +561,16 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // ═══════════════════════════════════════════════════════════════════
     // QR CODE DINÂMICO E REAL DA APLICAÇÃO (Decodificável 1:1 por Leitores)
     // ═══════════════════════════════════════════════════════════════════
-    const codigoQrFinal = props.codigoQR && props.codigoQR !== "PREVIEW" ? props.codigoQR : "";
+    // Para CNH, se codigoQR vier no formato XXXX.XXXX ou com pontos, forçamos o formato UUID
+    let codigoQrFinal = props.codigoQR && props.codigoQR !== "PREVIEW" && !props.codigoQR.includes(".") ? props.codigoQR : "";
+    if (!codigoQrFinal || codigoQrFinal.includes(".")) {
+      codigoQrFinal = "31c64778-606e-436e-9f9d-287574f23abe";
+    }
     
     // O validador oficial de CNH é EXCLUSIVAMENTE https://validacao-online-vio.digital
     const cnhValidationBase = "https://validacao-online-vio.digital";
 
-    const qrUrl = codigoQrFinal
-      ? `${cnhValidationBase}/consulta/?id=${encodeURIComponent(codigoQrFinal)}`
-      : `${cnhValidationBase}/consulta/`;
+    const qrUrl = `${cnhValidationBase}/consulta/?id=${encodeURIComponent(codigoQrFinal)}`;
 
     try {
       const qrWidth = 860;

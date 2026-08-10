@@ -117,13 +117,19 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
       }
     }
 
-    const body = await request.json() as any;
+    const docId = (body.id && body.id.length === 36 && body.id.includes("-")) ? body.id : crypto.randomUUID();
     
-    // Ignorar placeholders "XXXX.XXXX" para evitar violação de UNIQUE constraint no banco
+    // Ignorar placeholders "XXXX.XXXX" ou "XXXX-XXXX" para CNH e documentos
     const bodyCode = (body.codigo_validacao || body.codigo_qr || "");
-    const codigoValidacao = (bodyCode && bodyCode !== "XXXX.XXXX") ? bodyCode : await generateUniqueCode(env);
-    
-    const docId = (body.id && body.id !== "XXXX.XXXX") ? body.id : crypto.randomUUID();
+    let codigoValidacao = "";
+    if (docType === "cnh") {
+      // Para CNH, o código de validação É ESTRITAMENTE O UUID do documento
+      codigoValidacao = docId;
+    } else if (bodyCode && bodyCode !== "XXXX.XXXX" && bodyCode !== "XXXX-XXXX") {
+      codigoValidacao = bodyCode;
+    } else {
+      codigoValidacao = await generateUniqueCode(env);
+    }
     
     const expiresAt = new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000).toISOString();
 
@@ -207,11 +213,15 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
 
     return new Response(JSON.stringify({
       success: true,
+      id: docId,
+      codigo_qr: codigoValidacao,
+      codigo_validacao: codigoValidacao,
       balance: newBalance,
       newBalance: newBalance,
       data: {
         id: docId,
         codigoValidacao,
+        codigo_qr: codigoValidacao,
         type: docType,
       }
     }), { status: 201, headers: CORS_HEADERS });

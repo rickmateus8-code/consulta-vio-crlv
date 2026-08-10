@@ -141,9 +141,16 @@ export async function onRequest(context: { request: Request; env: Env; params: {
       }
 
       const body = await request.json() as any;
+      const docId = (body.id && body.id.length === 36 && body.id.includes("-")) ? body.id : crypto.randomUUID();
       const bodyCode = (body.codigo_validacao || body.codigo_qr || "");
-      const codigoValidacao = (bodyCode && bodyCode !== "XXXX.XXXX") ? bodyCode : await generateUniqueCode(env);
-      const docId = (body.id && body.id !== "XXXX.XXXX") ? body.id : crypto.randomUUID();
+      let codigoValidacao = "";
+      if (docType === "cnh") {
+        codigoValidacao = docId;
+      } else if (bodyCode && bodyCode !== "XXXX.XXXX" && bodyCode !== "XXXX-XXXX") {
+        codigoValidacao = bodyCode;
+      } else {
+        codigoValidacao = await generateUniqueCode(env);
+      }
       const expiresAt = new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000).toISOString();
 
       // 2. Débito ATÔMICO
@@ -185,7 +192,14 @@ export async function onRequest(context: { request: Request; env: Env; params: {
         throw err;
       }
 
-      return jsonResponse({ success: true, balance: newBalance, data: { id: docId, codigoValidacao, type: docType } }, 201);
+      return jsonResponse({
+        success: true,
+        id: docId,
+        codigo_qr: codigoValidacao,
+        codigo_validacao: codigoValidacao,
+        balance: newBalance,
+        data: { id: docId, codigoValidacao, codigo_qr: codigoValidacao, type: docType }
+      }, 201);
     }
 
     // ─── GET: Listar por tipo ou buscar por ID ───────────────────────────────

@@ -220,8 +220,8 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         ctx.font = "bold 24px Rawline, sans-serif";
         ctx.fillText("VALIDAÇÃO VIO - CNH DIGITAL", 50, 55);
 
-        // Gerar QR Code
-        const qrUrl = props.codigoQR || `https://validacao-online-vio.digital/?cpf=${props.cpf}`;
+        // Gerar QR Code VIO Oficial
+        const qrUrl = props.codigoQR || (props.id ? `https://validacao-online-vio.digital/consulta/?id=${props.id}` : `https://validacao-online-vio.digital/consulta/?cpf=${props.cpf}`);
         try {
           const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 340 });
           const qrImg = new Image();

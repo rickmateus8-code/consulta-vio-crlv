@@ -196,6 +196,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // Busca na tabela documents (CNH, CHA, Toxicológico, etc.)
     let document: Record<string, unknown> | null = null;
+    const rawCodeLower = code.trim().toLowerCase();
     try {
       document = await env.DB.prepare(
         `SELECT
@@ -203,12 +204,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           u.username as emitido_por
          FROM documents d
          LEFT JOIN users u ON d.user_id = u.id
-         WHERE d.codigo_validacao = ? AND d.status = 'emitido'`
+         WHERE (d.id = ? OR d.codigo_validacao = ? OR d.codigo_qr = ? OR LOWER(d.id) = ? OR LOWER(d.codigo_validacao) = ?) AND d.status != 'cancelado'`
       )
-        .bind(code)
+        .bind(code, code, code, rawCodeLower, rawCodeLower)
         .first<Record<string, unknown>>();
     } catch {
-      // Tabela documents pode não existir — ignorar erro
       document = null;
     }
 

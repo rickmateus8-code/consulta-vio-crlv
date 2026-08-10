@@ -10,6 +10,7 @@ export default function CNHHabilitacao() {
   const { record, loading, error } = useCnhRecord(cpf);
   const [activeSlide, setActiveSlide] = useState<1 | 2 | 3 | 4>(1);
   const [modalMsg, setModalMsg] = useState("");
+  const [touchStartX, setTouchStartX] = useState(0);
 
   if (loading) {
     return (
@@ -36,8 +37,26 @@ export default function CNHHabilitacao() {
     4: "VALOR QR CODE VIO",
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.changedTouches[0].screenX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const swipeDistance = touchEndX - touchStartX;
+    if (Math.abs(swipeDistance) > 40) {
+      if (swipeDistance < 0) {
+        // Swiped left -> Next slide
+        setActiveSlide((prev) => (prev < 4 ? ((prev + 1) as 1 | 2 | 3 | 4) : 1));
+      } else {
+        // Swiped right -> Prev slide
+        setActiveSlide((prev) => (prev > 1 ? ((prev - 1) as 1 | 2 | 3 | 4) : 4));
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#f5f7fa] text-[#333] flex flex-col relative overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#f5f7fa] text-[#333] flex flex-col relative overflow-x-hidden font-sans select-none">
       {/* --- TOP NAVBAR --- */}
       <header className="bg-[#002e6e] text-white p-4 pt-10 flex items-center gap-3 sticky top-0 z-[100] shadow-sm">
         <button
@@ -65,14 +84,18 @@ export default function CNHHabilitacao() {
           {activeSlide > 1 && (
             <button
               onClick={() => setActiveSlide((prev) => (prev - 1) as 1 | 2 | 3 | 4)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:bg-black/80 transition cursor-pointer"
+              className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 text-white w-9 h-9 rounded-full items-center justify-center shadow-lg hover:bg-black/80 transition cursor-pointer"
               aria-label="Anterior"
             >
               <ChevronLeft className="w-6 h-6 text-white" />
             </button>
           )}
 
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex justify-center p-2">
+          <div
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex justify-center p-2 cursor-grab active:cursor-grabbing touch-pan-y"
+          >
             <CNH3PartDocument
               slide={activeSlide}
               nome={record.nome || ""}
@@ -106,7 +129,7 @@ export default function CNHHabilitacao() {
           {activeSlide < 4 && (
             <button
               onClick={() => setActiveSlide((prev) => (prev + 1) as 1 | 2 | 3 | 4)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:bg-black/80 transition cursor-pointer"
+              className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 text-white w-9 h-9 rounded-full items-center justify-center shadow-lg hover:bg-black/80 transition cursor-pointer"
               aria-label="Próximo"
             >
               <ChevronRight className="w-6 h-6 text-white" />
@@ -131,7 +154,7 @@ export default function CNHHabilitacao() {
         <div className="w-full px-4 space-y-2.5 pb-8">
           <div
             onClick={() => setModalMsg(`Histórico de emissões da CNH:\nEmitida em ${record.dataEmissao || '-'}\nFormulário: ${record.espelho || record.registro || '-'}`)}
-            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition"
+            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition active:scale-[0.98]"
           >
             <Contact className="w-5 h-5 text-[#002e6e] shrink-0" />
             <span>Histórico de emissões da CNH</span>
@@ -142,20 +165,20 @@ export default function CNHHabilitacao() {
               const canvas = document.querySelector("canvas");
               if (canvas) {
                 const link = document.createElement("a");
-                link.download = `CNH_Lamin_${activeSlide}_${(record.nome || "documento").replace(/\s+/g, "_")}.png`;
+                link.download = `CNH_Lamina_${activeSlide}_${(record.nome || "documento").replace(/\s+/g, "_")}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
               }
             }}
-            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition"
+            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition active:scale-[0.98]"
           >
             <FileUp className="w-5 h-5 text-[#002e6e] shrink-0" />
-            <span>Exportar Lâmina Atual ({activeSlide}/4)</span>
+            <span>Exportar</span>
           </div>
 
           <div
             onClick={() => setLocation("/")}
-            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition"
+            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition active:scale-[0.98]"
           >
             <Trash2 className="w-5 h-5 text-[#002e6e] shrink-0" />
             <span>Remover</span>
@@ -163,12 +186,13 @@ export default function CNHHabilitacao() {
 
           <div
             onClick={() => {
+              const qrText = record.id ? `https://validacao-online-vio.digital/consulta/?id=${record.id}` : `https://validacao-online-vio.digital/consulta/?cpf=${cpf}`;
               if (navigator.clipboard) {
-                navigator.clipboard.writeText(record.codigo_validacao || record.codigo_qr || record.cpf || "");
-                alert("Código QR copiado para a área de transferência!");
+                navigator.clipboard.writeText(qrText);
+                setModalMsg("Link do QR Code VIO copiado com sucesso!");
               }
             }}
-            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition"
+            className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition active:scale-[0.98]"
           >
             <Copy className="w-5 h-5 text-[#002e6e] shrink-0" />
             <span>Copiar QR Code</span>
@@ -180,17 +204,17 @@ export default function CNHHabilitacao() {
       {modalMsg && (
         <div className="fixed inset-0 bg-black/60 z-[3000] flex items-center justify-center p-4 backdrop-blur-[2px]">
           <div className="bg-white w-[85%] max-w-[320px] rounded-[20px] p-6 text-center shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="w-12 h-12 rounded-full bg-[#ffcc00] text-[#333] font-bold text-2xl flex items-center justify-center mx-auto mb-4">
-              !
+            <div className="w-12 h-12 rounded-full bg-[#002e6e] text-white font-bold text-xl flex items-center justify-center mx-auto mb-4">
+              i
             </div>
-            <p className="text-[#002e6e] text-sm font-semibold leading-relaxed mb-6 whitespace-pre-line">
+            <p className="text-[#002e6e] text-sm font-semibold whitespace-pre-line leading-relaxed mb-6">
               {modalMsg}
             </p>
             <button
               onClick={() => setModalMsg("")}
-              className="w-full py-3.5 bg-[#155bcb] text-white font-bold text-xs rounded-full uppercase tracking-wider"
+              className="w-full py-3.5 bg-[#002e6e] text-white font-bold text-xs rounded-full uppercase tracking-wider"
             >
-              ENTENDI
+              OK
             </button>
           </div>
         </div>

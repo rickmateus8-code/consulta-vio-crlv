@@ -16,6 +16,7 @@
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
         body {
@@ -25,6 +26,8 @@
             display: flex;
             flex-direction: column;
             color: #333;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .navbar-interna {
@@ -89,6 +92,7 @@
             margin: 20px auto 10px;
             position: relative;
             padding: 0 10px;
+            touch-action: pan-y;
         }
 
         .canvas-card {
@@ -101,12 +105,18 @@
             display: flex;
             justify-content: center;
             padding: 8px;
+            cursor: grab;
+        }
+
+        .canvas-card:active {
+            cursor: grabbing;
         }
 
         canvas {
             width: 100%;
             height: auto;
             border-radius: 10px;
+            pointer-events: none;
         }
 
         .dots-container {
@@ -189,6 +199,13 @@
 
         .arrow-left { left: 18px; }
         .arrow-right { right: 18px; }
+
+        /* HIDE NAVIGATION ARROWS ON MOBILE DEVICES */
+        @media (max-width: 640px) {
+            .arrow-nav {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 
@@ -207,7 +224,7 @@
 
     <div class="carousel-wrapper">
         <button class="arrow-nav arrow-left" id="btnPrev" onclick="mudarSlide(-1)"><i class="fas fa-chevron-left"></i></button>
-        <div class="canvas-card">
+        <div class="canvas-card" id="touchCard">
             <canvas id="cnhCanvas"></canvas>
         </div>
         <button class="arrow-nav arrow-right" id="btnNext" onclick="mudarSlide(1)"><i class="fas fa-chevron-right"></i></button>
@@ -306,6 +323,26 @@
             setSlide(next);
         }
 
+        // SWIPE TOUCH GESTURES FOR MOBILE DEVICES
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const touchCard = document.getElementById('touchCard');
+
+        if (touchCard) {
+            touchCard.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            touchCard.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                const swipeDistance = touchEndX - touchStartX;
+                if (Math.abs(swipeDistance) > 40) {
+                    if (swipeDistance < 0) mudarSlide(1);  // Swiped Left
+                    else mudarSlide(-1);                    // Swiped Right
+                }
+            }, { passive: true });
+        }
+
         async function renderSlide() {
             const canvas = document.getElementById('cnhCanvas');
             const ctx = canvas.getContext('2d');
@@ -398,7 +435,7 @@
                 ctx.font = "bold 24px sans-serif";
                 ctx.fillText("VALIDAÇÃO VIO - CNH DIGITAL", 50, 55);
 
-                const qrUrl = d.codigo_validacao || d.codigo_qr || `https://validacao-online-vio.digital/?cpf=${cpf}`;
+                const qrUrl = d.id ? `https://validacao-online-vio.digital/consulta/?id=${d.id}` : `https://validacao-online-vio.digital/consulta/?cpf=${cpf}`;
                 try {
                     const qrData = await QRCode.toDataURL(qrUrl, { margin: 1, width: 340 });
                     const qrimg = new Image();
@@ -443,10 +480,10 @@
         }
 
         function copiarQRCode() {
-            const qrText = (cnhData && (cnhData.codigo_validacao || cnhData.codigo_qr)) || cpf;
+            const qrText = (cnhData && cnhData.id) ? `https://validacao-online-vio.digital/consulta/?id=${cnhData.id}` : `https://validacao-online-vio.digital/consulta/?cpf=${cpf}`;
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(qrText);
-                Swal.fire({ icon: 'success', title: 'Copiado!', text: 'Código QR copiado para a área de transferência.', timer: 1500, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'Copiado!', text: 'Link do QR Code VIO copiado com sucesso.', timer: 1500, showConfirmButton: false });
             }
         }
 
@@ -460,7 +497,12 @@
                 const res = await fetch("/api/cnh/validate?cpf=" + cleanCpf);
                 const json = await res.json();
                 if (res.ok && json.success && json.data) {
-                    cnhData = json.data.parsedData || json.data.data || json.data;
+                    const raw = json.data;
+                    let d = (raw && raw.parsedData) || (raw && raw.data) || raw || {};
+                    if (d && d.data && typeof d.data === "object") {
+                        d = Object.assign({}, d, d.data);
+                    }
+                    cnhData = Object.assign({}, raw, d);
                     renderSlide();
                 }
             } catch (e) {

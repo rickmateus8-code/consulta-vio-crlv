@@ -2,7 +2,7 @@
  * CRLVDocument — Geração visual 1:1 baseada no Gabarito Vetorial PDF em Alta Definição (A4 @300DPI)
  *
  * Utiliza o modelo limpo vetorial 600DPI enviado pelo usuário como BACKGROUND PRINCIPAL ABSOLUTO
- * com o QR Code ajustado 0,2% para cima (qrY = 383px).
+ * com o valor de capacidade (*.*) descendo 0,2% (Y = 332px).
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import QRCode from "qrcode";
@@ -167,7 +167,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.font = `bold 44px ${FONT_VAL}`;
   ctx.fillText(props.renavam || "00278581161", marginX, 453);
 
-  // 3. QR CODE PRINCIPAL DO DOCUMENTO (Mover 0,2% para cima: qrY=383px, qrX=690px)
+  // 3. QR CODE PRINCIPAL DO DOCUMENTO (qrY=383px, qrX=690px)
   const qrSize = 425;
   const qrX = 690;
   const qrY = 383;
@@ -243,10 +243,10 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
 
   // ─── COLUNA DIREITA (ESPECIFICAÇÕES & PROPRIETÁRIO) ─────────────────────
 
-  // 14. CATEGORIA (Y=336, Fonte: 42px) & CAPACIDADE (Y=325, Fonte: 42px)
+  // 14. CATEGORIA (Y=336, Fonte: 42px) & CAPACIDADE (Descer 0,2% para baixo: Y=332, Fonte: 42px)
   ctx.font = `bold 42px ${FONT_VAL}`;
   ctx.fillText((props.categoria || "PARTICULAR").toUpperCase(), rightX, 336);
-  ctx.fillText(props.capacidade || "*.*", 2127, 325);
+  ctx.fillText(props.capacidade || "*.*", 2127, 332);
 
   // 15. POTÊNCIA/CILINDRADA & PESO BRUTO TOTAL (Valor Y=513, Fonte: 40px)
   ctx.font = `bold 40px ${FONT_VAL}`;

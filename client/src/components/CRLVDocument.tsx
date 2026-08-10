@@ -128,12 +128,12 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-  // 2. Carregar Imagem BASE Principal Original do Gabarito Vetorial (600DPI)
+  // 2. Carregar Imagem BASE Principal Original do Gabarito Vetorial (600DPI - V2 Cache Busting)
   let bgImg: HTMLImageElement | null = null;
   try {
-    bgImg = await loadImage("/assets/crlv_template_clean.png");
+    bgImg = await loadImage("/assets/crlv_template_clean_v2.png?v=20260810_v2");
   } catch {
-    try { bgImg = await loadImage("/assets/crlv_base.png"); } catch {}
+    try { bgImg = await loadImage("/assets/crlv_template_clean.png?v=20260810_v2"); } catch {}
   }
 
   if (bgImg) {

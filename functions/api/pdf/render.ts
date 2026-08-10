@@ -1,9 +1,8 @@
 import type { Env } from '../../types';
-import puppeteer from '@cloudflare/puppeteer';
 
 /**
  * MOTOR DE PDF ELITE 4.0
- * Renderização via Puppeteer no Cloudflare Browser Rendering
+ * Renderização via Puppeteer no Cloudflare Browser Rendering (Opcional)
  */
 
 const CORS_HEADERS = {
@@ -31,6 +30,18 @@ export async function onRequest(context: { request: Request; env: Env }) {
 
     if (!html) {
       throw new Error("HTML não fornecido para renderização.");
+    }
+
+    // Dynamic import com fallback seguro se o binding de Puppeteer não estiver presente
+    let puppeteer: any = null;
+    try {
+      // @ts-ignore
+      puppeteer = (await import("@cloudflare/puppeteer")).default;
+    } catch {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Motor de renderização Browser Rendering do Cloudflare não configurado."
+      }), { status: 501, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
     }
 
     // 1. Iniciar Browser

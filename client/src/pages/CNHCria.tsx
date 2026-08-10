@@ -456,29 +456,29 @@ export default function CNHCria() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#060919] text-slate-100 font-sans flex flex-col justify-between select-text min-h-screen w-full">
-        {/* CONTAINER CARD PREENCHENDO 100% DA TELA */}
-        <div className="w-full min-h-screen bg-[#0b1026] border-0 rounded-none shadow-none flex flex-col justify-between flex-1">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070d1e] text-slate-100 font-sans flex flex-col justify-between select-text min-h-screen w-full p-4 sm:p-6">
+        {/* CONTAINER CARD CENTRALIZADO 1:1 COM IMAGEM DE REFERÊNCIA */}
+        <div className="w-full max-w-5xl mx-auto bg-[#0c142b] border border-blue-900/40 rounded-2xl shadow-2xl flex flex-col justify-between my-auto overflow-hidden">
           {/* HEADER SUPERIOR DO CARD */}
-          <div className="p-4 sm:p-5 border-b border-blue-500/20 bg-slate-950/70 flex items-center justify-between">
+          <div className="p-4 sm:p-5 border-b border-blue-900/40 bg-[#091024] flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-base sm:text-lg font-black tracking-wide text-white">
-                <span className="text-blue-400">DOCMASTER</span>.STORE Gerador de CNH
+                <span className="text-[#38bdf8]">DOCMASTER</span>.STORE Gerador de CNH
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 onClick={limparFormulario}
-                className="px-3.5 py-1.5 rounded-lg border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 text-xs font-bold transition-all"
+                className="px-4 py-1.5 rounded-lg border border-slate-700/80 bg-[#0c142b] hover:bg-[#111c3d] text-slate-200 text-xs font-bold transition-all shadow-sm"
               >
                 LIMPAR FORMULÁRIO
               </button>
               <button
                 type="button"
                 onClick={() => setLocation("/dashboard")}
-                className="px-3.5 py-1.5 rounded-lg border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 text-xs font-bold transition-all"
+                className="px-4 py-1.5 rounded-lg border border-slate-700/80 bg-[#0c142b] hover:bg-[#111c3d] text-slate-200 text-xs font-bold transition-all shadow-sm"
               >
                 VOLTAR
               </button>
@@ -486,16 +486,16 @@ export default function CNHCria() {
           </div>
 
           {/* CORPO CENTRAL DO CARD: SIDEBAR LATERAL + FORMULÁRIO DA ETAPA */}
-          <div className="flex flex-col md:flex-row p-4 sm:p-6 gap-6 flex-1 min-h-[480px]">
-            {/* SIDEBAR LATERAL (4 ITENS) */}
-            <div className="w-full md:w-52 shrink-0 flex flex-col gap-2.5">
+          <div className="flex flex-col md:flex-row p-4 sm:p-6 gap-6 min-h-[420px]">
+            {/* SIDEBAR LATERAL (4 ITENS ESTILO ELITEDOC) */}
+            <div className="w-full md:w-56 shrink-0 flex flex-col gap-2.5">
               <button
                 type="button"
                 onClick={() => setEtapa("automacao")}
                 className={`w-full px-4 py-3 rounded-xl border text-left text-xs font-bold tracking-wide transition-all ${
                   etapa === "automacao"
-                    ? "border-blue-500 bg-blue-950/80 text-white shadow-lg shadow-blue-500/20"
-                    : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                    ? "border-2 border-blue-500 bg-[#0e1a38] text-white shadow-lg shadow-blue-500/20"
+                    : "border border-slate-800 bg-[#080e21] text-slate-400 hover:border-slate-700 hover:text-slate-200"
                 }`}
               >
                 AUTOMAÇÃO
@@ -506,8 +506,8 @@ export default function CNHCria() {
                 onClick={() => setEtapa("pessoais")}
                 className={`w-full px-4 py-3 rounded-xl border text-left text-xs font-bold tracking-wide transition-all ${
                   etapa === "pessoais"
-                    ? "border-blue-500 bg-blue-950/80 text-white shadow-lg shadow-blue-500/20"
-                    : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                    ? "border-2 border-blue-500 bg-[#0e1a38] text-white shadow-lg shadow-blue-500/20"
+                    : "border border-slate-800 bg-[#080e21] text-slate-400 hover:border-slate-700 hover:text-slate-200"
                 }`}
               >
                 1. PESSOAIS
@@ -518,8 +518,8 @@ export default function CNHCria() {
                 onClick={() => setEtapa("cnh")}
                 className={`w-full px-4 py-3 rounded-xl border text-left text-xs font-bold tracking-wide transition-all ${
                   etapa === "cnh"
-                    ? "border-blue-500 bg-blue-950/80 text-white shadow-lg shadow-blue-500/20"
-                    : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                    ? "border-2 border-blue-500 bg-[#0e1a38] text-white shadow-lg shadow-blue-500/20"
+                    : "border border-slate-800 bg-[#080e21] text-slate-400 hover:border-slate-700 hover:text-slate-200"
                 }`}
               >
                 2. CNH
@@ -530,8 +530,8 @@ export default function CNHCria() {
                 onClick={() => setEtapa("finalizacao")}
                 className={`w-full px-4 py-3 rounded-xl border text-left text-xs font-bold tracking-wide transition-all ${
                   etapa === "finalizacao"
-                    ? "border-blue-500 bg-blue-950/80 text-white shadow-lg shadow-blue-500/20"
-                    : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                    ? "border-2 border-blue-500 bg-[#0e1a38] text-white shadow-lg shadow-blue-500/20"
+                    : "border border-slate-800 bg-[#080e21] text-slate-400 hover:border-slate-700 hover:text-slate-200"
                 }`}
               >
                 3. FINALIZAÇÃO
@@ -539,36 +539,38 @@ export default function CNHCria() {
             </div>
 
             {/* CONTEÚDO PRINCIPAL DA ETAPA SELECIONADA */}
-            <div className="flex-1 bg-slate-950/80 border border-slate-800/80 rounded-xl p-5 relative flex flex-col justify-between">
-              {/* ETAPA 1: AUTOMAÇÃO */}
+            <div className="flex-1 bg-[#080e21] border border-blue-900/30 rounded-xl p-6 relative flex flex-col justify-between min-h-[360px]">
+              {/* ETAPA 1: AUTOMAÇÃO (REPLICA 1:1 DA IMAGEM DE REFERÊNCIA) */}
               {etapa === "automacao" && (
                 <div className="space-y-6">
-                  <div className="p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-950/30 text-emerald-300 font-bold text-xs">
+                  <div className="p-3.5 rounded-lg border-t-2 border-t-emerald-500 border-x border-b border-emerald-950/60 bg-[#051711] text-emerald-400 font-bold text-xs tracking-wide uppercase">
                     AUTOMAÇÃO VIA WHATSAPP
                   </div>
 
-                  <p className="text-xs text-slate-300 font-medium">1. Envie para o cliente preencher</p>
+                  <div className="p-3 rounded-lg border border-dashed border-slate-800 bg-[#050a17] text-slate-300 text-xs font-medium">
+                    1. envie para o cliente preencher
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
                       onClick={handleCopiarWhatsApp}
-                      className="py-3 px-4 rounded-xl border border-blue-500/40 bg-blue-950/60 hover:bg-blue-900/80 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow"
+                      className="py-3.5 px-4 rounded-xl border border-emerald-500/60 bg-[#064e3b] hover:bg-[#047857] text-emerald-100 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-950/50"
                     >
-                      <Copy className="w-4 h-4 text-blue-400" /> COPIAR
+                      <Copy className="w-4 h-4 text-emerald-300" /> COPIAR
                     </button>
 
                     <button
                       type="button"
                       onClick={handleColarEPreencher}
-                      className="py-3 px-4 rounded-xl border border-blue-500/40 bg-blue-950/60 hover:bg-blue-900/80 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow"
+                      className="py-3.5 px-4 rounded-xl border border-blue-500/60 bg-[#1e40af] hover:bg-[#1d4ed8] text-blue-100 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-950/50"
                     >
-                      <Zap className="w-4 h-4 text-amber-400" /> COLAR E PREENCHER
+                      <Zap className="w-4 h-4 text-amber-300" /> COLAR E PREENCHER
                     </button>
                   </div>
 
-                  <div className="p-3 rounded-xl border border-emerald-500/30 bg-slate-900/80 text-emerald-400 text-xs font-mono">
-                    Aguardando envio ou colagem do formulário.
+                  <div className="p-3.5 rounded-xl border border-emerald-900/40 bg-[#051610] text-emerald-400 text-xs font-mono text-center font-semibold">
+                    Aguardando cópia ou colagem do formulário.
                   </div>
                 </div>
               )}
@@ -1158,21 +1160,18 @@ export default function CNHCria() {
             </div>
           </div>
 
-          {/* BOTÃO GERAR CNH NA PARTE INFERIOR FIXO NA TELA (ESTILO ELITEDOC.ONLINE/CNHCRIA) */}
-          <div className="p-4 bg-slate-950/90 border-t border-blue-500/20 flex items-center justify-center no-print">
+          {/* BOTÃO GERAR CNH NA PARTE INFERIOR FIXO NA TELA (RÉPLICA 1:1 DA IMAGEM DE REFERÊNCIA) */}
+          <div className="p-4 sm:p-5 bg-[#091024] border-t border-blue-900/40 flex items-center justify-center no-print">
             <button
               type="button"
               onClick={handleRequestEmit}
               disabled={loading}
-              className="w-full max-w-lg py-3 px-8 rounded-full border-2 border-blue-500/80 bg-blue-950/80 hover:bg-blue-900 text-white font-black text-sm tracking-widest shadow-xl shadow-blue-500/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-xl border border-blue-600/50 bg-[#0c1838] hover:bg-[#11224d] text-white font-bold text-sm tracking-wide shadow-2xl hover:scale-[1.005] transition-all flex items-center justify-center gap-2"
             >
               {loading ? (
                 <span>PROCESSANDO GERADOR...</span>
               ) : (
-                <>
-                  <Car className="w-5 h-5 text-blue-400" />
-                  <span>Gerar CNH</span>
-                </>
+                <span>Gerar CNH</span>
               )}
             </button>
           </div>

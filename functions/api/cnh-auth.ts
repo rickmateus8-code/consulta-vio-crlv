@@ -30,7 +30,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Buscar documento CNH com esse CPF
     const docs = await context.env.DB.prepare(
-      `SELECT * FROM documents WHERE type = 'cnh' AND status != 'cancelado' ORDER BY created_at DESC`
+      `SELECT * FROM documents WHERE (type = 'cnh' OR type = 'cnh_digital' OR type = 'cnh-e') AND status != 'cancelado' ORDER BY created_at DESC`
     ).all();
 
     let cpfFoundDoc: any = null;
@@ -40,11 +40,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       try {
         const data = typeof doc.data === "string" ? JSON.parse(doc.data as string) : (doc.data || {});
         const docCpf = (data.cpf || (doc as any).cpf || "").replace(/\D/g, "");
-        const docSenha = data.senhaApp || data.senha || data.password || (doc as any).senha || "";
+        const docSenha = String(data.senhaApp || data.senha || data.password || (doc as any).senha || "").trim();
+        const userSenha = String(senha).trim();
 
         if (docCpf === cpfNorm) {
           if (!cpfFoundDoc) cpfFoundDoc = { ...doc, parsedData: data };
-          if (String(docSenha).trim() === String(senha).trim()) {
+
+          // Aceita a senha se coincidir OU se não houver senha definida no cadastro
+          if (!docSenha || docSenha === userSenha) {
             matchedDoc = { ...doc, parsedData: data };
             break;
           }
@@ -85,11 +88,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         primeiraHab: d.primeiraHab || "",
         local: d.local || "",
         observacoes: d.observacoes || d.obs || "",
-        foto: d.foto || "",
-        assinatura: d.assinatura || "",
-        nCnh: d.nCnh || d.numCnh || "",
+        foto: d.foto || d.fotoUrl || "",
+        assinatura: d.assinatura || d.assinaturaUrl || "",
+        nCnh: d.nCnh || d.numCnh || d.espelho || "",
         renach: d.assDigital2 || d.renach || "",
-        codigoSeguranca: d.codigoSeguranca || "",
+        codigoSeguranca: d.codigoSeguranca || d.codigo_validacao || d.codigo_qr || "",
       },
     }), {
       status: 200,

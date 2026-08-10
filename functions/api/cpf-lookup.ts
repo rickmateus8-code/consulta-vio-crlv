@@ -98,6 +98,50 @@ function normalizeSnoopPayload(result: any) {
     relatives.nome_mae
   ).toUpperCase();
 
+  // Cobre todos os aliases conhecidos da API Snoop para Nome do Pai
+  const nomePai = firstNonEmpty(
+    payload.pai,
+    payload.nome_pai,
+    payload.father_name,
+    payload.nomePai,
+    payload.father,
+    payload.pai_completo,
+    payload.nome_pai_completo,
+    relatives.father,
+    relatives.pai,
+    relatives.nome_pai,
+    Array.isArray(payload.parentes) ? payload.parentes.find((p: any) => p?.vinculo === "PAI" || p?.parentesco === "PAI" || p?.relacao === "PAI")?.nome : ""
+  ).toUpperCase();
+
+  const rg = firstNonEmpty(
+    payload.rg,
+    payload.numero_rg,
+    payload.rg_numero,
+    payload.rg_num,
+    payload.documento_rg
+  ).replace(/\D/g, "");
+
+  const orgaoEmissor = firstNonEmpty(
+    payload.orgao_emissor,
+    payload.orgao_expedidor,
+    payload.orgaoEmissor,
+    payload.orgao_rg,
+    payload.emissor_rg,
+    payload.orgao_emissor_rg,
+    payload.emissor
+  ).toUpperCase();
+
+  const ufRG = firstNonEmpty(
+    payload.uf_rg,
+    payload.estado_rg,
+    payload.uf_emissao_rg,
+    payload.uf_expedicao_rg,
+    payload.uf_emissor,
+    payload.uf,
+    address.uf,
+    address.state
+  ).toUpperCase();
+
   const endereco = firstNonEmpty(
     payload.logradouro,
     payload.endereco,
@@ -157,6 +201,10 @@ function normalizeSnoopPayload(result: any) {
       payload.gender,
       payload.genero
     )),
+    rg,
+    orgaoEmissor: orgaoEmissor || "SSP",
+    ufRG: ufRG || uf || "SP",
+    nomePai,
     nomeMae,
     endereco,
     numero,

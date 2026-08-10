@@ -323,15 +323,15 @@ export default function CNHCria() {
 
       const nomeVal = d.nome || cpfDados.nome || cpfDados.name || cpfDados.nome_completo;
       const sexoVal = (d.sexo === "M" || d.sexo === "MALE" || cpfDados.sexo === "M") ? "M" : ((d.sexo === "F" || d.sexo === "FEMALE" || cpfDados.sexo === "F") ? "F" : "");
-      const rgVal = d.rg || cpfDados.rg;
-      const orgaoEmissorVal = d.orgaoEmissor || cpfDados.orgao_emissor || cpfDados.orgaoEmissor;
-      const ufRgVal = d.uf || d.ufRG || cpfDados.uf || cpfDados.uf_rg;
+      const rgVal = d.rg || cpfDados.rg || cpfDados.numero_rg || cpfDados.rg_numero || cpfDados.documento_rg;
+      const orgaoEmissorVal = d.orgaoEmissor || cpfDados.orgao_emissor || cpfDados.orgao_expedidor || cpfDados.orgaoEmissor || cpfDados.orgao_rg || cpfDados.emissor_rg || cpfDados.emissor || "SSP";
+      const ufRgVal = d.ufRG || d.uf || cpfDados.uf_rg || cpfDados.estado_rg || cpfDados.uf_emissao_rg || cpfDados.uf_expedicao_rg || cpfDados.uf || "SP";
       const nacVal = d.nacionalidade || cpfDados.nacionalidade || "BRASILEIRO(A)";
       const nascDateVal = d.nascimento || cpfDados.nascimento || cpfDados.data_nascimento || cpfDados.birth_date;
       const localNascVal = d.cidade || cpfDados.cidade || cpfDados.municipio;
       const ufNascVal = d.uf || cpfDados.uf;
-      const paiVal = d.nomePai || cpfDados.pai || cpfDados.nome_pai;
-      const maeVal = d.nomeMae || cpfDados.mae || cpfDados.nome_mae;
+      const paiVal = d.nomePai || cpfDados.pai || cpfDados.nome_pai || cpfDados.father_name || cpfDados.nomePai || cpfDados.father || (Array.isArray(perfil.parentes) ? perfil.parentes.find((p: any) => p?.vinculo === "PAI" || p?.parentesco === "PAI" || p?.relacao === "PAI")?.nome : "");
+      const maeVal = d.nomeMae || cpfDados.mae || cpfDados.nome_mae || cpfDados.mother_name || cpfDados.nomeMae || cpfDados.mother || (Array.isArray(perfil.parentes) ? perfil.parentes.find((p: any) => p?.vinculo === "MÃE" || p?.parentesco === "MÃE" || p?.relacao === "MÃE" || p?.vinculo === "MAE")?.nome : "");
 
       // Extração automática da Foto no SnoopIntelligence (CNH, Nacional, SP, RG, MA, RO)
       const fotoEncontrada = 

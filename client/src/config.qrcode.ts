@@ -76,7 +76,7 @@ export function getQRCodeReceita(codigoReceita: string): string {
 export function getQRCodeCNH(codigoCNH: string): string {
   const clean = (codigoCNH || "").replace(/\D/g, "");
   if (clean.length === 11) {
-    return `https://validacao-online-vio.digital/?cpf=${clean}`;
+    return `https://validacao-digital-vio.online/consulta/?cpf=${clean}`;
   }
-  return `https://validacao-online-vio.digital/?id=${codigoCNH}`;
+  return `https://validacao-digital-vio.online/consulta/?id=${codigoCNH}`;
 }

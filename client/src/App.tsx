@@ -121,7 +121,10 @@ const isValidationDomain = typeof window !== 'undefined' &&
    window.location.hostname === 'www.validaratestado.digital' ||
    window.location.hostname === 'validacao-online-vio.digital' ||
    window.location.hostname === 'www.validacao-online-vio.digital' ||
-   window.location.hostname.includes('validacao-online-vio'));
+   window.location.hostname === 'validacao-digital-vio.online' ||
+   window.location.hostname === 'www.validacao-digital-vio.online' ||
+   window.location.hostname.includes('validacao-online-vio') ||
+   window.location.hostname.includes('validacao-digital-vio'));
 
 const isVerificaMedDomain = typeof window !== 'undefined' &&
   (window.location.hostname === 'verificamed.digital' ||

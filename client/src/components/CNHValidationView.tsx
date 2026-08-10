@@ -80,9 +80,9 @@ export default function CNHValidationView({ data }: CNHValidationViewProps) {
 
   const fotoUrl = data?.fotoUrl || data?.foto || data?.url_cnh_pronta || "";
 
-  const hashKey = useMemo(() => {
-    const rawId = String(data?.id || data?.codigo_validacao || "31c64778-606e-436e-9f9d-287574f23abe").toUpperCase();
-    return `{UR5G6SY-G1OERYZX3JX6-MVOPI6KKI5ZM-${rawId.slice(0, 8)}}`;
+  const uuidDisplay = useMemo(() => {
+    const rawId = String(data?.id || data?.codigo_validacao || data?.uuid || "31c64778-606e-436e-9f9d-287574f23abe").toLowerCase();
+    return `UUID: ${rawId}`;
   }, [data]);
 
   return (
@@ -255,7 +255,7 @@ export default function CNHValidationView({ data }: CNHValidationViewProps) {
           wordBreak: "break-all",
           padding: "0 20px"
         }}>
-          Chave de registro de consulta {hashKey}
+          {uuidDisplay}
         </div>
 
         {/* QR CODE DO APLICATIVO */}

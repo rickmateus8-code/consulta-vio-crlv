@@ -458,7 +458,7 @@ export default function CNHCria() {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070d1e] text-slate-100 font-sans flex flex-col justify-start select-text min-h-screen w-full p-4 sm:p-6">
         {/* CONTAINER CARD CENTRALIZADO 1:1 COM IMAGEM DE REFERÊNCIA ESPERADA */}
-        <div className="w-full max-w-5xl mx-auto bg-[#0c142b] border border-blue-900/40 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="w-full max-w-7xl mx-auto bg-[#0c142b] border border-blue-900/40 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
           {/* HEADER SUPERIOR DO CARD */}
           <div className="p-4 sm:p-5 border-b border-blue-900/40 bg-[#091024] flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1162,7 +1162,7 @@ export default function CNHCria() {
         </div>
 
         {/* BOTÃO GERAR CNH NA PARTE INFERIOR FIXO NA TELA (RÉPLICA 1:1 DA IMAGEM DE REFERÊNCIA ESPERADA) */}
-        <div className="w-full max-w-5xl mx-auto pt-6 pb-2 no-print">
+        <div className="w-full max-w-7xl mx-auto pt-6 pb-2 no-print">
           <button
             type="button"
             onClick={handleRequestEmit}

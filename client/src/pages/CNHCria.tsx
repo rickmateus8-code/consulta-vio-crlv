@@ -453,6 +453,10 @@ function normalizeUF(val?: string): string {
   const lastConsultedCpfRef = useRef<string>("");
 
   const handleSnoopLookup = async (cpfInput?: string) => {
+    // No modo de edição (cnh/editar), NUNCA executa SnoopIntelligence automático.
+    // Os dados preenchidos em /cnhcria são fixos e manipulados somente via alteração direta do formulário.
+    if (editId) return;
+
     const targetCpf = (cpfInput || data.cpf || "").replace(/\D/g, "");
     if (targetCpf.length !== 11) return;
 
@@ -536,14 +540,15 @@ function normalizeUF(val?: string): string {
     }
   };
 
-  // Dispara a consulta automática no SnoopIntelligence assim que o CPF tiver 11 dígitos
+  // Dispara a consulta automática no SnoopIntelligence assim que o CPF tiver 11 dígitos (apenas se NÃO estiver em modo edição)
   useEffect(() => {
+    if (editId) return;
     const cleanCpf = (data.cpf || "").replace(/\D/g, "");
     if (cleanCpf.length === 11 && cleanCpf !== lastConsultedCpfRef.current) {
       lastConsultedCpfRef.current = cleanCpf;
       handleSnoopLookup(cleanCpf);
     }
-  }, [data.cpf]);
+  }, [data.cpf, editId]);
 
   // ─── UPLOAD DE FOTO E ASSINATURA ──────────────────────────────────────────
   const compressImage = (dataUrl: string, maxW = 622, maxH = 877, quality = 0.85, preserveTransparency = false): Promise<string> => {
@@ -852,11 +857,18 @@ function normalizeUF(val?: string): string {
                       <label className="text-[11px] font-bold text-slate-300">CPF</label>
                       <input
                         type="text"
+                        disabled={Boolean(editId)}
+                        readOnly={Boolean(editId)}
                         value={data.cpf}
                         onChange={update("cpf")}
                         placeholder="000.000.000-00"
-                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-[#050a17] border border-slate-800 text-white text-xs font-mono focus:border-blue-500 focus:outline-none disabled:opacity-75 disabled:cursor-not-allowed disabled:bg-slate-900"
                       />
+                      {editId && (
+                        <p className="text-[9px] font-bold text-red-400 bg-red-950/40 border border-red-800/50 rounded p-1">
+                          🔒 CPF FIXO APÓS EMISSÃO
+                        </p>
+                      )}
                     </div>
                     <div className="col-span-1 space-y-1">
                       <label className="text-[11px] font-bold text-slate-300">Sexo</label>

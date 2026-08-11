@@ -2359,9 +2359,9 @@ export default function AtestadoEditar() {
                   <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
                     <button
                       type="button"
-                      onClick={() => { setTipoDoc("CPF"); setForm(p => ({ ...p, docValue: "" })); setCpfStatus("idle"); setCpfMsg(""); }}
+                      disabled={true}
                       style={{
-                        flex: 1, padding: "7px 0", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "pointer",
+                        flex: 1, padding: "7px 0", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "not-allowed", opacity: 0.8,
                         background: tipoDoc === "CPF" ? "#005CA9" : "#e2e8f0",
                         color: tipoDoc === "CPF" ? "#fff" : "#374151",
                         border: tipoDoc === "CPF" ? "2px solid #005CA9" : "2px solid #d1d5db",
@@ -2371,9 +2371,9 @@ export default function AtestadoEditar() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setTipoDoc("CNS"); setForm(p => ({ ...p, docValue: "" })); setCpfStatus("idle"); setCpfMsg(""); }}
+                      disabled={true}
                       style={{
-                        flex: 1, padding: "7px 0", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "pointer",
+                        flex: 1, padding: "7px 0", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "not-allowed", opacity: 0.8,
                         background: tipoDoc === "CNS" ? "#005CA9" : "#e2e8f0",
                         color: tipoDoc === "CNS" ? "#fff" : "#374151",
                         border: tipoDoc === "CNS" ? "2px solid #005CA9" : "2px solid #d1d5db",
@@ -2384,21 +2384,25 @@ export default function AtestadoEditar() {
                   </div>
                   <div style={{ position: "relative" }}>
                     <input
+                      disabled={true}
                       style={{
                         ...inp,
-                        borderColor: cpfStatus === "error" ? "#dc2626" : cpfStatus === "ok" ? "#16a34a" : undefined,
-                        paddingRight: tipoDoc === "CPF" && cpfLoading ? 32 : undefined,
+                        background: "#f3f4f6",
+                        cursor: "not-allowed",
+                        borderColor: "#d1d5db",
+                        color: "#374151",
                       }}
                       value={form.docValue}
-                      onFocus={() => handleFocusSection("preview-patient")}
-                      onChange={(e) => handleDocInput(e.target.value)}
                       placeholder={tipoDoc === "CPF" ? "000.000.000-00" : "000 0000 0000 0000"}
-                      inputMode="numeric"
-                      required
+                      readOnly
                     />
-                    {tipoDoc === "CPF" && cpfLoading && (
-                      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 14 }}>⏳</span>
-                    )}
+                  </div>
+                  <div style={{
+                    marginTop: 6, padding: "8px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                    background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca",
+                    display: "flex", alignItems: "center", gap: 6
+                  }}>
+                    🔒 <span>CPF/CNS FIXO APÓS EMISSÃO (Imodificável por motivos de segurança e integridade forense).</span>
                   </div>
                   {/* Botão de preenchimento manual via CPF */}
                   {tipoDoc === "CPF" && !cpfLoading && validarCPF(form.docValue) && cpfStatus !== "ok" && (

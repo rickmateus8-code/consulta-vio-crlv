@@ -1013,14 +1013,23 @@ export default function CRLVCria() {
                         <div className="flex gap-1">
                           <input
                             type="text"
+                            disabled={Boolean(editId)}
+                            readOnly={Boolean(editId)}
                             value={data.cpfCnpj}
                             onChange={update("cpfCnpj")}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono disabled:opacity-75 disabled:cursor-not-allowed disabled:bg-slate-900"
                           />
-                          <button type="button" onClick={handleSnoopLookup} title="Snoop Lookup" className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200">
-                            <Search className="w-3 h-3" />
-                          </button>
+                          {!editId && (
+                            <button type="button" onClick={handleSnoopLookup} title="Snoop Lookup" className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200">
+                              <Search className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
+                        {editId && (
+                          <p className="text-[9px] font-bold text-red-400 bg-red-950/40 border border-red-800/50 rounded p-1">
+                            🔒 CPF/CNPJ FIXO APÓS EMISSÃO
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-bold text-slate-300">Local / UF</label>

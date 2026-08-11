@@ -94,6 +94,45 @@ function gerarMRZ(p: CNH3PartDocumentProps): string[] {
   ];
 }
 
+async function drawCleanSignature(
+  ctx: CanvasRenderingContext2D,
+  imgUrl: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
+  try {
+    const assImg = new Image();
+    assImg.crossOrigin = "anonymous";
+    assImg.src = imgUrl;
+    await new Promise((res) => { assImg.onload = res; assImg.onerror = res; });
+    
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = assImg.width;
+    tempCanvas.height = assImg.height;
+    const tctx = tempCanvas.getContext("2d");
+    if (!tctx) return;
+    
+    tctx.drawImage(assImg, 0, 0);
+    const imgData = tctx.getImageData(0, 0, assImg.width, assImg.height);
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+      if (a < 50 || (r > 140 && g > 140 && b > 140)) {
+        data[i+3] = 0;
+      } else {
+        data[i] = 0;
+        data[i+1] = 0;
+        data[i+2] = 0;
+        data[i+3] = a > 50 ? a : 255;
+      }
+    }
+    tctx.putImageData(imgData, 0, 0);
+    ctx.drawImage(tempCanvas, x, y, width, height);
+  } catch {}
+}
+
 export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { slide } = props;
@@ -180,7 +219,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
         octx.drawImage(bgImg, 0, 0, 963, 680);
 
-        // 1. MOLDURA DA FOTO 3X4 MOVIDA 2 LINHAS PARA BAIXO (+14px)
+        // 1. MOLDURA DA FOTO 3X4 COM ENQUADRAMENTO BRANCO PURO
         octx.fillStyle = "#ffffff";
         octx.fillRect(191 + dx, 192 + dy, 250, 335);
 
@@ -197,29 +236,21 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
           } catch {}
         }
 
-        // Assinatura do Condutor
+        // Assinatura do Condutor com tratamento de transparência forense
         if (props.assinaturaUrl) {
-          try {
-            const ass = new Image();
-            ass.crossOrigin = "anonymous";
-            ass.src = props.assinaturaUrl;
-            await new Promise((res) => { ass.onload = res; ass.onerror = res; });
-            if (isMounted) {
-              octx.drawImage(ass, 187 + dx, 580 + dy, 230, 54);
-            }
-          } catch {}
+          await drawCleanSignature(octx, props.assinaturaUrl, 187 + dx, 580 + dy, 230, 54);
         }
 
         // 2. NÚMERO DO ESPELHO / FORMULÁRIO (TOPO ESQUERDO)
-        octx.fillStyle = "#0f172a";
+        octx.fillStyle = "#000000";
         octx.font = "bold 24px Times New Roman, serif";
         octx.fillText(props.espelho || props.registro || "5728237792", 80 + dx, 110 + dy);
 
-        // 3. MAPEAMENTO DE CAMPOS DE TEXTO DA FRENTE
-        octx.fillStyle = "#0f172a";
+        // 3. MAPEAMENTO DE CAMPOS DE TEXTO DA FRENTE (PARIDADE 1:1 COM /CNHCRIA)
+        octx.fillStyle = "#000000";
         octx.font = "bold 19px Rawline, Arial, sans-serif";
 
-        // Campo 1 e 2: Nome e Sobrenome (Recuado ~10 espaçamentos para a esquerda)
+        // Campo 1 e 2: Nome e Sobrenome
         octx.fillText((props.nome || "").toUpperCase(), 400 + dx, 215 + dy);
 
         // Campo 1ª Habilitação
@@ -232,10 +263,10 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         // Campo 4a: Data de Emissão
         octx.fillText(fmtDate(props.dataEmissao), 460 + dx, 345 + dy);
 
-        // Campo 4b: Validade (Cor Vermelha de Segurança #c5221f)
-        octx.fillStyle = "#c5221f";
+        // Campo 4b: Validade (Cor Vermelha de Segurança Oficial #c0392b)
+        octx.fillStyle = "#c0392b";
         octx.fillText(fmtDate(props.validade), 630 + dx, 345 + dy);
-        octx.fillStyle = "#0f172a";
+        octx.fillStyle = "#000000";
 
         // Campo 4c: Doc Identidade / Órgão Emissor / UF
         const docId = [props.rg || "0000000", props.orgaoEmissor || "SSP", props.ufRG || props.ufEmissao || "DF"].filter(Boolean).join(" ");
@@ -244,13 +275,13 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         // Campo 4d: CPF
         octx.fillText(formatCPF(props.cpf), 460 + dx, 475 + dy);
 
-        // Campo 5: Nº Registro (Cor Vermelha de Segurança #c5221f)
-        octx.fillStyle = "#c5221f";
+        // Campo 5: Nº Registro (Cor Vermelha de Segurança Oficial #c0392b)
+        octx.fillStyle = "#c0392b";
         octx.fillText(props.registro || "00000000000", 660 + dx, 475 + dy);
 
-        // Campo 9: Categoria (Cor Vermelha de Segurança #c5221f)
+        // Campo 9: Categoria (Cor Vermelha de Segurança Oficial #c0392b)
         octx.fillText((props.categoria || "AB").toUpperCase(), 860 + dx, 475 + dy);
-        octx.fillStyle = "#0f172a";
+        octx.fillStyle = "#000000";
 
         // Nacionalidade
         octx.fillText((props.nacionalidade || "BRASILEIRA").toUpperCase(), 460 + dx, 538 + dy);
@@ -270,7 +301,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.drawImage(bgImg, 0, 0, 963, 680);
 
         // Número do Espelho (Topo)
-        octx.fillStyle = "#0f172a";
+        octx.fillStyle = "#000000";
         octx.font = "bold 24px Times New Roman, serif";
         octx.fillText(props.espelho || props.registro || "5728237792", 80 + dx, 110 + dy);
 
@@ -280,9 +311,9 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.font = "bold 32px Rawline, Arial, sans-serif";
         octx.fillText(estadoExtenso, 80 + dx, 400 + dy);
 
-        // Datas da Tabela de Categorias
+        // Datas da Tabela de Categorias (Vermelho #c0392b)
         octx.font = "bold 15px Rawline, Arial, sans-serif";
-        octx.fillStyle = "#c5221f";
+        octx.fillStyle = "#c0392b";
         const catStr = (props.categoria || "AB").toUpperCase();
         const validFmt = fmtDate(props.validade);
         
@@ -290,7 +321,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         if (catStr.includes("B")) octx.fillText(validFmt, 855 + dx, 296 + dy);
         if (catStr.includes("C")) octx.fillText(validFmt, 855 + dx, 360 + dy);
         if (catStr.includes("D")) octx.fillText(validFmt, 855 + dx, 590 + dy);
-        octx.fillStyle = "#0f172a";
+        octx.fillStyle = "#000000";
 
         // Campo 12: Observações (EAR)
         octx.font = "bold 18px Rawline, Arial, sans-serif";
@@ -316,7 +347,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.drawImage(bgImg, 0, 0, 963, 680);
 
         const mrzLines = gerarMRZ(props);
-        octx.fillStyle = "#0f172a";
+        octx.fillStyle = "#000000";
         octx.font = "bold 26px monospace";
         octx.textAlign = "center";
 

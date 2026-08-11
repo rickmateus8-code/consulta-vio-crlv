@@ -12,7 +12,8 @@ import {
   Activity, Database, Search, Eye, EyeOff, X, Save, Layout,
   Download, Pencil, Wifi, WifiOff, Monitor, Globe, Anchor,
   CreditCard, AlertCircle, Filter, Gift, Percent, Wallet,
-  Link, Copy, Calendar, Trash, Lock, UserPlus, Clock, User, TrendingUp
+  Link, Copy, Calendar, Trash, Lock, UserPlus, Clock, User, TrendingUp,
+  Car, FlaskConical, GraduationCap, Pill
 } from "lucide-react";
 
 type Tab = "users" | "tools" | "pricing" | "notices" | "logs" | "emissions" | "monitoring" | "referral" | "settings" | "database";

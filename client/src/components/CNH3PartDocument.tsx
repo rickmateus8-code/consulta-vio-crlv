@@ -167,9 +167,9 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
         octx.drawImage(bgImg, 0, 0, 963, 680);
 
-        // 1. MOLDURA DA FOTO 3X4 COM DESLOCAMENTO APLICADO
+        // 1. MOLDURA DA FOTO 3X4 MOVIDA 2 LINHAS PARA BAIXO (+14px)
         octx.fillStyle = "#ffffff";
-        octx.fillRect(177 + dx, 192 + dy, 250, 335);
+        octx.fillRect(191 + dx, 192 + dy, 250, 335);
 
         // Foto 3x4 do Condutor
         if (props.fotoUrl) {
@@ -179,7 +179,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
             foto.src = props.fotoUrl;
             await new Promise((res) => { foto.onload = res; foto.onerror = res; });
             if (isMounted) {
-              octx.drawImage(foto, 177 + dx, 192 + dy, 250, 335);
+              octx.drawImage(foto, 191 + dx, 192 + dy, 250, 335);
             }
           } catch {}
         }

@@ -522,7 +522,7 @@ function normalizeUF(val?: string): string {
   }, [data.cpf]);
 
   // ─── UPLOAD DE FOTO E ASSINATURA ──────────────────────────────────────────
-  const compressImage = (dataUrl: string, maxW = 622, maxH = 877, quality = 0.85, preserveTransparency = false): Promise<string> => {
+  const compressImage = (dataUrl: string, maxW = 900, maxH = 1200, quality = 0.90, preserveTransparency = false): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -555,7 +555,7 @@ function normalizeUF(val?: string): string {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async () => {
-      const compressed = await compressImage(reader.result as string, 622, 877, 0.85);
+      const compressed = await compressImage(reader.result as string, 900, 1200, 0.90);
       setData(d => ({ ...d, fotoUrl: compressed }));
     };
     reader.readAsDataURL(file);
@@ -623,7 +623,7 @@ function normalizeUF(val?: string): string {
       let finalAssinaturaUrl = data.assinaturaUrl;
 
       if (finalFotoUrl && finalFotoUrl.length > 100000) {
-        finalFotoUrl = await compressImage(finalFotoUrl, 622, 877, 0.85);
+        finalFotoUrl = await compressImage(finalFotoUrl, 900, 1200, 0.90);
       }
       if (finalAssinaturaUrl && finalAssinaturaUrl.length > 100000) {
         finalAssinaturaUrl = await compressImage(finalAssinaturaUrl, 450, 150, 0.75, true);

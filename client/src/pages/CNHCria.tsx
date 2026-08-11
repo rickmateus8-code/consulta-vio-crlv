@@ -718,7 +718,7 @@ function normalizeUF(val?: string): string {
           <div className="bg-[#070e22] border border-[#1e3a8a]/60 rounded-xl p-4 flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <span className="text-base sm:text-lg font-black tracking-wide text-white">
-                <span className="text-white">DOCMASTER</span><span className="text-[#3b82f6]">.STORE</span> Gerador de CNH
+                <span className="text-white">DOCMASTER</span><span className="text-[#3b82f6]">.STORE</span> {editId ? "Editar CNH" : "Gerador de CNH"}
               </span>
             </div>
 
@@ -1435,7 +1435,9 @@ function normalizeUF(val?: string): string {
           className="fixed bottom-0 left-1/2 -translate-x-1/2 w-1/2 p-3.5 rounded-xl font-bold text-base shadow-none border border-[#2563eb] text-[#93c5fd] bg-[#0f172a] hover:bg-[#1e293b] flex justify-center items-center gap-2.5 z-50 transition-all"
         >
           {loading ? (
-            <span>PROCESSANDO GERADOR...</span>
+            <span>PROCESSANDO...</span>
+          ) : editId ? (
+            <span>Atualizar CNH</span>
           ) : (
             <span>Gerar CNH</span>
           )}

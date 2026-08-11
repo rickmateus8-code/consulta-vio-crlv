@@ -1141,21 +1141,26 @@ export default function AdminDashboard() {
   };
 
   const editEmission = (e: EmissionRow) => {
+    const docType = e.type || "atestado";
     const editRoutes: Record<string, string> = {
       atestado: `/atestado/editar/${e.id}?admin=1`,
       receita: `/receita/editar/${e.id}?admin=1`,
       cnh: `/cnh/editar/${e.id}?admin=1`,
       cha: `/cha/editar/${e.id}?admin=1`,
-      "toxicologico": `/toxicologico/editar/${e.id}?admin=1`,
+      crlv: `/crlv/editar/${e.id}?admin=1`,
+      crlvcria: `/crlv/editar/${e.id}?admin=1`,
+      toxicologico: `/toxicria/editar/${e.id}?admin=1`,
+      toxicria: `/toxicria/editar/${e.id}?admin=1`,
+      laudocria: `/toxicria/editar/${e.id}?admin=1`,
       "historico-sp": `/historico-sp`,
       "historico-uninter": `/historicocria/editar/${e.id}?admin=1`,
-      };
-    const route = editRoutes[e.type];
-    if (route) {
-      setLocation(route);
-    } else {
-      toast.info("Edição inline para este tipo de documento será implementada em breve.");
-    }
+      historicocria: `/historicocria/editar/${e.id}?admin=1`,
+      "peticao-stj": `/peticaocria/editar/${e.id}?admin=1`,
+      peticaocria: `/peticaocria/editar/${e.id}?admin=1`,
+      fgv: `/certificado-fgv/editar/${e.id}?admin=1`,
+    };
+    const route = editRoutes[docType] || `/atestado/editar/${e.id}?admin=1`;
+    setLocation(route);
   };
 
   const runCleanupNow = async () => {

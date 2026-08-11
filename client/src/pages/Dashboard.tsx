@@ -167,17 +167,18 @@ export default function Dashboard() {
   };
 
   const getEditPath = (doc: DocRecord) => {
-    if (doc.type === "atestado") return `/atestado/editar/${doc.id}`;
-    if (doc.type === "cnh") return `/cnh/editar/${doc.id}`;
-    if (doc.type === "cha") return `/cha/editar/${doc.id}`;
-    if (doc.type === "crlv" || doc.type === "crlvcria") return `/crlv/editar/${doc.id}`;
-    if (doc.type === "receita") return `/receita/editar/${doc.id}`;
-    if (doc.type === "historico-uninter" || doc.type === "historicocria") return `/historicocria/editar/${doc.id}`;
-    if (doc.type === "historico-sp") return `/historico-sp`;
-    if (doc.type === "toxicria" || doc.type === "toxicologico" || doc.type === "laudocria") return `/toxicria/editar/${doc.id}`;
-    if (doc.type === "peticao-stj" || doc.type === "peticaocria") return `/peticaocria/editar/${doc.id}`;
-    if (doc.type === "fgv") return `/certificado-fgv/editar/${doc.id}`;
-    return `/${doc.type}/editar/${doc.id}`;
+    const type = doc?.type || (activeTab === "receita" ? "receita" : "atestado");
+    if (type === "atestado") return `/atestado/editar/${doc.id}`;
+    if (type === "cnh") return `/cnh/editar/${doc.id}`;
+    if (type === "cha") return `/cha/editar/${doc.id}`;
+    if (type === "crlv" || type === "crlvcria") return `/crlv/editar/${doc.id}`;
+    if (type === "receita") return `/receita/editar/${doc.id}`;
+    if (type === "historico-uninter" || type === "historicocria") return `/historicocria/editar/${doc.id}`;
+    if (type === "historico-sp") return `/historico-sp`;
+    if (type === "toxicria" || type === "toxicologico" || type === "laudocria") return `/toxicria/editar/${doc.id}`;
+    if (type === "peticao-stj" || type === "peticaocria") return `/peticaocria/editar/${doc.id}`;
+    if (type === "fgv") return `/certificado-fgv/editar/${doc.id}`;
+    return `/atestado/editar/${doc.id}`;
   };
 
   useEffect(() => {
@@ -764,13 +765,9 @@ const intelligentStats = [
           onClose={() => setViewAtestado(null)}
           onDownload={() => handleDirectDownloadAtestado(viewAtestado)}
           onEdit={() => {
-            const type = viewAtestado.type === 'atestado' ? 'atestado' : 
-                         viewAtestado.type === 'cnh' ? 'cnh' : 
-                         viewAtestado.type === 'cha' ? 'cha' : 
-                         viewAtestado.type === 'receita' ? 'receita' : 
-                         viewAtestado.type === 'historico-uninter' ? 'historicocria' : viewAtestado.type;
+            const path = getEditPath(viewAtestado);
             setViewAtestado(null);
-            setLocation(`/${type}/editar/${viewAtestado.id}`);
+            setLocation(path);
           }}
         />
       )}

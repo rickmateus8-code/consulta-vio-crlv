@@ -116,8 +116,8 @@ export default function CRLVCria() {
   const [previewZoom, setPreviewZoom] = useState(1.0);
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
-  // Ocultar / Exibir Formulário com Animação e Seta
-  const [formOculto, setFormOculto] = useState(false);
+  // Ocultar / Exibir Prévia do Documento (Por padrão OCULTO, priorizando o Formulário)
+  const [previewOculto, setPreviewOculto] = useState(true);
 
   const [editId, setEditId] = useState<string | null>(null);
 
@@ -647,504 +647,501 @@ export default function CRLVCria() {
           </div>
         </header>
 
-        {/* ÁREA PRINCIPAL DUAS COLUNAS COM ANIMAÇÃO DE RECOLHIMENTO */}
+        {/* ÁREA PRINCIPAL DUAS COLUNAS: FORMULÁRIO PRIORITÁRIO & PREVIEW OPCIONAL */}
         <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden relative">
-          {/* COLUNA ESQUERDA: NAVEGAÇÃO DE ABAS & FORMULÁRIO */}
+          {/* COLUNA ESQUERDA: FORMULÁRIO (PRIORITÁRIO - OCUPA TELA CHEIA QUANDO PREVIEW ESTÁ OCULTO) */}
           <div
-            className={`border-r border-slate-800 bg-[#040914] flex flex-col h-[calc(100vh-4rem-4rem)] transition-all duration-300 ease-in-out relative shrink-0 ${
-              formOculto
-                ? "w-12 min-w-[48px] max-w-[48px] overflow-hidden select-none"
-                : "w-full lg:w-[42%] lg:min-w-[380px] lg:max-w-[520px]"
+            className={`bg-[#040914] flex flex-col h-[calc(100vh-4rem-4rem)] transition-all duration-300 ease-in-out relative ${
+              previewOculto
+                ? "flex-1 w-full"
+                : "w-full lg:w-[42%] lg:min-w-[380px] lg:max-w-[500px] shrink-0 border-r border-slate-800"
             }`}
           >
-            {formOculto ? (
-              /* BARRA VERTICAL COMPACTA QUANDO O FORMULÁRIO ESTÁ OCULTO */
-              <div className="flex-1 flex flex-col items-center py-4 gap-6 bg-[#040914] border-r border-amber-500/20">
-                <button
-                  type="button"
-                  onClick={() => setFormOculto(false)}
-                  title="Expandir Formulário"
-                  className="p-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 transition shadow-md hover:scale-110"
-                >
-                  <ChevronRight className="w-5 h-5 animate-pulse text-amber-400" />
-                </button>
-
-                <div
-                  onClick={() => setFormOculto(false)}
-                  className="flex-1 flex items-center justify-center cursor-pointer group py-4"
-                  title="Clique para expandir o formulário"
-                >
-                  <span
-                    className="text-xs font-black tracking-widest text-slate-400 group-hover:text-amber-400 uppercase transition-colors"
-                    style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-                  >
-                    FORMULÁRIO DO CRLV
-                  </span>
-                </div>
+            <div className="flex-1 overflow-y-auto p-4 flex gap-4">
+              {/* SIDEBAR TABS VERTICAL */}
+              <div className="w-40 flex flex-col gap-1.5 shrink-0">
+                {[
+                  { id: "automacao", label: "AUTOMAÇÃO", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
+                  { id: "identificacao", label: "1. IDENTIFICAÇÃO", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
+                  { id: "caracteristicas", label: "2. CARACTERÍSTICAS", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
+                  { id: "tecnica", label: "3. TÉCNICA", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
+                  { id: "proprietario", label: "4. PROPRIETÁRIO", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
+                  { id: "observacoes", label: "5. OBSERVAÇÕES", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
+                ].map((t) => {
+                  const active = etapa === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setEtapa(t.id as any)}
+                      className={`py-2 px-3 rounded-md font-bold text-[11px] text-left transition border ${
+                        active
+                          ? `${t.activeColor} shadow-sm`
+                          : "border-slate-800/80 bg-slate-900/60 hover:bg-slate-800/80 text-slate-400"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              /* CONTEÚDO COMPLETO DO FORMULÁRIO */
-              <>
-                <div className="flex-1 overflow-y-auto p-4 flex gap-4">
-                  {/* SIDEBAR TABS VERTICAL */}
-                  <div className="w-40 flex flex-col gap-1.5">
-                    {[
-                      { id: "automacao", label: "AUTOMAÇÃO", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
-                      { id: "identificacao", label: "1. IDENTIFICAÇÃO", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
-                      { id: "caracteristicas", label: "2. CARACTERÍSTICAS", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
-                      { id: "tecnica", label: "3. TÉCNICA", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
-                      { id: "proprietario", label: "4. PROPRIETÁRIO", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
-                      { id: "observacoes", label: "5. OBSERVAÇÕES", activeColor: "border-amber-400 text-amber-300 bg-amber-500/10" },
-                    ].map((t) => {
-                      const active = etapa === t.id;
-                      return (
-                        <button
-                          key={t.id}
-                          onClick={() => setEtapa(t.id as any)}
-                          className={`py-2 px-3 rounded-md font-bold text-[11px] text-left transition border ${
-                            active
-                              ? `${t.activeColor} shadow-sm`
-                              : "border-slate-800/80 bg-slate-900/60 hover:bg-slate-800/80 text-slate-400"
-                          }`}
-                        >
-                          {t.label}
+
+              {/* CONTEÚDO DA ABA SELECIONADA */}
+              <div className="flex-1 space-y-4 max-w-4xl">
+                {/* 0. AUTOMAÇÃO VIA WHATSAPP */}
+                {etapa === "automacao" && (
+                  <div className="p-4 rounded-xl bg-[#070e20] border border-emerald-500/40 space-y-4">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wide">
+                      <MessageCircle className="w-4 h-4" /> AUTOMAÇÃO VIA WHATSAPP
+                    </div>
+
+                    <p className="text-xs text-slate-300 font-medium">1. Envie para o cliente preencher</p>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={handleCopiarModelo}
+                        className="py-2.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center justify-center gap-2 uppercase"
+                      >
+                        <Copy className="w-3.5 h-3.5" /> COPIAR
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleColarEPreencher}
+                        className="py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-2 uppercase shadow-md shadow-emerald-950"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> COLAR E PREENCHER
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-emerald-400/80 font-mono">
+                      Aguardando cópia ou colagem do formulário.
+                    </p>
+                  </div>
+                )}
+
+                {/* 1. IDENTIFICAÇÃO DO VEÍCULO */}
+                {etapa === "identificacao" && (
+                  <div className="p-4 rounded-xl bg-[#070e20] border border-amber-500/30 space-y-3.5">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
+                      <Car className="w-4 h-4" /> IDENTIFICAÇÃO DO VEÍCULO
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-300">Renavam</label>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={data.renavam}
+                          onChange={update("renavam")}
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
+                        />
+                        <button type="button" onClick={gerarRenavam} className="px-2.5 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
+                          GERAR
                         </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* CONTEÚDO DA ABA SELECIONADA */}
-                  <div className="flex-1 space-y-4">
-                    {/* 0. AUTOMAÇÃO VIA WHATSAPP */}
-                    {etapa === "automacao" && (
-                      <div className="p-4 rounded-xl bg-[#070e20] border border-emerald-500/40 space-y-4">
-                        <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wide">
-                          <MessageCircle className="w-4 h-4" /> AUTOMAÇÃO VIA WHATSAPP
-                        </div>
-
-                        <p className="text-xs text-slate-300 font-medium">1. Envie para o cliente preencher</p>
-
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <button
-                            type="button"
-                            onClick={handleCopiarModelo}
-                            className="py-2.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center justify-center gap-2 uppercase"
-                          >
-                            <Copy className="w-3.5 h-3.5" /> COPIAR
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleColarEPreencher}
-                            className="py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-2 uppercase shadow-md shadow-emerald-950"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" /> COLAR E PREENCHER
-                          </button>
-                        </div>
-
-                        <p className="text-[11px] text-emerald-400/80 font-mono">
-                          Aguardando cópia ou colagem do formulário.
-                        </p>
                       </div>
-                    )}
+                    </div>
 
-                    {/* 1. IDENTIFICAÇÃO DO VEÍCULO */}
-                    {etapa === "identificacao" && (
-                      <div className="p-4 rounded-xl bg-[#070e20] border border-amber-500/30 space-y-3.5">
-                        <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
-                          <Car className="w-4 h-4" /> IDENTIFICAÇÃO DO VEÍCULO
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-300">Renavam</label>
-                          <div className="flex gap-1.5">
-                            <input
-                              type="text"
-                              value={data.renavam}
-                              onChange={update("renavam")}
-                              className="flex-1 px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
-                            />
-                            <button type="button" onClick={gerarRenavam} className="px-2.5 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
-                              GERAR
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Placa</label>
-                            <div className="flex gap-1.5">
-                              <input
-                                type="text"
-                                value={data.placa}
-                                onChange={update("placa")}
-                                className="flex-1 px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono uppercase"
-                              />
-                              <button type="button" onClick={gerarPlacaField} className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
-                                GERAR
-                              </button>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Exercício</label>
-                            <input
-                              type="text"
-                              value={data.exercicio}
-                              onChange={update("exercicio")}
-                              className="w-full px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-300">Número do CRV</label>
-                          <div className="flex gap-1.5">
-                            <input
-                              type="text"
-                              value={data.numeroCRV}
-                              onChange={update("numeroCRV")}
-                              placeholder="Ex: 1234567890"
-                              className="flex-1 px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
-                            />
-                            <button type="button" onClick={gerarNumeroCRV} className="px-2.5 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
-                              GERAR
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Segurança CRV</label>
-                            <div className="flex gap-1.5">
-                              <input
-                                type="text"
-                                value={segurancaCRV}
-                                onChange={(e) => setSegurancaCRV(e.target.value)}
-                                className="flex-1 px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
-                              />
-                              <button type="button" onClick={gerarSegurancaCRV} className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
-                                GERAR
-                              </button>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Cód. Seg CLA</label>
-                            <div className="flex gap-1.5">
-                              <input
-                                type="text"
-                                value={data.codigoSegurancaCLA}
-                                onChange={update("codigoSegurancaCLA")}
-                                className="flex-1 px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
-                              />
-                              <button type="button" onClick={gerarCodigoCLA} className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
-                                GERAR
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 2. CARACTERÍSTICAS */}
-                    {etapa === "caracteristicas" && (
-                      <div className="p-4 rounded-xl bg-[#070e20] border border-amber-500/30 space-y-3.5">
-                        <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
-                          <Car className="w-4 h-4" /> CARACTERÍSTICAS
-                        </div>
-
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-center">
-                            <label className="text-[11px] font-bold text-slate-300">Marca / Modelo</label>
-                            <button
-                              type="button"
-                              onClick={() => preencherDadosTecnicosPorModelo(data.marcaModeloVersao)}
-                              className="text-[10px] font-bold text-amber-400 hover:text-amber-300 uppercase flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30"
-                            >
-                              <Sparkles className="w-3 h-3" /> AUTO-SPECS
-                            </button>
-                          </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Placa</label>
+                        <div className="flex gap-1.5">
                           <input
                             type="text"
-                            value={data.marcaModeloVersao}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setData((d) => ({ ...d, marcaModeloVersao: val }));
-                              preencherDadosTecnicosPorModelo(val);
-                            }}
-                            placeholder="Ex: PEUGEOT/206 SW16 ESCA FX"
-                            className="w-full px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase"
+                            value={data.placa}
+                            onChange={update("placa")}
+                            className="flex-1 px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono uppercase"
                           />
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Ano Fab</label>
-                            <input type="text" value={data.anoFabricacao} onChange={update("anoFabricacao")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Ano Mod</label>
-                            <input type="text" value={data.anoModelo} onChange={update("anoModelo")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Cor</label>
-                            <input type="text" value={data.corPredominante} onChange={update("corPredominante")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Combustível</label>
-                            <input type="text" value={data.combustivel} onChange={update("combustivel")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Espécie / Tipo</label>
-                            <input type="text" value={data.especieTipo} onChange={update("especieTipo")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Categoria</label>
-                            <input type="text" value={data.categoria} onChange={update("categoria")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Carroceria</label>
-                            <input type="text" value={data.carroceria} onChange={update("carroceria")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">CAT (*.*)</label>
-                            <input type="text" value={data.cat} onChange={update("cat")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
+                          <button type="button" onClick={gerarPlacaField} className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
+                            GERAR
+                          </button>
                         </div>
                       </div>
-                    )}
-
-                    {/* 3. TÉCNICA (ESPECIFICAÇÕES TÉCNICAS) */}
-                    {etapa === "tecnica" && (
-                      <div className="p-4 rounded-xl bg-[#070e20] border border-amber-500/30 space-y-3.5">
-                        <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
-                          <Wrench className="w-4 h-4" /> ESPECIFICAÇÕES TÉCNICAS
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-300">Chassi</label>
-                          <div className="flex gap-1.5">
-                            <input
-                              type="text"
-                              value={data.chassi}
-                              onChange={update("chassi")}
-                              className="flex-1 px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono uppercase"
-                            />
-                            <button type="button" onClick={gerarChassiField} className="px-2.5 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
-                              GERAR
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2.5">
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Placa Ant.</label>
-                            <input type="text" value={data.placaAnteriorUF} onChange={update("placaAnteriorUF")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase font-mono" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Potência/Cil</label>
-                            <input type="text" value={data.potenciaCilindrada} onChange={update("potenciaCilindrada")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Capacidade</label>
-                            <input type="text" value={data.capacidade} onChange={update("capacidade")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Lotação</label>
-                            <input type="text" value={data.lotacao} onChange={update("lotacao")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Peso Bruto</label>
-                            <input type="text" value={data.pesoBrutoTotal} onChange={update("pesoBrutoTotal")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Motor</label>
-                            <div className="flex gap-1">
-                              <input type="text" value={data.motor} onChange={update("motor")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono uppercase" />
-                              <button type="button" onClick={() => gerarMotorField(data.marcaModeloVersao)} className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
-                                GERAR
-                              </button>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">CMT</label>
-                            <input type="text" value={data.cmt} onChange={update("cmt")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                          </div>
-                        </div>
-
-                        <div className="w-1/4 space-y-1">
-                          <label className="text-[11px] font-bold text-slate-300">Eixos</label>
-                          <input type="text" value={data.eixos} onChange={update("eixos")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
-                        </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Exercício</label>
+                        <input
+                          type="text"
+                          value={data.exercicio}
+                          onChange={update("exercicio")}
+                          className="w-full px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
+                        />
                       </div>
-                    )}
+                    </div>
 
-                    {/* 4. PROPRIETÁRIO & LOCAL */}
-                    {etapa === "proprietario" && (
-                      <div className="p-4 rounded-xl bg-[#070e20] border border-amber-500/30 space-y-3.5">
-                        <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
-                          <User className="w-4 h-4" /> PROPRIETÁRIO & LOCAL
-                        </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-300">Número do CRV</label>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={data.numeroCRV}
+                          onChange={update("numeroCRV")}
+                          placeholder="Ex: 1234567890"
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
+                        />
+                        <button type="button" onClick={gerarNumeroCRV} className="px-2.5 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
+                          GERAR
+                        </button>
+                      </div>
+                    </div>
 
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-300">Nome Proprietário</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Segurança CRV</label>
+                        <div className="flex gap-1.5">
                           <input
                             type="text"
-                            value={data.nome}
-                            onChange={update("nome")}
-                            placeholder="NOME COMPLETO"
-                            className="w-full px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase"
+                            value={segurancaCRV}
+                            onChange={(e) => setSegurancaCRV(e.target.value)}
+                            className="flex-1 px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
                           />
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2.5">
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">CPF / CNPJ</label>
-                            <div className="flex gap-1">
-                              <input
-                                type="text"
-                                value={data.cpfCnpj}
-                                onChange={update("cpfCnpj")}
-                                className="w-full px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
-                              />
-                              <button type="button" onClick={handleSnoopLookup} title="Snoop Lookup" className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200">
-                                <Search className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Local / UF</label>
-                            <input
-                              type="text"
-                              value={data.local}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setData((d) => {
-                                  const clean = val.trim().toUpperCase().replace(/\s*-\s*/g, " ").replace(/\s+/g, " ");
-                                  const parts = clean.split(" ");
-                                  let updatedUf = d.detranUF;
-                                  if (parts.length > 1) {
-                                    const last = parts[parts.length - 1];
-                                    if (last.length === 2 && /^[A-Z]{2}$/.test(last)) {
-                                      updatedUf = last;
-                                    }
-                                  }
-                                  return {
-                                    ...d,
-                                    local: val,
-                                    detranUF: updatedUf,
-                                    emissaoDetranUF: updatedUf,
-                                  };
-                                });
-                              }}
-                              placeholder="Ex: CURITIBA PR"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-slate-300">Data</label>
-                            <input
-                              type="text"
-                              value={data.dataEmissaoDoc}
-                              onChange={update("dataEmissaoDoc")}
-                              placeholder="21/01/2026"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
-                            />
-                          </div>
+                          <button type="button" onClick={gerarSegurancaCRV} className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
+                            GERAR
+                          </button>
                         </div>
                       </div>
-                    )}
-
-                    {/* 5. OBSERVAÇÕES */}
-                    {etapa === "observacoes" && (
-                      <div className="p-4 rounded-xl bg-[#070e20] border border-amber-500/30 space-y-3.5">
-                        <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
-                          <FileText className="w-4 h-4" /> OBSERVAÇÕES & DPVAT
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-300">Observações do Veículo</label>
-                          <textarea
-                            rows={3}
-                            value={data.observacoesVeiculo}
-                            onChange={update("observacoesVeiculo")}
-                            placeholder="SEM OBSERVAÇÕES"
-                            className="w-full p-2.5 rounded-lg bg-[#030712] border border-slate-800 text-xs text-white uppercase focus:border-amber-500 focus:outline-none"
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Cód. Seg CLA</label>
+                        <div className="flex gap-1.5">
+                          <input
+                            type="text"
+                            value={data.codigoSegurancaCLA}
+                            onChange={update("codigoSegurancaCLA")}
+                            className="flex-1 px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
                           />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-300">Informações do Seguro DPVAT</label>
-                          <textarea
-                            rows={3}
-                            value={data.informacoesDpvat}
-                            onChange={update("informacoesDpvat")}
-                            placeholder="Campos adicionais DPVAT"
-                            className="w-full p-2.5 rounded-lg bg-[#030712] border border-slate-800 text-xs text-white uppercase focus:border-amber-500 focus:outline-none"
-                          />
+                          <button type="button" onClick={gerarCodigoCLA} className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
+                            GERAR
+                          </button>
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* BOTÃO FIXO DE AÇÃO INFERIOR DO FORMULÁRIO */}
-                <div className="p-3 border-t border-slate-800 bg-[#050a17] flex justify-center">
-                  <button
-                    type="button"
-                    onClick={handleAbrirEmissao}
-                    className="w-full py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-amber-500/50 text-amber-300 font-extrabold text-xs tracking-wider uppercase shadow-lg shadow-amber-950/40 transition flex items-center justify-center gap-2"
-                  >
-                    <ShieldCheck className="w-4 h-4" /> ATUALIZAR CRLV (EMITIR)
-                  </button>
-                </div>
-              </>
-            )}
+                {/* 2. CARACTERÍSTICAS */}
+                {etapa === "caracteristicas" && (
+                  <div className="p-4 rounded-xl bg-[#070e20] border border-amber-500/30 space-y-3.5">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
+                      <Car className="w-4 h-4" /> CARACTERÍSTICAS
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[11px] font-bold text-slate-300">Marca / Modelo</label>
+                        <button
+                          type="button"
+                          onClick={() => preencherDadosTecnicosPorModelo(data.marcaModeloVersao)}
+                          className="text-[10px] font-bold text-amber-400 hover:text-amber-300 uppercase flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30"
+                        >
+                          <Sparkles className="w-3 h-3" /> AUTO-SPECS
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={data.marcaModeloVersao}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setData((d) => ({ ...d, marcaModeloVersao: val }));
+                          preencherDadosTecnicosPorModelo(val);
+                        }}
+                        placeholder="Ex: PEUGEOT/206 SW16 ESCA FX"
+                        className="w-full px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Ano Fab</label>
+                        <input type="text" value={data.anoFabricacao} onChange={update("anoFabricacao")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Ano Mod</label>
+                        <input type="text" value={data.anoModelo} onChange={update("anoModelo")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Cor</label>
+                        <input type="text" value={data.corPredominante} onChange={update("corPredominante")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Combustível</label>
+                        <input type="text" value={data.combustivel} onChange={update("combustivel")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Espécie / Tipo</label>
+                        <input type="text" value={data.especieTipo} onChange={update("especieTipo")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Categoria</label>
+                        <input type="text" value={data.categoria} onChange={update("categoria")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Carroceria</label>
+                        <input type="text" value={data.carroceria} onChange={update("carroceria")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">CAT (*.*)</label>
+                        <input type="text" value={data.cat} onChange={update("cat")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. TÉCNICA (ESPECIFICAÇÕES TÉCNICAS) */}
+                {etapa === "tecnica" && (
+                  <div className="p-4 rounded-xl bg-[#070e20] border border-amber-500/30 space-y-3.5">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
+                      <Wrench className="w-4 h-4" /> ESPECIFICAÇÕES TÉCNICAS
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-300">Chassi</label>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={data.chassi}
+                          onChange={update("chassi")}
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono uppercase"
+                        />
+                        <button type="button" onClick={gerarChassiField} className="px-2.5 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
+                          GERAR
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Placa Ant.</label>
+                        <input type="text" value={data.placaAnteriorUF} onChange={update("placaAnteriorUF")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase font-mono" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Potência/Cil</label>
+                        <input type="text" value={data.potenciaCilindrada} onChange={update("potenciaCilindrada")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Capacidade</label>
+                        <input type="text" value={data.capacidade} onChange={update("capacidade")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Lotação</label>
+                        <input type="text" value={data.lotacao} onChange={update("lotacao")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Peso Bruto</label>
+                        <input type="text" value={data.pesoBrutoTotal} onChange={update("pesoBrutoTotal")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Motor</label>
+                        <div className="flex gap-1">
+                          <input type="text" value={data.motor} onChange={update("motor")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono uppercase" />
+                          <button type="button" onClick={() => gerarMotorField(data.marcaModeloVersao)} className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 font-bold text-[10px] uppercase">
+                            GERAR
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">CMT</label>
+                        <input type="text" value={data.cmt} onChange={update("cmt")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                      </div>
+                    </div>
+
+                    <div className="w-1/4 space-y-1">
+                      <label className="text-[11px] font-bold text-slate-300">Eixos</label>
+                      <input type="text" value={data.eixos} onChange={update("eixos")} className="w-full px-2 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase" />
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. PROPRIETÁRIO & LOCAL */}
+                {etapa === "proprietario" && (
+                  <div className="p-4 rounded-xl bg-[#070e20] border border-amber-500/30 space-y-3.5">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
+                      <User className="w-4 h-4" /> PROPRIETÁRIO & LOCAL
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-300">Nome Proprietário</label>
+                      <input
+                        type="text"
+                        value={data.nome}
+                        onChange={update("nome")}
+                        placeholder="NOME COMPLETO"
+                        className="w-full px-3 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">CPF / CNPJ</label>
+                        <div className="flex gap-1">
+                          <input
+                            type="text"
+                            value={data.cpfCnpj}
+                            onChange={update("cpfCnpj")}
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
+                          />
+                          <button type="button" onClick={handleSnoopLookup} title="Snoop Lookup" className="px-2 py-1.5 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200">
+                            <Search className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Local / UF</label>
+                        <input
+                          type="text"
+                          value={data.local}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setData((d) => {
+                              const clean = val.trim().toUpperCase().replace(/\s*-\s*/g, " ").replace(/\s+/g, " ");
+                              const parts = clean.split(" ");
+                              let updatedUf = d.detranUF;
+                              if (parts.length > 1) {
+                                const last = parts[parts.length - 1];
+                                if (last.length === 2 && /^[A-Z]{2}$/.test(last)) {
+                                  updatedUf = last;
+                                }
+                              }
+                              return {
+                                ...d,
+                                local: val,
+                                detranUF: updatedUf,
+                                emissaoDetranUF: updatedUf,
+                              };
+                            });
+                          }}
+                          placeholder="Ex: CURITIBA PR"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs uppercase"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-300">Data</label>
+                        <input
+                          type="text"
+                          value={data.dataEmissaoDoc}
+                          onChange={update("dataEmissaoDoc")}
+                          placeholder="21/01/2026"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#030712] border border-slate-800 text-white text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. OBSERVAÇÕES */}
+                {etapa === "observacoes" && (
+                  <div className="p-4 rounded-xl bg-[#070e20] border border-amber-500/30 space-y-3.5">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
+                      <FileText className="w-4 h-4" /> OBSERVAÇÕES & DPVAT
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-300">Observações do Veículo</label>
+                      <textarea
+                        rows={3}
+                        value={data.observacoesVeiculo}
+                        onChange={update("observacoesVeiculo")}
+                        placeholder="SEM OBSERVAÇÕES"
+                        className="w-full p-2.5 rounded-lg bg-[#030712] border border-slate-800 text-xs text-white uppercase focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-300">Informações do Seguro DPVAT</label>
+                      <textarea
+                        rows={3}
+                        value={data.informacoesDpvat}
+                        onChange={update("informacoesDpvat")}
+                        placeholder="Campos adicionais DPVAT"
+                        className="w-full p-2.5 rounded-lg bg-[#030712] border border-slate-800 text-xs text-white uppercase focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* BOTÃO FIXO DE AÇÃO INFERIOR DO FORMULÁRIO */}
+            <div className="p-3 border-t border-slate-800 bg-[#050a17] flex justify-center">
+              <button
+                type="button"
+                onClick={handleAbrirEmissao}
+                className="w-full max-w-lg py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-amber-500/50 text-amber-300 font-extrabold text-xs tracking-wider uppercase shadow-lg shadow-amber-950/40 transition flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4" /> ATUALIZAR CRLV (EMITIR)
+              </button>
+            </div>
           </div>
 
-          {/* COLUNA DIREITA: PRÉVIA INTERATIVA EM TEMPO REAL */}
-          <div className="flex-1 bg-[#020617] flex flex-col h-[calc(100vh-4rem-4rem)] relative overflow-hidden transition-all duration-300 ease-in-out">
-            {/* BARRA DE ZOOM */}
-            <div className="p-2.5 bg-[#050a17]/90 border-b border-slate-800 flex items-center justify-between z-10">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setFormOculto(!formOculto)}
-                  title={formOculto ? "Expandir Formulário" : "Ocultar Formulário"}
-                  className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 transition-all flex items-center gap-1 group shadow-sm hover:scale-105"
+          {/* COLUNA DIREITA OU BARRA VERTICAL COMPACTA DO PREVIEW */}
+          {previewOculto ? (
+            /* BARRA VERTICAL LATERAL DIREITA COMPACTA QUANDO O PREVIEW ESTÁ OCULTO (POR PADRÃO) */
+            <div
+              onClick={() => setPreviewOculto(false)}
+              className="w-12 min-w-[48px] max-w-[48px] bg-[#050a17] border-l border-amber-500/20 flex flex-col items-center py-4 gap-6 select-none cursor-pointer hover:bg-[#071026] group transition-all shrink-0 h-[calc(100vh-4rem-4rem)]"
+              title="Clique para expandir a Prévia do Documento"
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPreviewOculto(false);
+                }}
+                title="Expandir Prévia do Documento"
+                className="p-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 transition shadow-md hover:scale-110"
+              >
+                <ChevronLeft className="w-5 h-5 animate-pulse text-amber-400" />
+              </button>
+
+              <div className="flex-1 flex items-center justify-center py-4">
+                <span
+                  className="text-xs font-black tracking-widest text-slate-400 group-hover:text-amber-400 uppercase transition-colors"
+                  style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
                 >
-                  {formOculto ? (
-                    <ChevronRight className="w-4 h-4 text-amber-300 transition-transform duration-300 group-hover:translate-x-0.5" />
-                  ) : (
-                    <ChevronLeft className="w-4 h-4 text-amber-300 transition-transform duration-300 group-hover:-translate-x-0.5" />
-                  )}
-                </button>
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
-                  <Maximize2 className="w-3.5 h-3.5 text-amber-400" /> Prévia do Documento
+                  PRÉVIA DO DOCUMENTO
                 </span>
               </div>
+            </div>
+          ) : (
+            /* PAINEL DE PREVIEW EXIBIDO NO SEU POSICIONAMENTO E ENQUADRAMENTO ORIGINAL PERFEITO */
+            <div className="flex-1 bg-[#020617] flex flex-col h-[calc(100vh-4rem-4rem)] relative overflow-hidden transition-all duration-300 ease-in-out border-l border-slate-800">
+              {/* BARRA DE ZOOM */}
+              <div className="p-2.5 bg-[#050a17]/90 border-b border-slate-800 flex items-center justify-between z-10">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewOculto(true)}
+                    title="Ocultar Prévia (Expandir Formulário)"
+                    className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 transition-all flex items-center gap-1 group shadow-sm hover:scale-105"
+                  >
+                    <ChevronRight className="w-4 h-4 text-amber-300 transition-transform duration-300 group-hover:translate-x-0.5" />
+                  </button>
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
+                    <Maximize2 className="w-3.5 h-3.5 text-amber-400" /> Prévia do Documento
+                  </span>
+                </div>
 
-              <div className="flex items-center gap-1.5">
-                <button onClick={zoomOut} className="p-1.5 rounded-md bg-slate-900 text-slate-300 hover:bg-slate-800"><ZoomOut className="w-4 h-4" /></button>
-                <button onClick={zoomReset} className="px-2 py-1 rounded-md bg-slate-900 text-slate-300 text-[11px] font-mono">100%</button>
-                <button onClick={zoomIn} className="p-1.5 rounded-md bg-slate-900 text-slate-300 hover:bg-slate-800"><ZoomIn className="w-4 h-4" /></button>
-                <div className="h-4 w-px bg-slate-800 mx-1" />
-                <button onClick={scrollToTop} className="p-1.5 rounded-md bg-slate-900 text-slate-300 hover:bg-slate-800"><ArrowUp className="w-4 h-4" /></button>
-                <button onClick={scrollToBottom} className="p-1.5 rounded-md bg-slate-900 text-slate-300 hover:bg-slate-800"><ArrowDown className="w-4 h-4" /></button>
+                <div className="flex items-center gap-1.5">
+                  <button onClick={zoomOut} className="p-1.5 rounded-md bg-slate-900 text-slate-300 hover:bg-slate-800"><ZoomOut className="w-4 h-4" /></button>
+                  <button onClick={zoomReset} className="px-2 py-1 rounded-md bg-slate-900 text-slate-300 text-[11px] font-mono">100%</button>
+                  <button onClick={zoomIn} className="p-1.5 rounded-md bg-slate-900 text-slate-300 hover:bg-slate-800"><ZoomIn className="w-4 h-4" /></button>
+                  <div className="h-4 w-px bg-slate-800 mx-1" />
+                  <button onClick={scrollToTop} className="p-1.5 rounded-md bg-slate-900 text-slate-300 hover:bg-slate-800"><ArrowUp className="w-4 h-4" /></button>
+                  <button onClick={scrollToBottom} className="p-1.5 rounded-md bg-slate-900 text-slate-300 hover:bg-slate-800"><ArrowDown className="w-4 h-4" /></button>
+                </div>
+              </div>
+
+              {/* PREVIEW CANVAS */}
+              <div ref={previewContainerRef} className="flex-1 overflow-auto p-6 flex justify-center items-start bg-[#090d16]">
+                <div style={{ transform: `scale(${previewZoom})`, transformOrigin: "top center", transition: "transform 0.15s ease-out" }} className="my-2">
+                  <CRLVDocument ref={docRef} {...data} previewWidth={760} />
+                </div>
               </div>
             </div>
-
-            {/* PREVIEW CANVAS */}
-            <div ref={previewContainerRef} className="flex-1 overflow-auto p-6 flex justify-center items-start bg-[#090d16]">
-              <div style={{ transform: `scale(${previewZoom})`, transformOrigin: "top center", transition: "transform 0.15s ease-out" }} className="my-2">
-                <CRLVDocument ref={docRef} {...data} previewWidth={760} />
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* MODAL DE EMISSÃO */}

@@ -301,8 +301,8 @@ export async function onRequest(context: { request: Request; env: Env; params: {
           updated_at = ?
         WHERE id = ?
       `).bind(
-        resolveValue(body, existing, ['cpf'], 'cpf', toNullableString),
-        resolveValue(body, existing, ['cns'], 'cns', toNullableString),
+        existing.cpf || resolveValue(body, existing, ['cpf'], 'cpf', toNullableString),
+        existing.cns || resolveValue(body, existing, ['cns'], 'cns', toNullableString),
         resolveValue(body, existing, ['tipoDoc', 'tipo_doc'], 'tipo_doc', toNullableString),
         resolveValue(body, existing, ['instituicao'], 'instituicao', toNullableUpper),
         resolveValue(body, existing, ['unidade'], 'unidade', toNullableUpper),

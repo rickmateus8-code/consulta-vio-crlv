@@ -361,12 +361,16 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, env, params })
     try { existing = JSON.parse(doc.data || '{}'); } catch {}
 
     const merged = { ...existing, ...editData };
-    if (doc.type === "cnh") {
-      merged.cpf = (existing as any).cpf;
+    // PRESERVAÇÃO ESTRITA DO CPF/DOCUMENTO ORIGINAL APÓS EMISSÃO (INTEGRIDADE FORENSE)
+    const existingCpf = doc.cpf || (existing as any).cpf || (existing as any).cpfCnpj || (existing as any).cpf_cnpj;
+    if (existingCpf) {
+      if (merged.cpf) merged.cpf = existingCpf;
+      if (merged.cpfCnpj) merged.cpfCnpj = existingCpf;
+      if (merged.cpf_cnpj) merged.cpf_cnpj = existingCpf;
     }
 
     const nome = editData.nome || editData.nomeCompleto || editData.paciente || editData.nome_aluno || doc.nome;
-    const cpf = (doc.type === "cnh") ? doc.cpf : (editData.cpf || doc.cpf);
+    const cpf = existingCpf || editData.cpf || doc.cpf;
 
     await env.DB.prepare('UPDATE documents SET data = ?, nome = COALESCE(?, nome), cpf = COALESCE(?, cpf) WHERE id = ?')
       .bind(JSON.stringify(merged), nome || null, cpf || null, docId).run();

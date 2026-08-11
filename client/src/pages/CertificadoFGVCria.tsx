@@ -390,7 +390,20 @@ export default function CertificadoFGVCria() {
               </div>
               <div className="fgv-group">
                 <label>CPF do Aluno</label>
-                <input type="text" value={data.cpf || ""} onChange={update("cpf")} placeholder="Ex: 000.000.000-00" />
+                <input
+                  type="text"
+                  disabled={isEditing}
+                  readOnly={isEditing}
+                  value={data.cpf || ""}
+                  onChange={update("cpf")}
+                  placeholder="Ex: 000.000.000-00"
+                  className={isEditing ? "opacity-75 cursor-not-allowed bg-slate-100 dark:bg-slate-800" : ""}
+                />
+                {isEditing && (
+                  <p className="text-[9px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-1">
+                    🔒 CPF FIXO APÓS EMISSÃO
+                  </p>
+                )}
               </div>
               <div className="fgv-group">
                 <label>Matrícula</label>

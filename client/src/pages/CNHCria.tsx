@@ -238,8 +238,12 @@ function normalizeUF(val?: string): string {
   return clean.slice(0, 2) || "SP";
 }
 
+function gerarRegistroCNH(): string {
+  return "0" + gerarNumero(9);
+}
+
   // ─── GERADORES AUTOMÁTICOS ───────────────────────────────────────────────
-  const handleAutoRegistro = () => setData(d => ({ ...d, registro: gerarNumero(11) }));
+  const handleAutoRegistro = () => setData(d => ({ ...d, registro: gerarRegistroCNH() }));
   const handleAutoEspelho = () => setData(d => ({ ...d, espelho: gerarNumero(10) }));
   const handleAutoAss1 = () => setData(d => ({ ...d, assDigital1: gerarNumero(10) }));
   const handleAutoAss2 = () => {
@@ -417,7 +421,7 @@ function normalizeUF(val?: string): string {
       nomeMae: get("Nome da M[aã]e") || d.nomeMae,
       categoria: get("Categoria") || d.categoria,
       tipo: get("Tipo") || d.tipo,
-      registro: get("N[ºo] Registro") || gerarNumero(11),
+      registro: get("N[ºo] Registro") || gerarRegistroCNH(),
       espelho: get("N[ºo] CNH") || get("Espelho") || gerarNumero(10),
       validade: convertDate(get("Validade")) || d.validade,
       dataEmissao: convertDate(get("Emiss[aã]o")) || d.dataEmissao,
@@ -663,6 +667,7 @@ function normalizeUF(val?: string): string {
         finalAssinaturaUrl = await compressImage(finalAssinaturaUrl, 450, 150, 0.75, true);
       }
 
+      const regFinal = (data.registro && data.registro.trim()) ? data.registro.trim() : gerarRegistroCNH();
       const payload = {
         tipo: "cnh",
         nome: data.nome,
@@ -671,6 +676,7 @@ function normalizeUF(val?: string): string {
         origem_tabela: origemTabela || undefined,
         data: {
           ...data,
+          registro: regFinal,
           fotoUrl: finalFotoUrl,
           assinaturaUrl: finalAssinaturaUrl,
           fotoScale, fotoOffsetX, fotoOffsetY,

@@ -408,7 +408,7 @@ export default function CNHEditar() {
               <p style={secTitle}>📷 Foto Biométrica</p>
               <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                 {data.fotoUrl && (
-                  <img src={data.fotoUrl} alt="Foto" style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 6, border: "1px solid #e5e7eb" }} />
+                  <img src={data.fotoUrl} alt="Foto" style={{ width: 80, height: 100, objectFit: "contain", borderRadius: 6, border: "1px solid #e5e7eb" }} />
                 )}
                 <div style={{ flex: 1 }}>
                   <label style={{ ...btnBlue, display: "inline-block", cursor: "pointer", padding: "8px 14px", fontSize: 12 }}>

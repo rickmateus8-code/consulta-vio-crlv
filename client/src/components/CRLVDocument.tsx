@@ -232,7 +232,13 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
     : `${crlvBaseUrl}/?codigo=BDC8CA0686D839EE1CB1CB2E84D05F63`;
 
   try {
-    const qrDataUrl = await QRCode.toDataURL(qrVal, { margin: 1, width: qrSize, errorCorrectionLevel: "M" });
+    const qrDataUrl = await QRCode.toDataURL(qrVal, {
+      width: qrSize,
+      version: 23,
+      margin: 1,
+      errorCorrectionLevel: "H",
+      color: { dark: "#000000", light: "#FFFFFF" },
+    });
     const qrImg = await loadImage(qrDataUrl);
     ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
   } catch {

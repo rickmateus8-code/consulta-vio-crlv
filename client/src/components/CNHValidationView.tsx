@@ -129,7 +129,7 @@ export default function CNHValidationView({ data }: CNHValidationViewProps) {
               style={{
                 width: "120px",
                 height: "160px",
-                objectFit: "cover",
+                objectFit: "contain",
                 borderRadius: "4px",
                 background: "#eee"
               }}

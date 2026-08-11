@@ -1017,7 +1017,7 @@ export default function CNHCria() {
                           <img
                             src={data.fotoUrl}
                             alt="Foto Rosto 3x4"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain object-top"
                             style={{
                               transform: `translate(${fotoOffsetX}px, ${fotoOffsetY}px) scale(${fotoScale})`,
                               transformOrigin: "center",

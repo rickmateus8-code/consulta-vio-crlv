@@ -91,15 +91,66 @@ function getHojeDataHoraStr(): string {
   return `${dia}/${mes}/${ano} às ${hora}:${min}:${seg}`;
 }
 
+const CRLV_DRAFT_KEY = "docmaster_crlv_draft_v1";
+
+const DEFAULT_CRLV_DATA: CRLVDocumentProps = {
+  renavam: "",
+  placa: "",
+  exercicio: "2026",
+  anoFabricacao: "",
+  anoModelo: "",
+  numeroCRV: "***",
+  codigoSegurancaCLA: "",
+  cat: "***",
+  marcaModeloVersao: "",
+  especieTipo: "",
+  placaAnteriorUF: "*******/**",
+  chassi: "",
+  corPredominante: "",
+  combustivel: "",
+
+  detranUF: "PR",
+  emissaoDetranUF: "PR",
+  emissaoDetranHash: "D72C8C94ED88BF41",
+  emissaoDataHora: getHojeDataHoraStr(),
+
+  categoria: "PARTICULAR",
+  capacidade: "*.*",
+  potenciaCilindrada: "",
+  pesoBrutoTotal: "",
+  motor: "",
+  cmt: "",
+  eixos: "2",
+  lotacao: "05",
+  carroceria: "NÃO APLICAVEL",
+  nome: "",
+  cpfCnpj: "",
+  local: "",
+  dataEmissaoDoc: getHojeDataStr(),
+
+  dpvatCatTarif: "",
+  dpvatDataQuitacao: "",
+  dpvatPagamento: "",
+  dpvatRepasseFns: "",
+  dpvatCustoBilhete: "",
+  dpvatCustoEfetivo: "",
+  dpvatRepasseDenatran: "",
+  dpvatValorIof: "",
+  dpvatValorTotal: "",
+
+  observacoesVeiculo: "SEM OBSERVAÇÕES",
+  informacoesDpvat: "",
+
+  codigoQR: "PREVIEW",
+  blurred: true,
+};
+
 export default function CRLVCria() {
-  const { user, updateBalance } = useAuth();
   const [, setLocation] = useLocation();
+  const { user, updateBalance } = useUser();
   const docRef = useRef<CRLVDocumentHandle>(null);
 
-  // Etapas das Abas (6 Seções Fieis)
-  const [etapa, setEtapa] = useState<"automacao" | "identificacao" | "caracteristicas" | "tecnica" | "proprietario" | "observacoes">("automacao");
-
-  // Estados do Formulário
+  const [etapa, setEtapa] = useState<"automacao" | "identificacao" | "caracteristicas" | "tecnica" | "proprietario" | "observacoes">("identificacao");
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [codigoQR, setCodigoQR] = useState("");
@@ -110,7 +161,7 @@ export default function CRLVCria() {
   const [documentPrice, setDocumentPrice] = useState(1500);
 
   // Campos extras de Segurança CRV
-  const [segurancaCRV, setSegurancaCRV] = useState("66545815734");
+  const [segurancaCRV, setSegurancaCRV] = useState("");
 
   // Ajustes de Zoom e Navegação do Preview
   const [previewZoom, setPreviewZoom] = useState(1.0);
@@ -121,57 +172,49 @@ export default function CRLVCria() {
 
   const [editId, setEditId] = useState<string | null>(null);
 
-  const [data, setData] = useState<CRLVDocumentProps>({
-    renavam: "00278581161",
-    placa: "MPK5502",
-    exercicio: "2026",
-    anoFabricacao: "1993",
-    anoModelo: "1993",
-    numeroCRV: "***",
-    codigoSegurancaCLA: "60529625695",
-    cat: "***",
-    marcaModeloVersao: "GM/OMEGA GLS",
-    especieTipo: "PASSAGEIRO",
-    placaAnteriorUF: "*******/**",
-    chassi: "9BGVP19BPPB233276",
-    corPredominante: "PRETA",
-    combustivel: "GASOLINA",
-
-    detranUF: "PR",
-    emissaoDetranUF: "SE",
-    emissaoDetranHash: "D72C8C94ED88BF41",
-    emissaoDataHora: getHojeDataHoraStr(),
-
-    categoria: "PARTICULAR",
-    capacidade: "*.*",
-    potenciaCilindrada: "116CV/2198",
-    pesoBrutoTotal: "1.29",
-    motor: "C20NE31022309V",
-    cmt: "3.05",
-    eixos: "2",
-    lotacao: "05",
-    carroceria: "NÃO APLICAVEL",
-    nome: "ANTONIO CAMILO ALMEIDA FREITAS JUNIOR",
-    cpfCnpj: "042.512.909-84",
-    local: "CURITIBA PR",
-    dataEmissaoDoc: getHojeDataStr(),
-
-    dpvatCatTarif: "",
-    dpvatDataQuitacao: "",
-    dpvatPagamento: "",
-    dpvatRepasseFns: "",
-    dpvatCustoBilhete: "",
-    dpvatCustoEfetivo: "",
-    dpvatRepasseDenatran: "",
-    dpvatValorIof: "",
-    dpvatValorTotal: "",
-
-    observacoesVeiculo: "SEM OBSERVAÇÕES",
-    informacoesDpvat: "",
-
-    codigoQR: "PREVIEW",
-    blurred: true,
+  // Inicialização com Persistência da última sessão (Draft LocalStorage)
+  const [data, setData] = useState<CRLVDocumentProps>(() => {
+    try {
+      const savedDraft = localStorage.getItem(CRLV_DRAFT_KEY);
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && typeof parsed === "object") {
+          return { ...DEFAULT_CRLV_DATA, ...parsed, blurred: true };
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return DEFAULT_CRLV_DATA;
   });
+
+  // Salvar rascunho automaticamente a cada mudança de campo (se não em modo edição)
+  useEffect(() => {
+    if (!editId) {
+      try {
+        localStorage.setItem(CRLV_DRAFT_KEY, JSON.stringify(data));
+      } catch {
+        // ignore
+      }
+    }
+  }, [data, editId]);
+
+  // Função inteligente de navegação suave por seção (metade cima / metade baixo)
+  const autoScrollPreview = useCallback((currentEtapa: string) => {
+    if (!previewContainerRef.current) return;
+    const topSections = ["automacao", "identificacao", "caracteristicas"];
+    if (topSections.includes(currentEtapa)) {
+      previewContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      const maxScroll = previewContainerRef.current.scrollHeight;
+      previewContainerRef.current.scrollTo({ top: maxScroll / 2.2, behavior: "smooth" });
+    }
+  }, []);
+
+  // Monitorar mudança de abas para rolagem inteligente do preview
+  useEffect(() => {
+    autoScrollPreview(etapa);
+  }, [etapa, autoScrollPreview]);
 
   const routeParams = useParams<{ id?: string }>();
 
@@ -226,24 +269,15 @@ export default function CRLVCria() {
   }, []);
 
   const limparFormulario = () => {
-    setData({
-      renavam: "", placa: "", exercicio: "2026", anoFabricacao: "", anoModelo: "",
-      numeroCRV: "", codigoSegurancaCLA: "", cat: "***", marcaModeloVersao: "",
-      especieTipo: "PASSAGEIRO", placaAnteriorUF: "*******/**", chassi: "",
-      corPredominante: "", combustivel: "GASOLINA", detranUF: "PR", emissaoDetranUF: "PR",
-      emissaoDetranHash: "D72C8C94ED88BF41", emissaoDataHora: getHojeDataHoraStr(),
-      categoria: "PARTICULAR", capacidade: "*.*", potenciaCilindrada: "", pesoBrutoTotal: "",
-      motor: "", cmt: "", eixos: "2", lotacao: "05", carroceria: "NÃO APLICAVEL",
-      nome: "", cpfCnpj: "", local: "", dataEmissaoDoc: getHojeDataStr(),
-      dpvatCatTarif: "", dpvatDataQuitacao: "", dpvatPagamento: "",
-      dpvatRepasseFns: "", dpvatCustoBilhete: "", dpvatCustoEfetivo: "",
-      dpvatRepasseDenatran: "", dpvatValorIof: "", dpvatValorTotal: "",
-      observacoesVeiculo: "SEM OBSERVAÇÕES", informacoesDpvat: "",
-      codigoQR: "PREVIEW", blurred: true
-    });
+    setData(DEFAULT_CRLV_DATA);
     setSegurancaCRV("");
     setSaved(false);
-    toast.success("Formulário limpo!");
+    try {
+      localStorage.removeItem(CRLV_DRAFT_KEY);
+    } catch {
+      // ignore
+    }
+    toast.success("Formulário limpo e zerado!");
   };
 
   // Geradores Individuais por campo
@@ -654,7 +688,7 @@ export default function CRLVCria() {
             className={`bg-[#040914] flex flex-col h-[calc(100vh-4rem-4rem)] transition-all duration-300 ease-in-out relative ${
               previewOculto
                 ? "flex-1 w-full"
-                : "w-full lg:w-[42%] lg:min-w-[380px] lg:max-w-[500px] shrink-0 border-r border-slate-800"
+                : "w-full lg:w-[56%] lg:min-w-[480px] lg:max-w-[720px] shrink-0 border-r border-slate-800"
             }`}
           >
             <div className="flex-1 overflow-y-auto p-4 flex gap-4">
@@ -1071,7 +1105,7 @@ export default function CRLVCria() {
                 onClick={handleAbrirEmissao}
                 className="w-full max-w-lg py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-amber-500/50 text-amber-300 font-extrabold text-xs tracking-wider uppercase shadow-lg shadow-amber-950/40 transition flex items-center justify-center gap-2"
               >
-                <ShieldCheck className="w-4 h-4" /> ATUALIZAR CRLV (EMITIR)
+                <ShieldCheck className="w-4 h-4" /> {editId ? "ATUALIZAR CRLV" : "EMITIR CRLV"}
               </button>
             </div>
           </div>
@@ -1137,7 +1171,7 @@ export default function CRLVCria() {
               {/* PREVIEW CANVAS */}
               <div ref={previewContainerRef} className="flex-1 overflow-auto p-6 flex justify-center items-start bg-[#090d16]">
                 <div style={{ transform: `scale(${previewZoom})`, transformOrigin: "top center", transition: "transform 0.15s ease-out" }} className="my-2">
-                  <CRLVDocument ref={docRef} {...data} previewWidth={760} />
+                  <CRLVDocument ref={docRef} {...data} previewWidth={660} />
                 </div>
               </div>
             </div>

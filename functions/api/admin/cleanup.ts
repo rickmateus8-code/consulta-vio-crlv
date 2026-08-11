@@ -120,33 +120,33 @@ async function buildPreview(env: Env) {
   const preview = {
     atestado: await countDocuments(
       env,
-      `SELECT COUNT(*) AS count FROM attestations WHERE ${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?)` ,
-      [`-${retention.atestado} days`]
+      `SELECT COUNT(*) AS count FROM attestations WHERE created_at < date('now', ?) OR (${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?))`,
+      [`-${retention.atestado} days`, `-${retention.atestado} days`]
     ),
     receita: await countDocuments(
       env,
-      `SELECT COUNT(*) AS count FROM receitas WHERE ${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?)` ,
-      [`-${retention.receita} days`]
+      `SELECT COUNT(*) AS count FROM receitas WHERE created_at < date('now', ?) OR (${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?))`,
+      [`-${retention.receita} days`, `-${retention.receita} days`]
     ),
     cnh: await countDocuments(
       env,
-      `SELECT COUNT(*) AS count FROM documents WHERE type = 'cnh' AND ${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)` ,
-      [`-${retention.cnh} days`]
+      `SELECT COUNT(*) AS count FROM documents WHERE type = 'cnh' AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.cnh} days`, `-${retention.cnh} days`]
     ),
     cha: await countDocuments(
       env,
-      `SELECT COUNT(*) AS count FROM documents WHERE type = 'cha' AND ${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)` ,
-      [`-${retention.cha} days`]
+      `SELECT COUNT(*) AS count FROM documents WHERE type = 'cha' AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.cha} days`, `-${retention.cha} days`]
     ),
     toxicologico: await countDocuments(
       env,
-      `SELECT COUNT(*) AS count FROM documents WHERE type IN ('toxicologico', 'toxicria', 'laudocria') AND ${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)` ,
-      [`-${retention.toxicologico} days`]
+      `SELECT COUNT(*) AS count FROM documents WHERE type IN ('toxicologico', 'toxicria', 'laudocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.toxicologico} days`, `-${retention.toxicologico} days`]
     ),
     historico: await countDocuments(
       env,
-      `SELECT COUNT(*) AS count FROM documents WHERE type IN ('historico-sp', 'historico-uninter') AND ${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)` ,
-      [`-${retention.historico} days`]
+      `SELECT COUNT(*) AS count FROM documents WHERE type IN ('historico-sp', 'historico-uninter', 'historicocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.historico} days`, `-${retention.historico} days`]
     ),
   };
 
@@ -192,33 +192,33 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const deleted = {
       atestado: await runDelete(
         env,
-        `DELETE FROM attestations WHERE ${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?)` ,
-        [`-${retention.atestado} days`]
+        `DELETE FROM attestations WHERE created_at < date('now', ?) OR (${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?))`,
+        [`-${retention.atestado} days`, `-${retention.atestado} days`]
       ),
       receita: await runDelete(
         env,
-        `DELETE FROM receitas WHERE ${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?)` ,
-        [`-${retention.receita} days`]
+        `DELETE FROM receitas WHERE created_at < date('now', ?) OR (${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?))`,
+        [`-${retention.receita} days`, `-${retention.receita} days`]
       ),
       cnh: await runDelete(
         env,
-        `DELETE FROM documents WHERE type = 'cnh' AND ${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)` ,
-        [`-${retention.cnh} days`]
+        `DELETE FROM documents WHERE type = 'cnh' AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+        [`-${retention.cnh} days`, `-${retention.cnh} days`]
       ),
       cha: await runDelete(
         env,
-        `DELETE FROM documents WHERE type = 'cha' AND ${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)` ,
-        [`-${retention.cha} days`]
+        `DELETE FROM documents WHERE type = 'cha' AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+        [`-${retention.cha} days`, `-${retention.cha} days`]
       ),
       toxicologico: await runDelete(
         env,
-        `DELETE FROM documents WHERE type IN ('toxicologico', 'toxicria', 'laudocria') AND ${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)` ,
-        [`-${retention.toxicologico} days`]
+        `DELETE FROM documents WHERE type IN ('toxicologico', 'toxicria', 'laudocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+        [`-${retention.toxicologico} days`, `-${retention.toxicologico} days`]
       ),
       historico: await runDelete(
         env,
-        `DELETE FROM documents WHERE type IN ('historico-sp', 'historico-uninter') AND ${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)` ,
-        [`-${retention.historico} days`]
+        `DELETE FROM documents WHERE type IN ('historico-sp', 'historico-uninter', 'historicocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+        [`-${retention.historico} days`, `-${retention.historico} days`]
       ),
     };
 

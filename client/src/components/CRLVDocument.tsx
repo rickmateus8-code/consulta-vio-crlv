@@ -235,7 +235,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
     const qrDataUrl = await QRCode.toDataURL(qrVal, {
       width: qrSize,
       version: 12,
-      margin: 1,
+      margin: 2,
       errorCorrectionLevel: "H",
       color: { dark: "#000000", light: "#FFFFFF" },
     });

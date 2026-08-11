@@ -27,8 +27,17 @@ async function getAuthUser(env: Env, token: string | null): Promise<any | null> 
   ).bind(token, now).first<{ user_id: string }>();
   if (!session) return null;
   const user = await env.DB.prepare(
-    "SELECT id, username, role, balance, is_active FROM users WHERE id = ? AND is_active = 1 LIMIT 1"
+    "SELECT id, username, role, balance, is_active, free_documents FROM users WHERE id = ? AND is_active = 1 LIMIT 1"
   ).bind(session.user_id).first<any>();
+
+  if (user) {
+    try {
+      user.free_documents = typeof user.free_documents === 'string' ? JSON.parse(user.free_documents) : (user.free_documents || []);
+    } catch {
+      user.free_documents = [];
+    }
+  }
+
   return user || null;
 }
 
@@ -215,7 +224,7 @@ async function handleCreateReceita(request: Request, env: Env, user: any) {
 
   // 2. Verificar saldo do usuário
   const price = await getDocumentPrice(env, "receita");
-  const freeDocuments = JSON.parse(user.free_documents || '[]');
+  const freeDocuments = Array.isArray(user.free_documents) ? user.free_documents : [];
   const isFree = freeDocuments.includes('receita');
 
   if (user.role !== "admin" && price > 0 && !isFree) {
@@ -308,6 +317,9 @@ async function handleCreateReceita(request: Request, env: Env, user: any) {
       }, 402);
     }
     newBalance = updated.balance;
+    await env.DB.prepare(
+      'INSERT INTO transactions (user_id, type, amount, description, document_type, document_id, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))'
+    ).bind(user.id, 'debit', price, 'Emissão de RECEITUÁRIO MÉDICO', 'receita', id).run().catch(() => {});
   }
 
   return jsonResponse(request, {

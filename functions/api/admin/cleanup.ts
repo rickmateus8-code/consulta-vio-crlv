@@ -9,12 +9,12 @@ const corsHeaders = {
 };
 
 const DEFAULT_RETENTION = {
-  atestado: 60,
-  receita: 60,
-  cnh: 365,
-  cha: 60,
-  toxicologico: 60,
-  historico: 90,
+  atestado: 30,
+  receita: 30,
+  cnh: 30,
+  cha: 30,
+  toxicologico: 30,
+  historico: 30,
 } as const;
 
 function getSessionToken(request: Request): string | null {

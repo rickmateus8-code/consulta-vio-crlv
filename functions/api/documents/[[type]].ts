@@ -15,9 +15,19 @@ async function getAuthUser(request: Request, env: Env): Promise<any | null> {
   ).bind(token).first<any>();
   if (!session) return null;
 
-  return env.DB.prepare(
-    'SELECT id, username, email, display_name, role, balance, is_active FROM users WHERE id = ? AND is_active = 1'
+  const user = await env.DB.prepare(
+    'SELECT id, username, email, display_name, role, balance, is_active, free_documents FROM users WHERE id = ? AND is_active = 1'
   ).bind(session.user_id).first<any>();
+
+  if (user) {
+    try {
+      user.free_documents = typeof user.free_documents === 'string' ? JSON.parse(user.free_documents) : (user.free_documents || []);
+    } catch {
+      user.free_documents = [];
+    }
+  }
+
+  return user;
 }
 
 async function generateUniqueCode(env: Env): Promise<string> {
@@ -58,7 +68,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
 
     if (authHeader === `Bearer ${syncToken}`) {
       // Bypassed via Sync Token (Modo Receptor IDAB)
-      user = { id: "system", username: "sync_system", role: "admin", balance: 999999, is_active: 1 };
+      user = { id: "system", username: "sync_system", role: "admin", balance: 999999, is_active: 1, free_documents: [] };
     } else {
       // Autenticação padrão via Sessão (Modo DocMaster)
       user = await getAuthUser(request, env);
@@ -73,11 +83,33 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
     const typeParam = Array.isArray(params.type) ? params.type.join('/') : (params.type || '');
     const docType = typeParam.toLowerCase();
 
+    // Mapeamento estrito de tempo de retenção do sistema (Máximo de 30 dias para otimização de DB)
+    const retentionMap: Record<string, number> = {
+      'cnh': 30,
+      'historico-sp': 30,
+      'historico-uninter': 30,
+      'fgv': 30,
+      'diploma-uninter': 30,
+      'peticao-stj': 3,
+      'peticaocria': 3,
+      'atestado': 30,
+      'receita': 30,
+      'cha': 30,
+      'toxicologico': 30,
+      'toxicria': 30,
+      'laudocria': 30,
+      'crlv': 30,
+      'crlvcria': 30,
+    };
+    let retentionDays = retentionMap[docType] || 30;
+
     // 2. Buscar preço DINÂMICO e RETENÇÃO do banco D1 (Prioridade: Usuário > Global)
     let price = 0;
-    let retentionDays = 30; // Default: 30 dias para a maioria
 
-    if (user.role !== 'admin') {
+    const freeDocs = Array.isArray(user.free_documents) ? user.free_documents : [];
+    const isFree = freeDocs.includes(docType);
+
+    if (user.role !== 'admin' && !isFree) {
       const config = await env.DB.prepare(
         `SELECT price FROM document_pricing WHERE document_type = ? AND is_active = 1`
       ).bind(docType).first<{ price: number }>();
@@ -91,15 +123,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
           'diploma-uninter': 2500, 'fgv': 1800
         };
         price = defaults[docType] || 1000;
-        retentionDays = (docType === 'peticao-stj' || docType === 'peticaocria') ? 3 : 30;
       } else {
         price = Math.round(config.price);
-        retentionDays = (docType === 'peticao-stj' || docType === 'peticaocria') ? 3 : 30;
-      }
-
-      // Se for STJ ou Peticao, garantir o máximo de 3 dias solicitado pelo usuário, a menos que o admin mude
-      if ((docType === 'peticao-stj' || docType === 'peticaocria') && retentionDays > 3) {
-        retentionDays = 3;
       }
 
       // 3. Verificar saldo ANTES de qualquer operação
@@ -144,7 +169,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
 
     // 4. Débito ATÔMICO
     let newBalance = user.balance;
-    if (user.role !== 'admin' && price > 0) {
+    if (user.role !== 'admin' && !isFree && price > 0) {
       const updated = await env.DB.prepare(
         'UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ? RETURNING balance'
       ).bind(price, user.id, price).first<{ balance: number }>();
@@ -161,7 +186,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
     }
 
     // 5. Registrar transação para auditoria
-    if (price > 0 && user.role !== 'admin') {
+    if (user.role !== 'admin' && !isFree && price > 0) {
       await env.DB.prepare(
         'INSERT INTO transactions (user_id, type, amount, description, document_type, document_id, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))'
       ).bind(user.id, 'debit', price, `Emissão de ${docType.toUpperCase()}`, docType, docId).run();

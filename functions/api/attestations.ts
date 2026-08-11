@@ -435,6 +435,9 @@ async function handleCreateAttestation(request: Request, env: Env, user: any) {
       }, 402);
     }
     newBalance = updated.balance;
+    await env.DB.prepare(
+      'INSERT INTO transactions (user_id, type, amount, description, document_type, document_id, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))'
+    ).bind(user.id, 'debit', price, 'Emissão de ATESTADO MÉDICO', docTypeFromParams, id).run().catch(() => {});
   }
 
   // 7. Sincronizar com o banco oficial do validaratestado.digital (atestados-idab)
@@ -509,7 +512,7 @@ async function handleCreateAttestation(request: Request, env: Env, user: any) {
     success: true,
     message: "Atestado emitido com sucesso.",
     codigoQR,
-    notice: "⚠️ Aviso: Este documento será excluído automaticamente após 60 dias. Faça o download agora.",
+    notice: "⚠️ Aviso: Este documento será excluído automaticamente após 30 dias. Faça o download agora.",
     data: {
       id,
       codigoQR,

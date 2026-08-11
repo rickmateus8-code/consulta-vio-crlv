@@ -126,17 +126,21 @@ const NOTICE_TYPES = [
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   consultas: "Master Buscas (/consultas)",
-  atestado: "Atestado",
-  receita: "Receita",
-  cnh: "CNH",
+  atestado: "Atestado Médico",
+  receita: "Receituário Médico",
+  cnh: "CNH Digital",
+  crlv: "CRLV Digital",
+  crlvcria: "CRLV Digital",
   cha: "CHA Náutica",
-  toxicologico: "Toxicológico",
-  toxicria: "Toxicológico Innovatox",
+  toxicologico: "Exame Toxicológico",
+  toxicria: "Toxicológico Sodré",
   laudocria: "Laudo Sodré",
-  "historico-sp": "Histórico SP",
+  "historico-sp": "Histórico Escolar SP",
   "historico-uninter": "Histórico UNINTER",
+  historicocria: "Histórico UNINTER",
   "peticao-stj": "Petição STJ",
-  "peticaocria": "Petição Jurídica",
+  peticaocria: "Petição STJ",
+  fgv: "Certificado FGV",
   "diploma-uninter": "Diploma UNINTER",
 };
 
@@ -2468,15 +2472,18 @@ export default function AdminDashboard() {
                 className="px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
               >
                 <option value="all">Todos os Tipos</option>
-                <option value="atestado">Atestado</option>
-                <option value="receita">Receita</option>
-                <option value="cnh">CNH</option>
-                <option value="cha">CHA</option>
-                <option value="toxicologico">Toxicológico</option>
+                <option value="atestado">Atestado Médico</option>
+                <option value="receita">Receituário Médico</option>
+                <option value="cnh">CNH Digital</option>
+                <option value="crlv">CRLV Digital</option>
+                <option value="cha">CHA Náutica</option>
+                <option value="toxicologico">Exame Toxicológico</option>
+                <option value="toxicria">Toxicológico Sodré</option>
                 <option value="historico-sp">Histórico SP</option>
                 <option value="historico-uninter">Histórico UNINTER</option>
-                <option value="toxicria">Toxicológico Sodré</option>
-                <option value="laudocria">Laudo Sodré</option>
+                <option value="peticao-stj">Petição STJ</option>
+                <option value="fgv">Certificado FGV</option>
+                <option value="diploma-uninter">Diploma UNINTER</option>
               </select>
               <div className="flex items-center gap-2">
                 <Calendar className="w-3.5 h-3.5 text-gray-400" />

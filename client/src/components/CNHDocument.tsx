@@ -456,14 +456,14 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     const ufEmissRaw = getVal("ufEmissao", "uf_emissao");
     const SHIFT_X = 22; // Deslocamento ideal (-0,5% a esquerda para precisao 1:1 perfeita)
 
-    // 1. CAIXA NOME COMPLETO (X=319px + SHIFT_X, Y=463px)
+    // 1. CAIXA NOME COMPLETO (X=307px + SHIFT_X, Y=463px - Movel 0,5% a esquerda)
     ctx.save();
     ctx.letterSpacing = "1px";
-    txt(p(nomeRaw, "RICK MATEUS ARRUDA DE FIGUEIREDO"), 319 + SHIFT_X, 463, 21, 1, "#000000", 600);
+    txt(p(nomeRaw, "RICK MATEUS ARRUDA DE FIGUEIREDO"), 307 + SHIFT_X, 463, 21, 1, "#000000", 600);
     ctx.restore();
 
-    // 2. CAIXA 1ª HABILITAÇÃO (X=962px + SHIFT_X, Y=463px)
-    txt(p(d(primHabRaw), "20/05/2012"), 962 + SHIFT_X, 463, 21, 1, "#000000", 130);
+    // 2. CAIXA 1ª HABILITAÇÃO (X=969px + SHIFT_X, Y=463px - Mover 0,3% a direita)
+    txt(p(d(primHabRaw), "20/05/2012"), 969 + SHIFT_X, 463, 21, 1, "#000000", 130);
 
     // 3. CAIXA 3: DATA, LOCAL E UF DE NASCIMENTO (X=599px + SHIFT_X, Y=523px)
     const dtNasc = p(d(dtNascRaw), "05/03/2003");
@@ -494,9 +494,9 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // 9. CAIXA 5: Nº REGISTRO (X=805px + SHIFT_X, Y=704px, Vermelho)
     txt(p(regRaw, "37362896284"), 805 + SHIFT_X, 704, 20, 1, "#c0392b", 175);
 
-    // 10. CAIXA 9: CAT HAB (X=990px + SHIFT_X, Y=704px, Vermelho)
+    // 10. CAIXA 9: CAT HAB (X=1002px + SHIFT_X, Y=704px, Vermelho - Mover 0,5% a direita)
     const catFmt = p(catRaw, "AB");
-    txt(catFmt, 990 + SHIFT_X, 704, 21.8, 1, "#c0392b", 80);
+    txt(catFmt, 1002 + SHIFT_X, 704, 21.8, 1, "#c0392b", 80);
 
     // 11. CAIXA NACIONALIDADE (X=599px + SHIFT_X, Y=764px)
     txt(p(nacRaw, "BRASILEIRO(A)"), 599 + SHIFT_X, 764, 20, 1, "#000000", 405);
@@ -529,7 +529,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.fillText(nomeEstadoCompleto, 600 + SHIFT_X, 1668);
     ctx.restore();
 
-    // ── Assinaturas digitais (números de série): Ass. Digital 1 (X=947px + SHIFT_X) e Ass. Digital 2 (X=888px + SHIFT_X) com fonte aumentada +1% (18.2px) ──
+    // ── Assinaturas digitais: Ass. Digital 1 (X=960px + SHIFT_X, +0,2% dir) e Ass. Digital 2 (X=908px + SHIFT_X, +0,5% dir) ──
     const rawAss2 = props.assDigital2 || "";
     let displayAss2 = "SP54171992";
     if (rawAss2) {
@@ -546,14 +546,14 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.font = "18.2px 'MyriadPro-Regular'";
     ctx.fillStyle = "#222222";
     ctx.textAlign = "center";
-    ctx.fillText(props.assDigital1 || "46418356416", 955 + SHIFT_X, 1559);
+    ctx.fillText(props.assDigital1 || "46418356416", 960 + SHIFT_X, 1559);
     ctx.textAlign = "left";
-    ctx.fillText(displayAss2, 896 + SHIFT_X, 1584);
+    ctx.fillText(displayAss2, 908 + SHIFT_X, 1584);
     ctx.restore();
 
-    // ── Textos laterais verticais (Nº Espelho - Desceu 0,5% -> Y=948px e Y=1688px) ───────────────────────────
+    // ── Textos laterais verticais (Nº Espelho - Mover 0,2% esq -> X=208px, descer 0,1% -> Y=952px e Y=1692px) ───────────────────────────
     ctx.save();
-    ctx.translate(213 + SHIFT_X, 948);
+    ctx.translate(208 + SHIFT_X, 952);
     ctx.rotate(-Math.PI / 2);
     ctx.font = "40px 'MyriadPro-Regular'";
     ctx.fillStyle = "#000000";
@@ -561,7 +561,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.restore();
 
     ctx.save();
-    ctx.translate(213 + SHIFT_X, 1688);
+    ctx.translate(208 + SHIFT_X, 1692);
     ctx.rotate(-Math.PI / 2);
     ctx.font = "40px 'MyriadPro-Regular'";
     ctx.fillStyle = "#000000";
@@ -569,8 +569,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.restore();
 
     // ═══════════════════════════════════════════════════════════════════
-    // MRZ (OCR-B 35.175px @300DPI) — TRAVA INVIOLÁVEL DE LARGURA (MAX 1800PX)
-    // NUNCA ULTRAPASSA OS LIMITES DAS MARGENS ESQUERDA/DIREITA
+    // MRZ (OCR-B 35.175px @300DPI - Mover 2% a esquerda -> X=285px)
     // ═══════════════════════════════════════════════════════════════════
     const mrz = gerarMRZ(props);
     ctx.save();
@@ -586,60 +585,54 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.fillStyle = "#353535";
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    mrz.forEach((l, i) => ctx.fillText(l, 335 + SHIFT_X, 2220 + (i * 65)));
+    mrz.forEach((l, i) => ctx.fillText(l, 285 + SHIFT_X, 2220 + (i * 65)));
     ctx.restore();
 
     // ═══════════════════════════════════════════════════════════════════
-    // QR CODE DINÂMICO E REAL DA APLICAÇÃO (Decodificável 1:1 por Leitores)
+    // QR CODE DINÂMICO E REAL (Mover 0,5% a esquerda -> X=1353px)
     // ═══════════════════════════════════════════════════════════════════
-    // Para CNH, se codigoQR vier no formato XXXX.XXXX ou com pontos, forçamos o formato UUID
     let codigoQrFinal = props.codigoQR && props.codigoQR !== "PREVIEW" && !props.codigoQR.includes(".") ? props.codigoQR : "";
     if (!codigoQrFinal || codigoQrFinal.includes(".")) {
       codigoQrFinal = "31c64778-606e-436e-9f9d-287574f23abe";
     }
     
-    // O validador oficial de CNH é EXCLUSIVAMENTE https://validacao-online-vio.digital
     const cnhValidationBase = "https://validacao-online-vio.digital";
-
     const qrUrl = `${cnhValidationBase}/consulta/?id=${encodeURIComponent(codigoQrFinal)}`;
 
     try {
       const qrWidth = 860;
-      const qrX = 1365 + SHIFT_X;
+      const qrX = 1353 + SHIFT_X;
       const qrY = 370;
 
       // Fundo passepartout limpo
       ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(qrX, qrY, qrWidth, qrWidth);
 
-      // Geração Intermediária Equilibrada (Versão 12 - Matriz 65x65 com módulos nítidos e cantos grandes)
       const qrDataUrl = await QRCode.toDataURL(qrUrl, {
         width: qrWidth,
-        version: 12, // Versão intermediária equilibrada (matriz 65x65)
-        margin: 4, // Margem branca padrão (border = 4)
-        errorCorrectionLevel: "H", // Nível H (~30% de recuperação de erros)
+        version: 12,
+        margin: 4,
+        errorCorrectionLevel: "H",
         color: { dark: "#000000", light: "#FFFFFF" },
       });
       const qrImg = await loadImage(qrDataUrl);
-
-      // Renderização NÍTIDA do QR Code (SEM BLUR)
       ctx.drawImage(qrImg, qrX, qrY, qrWidth, qrWidth);
     } catch (e) {
       console.warn("Erro ao gerar QR Code:", e);
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // TABELA DE CATEGORIAS (Mapeamento Estrito das Coordenadas 1:1 + SHIFT_X)
+    // TABELA DE CATEGORIAS (Microajustes B, C, D, D1)
     // ═══════════════════════════════════════════════════════════════════
     const catPositions: Record<string, { x: number; y: number }> = {
       A:   { x: 436 + SHIFT_X, y: 1099 },
       A1:  { x: 431 + SHIFT_X, y: 1136 },
-      B:   { x: 436 + SHIFT_X, y: 1169 },
+      B:   { x: 433 + SHIFT_X, y: 1169 }, // Mover B 0,1% esq -> 433px
       B1:  { x: 431 + SHIFT_X, y: 1212 },
-      C:   { x: 431 + SHIFT_X, y: 1249 },
+      C:   { x: 434 + SHIFT_X, y: 1231 }, // Mover C 0,1% dir (434px) e subir 0,5% (1231px)
       C1:  { x: 431 + SHIFT_X, y: 1286 },
-      D:   { x: 861 + SHIFT_X, y: 1099 },
-      D1:  { x: 861 + SHIFT_X, y: 1136 },
+      D:   { x: 866 + SHIFT_X, y: 1099 }, // Mover D 0,2% dir -> 866px
+      D1:  { x: 866 + SHIFT_X, y: 1136 }, // Mover D1 0,2% dir -> 866px
       BE:  { x: 861 + SHIFT_X, y: 1174 },
       CE:  { x: 861 + SHIFT_X, y: 1212 },
       C1E: { x: 861 + SHIFT_X, y: 1249 },
@@ -650,7 +643,6 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     const rawCat = (props.categoria || "AB").toUpperCase().trim();
     const dtValidadeCat = p(d(validadeRaw), "15/09/2026");
 
-    // Identificação estrita dos seletores de categoria (Padrão CONTRAN / SENATRAN 1:1)
     const includesA = rawCat.includes("A") && !rawCat.includes("A1");
     const includesB = rawCat.includes("B") && !rawCat.includes("B1") && !rawCat.includes("BE");
     const includesC = rawCat.includes("C") && !rawCat.includes("C1") && !rawCat.includes("CE") && !rawCat.includes("C1E");
@@ -671,12 +663,6 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     const isDE = rawCat.includes("DE");
     const isD1E = rawCat.includes("D1E");
 
-    // Mapeamento Estrito:
-    // Categoria A  -> Preenche A (436, 1099)
-    // Categoria B  -> Preenche B (436, 1169)
-    // Categoria C  -> Preenche B e C (431, 1249)
-    // Categoria D  -> Preenche B, C e D (861, 1099)
-    // Categoria AE -> Preenche A, B, C e D (1:1 com CNH Oficial SENATRAN)
     const enabledCats: Record<string, boolean> = {
       A: isA,
       A1: isA1,
@@ -701,7 +687,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // FOTO DO CONDUTOR (Moldura de enquadramento 1:1 exata: 246 x 301 px + SHIFT_X)
+    // FOTO DO CONDUTOR (Mover 3 linhas para baixo -> Y=576px, +5% tamanho -> 258x316px)
     // ═══════════════════════════════════════════════════════════════════
     if (props.fotoUrl) {
       try {
@@ -709,15 +695,15 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = (props.fotoScale ?? 1.0) * 0.999;
         const offsetX = props.fotoOffsetX ?? 0;
         const offsetY = props.fotoOffsetY ?? 0;
-        const baseBw = 246, baseBh = 301;
+        const baseBw = 258, baseBh = 316; // Aumentado 5% (246*1.05=258, 301*1.05=316)
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
         const bx = 310 + SHIFT_X + offsetX;
-        const by = 516 + offsetY;
+        const by = 576 + offsetY; // Desceu 3 linhas (516 -> 576)
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(310 + SHIFT_X, 516, baseBw, baseBh);
+        ctx.rect(310 + SHIFT_X, 576, baseBw, baseBh);
         ctx.clip();
 
         const imgRatio = fotoImg.width / fotoImg.height;
@@ -742,7 +728,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // ASSINATURA DO CONDUTOR (Moldura de enquadramento 1:1 exata: 246 x 71 px + SHIFT_X)
+    // ASSINATURA DO CONDUTOR (Diminuir 4% tamanho -> 236x68px, alinhado ao quadrado inferior)
     // ═══════════════════════════════════════════════════════════════════
     if (props.assinaturaUrl) {
       try {
@@ -750,11 +736,11 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = props.assScale ?? 1.0;
         const offsetX = props.assOffsetX ?? 0;
         const offsetY = props.assOffsetY ?? 0;
-        const baseBw = 246, baseBh = 71;
+        const baseBw = 236, baseBh = 68; // Reduzido 4% (246*0.96=236, 71*0.96=68)
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
         const bx = 311 + SHIFT_X + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 880 + Math.round((baseBh - bh) / 2) + offsetY;
+        const by = 900 + Math.round((baseBh - bh) / 2) + offsetY;
 
         const isPng = props.assinaturaUrl.startsWith("data:image/png");
         const tempCanvas = document.createElement("canvas");
@@ -772,11 +758,9 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
           const b = dataPixels[i + 2];
           const a = dataPixels[i + 3];
 
-          // Se a imagem já era transparente (alpha sutil) ou se o pixel é tom de papel/claro (R>150, G>150, B>150)
           if (a < 50 || (r > 150 && g > 150 && b > 150)) {
-            dataPixels[i + 3] = 0; // 100% Transparente (SEM FUNDO PRETO)
+            dataPixels[i + 3] = 0;
           } else {
-            // Traço da assinatura: preserva opacidade sobre fundo transparente
             dataPixels[i] = 0;
             dataPixels[i + 1] = 0;
             dataPixels[i + 2] = 0;
@@ -792,7 +776,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(311 + SHIFT_X, 880, baseBw, baseBh);
+        ctx.rect(311 + SHIFT_X, 900, baseBw, baseBh);
         ctx.clip();
         ctx.drawImage(tempCanvas, drawX, drawY, drawW, drawH);
         ctx.drawImage(tempCanvas, drawX + 1, drawY, drawW, drawH);

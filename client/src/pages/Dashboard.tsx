@@ -95,6 +95,30 @@ interface DocRecord {
   data?: any;
 }
 
+const getDocRetentionDays = (type: string): number => {
+  if (type === "cnh") return 90;
+  if (type === "peticao-stj" || type === "peticaocria") return 3;
+  return 30;
+};
+
+const getDaysRemaining = (dateStr: string) => {
+  if (!dateStr) return null;
+  try {
+    let d: Date;
+    if (/^\d{2}\/\d{2}\/\d{4}/.test(dateStr)) {
+      const [day, month, year] = dateStr.split("/");
+      d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    } else {
+      d = new Date(dateStr);
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+    const diff = d.getTime() - today.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  } catch { return null; }
+};
+
 export default function Dashboard() {
   const { user, refresh } = useAuth();
   const [, setLocation] = useLocation();
@@ -124,12 +148,6 @@ export default function Dashboard() {
       parsed = typeof doc.data === "string" ? JSON.parse(doc.data) : (doc.data || {}); 
     } catch {}
     return parsed;
-  };
-
-  const getDocRetentionDays = (type: string): number => {
-    if (type === "cnh") return 90;
-    if (type === "peticao-stj" || type === "peticaocria") return 3;
-    return 30;
   };
 
   const filteredHistory = history.filter(doc => {
@@ -223,23 +241,7 @@ export default function Dashboard() {
     } catch { return dateStr; }
   };
 
-  const getDaysRemaining = (dateStr: string) => {
-    if (!dateStr) return null;
-    try {
-      let d: Date;
-      if (/^\d{2}\/\d{2}\/\d{4}/.test(dateStr)) {
-        const [day, month, year] = dateStr.split("/");
-        d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      } else {
-        d = new Date(dateStr);
-      }
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      d.setHours(0, 0, 0, 0);
-      const diff = d.getTime() - today.getTime();
-      return Math.ceil(diff / (1000 * 60 * 60 * 24));
-    } catch { return null; }
-  };
+
 
   const loadStats = async () => {
     try {

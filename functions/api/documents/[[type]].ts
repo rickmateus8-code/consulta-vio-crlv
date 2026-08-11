@@ -180,7 +180,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
 
     // Limpeza "Lazy" de documentos expirados do usuário atual antes de emitir novo
     await env.DB.prepare(
-      'DELETE FROM documents WHERE user_id = ? AND expires_at < datetime("now")'
+      'DELETE FROM documents WHERE user_id = ? AND (expires_at < datetime("now") OR created_at < date("now", "-30 days"))'
     ).bind(user.id).run();
 
     // 4. Débito ATÔMICO

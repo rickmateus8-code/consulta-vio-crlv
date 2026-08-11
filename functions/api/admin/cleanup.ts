@@ -1,12 +1,15 @@
 import type { Env } from '../../types';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://docmaster.store',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Credentials': 'true',
-  'Content-Type': 'application/json',
-};
+function getCorsHeaders(request: Request) {
+  const origin = request.headers.get('Origin') || '*';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Credentials': 'true',
+    'Content-Type': 'application/json',
+  };
+}
 
 const DEFAULT_RETENTION = {
   atestado: 30,
@@ -15,6 +18,9 @@ const DEFAULT_RETENTION = {
   cha: 30,
   toxicologico: 30,
   historico: 30,
+  crlv: 30,
+  peticao: 3,
+  outros: 30,
 } as const;
 
 function getSessionToken(request: Request): string | null {
@@ -48,6 +54,8 @@ async function ensureSettingsTable(env: Env) {
     auto_delete_cha: String(DEFAULT_RETENTION.cha),
     auto_delete_toxicologico: String(DEFAULT_RETENTION.toxicologico),
     auto_delete_historico: String(DEFAULT_RETENTION.historico),
+    auto_delete_crlv: String(DEFAULT_RETENTION.crlv),
+    auto_delete_peticao: String(DEFAULT_RETENTION.peticao),
   };
 
   for (const [key, value] of Object.entries(defaults)) {
@@ -73,6 +81,8 @@ async function getRetentionDays(env: Env) {
     'auto_delete_cha',
     'auto_delete_toxicologico',
     'auto_delete_historico',
+    'auto_delete_crlv',
+    'auto_delete_peticao',
   ];
   const rows = await env.DB.prepare(
     `SELECT key, value FROM system_settings WHERE key IN (${keys.map(() => '?').join(', ')})`
@@ -86,6 +96,8 @@ async function getRetentionDays(env: Env) {
     cha: map.auto_delete_cha || DEFAULT_RETENTION.cha,
     toxicologico: map.auto_delete_toxicologico || DEFAULT_RETENTION.toxicologico,
     historico: map.auto_delete_historico || DEFAULT_RETENTION.historico,
+    crlv: map.auto_delete_crlv || DEFAULT_RETENTION.crlv,
+    peticao: map.auto_delete_peticao || DEFAULT_RETENTION.peticao,
   };
 }
 
@@ -106,6 +118,67 @@ async function countDocuments(env: Env, sql: string, binds: any[]) {
 async function runDelete(env: Env, sql: string, binds: any[]) {
   const result = await env.DB.prepare(sql).bind(...binds).run();
   return Number(result.meta?.changes || 0);
+}
+
+async function executeGlobalCleanup(env: Env) {
+  const retention = await getRetentionDays(env);
+  const docDate = normalizeDateExpression(`COALESCE(
+    json_extract(data, '$.dataEmissao'),
+    json_extract(data, '$.data_emissao'),
+    json_extract(data, '$.emissao'),
+    json_extract(data, '$.data_expedicao_historico')
+  )`);
+
+  const deleted = {
+    atestado: await runDelete(
+      env,
+      `DELETE FROM attestations WHERE created_at < date('now', ?) OR (${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?))`,
+      [`-${retention.atestado} days`, `-${retention.atestado} days`]
+    ),
+    receita: await runDelete(
+      env,
+      `DELETE FROM receitas WHERE created_at < date('now', ?) OR (${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?))`,
+      [`-${retention.receita} days`, `-${retention.receita} days`]
+    ),
+    cnh: await runDelete(
+      env,
+      `DELETE FROM documents WHERE type = 'cnh' AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.cnh} days`, `-${retention.cnh} days`]
+    ),
+    cha: await runDelete(
+      env,
+      `DELETE FROM documents WHERE type = 'cha' AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.cha} days`, `-${retention.cha} days`]
+    ),
+    toxicologico: await runDelete(
+      env,
+      `DELETE FROM documents WHERE type IN ('toxicologico', 'toxicria', 'laudocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.toxicologico} days`, `-${retention.toxicologico} days`]
+    ),
+    historico: await runDelete(
+      env,
+      `DELETE FROM documents WHERE type IN ('historico-sp', 'historico-uninter', 'historicocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.historico} days`, `-${retention.historico} days`]
+    ),
+    crlv: await runDelete(
+      env,
+      `DELETE FROM documents WHERE type IN ('crlv', 'crlvcria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.crlv} days`, `-${retention.crlv} days`]
+    ),
+    peticao: await runDelete(
+      env,
+      `DELETE FROM documents WHERE type IN ('peticao-stj', 'peticaocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.peticao} days`, `-${retention.peticao} days`]
+    ),
+    outros: await runDelete(
+      env,
+      `DELETE FROM documents WHERE type NOT IN ('cnh', 'cha', 'toxicologico', 'toxicria', 'laudocria', 'historico-sp', 'historico-uninter', 'historicocria', 'crlv', 'crlvcria', 'peticao-stj', 'peticaocria') AND (created_at < date('now', '-30 days') OR (expires_at IS NOT NULL AND expires_at < datetime('now')))`,
+      []
+    ),
+  };
+
+  const total = Object.values(deleted).reduce((sum, value) => sum + Number(value || 0), 0);
+  return { deleted, total, retention_days: retention };
 }
 
 async function buildPreview(env: Env) {
@@ -148,6 +221,21 @@ async function buildPreview(env: Env) {
       `SELECT COUNT(*) AS count FROM documents WHERE type IN ('historico-sp', 'historico-uninter', 'historicocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
       [`-${retention.historico} days`, `-${retention.historico} days`]
     ),
+    crlv: await countDocuments(
+      env,
+      `SELECT COUNT(*) AS count FROM documents WHERE type IN ('crlv', 'crlvcria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.crlv} days`, `-${retention.crlv} days`]
+    ),
+    peticao: await countDocuments(
+      env,
+      `SELECT COUNT(*) AS count FROM documents WHERE type IN ('peticao-stj', 'peticaocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
+      [`-${retention.peticao} days`, `-${retention.peticao} days`]
+    ),
+    outros: await countDocuments(
+      env,
+      `SELECT COUNT(*) AS count FROM documents WHERE type NOT IN ('cnh', 'cha', 'toxicologico', 'toxicria', 'laudocria', 'historico-sp', 'historico-uninter', 'historicocria', 'crlv', 'crlvcria', 'peticao-stj', 'peticaocria') AND (created_at < date('now', '-30 days') OR (expires_at IS NOT NULL AND expires_at < datetime('now')))`,
+      []
+    ),
   };
 
   return {
@@ -160,20 +248,24 @@ async function buildPreview(env: Env) {
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+  const corsHeaders = getCorsHeaders(request);
   const admin = await getAdminUser(request, env);
   if (!admin) {
     return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
   }
 
   try {
+    // Executar a limpeza real automaticamente ao acessar o endpoint
+    const cleanupResult = await executeGlobalCleanup(env);
     const preview = await buildPreview(env);
-    return new Response(JSON.stringify({ success: true, ...preview }), { headers: corsHeaders });
+    return new Response(JSON.stringify({ success: true, cleanupResult, ...preview }), { headers: corsHeaders });
   } catch (error: any) {
     return new Response(JSON.stringify({ success: false, error: error?.message || 'Erro interno' }), { status: 500, headers: corsHeaders });
   }
 };
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  const corsHeaders = getCorsHeaders(request);
   const admin = await getAdminUser(request, env);
   if (!admin) {
     return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
@@ -181,59 +273,20 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   try {
     const preview = await buildPreview(env);
-    const retention = preview.retention_days;
-    const docDate = normalizeDateExpression(`COALESCE(
-      json_extract(data, '$.dataEmissao'),
-      json_extract(data, '$.data_emissao'),
-      json_extract(data, '$.emissao'),
-      json_extract(data, '$.data_expedicao_historico')
-    )`);
-
-    const deleted = {
-      atestado: await runDelete(
-        env,
-        `DELETE FROM attestations WHERE created_at < date('now', ?) OR (${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?))`,
-        [`-${retention.atestado} days`, `-${retention.atestado} days`]
-      ),
-      receita: await runDelete(
-        env,
-        `DELETE FROM receitas WHERE created_at < date('now', ?) OR (${normalizeDateExpression('data_emissao')} IS NOT NULL AND date(${normalizeDateExpression('data_emissao')}) < date('now', ?))`,
-        [`-${retention.receita} days`, `-${retention.receita} days`]
-      ),
-      cnh: await runDelete(
-        env,
-        `DELETE FROM documents WHERE type = 'cnh' AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
-        [`-${retention.cnh} days`, `-${retention.cnh} days`]
-      ),
-      cha: await runDelete(
-        env,
-        `DELETE FROM documents WHERE type = 'cha' AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
-        [`-${retention.cha} days`, `-${retention.cha} days`]
-      ),
-      toxicologico: await runDelete(
-        env,
-        `DELETE FROM documents WHERE type IN ('toxicologico', 'toxicria', 'laudocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
-        [`-${retention.toxicologico} days`, `-${retention.toxicologico} days`]
-      ),
-      historico: await runDelete(
-        env,
-        `DELETE FROM documents WHERE type IN ('historico-sp', 'historico-uninter', 'historicocria') AND (created_at < date('now', ?) OR (expires_at IS NOT NULL AND expires_at < datetime('now')) OR (${docDate} IS NOT NULL AND date(${docDate}) < date('now', ?)))`,
-        [`-${retention.historico} days`, `-${retention.historico} days`]
-      ),
-    };
-
-    const total = Object.values(deleted).reduce((sum, value) => sum + Number(value || 0), 0);
-    await logAdminAction(env, admin.id, 'run_cleanup', { deleted, retention_days: retention, preview: preview.pendingDeletion });
+    const cleanupResult = await executeGlobalCleanup(env);
+    
+    await logAdminAction(env, admin.id, 'run_cleanup', { deleted: cleanupResult.deleted, retention_days: cleanupResult.retention_days, preview: preview.pendingDeletion });
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Limpeza concluída. ${total} documentos excluídos.`,
-      deleted: { ...deleted, total },
-      retention_days: retention,
+      message: `Limpeza concluída com sucesso. ${cleanupResult.total} documentos expirados há mais de 1 mês foram excluídos.`,
+      deleted: cleanupResult.deleted,
+      total: cleanupResult.total,
+      retention_days: cleanupResult.retention_days,
     }), { headers: corsHeaders });
   } catch (error: any) {
     return new Response(JSON.stringify({ success: false, error: error?.message || 'Erro interno' }), { status: 500, headers: corsHeaders });
   }
 };
 
-export const onRequestOptions: PagesFunction = async () => new Response(null, { headers: corsHeaders });
+export const onRequestOptions: PagesFunction = async ({ request }) => new Response(null, { headers: getCorsHeaders(request) });

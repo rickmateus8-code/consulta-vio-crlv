@@ -664,18 +664,18 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         ctx.clip();
 
         const imgRatio = fotoImg.width / fotoImg.height;
-        const boxRatio = bw / bh;
+        const boxRatio = baseBw / baseBh;
         let drawW: number, drawH: number, drawX: number, drawY: number;
         if (imgRatio > boxRatio) {
-          drawW = bw;
-          drawH = bw / imgRatio;
-          drawX = bx;
-          drawY = by + (bh - drawH) / 2;
+          drawH = baseBh * scale;
+          drawW = drawH * imgRatio;
+          drawX = bx + (baseBw - drawW) / 2 + offsetX;
+          drawY = by + (baseBh - drawH) / 2 + offsetY;
         } else {
-          drawH = bh;
-          drawW = bh * imgRatio;
-          drawX = bx + (bw - drawW) / 2;
-          drawY = by;
+          drawW = baseBw * scale;
+          drawH = drawW / imgRatio;
+          drawX = bx + (baseBw - drawW) / 2 + offsetX;
+          drawY = by + offsetY;
         }
         ctx.drawImage(fotoImg, drawX, drawY, drawW, drawH);
         ctx.restore();

@@ -62,16 +62,20 @@ const INITIAL_HISTORY_TABS = [
   { key: "historico-sp", label: "Histórico SP", icon: GraduationCap, color: "green" },
   { key: "historico-uninter", label: "UNINTER", icon: GraduationCap, color: "indigo" },
   { key: "fgv", label: "Certificado FGV", icon: Award, color: "blue" },
+  { key: "peticao-stj", label: "Petição STJ", icon: FileText, color: "indigo" },
   { key: "receita", label: "Receitas", icon: Pill, color: "violet" },
 ];
 
 const TAB_LABELS: Record<string, string> = {
   atestado: "Atestado",
   cnh: "CNH",
+  crlv: "CRLV",
   cha: "CHA",
+  toxicologico: "Toxicológico",
   "historico-sp": "Histórico SP",
   "historico-uninter": "UNINTER",
   fgv: "Certificado FGV",
+  "peticao-stj": "Petição STJ",
   receita: "Receita",
 };
 
@@ -85,6 +89,8 @@ interface DocRecord {
   created_at: string;
   status: string;
   codigo_qr?: string;
+  codigo_validacao?: string;
+  data_emissao?: string;
   data?: any;
 }
 
@@ -151,15 +157,26 @@ export default function Dashboard() {
   const handleWhatsAppHistory = (doc: DocRecord) => {
     const parsed = parseDocData(doc);
     const codigoQR = doc.codigo_qr || doc.codigo_validacao || doc.id?.slice(0, 8);
+    const domain = doc.type === 'cnh' ? 'carteira-digital-transito-vio.digital' : 'validaratestado.digital';
+    const link = `https://${domain}/v/${codigoQR}`;
     const texto = encodeURIComponent(
-      `*DocMaster - ${doc.type === 'cnh' ? 'CNH Digital' : 'CHA Náutica'}*\n\nOlá! Segue seu documento gerado pelo DocMaster.\n\nNome: ${doc.nome || parsed.nome || doc.paciente}\nCPF: ${doc.cpf || parsed.cpf}\n\nAcesse o documento: ${getQRCodeCNH(codigoQR)}\n\n_Documento gerado por DocMaster_`
+      `*DocMaster - ${doc.type === 'cnh' ? 'CNH Digital' : 'CHA Náutica'}*\n\nOlá! Segue seu documento gerado pelo DocMaster.\n\nNome: ${doc.nome || parsed.nome || doc.paciente || '—'}\nCPF: ${doc.cpf || parsed.cpf || '—'}\n\nAcesse o documento: ${link}\n\n_Documento gerado por DocMaster_`
     );
     window.open(`https://wa.me/?text=${texto}`, "_blank");
   };
 
   const getEditPath = (doc: DocRecord) => {
-    const type = doc.type === 'historico-uninter' ? 'historicocria' : doc.type;
-    return `/${type}/editar/${doc.id}`;
+    if (doc.type === "atestado") return `/atestado/editar/${doc.id}`;
+    if (doc.type === "cnh") return `/cnh/editar/${doc.id}`;
+    if (doc.type === "cha") return `/cha/editar/${doc.id}`;
+    if (doc.type === "crlv" || doc.type === "crlvcria") return `/crlv/editar/${doc.id}`;
+    if (doc.type === "receita") return `/receita/editar/${doc.id}`;
+    if (doc.type === "historico-uninter" || doc.type === "historicocria") return `/historicocria/editar/${doc.id}`;
+    if (doc.type === "historico-sp") return `/historico-sp`;
+    if (doc.type === "toxicria" || doc.type === "toxicologico" || doc.type === "laudocria") return `/toxicria/editar/${doc.id}`;
+    if (doc.type === "peticao-stj" || doc.type === "peticaocria") return `/peticaocria/editar/${doc.id}`;
+    if (doc.type === "fgv") return `/certificado-fgv/editar/${doc.id}`;
+    return `/${doc.type}/editar/${doc.id}`;
   };
 
   useEffect(() => {
@@ -259,9 +276,10 @@ export default function Dashboard() {
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
-      let endpoint = `/api/attestations/${id}`;
-      if (activeTab === "receita") endpoint = `/api/receitas/${id}`;
-      else if (["cnh", "cha", "toxicologico", "toxicria", "historico-sp", "historico-uninter", "fgv"].includes(activeTab)) endpoint = `/api/documents/${id}`;
+      let endpoint = `/api/documents/${id}`;
+      if (activeTab === "atestado") endpoint = `/api/attestations/${id}`;
+      else if (activeTab === "receita") endpoint = `/api/receitas/${id}`;
+      
       const res = await fetch(endpoint, { method: "DELETE", credentials: "include" });
       if (res.ok) {
         setHistory(prev => prev.filter(d => d.id !== id));
@@ -278,9 +296,17 @@ export default function Dashboard() {
   };
 
   const openViewAtestado = async (doc: DocRecord) => {
-    const latestDoc = await fetchLatestAttestationRecord(doc);
-    setHistory((prev) => prev.map((item) => (item.id === latestDoc.id ? latestDoc : item)));
-    setViewAtestado(latestDoc);
+    if (doc.type === "atestado") {
+      try {
+        const latestDoc = await fetchLatestAttestationRecord(doc);
+        setHistory((prev) => prev.map((item) => (item.id === latestDoc.id ? latestDoc : item)));
+        setViewAtestado(latestDoc);
+      } catch {
+        setViewAtestado(doc);
+      }
+    } else {
+      setViewAtestado(doc);
+    }
   };
 
   const handleDirectDownloadAtestado = async (doc: DocRecord) => {
@@ -640,7 +666,7 @@ const intelligentStats = [
                                 <td className="px-4 py-4 text-right">
                                   <AttestationActionButtons
                                     onView={activeTab === "atestado" ? () => openViewAtestado(doc) : undefined}
-                                    onEdit={() => setLocation(`/${activeTab}/editar/${doc.id}`)}
+                                    onEdit={() => setLocation(getEditPath(doc))}
                                     onDownload={activeTab === "atestado" ? () => handleDirectDownloadAtestado(doc) : undefined}
                                     isDownloading={downloadingAtestadoId === doc.id}
                                     onDelete={() => setConfirmDeleteId(doc.id)}
@@ -738,10 +764,7 @@ const intelligentStats = [
                                     onView={() => openViewAtestado(doc)}
                                     onDownload={() => handleDirectDownloadGeneric(doc)}
                                     isDownloading={downloadingAtestadoId === doc.id}
-                                    onEdit={() => {
-                                      const route = doc.type === "fgv" ? "certificado-fgv" : (doc.type === "historico-uninter" ? "historicocria" : (doc.type || "documento"));
-                                      setLocation(`/${route}/editar/${doc.id}`);
-                                    }}
+                                    onEdit={() => setLocation(getEditPath(doc))}
                                     onDelete={() => setConfirmDeleteId(doc.id)}
                                 />
                               </td>
@@ -790,9 +813,8 @@ const intelligentStats = [
           isOpen={!!showRenewModal}
           onClose={() => setShowRenewModal(null)}
           doc={showRenewModal}
-          onRenewSuccess={(newBal) => {
+          onRenewSuccess={() => {
             refresh();
-            if (newBal !== undefined) updateBalance(newBal);
             loadHistory(activeTab);
           }}
         />

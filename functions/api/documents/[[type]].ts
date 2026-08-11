@@ -259,6 +259,128 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
   }
 };
 
+export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
+  try {
+    const token = getSessionToken(request);
+    const user = await getAuthUser(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({ success: false, error: 'Não autenticado' }), {
+        status: 401, headers: CORS_HEADERS
+      });
+    }
+
+    const typeParam = Array.isArray(params.type) ? params.type.join('/') : (params.type || '');
+    const idOrType = typeParam.toLowerCase().trim();
+
+    if (!idOrType) {
+      const rows = user.role === 'admin'
+        ? await env.DB.prepare('SELECT d.*, u.username as user_name FROM documents d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.created_at DESC LIMIT 100').all()
+        : await env.DB.prepare('SELECT * FROM documents WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').bind(user.id).all();
+      return new Response(JSON.stringify({ success: true, data: rows.results || [] }), { headers: CORS_HEADERS });
+    }
+
+    const DOCUMENT_TYPES = ['cnh', 'crlv', 'crlvcria', 'cha', 'toxicologico', 'historico-sp', 'historico-uninter', 'historicocria', 'peticaocria', 'peticao-stj', 'toxicria', 'laudocria', 'diploma-uninter', 'receita', 'fgv'];
+    const isType = DOCUMENT_TYPES.includes(idOrType);
+
+    if (isType) {
+      let typesToMatch = [idOrType];
+      if (idOrType === 'toxicologico' || idOrType === 'toxicria' || idOrType === 'laudocria') {
+        typesToMatch = ['toxicologico', 'toxicria', 'laudocria'];
+      } else if (idOrType === 'crlv' || idOrType === 'crlvcria') {
+        typesToMatch = ['crlv', 'crlvcria'];
+      } else if (idOrType === 'historico-uninter' || idOrType === 'historicocria') {
+        typesToMatch = ['historico-uninter', 'historicocria'];
+      } else if (idOrType === 'peticao-stj' || idOrType === 'peticaocria') {
+        typesToMatch = ['peticao-stj', 'peticaocria'];
+      }
+
+      const placeholders = typesToMatch.map(() => '?').join(', ');
+      let rows;
+      if (user.role === 'admin') {
+        rows = await env.DB.prepare(
+          `SELECT d.*, u.username as user_name FROM documents d LEFT JOIN users u ON d.user_id = u.id WHERE d.type IN (${placeholders}) ORDER BY d.created_at DESC LIMIT 100`
+        ).bind(...typesToMatch).all();
+      } else {
+        rows = await env.DB.prepare(
+          `SELECT * FROM documents WHERE type IN (${placeholders}) AND user_id = ? ORDER BY created_at DESC LIMIT 100`
+        ).bind(...typesToMatch, user.id).all();
+      }
+      return new Response(JSON.stringify({ success: true, data: rows.results || [] }), { headers: CORS_HEADERS });
+    }
+
+    // Buscar por ID
+    const doc = (user.role === 'admin')
+      ? await env.DB.prepare('SELECT * FROM documents WHERE id = ? LIMIT 1').bind(idOrType).first<any>()
+      : await env.DB.prepare('SELECT * FROM documents WHERE id = ? AND user_id = ? LIMIT 1').bind(idOrType, user.id).first<any>();
+
+    if (!doc) {
+      return new Response(JSON.stringify({ success: false, error: 'Documento não encontrado' }), { status: 404, headers: CORS_HEADERS });
+    }
+
+    let parsedData = {};
+    try { parsedData = JSON.parse(doc.data || '{}'); } catch {}
+
+    return new Response(JSON.stringify({ success: true, data: { ...doc, ...parsedData } }), { headers: CORS_HEADERS });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: err.message || 'Erro interno' }), { status: 500, headers: CORS_HEADERS });
+  }
+};
+
+export const onRequestPut: PagesFunction<Env> = async ({ request, env, params }) => {
+  try {
+    const token = getSessionToken(request);
+    const user = await getAuthUser(request, env);
+    if (!user) return new Response(JSON.stringify({ success: false, error: 'Não autenticado' }), { status: 401, headers: CORS_HEADERS });
+
+    const typeParam = Array.isArray(params.type) ? params.type.join('/') : (params.type || '');
+    const docId = typeParam.trim();
+
+    const doc = await env.DB.prepare('SELECT * FROM documents WHERE id = ? LIMIT 1').bind(docId).first<any>();
+    if (!doc) return new Response(JSON.stringify({ success: false, error: 'Documento não encontrado' }), { status: 404, headers: CORS_HEADERS });
+    if (user.role !== 'admin' && doc.user_id !== user.id) return new Response(JSON.stringify({ success: false, error: 'Sem permissão' }), { status: 403, headers: CORS_HEADERS });
+
+    const body = await request.json<any>();
+    const editData = body.data || body;
+    let existing = {};
+    try { existing = JSON.parse(doc.data || '{}'); } catch {}
+
+    const merged = { ...existing, ...editData };
+    if (doc.type === "cnh") {
+      merged.cpf = (existing as any).cpf;
+    }
+
+    const nome = editData.nome || editData.nomeCompleto || editData.paciente || editData.nome_aluno || doc.nome;
+    const cpf = (doc.type === "cnh") ? doc.cpf : (editData.cpf || doc.cpf);
+
+    await env.DB.prepare('UPDATE documents SET data = ?, nome = COALESCE(?, nome), cpf = COALESCE(?, cpf) WHERE id = ?')
+      .bind(JSON.stringify(merged), nome || null, cpf || null, docId).run();
+
+    return new Response(JSON.stringify({ success: true, message: 'Documento atualizado com sucesso' }), { headers: CORS_HEADERS });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: err.message || 'Erro interno' }), { status: 500, headers: CORS_HEADERS });
+  }
+};
+
+export const onRequestDelete: PagesFunction<Env> = async ({ request, env, params }) => {
+  try {
+    const token = getSessionToken(request);
+    const user = await getAuthUser(request, env);
+    if (!user) return new Response(JSON.stringify({ success: false, error: 'Não autenticado' }), { status: 401, headers: CORS_HEADERS });
+
+    const typeParam = Array.isArray(params.type) ? params.type.join('/') : (params.type || '');
+    const docId = typeParam.trim();
+
+    const doc = await env.DB.prepare('SELECT id, user_id FROM documents WHERE id = ? LIMIT 1').bind(docId).first<any>();
+    if (!doc) return new Response(JSON.stringify({ success: false, error: 'Documento não encontrado' }), { status: 404, headers: CORS_HEADERS });
+    if (user.role !== 'admin' && doc.user_id !== user.id) return new Response(JSON.stringify({ success: false, error: 'Sem permissão' }), { status: 403, headers: CORS_HEADERS });
+
+    await env.DB.prepare('DELETE FROM documents WHERE id = ?').bind(docId).run();
+    return new Response(JSON.stringify({ success: true, message: 'Documento excluído com sucesso' }), { headers: CORS_HEADERS });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: err.message || 'Erro interno' }), { status: 500, headers: CORS_HEADERS });
+  }
+};
+
 export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, { headers: CORS_HEADERS });
 };

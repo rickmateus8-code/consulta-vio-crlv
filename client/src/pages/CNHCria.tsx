@@ -218,13 +218,33 @@ export default function CNHCria() {
     toast.info("Formulário limpo com sucesso!");
   };
 
+const MAPA_UFS: Record<string, string> = {
+  "ACRE": "AC", "ALAGOAS": "AL", "AMAPA": "AP", "AMAZONAS": "AM", "BAHIA": "BA",
+  "CEARA": "CE", "DISTRITO FEDERAL": "DF", "ESPIRITO SANTO": "ES", "GOIAS": "GO",
+  "MARANHAO": "MA", "MATO GROSSO": "MT", "MATO GROSSO DO SUL": "MS", "MINAS GERAIS": "MG",
+  "PARA": "PA", "PARAIBA": "PB", "PARANA": "PR", "PERNAMBUCO": "PE", "PIAUI": "PI",
+  "RIO DE JANEIRO": "RJ", "RIO GRANDE DO NORTE": "RN", "RIO GRANDE DO SUL": "RS",
+  "RONDONIA": "RO", "RORAIMA": "RR", "SANTA CATARINA": "SC", "SAO PAULO": "SP",
+  "SÃO PAULO": "SP", "SERGIPE": "SE", "TOCANTINS": "TO"
+};
+
+function normalizeUF(val?: string): string {
+  if (!val) return "SP";
+  const clean = val.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (clean.length === 2 && UFS.includes(clean)) return clean;
+  if (MAPA_UFS[clean]) return MAPA_UFS[clean];
+  const foundKey = Object.keys(MAPA_UFS).find(k => k === clean || clean.includes(k));
+  if (foundKey) return MAPA_UFS[foundKey];
+  return clean.slice(0, 2) || "SP";
+}
+
   // ─── GERADORES AUTOMÁTICOS ───────────────────────────────────────────────
   const handleAutoRegistro = () => setData(d => ({ ...d, registro: gerarNumero(11) }));
   const handleAutoEspelho = () => setData(d => ({ ...d, espelho: gerarNumero(10) }));
   const handleAutoAss1 = () => setData(d => ({ ...d, assDigital1: gerarNumero(10) }));
   const handleAutoAss2 = () => {
-    const uf = data.ufEmissao || "SP";
-    setData(d => ({ ...d, assDigital2: uf + gerarNumero(8) }));
+    const ufSigla = normalizeUF(data.ufEmissao || data.ufNascimento || "SP");
+    setData(d => ({ ...d, assDigital2: ufSigla + gerarNumero(8) }));
   };
 
   // Gerador Estimado Opcional de 1ª Habilitação
@@ -379,9 +399,19 @@ export default function CNHCria() {
       dataEmissao: convertDate(get("Emiss[aã]o")) || d.dataEmissao,
       primeiraHabilitacao: convertDate(get("1[ªa] Habilita[çc][aã]o")) || d.primeiraHabilitacao,
       localEmissao: get("Local Emiss[aã]o") || d.localEmissao,
-      ufEmissao: ufEmissaoVal,
+      ufEmissao: normalizeUF(ufEmissaoVal),
       assDigital1: get("Ass\\.? Digital 1") || gerarNumero(10),
-      assDigital2: get("Ass\\.? Digital 2") || (ufEmissaoVal + gerarNumero(8)),
+      assDigital2: (() => {
+        const raw = get("Ass\\.? Digital 2");
+        const sigla = normalizeUF(ufEmissaoVal);
+        if (raw) {
+          const digits = raw.replace(/\D/g, "").slice(-8);
+          const textPart = raw.replace(/\d/g, "");
+          const s = normalizeUF(textPart || sigla);
+          return `${s}${digits || gerarNumero(8)}`;
+        }
+        return `${sigla}${gerarNumero(8)}`;
+      })(),
       senhaApp: get("Senha App") || get("Senha") || String(Math.floor(1000 + Math.random() * 9000)),
       observacoes: get("Observa[çc][oõ]es") || d.observacoes,
     }));

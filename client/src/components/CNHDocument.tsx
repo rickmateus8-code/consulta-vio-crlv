@@ -58,6 +58,25 @@ export interface CNHDocumentHandle {
 }
 
 // ─── Mapa de UF → Nome Completo ──────────────────────────────────────────────
+const MAPA_UFS_DOC: Record<string, string> = {
+  "ACRE": "AC", "ALAGOAS": "AL", "AMAPA": "AP", "AMAZONAS": "AM", "BAHIA": "BA",
+  "CEARA": "CE", "DISTRITO FEDERAL": "DF", "ESPIRITO SANTO": "ES", "GOIAS": "GO",
+  "MARANHAO": "MA", "MATO GROSSO": "MT", "MATO GROSSO DO SUL": "MS", "MINAS GERAIS": "MG",
+  "PARA": "PA", "PARAIBA": "PB", "PARANA": "PR", "PERNAMBUCO": "PE", "PIAUI": "PI",
+  "RIO DE JANEIRO": "RJ", "RIO GRANDE DO NORTE": "RN", "RIO GRANDE DO SUL": "RS",
+  "RONDONIA": "RO", "RORAIMA": "RR", "SANTA CATARINA": "SC", "SAO PAULO": "SP",
+  "SÃO PAULO": "SP", "SERGIPE": "SE", "TOCANTINS": "TO"
+};
+
+function normalizeUFDoc(val?: string): string {
+  if (!val) return "SP";
+  const clean = val.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (clean.length === 2 && /^[A-Z]{2}$/.test(clean)) return clean;
+  if (MAPA_UFS_DOC[clean]) return MAPA_UFS_DOC[clean];
+  const foundKey = Object.keys(MAPA_UFS_DOC).find(k => k === clean || clean.includes(k));
+  if (foundKey) return MAPA_UFS_DOC[foundKey];
+  return clean.slice(0, 2) || "SP";
+}
 const NOMES_ESTADOS: Record<string, string> = {
   AC: "ACRE", AL: "ALAGOAS", AP: "AMAPÁ", AM: "AMAZONAS",
   BA: "BAHIA", CE: "CEARÁ", DF: "DISTRITO FEDERAL", ES: "ESPÍRITO SANTO",
@@ -510,13 +529,25 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.restore();
 
     // ── Assinaturas digitais (números de série): Ass. Digital 1 (X=947px) e Ass. Digital 2 (X=888px) com fonte aumentada +1% (18.2px) ──
+    const rawAss2 = props.assDigital2 || "";
+    let displayAss2 = "SP54171992";
+    if (rawAss2) {
+      const digits = rawAss2.replace(/\D/g, "").slice(-8);
+      const textPart = rawAss2.replace(/\d/g, "");
+      const ufSigla = normalizeUFDoc(textPart || props.ufEmissao || "SP");
+      displayAss2 = `${ufSigla}${digits || "54171992"}`;
+    } else {
+      const ufSigla = normalizeUFDoc(props.ufEmissao || "SP");
+      displayAss2 = `${ufSigla}54171992`;
+    }
+
     ctx.save();
     ctx.font = "18.2px 'MyriadPro-Regular'";
     ctx.fillStyle = "#222222";
     ctx.textAlign = "center";
     ctx.fillText(props.assDigital1 || "46418356416", 955, 1559);
     ctx.textAlign = "left";
-    ctx.fillText(props.assDigital2 || "SPO32337809", 896, 1584);
+    ctx.fillText(displayAss2, 896, 1584);
     ctx.restore();
 
     // ── Textos laterais verticais (Nº Espelho - Desceu 0,5% -> Y=948px e Y=1688px) ───────────────────────────

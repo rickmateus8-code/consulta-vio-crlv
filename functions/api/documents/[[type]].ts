@@ -285,6 +285,15 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
       });
     }
 
+    // Executar auto-expurgo imediato no banco de dados SQLite D1
+    await env.DB.prepare(`
+      DELETE FROM documents WHERE 
+        (expires_at IS NOT NULL AND expires_at < datetime('now'))
+        OR (expires_at IS NULL AND type = 'cnh' AND created_at < date('now', '-90 days'))
+        OR (expires_at IS NULL AND (type = 'peticao-stj' OR type = 'peticaocria') AND created_at < date('now', '-3 days'))
+        OR (expires_at IS NULL AND type NOT IN ('cnh', 'peticao-stj', 'peticaocria') AND created_at < date('now', '-30 days'))
+    `).run().catch(() => null);
+
     const typeParam = Array.isArray(params.type) ? params.type.join('/') : (params.type || '');
     const idOrType = typeParam.toLowerCase().trim();
 
@@ -330,7 +339,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
       : await env.DB.prepare('SELECT * FROM documents WHERE id = ? AND user_id = ? LIMIT 1').bind(idOrType, user.id).first<any>();
 
     if (!doc) {
-      return new Response(JSON.stringify({ success: false, error: 'Documento não encontrado' }), { status: 404, headers: CORS_HEADERS });
+      return new Response(JSON.stringify({ success: false, error: 'Documento não encontrado ou expirado' }), { status: 404, headers: CORS_HEADERS });
+    }
+
+    if (doc.expires_at && new Date(doc.expires_at).getTime() < Date.now()) {
+      await env.DB.prepare('DELETE FROM documents WHERE id = ?').bind(doc.id).run().catch(() => null);
+      return new Response(JSON.stringify({ success: false, error: 'Documento expirado e removido do sistema' }), { status: 404, headers: CORS_HEADERS });
     }
 
     let parsedData = {};

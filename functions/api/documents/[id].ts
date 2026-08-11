@@ -208,6 +208,15 @@ export async function onRequest(context: { request: Request; env: Env; params: {
 
     // ─── GET: Listar por tipo ou buscar por ID ───────────────────────────────
     if (request.method === "GET") {
+      // Executar auto-expurgo no banco de dados
+      await env.DB.prepare(`
+        DELETE FROM documents WHERE 
+          (expires_at IS NOT NULL AND expires_at < datetime('now'))
+          OR (expires_at IS NULL AND type = 'cnh' AND created_at < date('now', '-90 days'))
+          OR (expires_at IS NULL AND (type = 'peticao-stj' OR type = 'peticaocria') AND created_at < date('now', '-3 days'))
+          OR (expires_at IS NULL AND type NOT IN ('cnh', 'peticao-stj', 'peticaocria') AND created_at < date('now', '-30 days'))
+      `).run().catch(() => null);
+
       const isType = DOCUMENT_TYPES.includes(idOrType.toLowerCase());
       
       if (isType) {
@@ -226,7 +235,13 @@ export async function onRequest(context: { request: Request; env: Env; params: {
         ? await env.DB.prepare('SELECT * FROM documents WHERE id = ? LIMIT 1').bind(idOrType).first<any>()
         : await env.DB.prepare('SELECT * FROM documents WHERE id = ? AND user_id = ? LIMIT 1').bind(idOrType, user.id).first<any>();
       
-      if (!doc) return jsonResponse({ success: false, error: "Documento não encontrado." }, 404);
+      if (!doc) return jsonResponse({ success: false, error: "Documento não encontrado ou expirado." }, 404);
+
+      if (doc.expires_at && new Date(doc.expires_at).getTime() < Date.now()) {
+        await env.DB.prepare('DELETE FROM documents WHERE id = ?').bind(doc.id).run().catch(() => null);
+        return jsonResponse({ success: false, error: "Documento expirado e removido do sistema." }, 404);
+      }
+
       return jsonResponse({ success: true, data: { ...doc, ...JSON.parse(doc.data || '{}') } });
     }
 

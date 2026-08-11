@@ -126,7 +126,23 @@ export default function Dashboard() {
     return parsed;
   };
 
+  const getDocRetentionDays = (type: string): number => {
+    if (type === "cnh") return 90;
+    if (type === "peticao-stj" || type === "peticaocria") return 3;
+    return 30;
+  };
+
   const filteredHistory = history.filter(doc => {
+    // Excluir automaticamente documentos expirados do frontend
+    const defaultDays = getDocRetentionDays(doc.type);
+    const rawExpires = doc.expires_at || (doc.created_at ? new Date(new Date(doc.created_at).getTime() + defaultDays * 24 * 60 * 60 * 1000).toISOString() : "");
+    if (rawExpires) {
+      const daysRemaining = getDaysRemaining(rawExpires);
+      if (daysRemaining !== null && daysRemaining < 0) {
+        return false; // VENCIDO -> Não exibir no painel
+      }
+    }
+
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase().trim();
     const parsed = parseDocData(doc);

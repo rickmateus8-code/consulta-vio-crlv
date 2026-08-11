@@ -210,11 +210,17 @@ export default function DocumentosSalvos({
     } catch { return d; }
   };
 
-  const filtered = docs.filter(d =>
-    d.nome.toLowerCase().includes(search.toLowerCase()) ||
-    d.cpf.includes(search) ||
-    d.id.toString().includes(search)
-  );
+  const filtered = docs.filter(d => {
+    if (d.expires_at) {
+      const exp = new Date(d.expires_at).getTime();
+      if (!isNaN(exp) && exp < Date.now()) return false;
+    }
+    return (
+      d.nome.toLowerCase().includes(search.toLowerCase()) ||
+      d.cpf.includes(search) ||
+      d.id.toString().includes(search)
+    );
+  });
 
   return (
     <DashboardLayout>

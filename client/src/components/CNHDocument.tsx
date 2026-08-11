@@ -456,13 +456,13 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     const ufEmissRaw = getVal("ufEmissao", "uf_emissao");
     const SHIFT_X = 22; // Deslocamento ideal (-0,5% a esquerda para precisao 1:1 perfeita)
 
-    // 1. CAIXA NOME COMPLETO (X=307px + SHIFT_X, Y=463px - Movel 0,5% a esquerda)
+    // 1. CAIXA NOME COMPLETO (X=304px + SHIFT_X, Y=463px - Mover 0,1% a esquerda)
     ctx.save();
     ctx.letterSpacing = "1px";
-    txt(p(nomeRaw, "RICK MATEUS ARRUDA DE FIGUEIREDO"), 307 + SHIFT_X, 463, 21, 1, "#000000", 600);
+    txt(p(nomeRaw, "RICK MATEUS ARRUDA DE FIGUEIREDO"), 304 + SHIFT_X, 463, 21, 1, "#000000", 600);
     ctx.restore();
 
-    // 2. CAIXA 1ª HABILITAÇÃO (X=969px + SHIFT_X, Y=463px - Mover 0,3% a direita)
+    // 2. CAIXA 1ª HABILITAÇÃO (X=969px + SHIFT_X, Y=463px)
     txt(p(d(primHabRaw), "20/05/2012"), 969 + SHIFT_X, 463, 21, 1, "#000000", 130);
 
     // 3. CAIXA 3: DATA, LOCAL E UF DE NASCIMENTO (X=599px + SHIFT_X, Y=523px)
@@ -474,8 +474,8 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // 4. CAIXA 4a: DATA EMISSÃO (X=599px + SHIFT_X, Y=583px)
     txt(p(d(dtEmissRaw), "14/09/2021"), 599 + SHIFT_X, 583, 20, 1, "#000000", 180);
 
-    // 5. CAIXA 4b: VALIDADE (X=783px + SHIFT_X, Y=583px, Vermelho)
-    txt(p(d(validadeRaw), "15/09/2026"), 783 + SHIFT_X, 583, 20, 1, "#c0392b", 160);
+    // 5. CAIXA 4b: VALIDADE (X=786px + SHIFT_X, Y=583px, Vermelho - Mover 0,1% a direita)
+    txt(p(d(validadeRaw), "15/09/2026"), 786 + SHIFT_X, 583, 20, 1, "#c0392b", 160);
 
     // 6. CAIXA ACC / TIPO CNH (X=1062px + SHIFT_X, Y=572px)
     const tipoLetra = tipoRaw === "Permissão" ? "P" : "D";
@@ -494,7 +494,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // 9. CAIXA 5: Nº REGISTRO (X=805px + SHIFT_X, Y=704px, Vermelho)
     txt(p(regRaw, "37362896284"), 805 + SHIFT_X, 704, 20, 1, "#c0392b", 175);
 
-    // 10. CAIXA 9: CAT HAB (X=1002px + SHIFT_X, Y=704px, Vermelho - Mover 0,5% a direita)
+    // 10. CAIXA 9: CAT HAB (X=1002px + SHIFT_X, Y=704px, Vermelho)
     const catFmt = p(catRaw, "AB");
     txt(catFmt, 1002 + SHIFT_X, 704, 21.8, 1, "#c0392b", 80);
 
@@ -505,19 +505,19 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     txt(p(paiRaw, "MARCOS PAULO ARCO IRIS DE FIGUEIREDO"), 599 + SHIFT_X, 832, 19, 1, "#000000", 415);
     txt(p(maeRaw, "DÉBORA DE ARRUDA CALDAS"), 599 + SHIFT_X, 904, 19, 1, "#000000", 415);
 
-    // 13. CAIXA OBSERVAÇÕES / EAR (X=302px + SHIFT_X, Y=1334px)
+    // 13. CAIXA OBSERVAÇÕES / EAR (X=299px + SHIFT_X, Y=1334px - Mover 0,1% a esquerda)
     const obsTexto = p(obsRaw, "EAR");
     const linhasObs = obsTexto.split("\n");
     const obsY = 1334; 
-    const obsX = 302 + SHIFT_X;
+    const obsX = 299 + SHIFT_X;
     linhasObs.forEach((linha, index) => {
       txt(linha, obsX, obsY + (index * 24), 19.9, false, "#000000", 740);
     });
 
-    // 14. CAIXA LOCAL EMISSÃO + UF (X=300px + SHIFT_X, Y=1579px)
+    // 14. CAIXA LOCAL EMISSÃO + UF (X=295px + SHIFT_X, Y=1579px - Mover 0,2% a esquerda)
     const locEmiss = p(locEmissRaw, "SÃO PAULO");
     const ufEmiss = p(ufEmissRaw, "SP");
-    txt(`${locEmiss}, ${ufEmiss}`, 300 + SHIFT_X, 1579, 20, 1, "#000000", 500);
+    txt(`${locEmiss}, ${ufEmiss}`, 295 + SHIFT_X, 1579, 20, 1, "#000000", 500);
 
     // 15. NOME DO ESTADO POR EXTENSO (Destaque Painel 2 - Desceu 2 linhas Y=1668px, +10% tamanho -> 35px)
     ctx.save();
@@ -529,7 +529,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.fillText(nomeEstadoCompleto, 600 + SHIFT_X, 1668);
     ctx.restore();
 
-    // ── Assinaturas digitais: Ass. Digital 1 (X=960px + SHIFT_X, +0,2% dir) e Ass. Digital 2 (X=908px + SHIFT_X, +0,5% dir) ──
+    // ── Assinaturas digitais: Ass. Digital 1 (X=965px + SHIFT_X, +0,2% dir) e Ass. Digital 2 (X=915px + SHIFT_X, +0,3% dir) ──
     const rawAss2 = props.assDigital2 || "";
     let displayAss2 = "SP54171992";
     if (rawAss2) {
@@ -546,9 +546,9 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.font = "18.2px 'MyriadPro-Regular'";
     ctx.fillStyle = "#222222";
     ctx.textAlign = "center";
-    ctx.fillText(props.assDigital1 || "46418356416", 960 + SHIFT_X, 1559);
+    ctx.fillText(props.assDigital1 || "46418356416", 965 + SHIFT_X, 1559);
     ctx.textAlign = "left";
-    ctx.fillText(displayAss2, 908 + SHIFT_X, 1584);
+    ctx.fillText(displayAss2, 915 + SHIFT_X, 1584);
     ctx.restore();
 
     // ── Textos laterais verticais (Nº Espelho - Mover 0,2% esq -> X=208px, descer 0,1% -> Y=952px e Y=1692px) ───────────────────────────
@@ -589,7 +589,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     ctx.restore();
 
     // ═══════════════════════════════════════════════════════════════════
-    // QR CODE DINÂMICO E REAL (Mover 0,5% a esquerda -> X=1353px)
+    // QR CODE DINÂMICO E REAL (Mover 0,1% a esquerda -> X=1350px)
     // ═══════════════════════════════════════════════════════════════════
     let codigoQrFinal = props.codigoQR && props.codigoQR !== "PREVIEW" && !props.codigoQR.includes(".") ? props.codigoQR : "";
     if (!codigoQrFinal || codigoQrFinal.includes(".")) {
@@ -601,7 +601,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
     try {
       const qrWidth = 860;
-      const qrX = 1353 + SHIFT_X;
+      const qrX = 1350 + SHIFT_X;
       const qrY = 370;
 
       // Fundo passepartout limpo
@@ -622,17 +622,17 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // TABELA DE CATEGORIAS (Microajustes B, C, D, D1)
+    // TABELA DE CATEGORIAS (Microajustes C, D, D1)
     // ═══════════════════════════════════════════════════════════════════
     const catPositions: Record<string, { x: number; y: number }> = {
       A:   { x: 436 + SHIFT_X, y: 1099 },
       A1:  { x: 431 + SHIFT_X, y: 1136 },
-      B:   { x: 433 + SHIFT_X, y: 1169 }, // Mover B 0,1% esq -> 433px
+      B:   { x: 433 + SHIFT_X, y: 1169 },
       B1:  { x: 431 + SHIFT_X, y: 1212 },
-      C:   { x: 434 + SHIFT_X, y: 1231 }, // Mover C 0,1% dir (434px) e subir 0,5% (1231px)
+      C:   { x: 434 + SHIFT_X, y: 1238 }, // Descer C 0,2% -> Y=1238px
       C1:  { x: 431 + SHIFT_X, y: 1286 },
-      D:   { x: 866 + SHIFT_X, y: 1099 }, // Mover D 0,2% dir -> 866px
-      D1:  { x: 866 + SHIFT_X, y: 1136 }, // Mover D1 0,2% dir -> 866px
+      D:   { x: 871 + SHIFT_X, y: 1099 }, // Mover D 0,2% dir -> 871px
+      D1:  { x: 869 + SHIFT_X, y: 1136 }, // Mover D1 0,1% dir -> 869px
       BE:  { x: 861 + SHIFT_X, y: 1174 },
       CE:  { x: 861 + SHIFT_X, y: 1212 },
       C1E: { x: 861 + SHIFT_X, y: 1249 },
@@ -687,7 +687,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // FOTO DO CONDUTOR (Mover 3 linhas para baixo -> Y=576px, +5% tamanho -> 258x316px)
+    // FOTO DO CONDUTOR (Subir 0,2% -> Y=569px, Mover 0,1% esq -> X=307px)
     // ═══════════════════════════════════════════════════════════════════
     if (props.fotoUrl) {
       try {
@@ -695,15 +695,15 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = (props.fotoScale ?? 1.0) * 0.999;
         const offsetX = props.fotoOffsetX ?? 0;
         const offsetY = props.fotoOffsetY ?? 0;
-        const baseBw = 258, baseBh = 316; // Aumentado 5% (246*1.05=258, 301*1.05=316)
+        const baseBw = 258, baseBh = 316;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 310 + SHIFT_X + offsetX;
-        const by = 576 + offsetY; // Desceu 3 linhas (516 -> 576)
+        const bx = 307 + SHIFT_X + offsetX;
+        const by = 569 + offsetY;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(310 + SHIFT_X, 576, baseBw, baseBh);
+        ctx.rect(307 + SHIFT_X, 569, baseBw, baseBh);
         ctx.clip();
 
         const imgRatio = fotoImg.width / fotoImg.height;
@@ -728,7 +728,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // ASSINATURA DO CONDUTOR (Diminuir 4% tamanho -> 236x68px, alinhado ao quadrado inferior)
+    // ASSINATURA DO CONDUTOR (Subir 0,2% -> Y=893px)
     // ═══════════════════════════════════════════════════════════════════
     if (props.assinaturaUrl) {
       try {
@@ -736,11 +736,11 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = props.assScale ?? 1.0;
         const offsetX = props.assOffsetX ?? 0;
         const offsetY = props.assOffsetY ?? 0;
-        const baseBw = 236, baseBh = 68; // Reduzido 4% (246*0.96=236, 71*0.96=68)
+        const baseBw = 236, baseBh = 68;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
         const bx = 311 + SHIFT_X + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 900 + Math.round((baseBh - bh) / 2) + offsetY;
+        const by = 893 + Math.round((baseBh - bh) / 2) + offsetY;
 
         const isPng = props.assinaturaUrl.startsWith("data:image/png");
         const tempCanvas = document.createElement("canvas");
@@ -776,7 +776,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(311 + SHIFT_X, 900, baseBw, baseBh);
+        ctx.rect(311 + SHIFT_X, 893, baseBw, baseBh);
         ctx.clip();
         ctx.drawImage(tempCanvas, drawX, drawY, drawW, drawH);
         ctx.drawImage(tempCanvas, drawX + 1, drawY, drawW, drawH);

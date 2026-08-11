@@ -16,15 +16,20 @@ export interface AttestationDocRecord {
 }
 
 function parseAttestationDocData(doc: AttestationDocRecord) {
-  if (!doc?.data) return {};
-  if (typeof doc.data === "string") {
-    try {
-      return JSON.parse(doc.data || "{}");
-    } catch {
-      return {};
+  if (!doc) return {};
+  let parsed = {};
+  if (doc.data) {
+    if (typeof doc.data === "string") {
+      try {
+        parsed = JSON.parse(doc.data || "{}");
+      } catch {
+        parsed = {};
+      }
+    } else if (typeof doc.data === "object") {
+      parsed = doc.data;
     }
   }
-  return doc.data || {};
+  return { ...doc, ...parsed };
 }
 
 export function buildAttestationData(doc: AttestationDocRecord): AttestationData & Record<string, any> {

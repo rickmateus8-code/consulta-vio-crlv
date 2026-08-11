@@ -314,15 +314,11 @@ export default function Dashboard() {
   };
 
   const openViewAtestado = async (doc: DocRecord) => {
-    if (doc.type === "atestado") {
-      try {
-        const latestDoc = await fetchLatestAttestationRecord(doc);
-        setHistory((prev) => prev.map((item) => (item.id === latestDoc.id ? latestDoc : item)));
-        setViewAtestado(latestDoc);
-      } catch {
-        setViewAtestado(doc);
-      }
-    } else {
+    try {
+      const latestDoc = await fetchLatestAttestationRecord(doc);
+      setHistory((prev) => prev.map((item) => (item.id === latestDoc.id ? latestDoc : item)));
+      setViewAtestado(latestDoc);
+    } catch {
       setViewAtestado(doc);
     }
   };

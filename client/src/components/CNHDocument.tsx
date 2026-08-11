@@ -194,7 +194,7 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
   ctx.fillRect(0, 0, cvs.width, 100);
 
   ctx.fillStyle = "#1a1a2e";
-  ctx.font = "bold 22px Arial, sans-serif";
+  ctx.font = "bold 22px 'MyriadPro-Regular', sans-serif";
   ctx.textBaseline = "middle";
   ctx.fillText("CARTEIRA NACIONAL DE HABILITAÇÃO / DRIVER LICENSE / PERMISO DE CONDUCCIÓN", 40, 50);
 
@@ -235,11 +235,11 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
   y += 45;
 
   const drawClippedText = (text: string, x: number, centerY: number, maxW: number, isBold = false) => {
-    ctx.font = `${isBold ? "bold " : ""}13px Arial, sans-serif`;
+    ctx.font = `${isBold ? "bold " : ""}13px 'MyriadPro-Regular', sans-serif`;
     let fontSize = 13;
     while (ctx.measureText(text).width > maxW && fontSize > 8.5) {
       fontSize -= 0.5;
-      ctx.font = `${isBold ? "bold " : ""}${fontSize}px Arial, sans-serif`;
+      ctx.font = `${isBold ? "bold " : ""}${fontSize}px 'MyriadPro-Regular', sans-serif`;
     }
     ctx.fillText(text, x, centerY, maxW);
   };
@@ -269,7 +269,7 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
   ctx.fillStyle = "#e8e8e8";
   ctx.fillRect(0, cvs.height - 70, cvs.width, 70);
   ctx.fillStyle = "#666666";
-  ctx.font = "14px Arial, sans-serif";
+  ctx.font = "14px 'MyriadPro-Regular', sans-serif";
   ctx.textBaseline = "middle";
   ctx.fillText("SERPRO / SENATRAN — Documento Digital com Certificação", 40, cvs.height - 35);
 

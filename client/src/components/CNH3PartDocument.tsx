@@ -243,12 +243,12 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
         // 2. NÚMERO DO ESPELHO / FORMULÁRIO (TOPO ESQUERDO)
         octx.fillStyle = "#000000";
-        octx.font = "bold 24px Times New Roman, serif";
+        octx.font = "bold 24px 'MyriadPro-Regular', sans-serif";
         octx.fillText(props.espelho || props.registro || "5728237792", 80 + dx, 110 + dy);
 
         // 3. MAPEAMENTO DE CAMPOS DE TEXTO DA FRENTE (PARIDADE 1:1 COM /CNHCRIA)
         octx.fillStyle = "#000000";
-        octx.font = "bold 19px Rawline, Arial, sans-serif";
+        octx.font = "bold 19px 'MyriadPro-Regular', sans-serif";
 
         // Campo 1 e 2: Nome e Sobrenome
         octx.fillText((props.nome || "").toUpperCase(), 400 + dx, 215 + dy);
@@ -287,7 +287,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.fillText((props.nacionalidade || "BRASILEIRA").toUpperCase(), 460 + dx, 538 + dy);
 
         // Filiação (Nome da Mãe e do Pai)
-        octx.font = "bold 17px Rawline, Arial, sans-serif";
+        octx.font = "bold 17px 'MyriadPro-Regular', sans-serif";
         if (props.nomeMae) octx.fillText(props.nomeMae.toUpperCase(), 460 + dx, 595 + dy);
         if (props.nomePai) octx.fillText(props.nomePai.toUpperCase(), 460 + dx, 625 + dy);
 
@@ -302,17 +302,17 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
         // Número do Espelho (Topo)
         octx.fillStyle = "#000000";
-        octx.font = "bold 24px Times New Roman, serif";
+        octx.font = "bold 24px 'MyriadPro-Regular', sans-serif";
         octx.fillText(props.espelho || props.registro || "5728237792", 80 + dx, 110 + dy);
 
         // Nome do Estado por Extenso
         const ufSigla = (props.ufEmissao || "SP").toUpperCase();
         const estadoExtenso = ESTADOS_POR_EXTENSO[ufSigla] || "SÃO PAULO";
-        octx.font = "bold 32px Rawline, Arial, sans-serif";
+        octx.font = "bold 32px 'MyriadPro-Regular', sans-serif";
         octx.fillText(estadoExtenso, 80 + dx, 400 + dy);
 
         // Datas da Tabela de Categorias (Vermelho #c0392b)
-        octx.font = "bold 15px Rawline, Arial, sans-serif";
+        octx.font = "bold 15px 'MyriadPro-Regular', sans-serif";
         octx.fillStyle = "#c0392b";
         const catStr = (props.categoria || "AB").toUpperCase();
         const validFmt = fmtDate(props.validade);
@@ -324,7 +324,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.fillStyle = "#000000";
 
         // Campo 12: Observações (EAR)
-        octx.font = "bold 18px Rawline, Arial, sans-serif";
+        octx.font = "bold 18px 'MyriadPro-Regular', sans-serif";
         const obs = (props.observacoes || "EXERCE ATIVIDADE REMUNERADA").toUpperCase();
         octx.fillText(obs, 180 + dx, 220 + dy);
 
@@ -333,7 +333,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.fillText(localUF, 180 + dx, 595 + dy);
 
         // Assinatura Digital do Detran
-        octx.font = "bold 12px Rawline, Arial, sans-serif";
+        octx.font = "bold 12px 'MyriadPro-Regular', sans-serif";
         const assDetran = `${props.assDigital1 || "7386321121"} ${props.assDigital2 || (ufSigla + "54171992")}`;
         octx.fillText(assDetran, 330 + dx, 635 + dy);
 

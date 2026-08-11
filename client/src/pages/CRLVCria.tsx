@@ -147,7 +147,7 @@ const DEFAULT_CRLV_DATA: CRLVDocumentProps = {
 
 export default function CRLVCria() {
   const [, setLocation] = useLocation();
-  const { user, updateBalance } = useUser();
+  const { user, updateBalance } = useAuth();
   const docRef = useRef<CRLVDocumentHandle>(null);
 
   const [etapa, setEtapa] = useState<"automacao" | "identificacao" | "caracteristicas" | "tecnica" | "proprietario" | "observacoes">("identificacao");

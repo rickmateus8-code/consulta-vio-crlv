@@ -58,6 +58,27 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json',
 };
 
+function isDocumentFree(user: any, docType: string): boolean {
+  if (!user) return false;
+  if (user.role === "admin") return true;
+  const freeDocs = Array.isArray(user.free_documents) ? user.free_documents.map((d: any) => String(d).toLowerCase()) : [];
+  const type = docType.toLowerCase();
+  
+  if (type === "peticao-stj" || type === "peticaocria" || type === "peticao") {
+    if (freeDocs.includes("peticao-stj") || freeDocs.includes("peticaocria") || freeDocs.includes("peticao")) return true;
+  }
+  if (type === "historico-uninter" || type === "historicocria") {
+    if (freeDocs.includes("historico-uninter") || freeDocs.includes("historicocria")) return true;
+  }
+  if (type === "toxicologico" || type === "toxicria" || type === "laudocria") {
+    if (freeDocs.includes("toxicologico") || freeDocs.includes("toxicria") || freeDocs.includes("laudocria")) return true;
+  }
+  if (type === "crlv" || type === "crlvcria") {
+    if (freeDocs.includes("crlv") || freeDocs.includes("crlvcria")) return true;
+  }
+  return freeDocs.includes(type);
+}
+
 export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }) => {
   try {
     // ─── Verificação de Autenticação (Cookie ou Token de Sincronia) ──────────────
@@ -67,10 +88,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
     let user: any = null;
 
     if (authHeader === `Bearer ${syncToken}`) {
-      // Bypassed via Sync Token (Modo Receptor IDAB)
       user = { id: "system", username: "sync_system", role: "admin", balance: 999999, is_active: 1, free_documents: [] };
     } else {
-      // Autenticação padrão via Sessão (Modo DocMaster)
       user = await getAuthUser(request, env);
     }
 
@@ -82,8 +101,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
 
     const typeParam = Array.isArray(params.type) ? params.type.join('/') : (params.type || '');
     const docType = typeParam.toLowerCase();
+    const body = await request.json() as any;
 
-    // Mapeamento estrito de tempo de retenção do sistema (Máximo de 30 dias para otimização de DB)
     const retentionMap: Record<string, number> = {
       'cnh': 30,
       'historico-sp': 30,
@@ -103,11 +122,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
     };
     let retentionDays = retentionMap[docType] || 30;
 
-    // 2. Buscar preço DINÂMICO e RETENÇÃO do banco D1 (Prioridade: Usuário > Global)
     let price = 0;
-
-    const freeDocs = Array.isArray(user.free_documents) ? user.free_documents : [];
-    const isFree = freeDocs.includes(docType);
+    const isFree = isDocumentFree(user, docType);
 
     if (user.role !== 'admin' && !isFree) {
       const config = await env.DB.prepare(

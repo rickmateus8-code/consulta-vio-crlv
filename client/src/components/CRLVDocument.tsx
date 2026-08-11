@@ -205,8 +205,8 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
     detectedUF = CIDADES_UF_MAP[rawLocal];
   }
 
-  // O formato exigido no layout é exatamente "{LOCAL}   {UF}" (3 espaços)
-  const localFormattedLayout = `${cidadeNome}   ${detectedUF}`;
+  // O formato exigido no layout é exatamente "{LOCAL}  {UF}" (2 espaços)
+  const localFormattedLayout = `${cidadeNome}  ${detectedUF}`;
 
   // 1. DETRAN - {UF} (Máscara expandida cobrindo 100% de qualquer vestígio no topo esquerdo)
   const topDetranUF = (props.detranUF || detectedUF).toUpperCase();

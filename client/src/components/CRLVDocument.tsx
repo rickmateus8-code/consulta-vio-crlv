@@ -380,7 +380,7 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
     ctx.save();
     ctx.translate(PAGE_W / 2, PAGE_H / 2);
     ctx.rotate(-Math.PI / 6);
-    ctx.font = `bold 90px ${FONT_LBL}`;
+    ctx.font = `bold 108px ${FONT_LBL}`;
     ctx.fillStyle = "rgba(220, 38, 38, 0.28)";
     ctx.textAlign = "center";
     ctx.fillText("DOCUMENTO INVALIDO - NÃO EMITIDO - PRÉVIA", 0, 0);

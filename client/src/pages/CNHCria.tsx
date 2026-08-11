@@ -247,33 +247,57 @@ function normalizeUF(val?: string): string {
     setData(d => ({ ...d, assDigital2: ufSigla + gerarNumero(8) }));
   };
 
-  // Gerador Estimado Opcional de 1ª Habilitação
+  // Gerador Estimado Opcional de 1ª Habilitação (Regras de Cronologia e {dia}/{mês} de Emissão/Validade)
   const handleGerarPrimeiraHabEstimada = () => {
-    if (!data.dataNascimento) {
-      toast.error("Preencha a Data de Nascimento para calcular a 1ª Habilitação estimada!");
-      return;
-    }
-    let dateNasc: Date | null = null;
-    const cleanNasc = data.dataNascimento.trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(cleanNasc)) {
-      const [y, m, d] = cleanNasc.split("-").map(Number);
-      dateNasc = new Date(y, m - 1, d);
-    } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(cleanNasc)) {
-      const [d, m, y] = cleanNasc.split("/").map(Number);
-      dateNasc = new Date(y, m - 1, d);
-    }
-    if (!dateNasc || isNaN(dateNasc.getTime())) {
-      toast.error("Data de Nascimento inválida!");
+    if (!data.dataEmissao && !data.dataNascimento) {
+      toast.error("Preencha a Emissão ou a Data de Nascimento para calcular a 1ª Habilitação!");
       return;
     }
 
-    const year18 = dateNasc.getFullYear() + 18;
-    const month = String(dateNasc.getMonth() + 1).padStart(2, "0");
-    const day = String(Math.min(dateNasc.getDate(), 28)).padStart(2, "0");
-    const primeiraHabStr = `${year18}-${month}-${day}`;
+    const parseDate = (str?: string): Date | null => {
+      if (!str) return null;
+      const clean = str.trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+        const [y, m, d] = clean.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      }
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(clean)) {
+        const [d, m, y] = clean.split("/").map(Number);
+        return new Date(y, m - 1, d);
+      }
+      return null;
+    };
+
+    const dateEmissao = parseDate(data.dataEmissao) || parseDate(data.validade) || new Date();
+    const dateNasc = parseDate(data.dataNascimento);
+
+    // O dia e o mês DEVEM SER OS MESMOS da Emissão / Validade
+    const emissaoDay = String(dateEmissao.getDate()).padStart(2, "0");
+    const emissaoMonth = String(dateEmissao.getMonth() + 1).padStart(2, "0");
+    const emissaoYear = dateEmissao.getFullYear();
+
+    let habYear = emissaoYear - 10;
+
+    if (dateNasc && !isNaN(dateNasc.getTime())) {
+      const nascYear = dateNasc.getFullYear();
+      const year18 = nascYear + 18;
+
+      // Se o condutor for menor de 18 no cálculo dos 10 anos ou perto da emissão:
+      // Considerar 1 ano anterior ao ano de emissão para simular a Provisória (PPD)
+      if (year18 >= emissaoYear) {
+        habYear = Math.max(nascYear + 18, emissaoYear - 1);
+      } else {
+        const ciclo10Anos = emissaoYear - 10;
+        habYear = (ciclo10Anos >= year18) ? ciclo10Anos : year18;
+      }
+    } else {
+      habYear = emissaoYear - 10;
+    }
+
+    const primeiraHabStr = `${habYear}-${emissaoMonth}-${emissaoDay}`;
 
     setData(d => ({ ...d, primeiraHabilitacao: primeiraHabStr }));
-    toast.success(`1ª Habilitação estimada gerada: ${day}/${month}/${year18} (Aos 18 anos)`);
+    toast.success(`1ª Habilitação estimada gerada: ${emissaoDay}/${emissaoMonth}/${habYear}`);
   };
 
   // ─── CÁLCULO AUTOMÁTICO DE VALIDADE DA CNH (REGRA DE TRÂNSITO BRASILEIRA) ───
@@ -522,7 +546,7 @@ function normalizeUF(val?: string): string {
   }, [data.cpf]);
 
   // ─── UPLOAD DE FOTO E ASSINATURA ──────────────────────────────────────────
-  const compressImage = (dataUrl: string, maxW = 900, maxH = 1200, quality = 0.90, preserveTransparency = false): Promise<string> => {
+  const compressImage = (dataUrl: string, maxW = 622, maxH = 877, quality = 0.85, preserveTransparency = false): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -555,7 +579,7 @@ function normalizeUF(val?: string): string {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async () => {
-      const compressed = await compressImage(reader.result as string, 900, 1200, 0.90);
+      const compressed = await compressImage(reader.result as string, 622, 877, 0.85);
       setData(d => ({ ...d, fotoUrl: compressed }));
     };
     reader.readAsDataURL(file);
@@ -623,7 +647,7 @@ function normalizeUF(val?: string): string {
       let finalAssinaturaUrl = data.assinaturaUrl;
 
       if (finalFotoUrl && finalFotoUrl.length > 100000) {
-        finalFotoUrl = await compressImage(finalFotoUrl, 900, 1200, 0.90);
+        finalFotoUrl = await compressImage(finalFotoUrl, 622, 877, 0.85);
       }
       if (finalAssinaturaUrl && finalAssinaturaUrl.length > 100000) {
         finalAssinaturaUrl = await compressImage(finalAssinaturaUrl, 450, 150, 0.75, true);
@@ -1153,10 +1177,10 @@ function normalizeUF(val?: string): string {
                           <img
                             src={data.fotoUrl}
                             alt="Foto Rosto 3x4"
-                            className="w-full h-full object-cover transition-transform duration-75"
+                            className="w-full h-full object-cover object-top"
                             style={{
                               transform: `translate(${fotoOffsetX}px, ${fotoOffsetY}px) scale(${fotoScale})`,
-                              transformOrigin: "center center",
+                              transformOrigin: "top center",
                             }}
                           />
                         ) : (
@@ -1167,74 +1191,26 @@ function normalizeUF(val?: string): string {
                         )}
                       </div>
 
-                      {/* MATRIZ DE CONTROLES DE AJUSTE DIRECIONAL E ZOOM PARA FOTO 3X4 */}
+                      {/* CONTROLE SOMENTE ZOOM NO ROSTO (SOMENTE +/-) */}
                       {data.fotoUrl && (
-                        <div className="flex flex-col gap-2 pt-2">
-                          {/* LINHA 1: CONTROLES DE ZOOM */}
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setFotoScale(s => clamp(s - 0.05, 0.4, 3.5))}
-                              className="px-3 py-1.5 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] active:bg-[#818cf8] text-slate-900 font-black text-xs flex items-center gap-1 shadow transition-all"
-                            >
-                              Zoom -
-                            </button>
-                            <span className="text-xs font-bold font-mono text-slate-200 min-w-[45px] text-center">
-                              {Math.round(fotoScale * 100)}%
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setFotoScale(s => clamp(s + 0.05, 0.4, 3.5))}
-                              className="px-3 py-1.5 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] active:bg-[#818cf8] text-slate-900 font-black text-xs flex items-center gap-1 shadow transition-all"
-                            >
-                              Zoom +
-                            </button>
-                          </div>
-
-                          {/* LINHA 2: CONTROLES DE POSIÇÃO DIREÇÃO + RESET */}
-                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => { setFotoScale(1.0); setFotoOffsetX(0); setFotoOffsetY(0); }}
-                              title="Resetar Posição e Zoom"
-                              className="p-2 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] text-slate-900 font-bold text-xs flex items-center justify-center shadow transition-all"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                            </button>
-                            <span className="text-slate-600 font-bold">|</span>
-                            <button
-                              type="button"
-                              onClick={() => setFotoOffsetX(x => x - 5)}
-                              title="Mover para Esquerda"
-                              className="p-2 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] text-slate-900 font-bold text-xs flex items-center justify-center shadow transition-all"
-                            >
-                              <ArrowLeft className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setFotoOffsetX(x => x + 5)}
-                              title="Mover para Direita"
-                              className="p-2 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] text-slate-900 font-bold text-xs flex items-center justify-center shadow transition-all"
-                            >
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setFotoOffsetY(y => y - 5)}
-                              title="Mover para Cima"
-                              className="p-2 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] text-slate-900 font-bold text-xs flex items-center justify-center shadow transition-all"
-                            >
-                              <ArrowUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setFotoOffsetY(y => y + 5)}
-                              title="Mover para Baixo"
-                              className="p-2 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] text-slate-900 font-bold text-xs flex items-center justify-center shadow transition-all"
-                            >
-                              <ArrowDown className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                        <div className="flex items-center justify-center gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setFotoScale(s => clamp(s - 0.05, 0.4, 3.5))}
+                            className="w-12 h-9 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] active:bg-[#818cf8] text-slate-800 font-black text-lg flex items-center justify-center shadow transition-all"
+                          >
+                            -
+                          </button>
+                          <span className="text-xs font-bold font-mono text-slate-200 min-w-[45px] text-center">
+                            {Math.round(fotoScale * 100)}%
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setFotoScale(s => clamp(s + 0.05, 0.4, 3.5))}
+                            className="w-12 h-9 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] active:bg-[#818cf8] text-slate-800 font-black text-lg flex items-center justify-center shadow transition-all"
+                          >
+                            +
+                          </button>
                         </div>
                       )}
                     </div>

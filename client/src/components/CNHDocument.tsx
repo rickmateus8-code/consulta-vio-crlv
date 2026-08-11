@@ -669,7 +669,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         (catKey === "D" && (userCat.includes("D") || userCat.includes("E")));
 
       if (habilitada) {
-        const sizeCat = (catKey === "A" || catKey === "B") ? 14.7 : 14;
+        const sizeCat = (catKey === "A" || catKey === "B" || catKey === "D") ? 14.7 : 14;
         txt(dtValidadeCat, pos.x, pos.y, sizeCat, 1, "#000000", 110);
       }
     });
@@ -706,7 +706,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
           drawW = baseBw * scale;
           drawH = drawW / imgRatio;
           drawX = bx + (baseBw - drawW) / 2 + offsetX;
-          drawY = by + (baseBh - drawH) / 2 + offsetY;
+          drawY = by + offsetY;
         }
         ctx.drawImage(fotoImg, drawX, drawY, drawW, drawH);
         ctx.restore();

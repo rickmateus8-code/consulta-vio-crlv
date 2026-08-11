@@ -51,8 +51,14 @@ Senha App:
 Observações: `;
 
 const ESTILOS_ASS = [
-  { label: "Estilo 1 (Cursiva Elegante)", font: "'Dancing Script', cursive" },
-  { label: "Estilo 2 (Bradley Hand)", font: "'Caveat', cursive" },
+  { label: "Estilo 1 (Dancing Script - Cursiva Clássica)", font: "'Dancing Script', cursive" },
+  { label: "Estilo 2 (Great Vibes - Caligrafia Oficial)", font: "'Great Vibes', cursive" },
+  { label: "Estilo 3 (Sacramento - Cursiva Fina Elegante)", font: "'Sacramento', cursive" },
+  { label: "Estilo 4 (Alex Brush - Assinatura Fluida)", font: "'Alex Brush', cursive" },
+  { label: "Estilo 5 (Satisfy - Traço Manual Autêntico)", font: "'Satisfy', cursive" },
+  { label: "Estilo 6 (Caveat - Cursiva Moderna)", font: "'Caveat', cursive" },
+  { label: "Estilo 7 (Allura - Caligrafia Suave)", font: "'Allura', cursive" },
+  { label: "Estilo 8 (Pinyon Script - Assinatura Formal)", font: "'Pinyon Script', cursive" },
 ];
 
 function gerarNumero(len: number): string {
@@ -221,6 +227,94 @@ export default function CNHCria() {
     setData(d => ({ ...d, assDigital2: uf + gerarNumero(8) }));
   };
 
+  // Gerador Estimado Opcional de 1ª Habilitação
+  const handleGerarPrimeiraHabEstimada = () => {
+    if (!data.dataNascimento) {
+      toast.error("Preencha a Data de Nascimento para calcular a 1ª Habilitação estimada!");
+      return;
+    }
+    let dateNasc: Date | null = null;
+    const cleanNasc = data.dataNascimento.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(cleanNasc)) {
+      const [y, m, d] = cleanNasc.split("-").map(Number);
+      dateNasc = new Date(y, m - 1, d);
+    } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(cleanNasc)) {
+      const [d, m, y] = cleanNasc.split("/").map(Number);
+      dateNasc = new Date(y, m - 1, d);
+    }
+    if (!dateNasc || isNaN(dateNasc.getTime())) {
+      toast.error("Data de Nascimento inválida!");
+      return;
+    }
+
+    const year18 = dateNasc.getFullYear() + 18;
+    const month = String(dateNasc.getMonth() + 1).padStart(2, "0");
+    const day = String(Math.min(dateNasc.getDate(), 28)).padStart(2, "0");
+    const primeiraHabStr = `${year18}-${month}-${day}`;
+
+    setData(d => ({ ...d, primeiraHabilitacao: primeiraHabStr }));
+    toast.success(`1ª Habilitação estimada gerada: ${day}/${month}/${year18} (Aos 18 anos)`);
+  };
+
+  // ─── CÁLCULO AUTOMÁTICO DE VALIDADE DA CNH (REGRA DE TRÂNSITO BRASILEIRA) ───
+  useEffect(() => {
+    if (!data.dataEmissao) return;
+
+    const parseDate = (str?: string): Date | null => {
+      if (!str) return null;
+      const clean = str.trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+        const [y, m, d] = clean.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      }
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(clean)) {
+        const [d, m, y] = clean.split("/").map(Number);
+        return new Date(y, m - 1, d);
+      }
+      return null;
+    };
+
+    const dateEmissao = parseDate(data.dataEmissao);
+    if (!dateEmissao || isNaN(dateEmissao.getTime())) return;
+
+    let anosValidade = 10;
+
+    if (data.dataNascimento) {
+      const dateNasc = parseDate(data.dataNascimento);
+      if (dateNasc && !isNaN(dateNasc.getTime())) {
+        let idade = dateEmissao.getFullYear() - dateNasc.getFullYear();
+        const m = dateEmissao.getMonth() - dateNasc.getMonth();
+        if (m < 0 || (m === 0 && dateEmissao.getDate() < dateNasc.getDate())) {
+          idade--;
+        }
+
+        if (idade >= 70) {
+          anosValidade = 3;
+        } else if (idade >= 50) {
+          anosValidade = 5;
+        } else {
+          anosValidade = 10;
+        }
+      }
+    }
+
+    const dateValidade = new Date(dateEmissao);
+    dateValidade.setFullYear(dateValidade.getFullYear() + anosValidade);
+
+    const yyyy = dateValidade.getFullYear();
+    const mm = String(dateValidade.getMonth() + 1).padStart(2, "0");
+    const dd = String(dateValidade.getDate()).padStart(2, "0");
+    const validadeCalculada = `${yyyy}-${mm}-${dd}`;
+
+    if (data.validade !== validadeCalculada) {
+      setData(d => ({
+        ...d,
+        validade: validadeCalculada,
+        validadeCNH2: validadeCalculada
+      }));
+    }
+  }, [data.dataNascimento, data.dataEmissao]);
+
   // Toggle Checkboxes de Categoria
   const toggleCatCheckbox = (cat: string) => {
     const next = { ...catsSelected, [cat]: !catsSelected[cat] };
@@ -309,7 +403,7 @@ export default function CNHCria() {
     if (targetCpf.length !== 11) return;
 
     setIsSnoopLoading(true);
-    const toastId = toast.loading("Consultando SnoopIntelligence (Dados Pessoais + Foto 3x4)...");
+    const toastId = toast.loading("Localizando dados do condutor e foto 3x4...");
 
     try {
       const [lookupRes, perfilData] = await Promise.all([
@@ -333,7 +427,7 @@ export default function CNHCria() {
       const paiVal = d.nomePai || cpfDados.pai || cpfDados.nome_pai || cpfDados.father_name || cpfDados.nomePai || cpfDados.father || (Array.isArray(perfil.parentes) ? perfil.parentes.find((p: any) => p?.vinculo === "PAI" || p?.parentesco === "PAI" || p?.relacao === "PAI")?.nome : "");
       const maeVal = d.nomeMae || cpfDados.mae || cpfDados.nome_mae || cpfDados.mother_name || cpfDados.nomeMae || cpfDados.mother || (Array.isArray(perfil.parentes) ? perfil.parentes.find((p: any) => p?.vinculo === "MÃE" || p?.parentesco === "MÃE" || p?.relacao === "MÃE" || p?.vinculo === "MAE")?.nome : "");
 
-      // Extração automática da Foto no SnoopIntelligence (CNH, Nacional, SP, RG, MA, RO)
+      // Extração automática da Foto (CNH, Nacional, SP, RG, MA, RO)
       const fotoEncontrada = 
         perfil.foto_cnh || 
         perfil.foto || 
@@ -367,6 +461,8 @@ export default function CNHCria() {
         dataNascimento: formatDateForInput(nascDateVal) || prev.dataNascimento,
         localNascimento: localNascVal ? String(localNascVal).toUpperCase() : prev.localNascimento,
         ufNascimento: ufNascVal ? String(ufNascVal).toUpperCase() : prev.ufNascimento,
+        localEmissao: localNascVal ? String(localNascVal).toUpperCase() : prev.localEmissao,
+        ufEmissao: ufNascVal ? String(ufNascVal).toUpperCase() : prev.ufEmissao,
         nomePai: paiVal ? String(paiVal).toUpperCase() : prev.nomePai,
         nomeMae: maeVal ? String(maeVal).toUpperCase() : prev.nomeMae,
         fotoUrl: fotoEncontrada || prev.fotoUrl,
@@ -920,7 +1016,17 @@ export default function CNHCria() {
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
-                      <label className="text-[11px] font-bold text-slate-300">1ª Habilitação</label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-slate-300">1ª Habilitação</label>
+                        <button
+                          type="button"
+                          onClick={handleGerarPrimeiraHabEstimada}
+                          className="px-1.5 py-0.5 rounded bg-blue-950 hover:bg-blue-900 border border-blue-500/40 text-blue-300 text-[10px] font-bold transition-all flex items-center gap-1 shadow-sm"
+                          title="Gerar 1ª Habilitação estimada realista (Aos 18 anos)"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-300" /> Estimada
+                        </button>
+                      </div>
                       <input
                         type="date"
                         value={data.primeiraHabilitacao}

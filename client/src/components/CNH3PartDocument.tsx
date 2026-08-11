@@ -120,24 +120,37 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(40, 40, 600, 600);
 
-        const codeVal = props.codigo_validacao || props.codigo_qr || props.codigoQR || props.id;
-        const qrUrl = props.qrCodeUrl?.startsWith("http")
-          ? props.qrCodeUrl
-          : props.codigoQR?.startsWith("http")
-          ? props.codigoQR
-          : codeVal
-          ? `https://validacao-online-vio.digital/consulta/?id=${codeVal}`
-          : `https://validacao-online-vio.digital/consulta/?cpf=${props.cpf.replace(/\D/g, "")}`;
+        let codigoQrFinal = props.codigo_validacao || props.codigo_qr || props.codigoQR || props.id || "";
+        let qrUrl = "";
+        if (props.qrCodeUrl && props.qrCodeUrl.startsWith("http")) {
+          qrUrl = props.qrCodeUrl;
+        } else if (codigoQrFinal.startsWith("http")) {
+          qrUrl = codigoQrFinal;
+        } else {
+          if (!codigoQrFinal || codigoQrFinal.includes(".")) {
+            codigoQrFinal = props.id || "31c64778-606e-436e-9f9d-287574f23abe";
+          }
+          qrUrl = `https://validacao-online-vio.digital/consulta/?id=${encodeURIComponent(codigoQrFinal)}`;
+        }
 
         try {
-          const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 520 });
+          const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 2, width: 520 });
           const qrImg = new Image();
           qrImg.src = qrDataUrl;
           await new Promise((res) => { qrImg.onload = res; qrImg.onerror = res; });
           if (isMounted) {
             ctx.drawImage(qrImg, 80, 80, 520, 520);
           }
-        } catch {}
+        } catch {
+          const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=520x520&data=${encodeURIComponent(qrUrl)}`;
+          const qrImg = new Image();
+          qrImg.crossOrigin = "anonymous";
+          qrImg.src = fallbackUrl;
+          await new Promise((res) => { qrImg.onload = res; qrImg.onerror = res; });
+          if (isMounted) {
+            ctx.drawImage(qrImg, 80, 80, 520, 520);
+          }
+        }
         return;
       }
 

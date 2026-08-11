@@ -806,6 +806,7 @@ export default function AdminDashboard() {
       if (data.success) {
         toast.success(`Saldo ${amount > 0 ? "adicionado" : "removido"} com sucesso`);
         loadUsers(showPasswords);
+        refresh();
       } else {
         toast.error(data.error || "Erro ao ajustar saldo");
       }

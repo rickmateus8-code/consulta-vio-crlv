@@ -12,10 +12,10 @@ import {
   Activity, Database, Search, Eye, EyeOff, X, Save, Layout,
   Download, Pencil, Wifi, WifiOff, Monitor, Globe, Anchor,
   CreditCard, AlertCircle, Filter, Gift, Percent, Wallet,
-  Link, Copy, Calendar, Trash, Lock, UserPlus, Clock, User
+  Link, Copy, Calendar, Trash, Lock, UserPlus, Clock, User, TrendingUp
 } from "lucide-react";
 
-type Tab = "users" | "tools" | "pricing" | "notices" | "logs" | "emissions" | "monitoring" | "referral" | "settings";
+type Tab = "users" | "tools" | "pricing" | "notices" | "logs" | "emissions" | "monitoring" | "referral" | "settings" | "database";
 
 interface EmissionRow {
   id: string;
@@ -28,6 +28,7 @@ interface EmissionRow {
   codigo_qr?: string;
   created_at: string;
   table_source?: string;
+  data?: any;
 }
 
 interface UserRow {

@@ -1420,7 +1420,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 flex-nowrap overflow-x-auto pb-2 mb-8 bg-gray-100/50 dark:bg-gray-800/50 p-1.5 rounded-2xl backdrop-blur-sm border border-gray-100 dark:border-gray-800 no-scrollbar">
+        <div className="flex flex-wrap gap-2.5 p-2 mb-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
           {TABS.map(t => {
             const Icon = t.icon;
             const isActive = tab === t.key;

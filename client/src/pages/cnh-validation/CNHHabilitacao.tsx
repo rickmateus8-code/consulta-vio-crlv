@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { ErrorState, LoadingState, queryCpf, useCnhRecord } from "./shared";
 import CNH3PartDocument from "@/components/CNH3PartDocument";
 import { ChevronLeft, ChevronRight, Contact, FileUp, Trash2, Copy } from "lucide-react";
+import { jsPDF } from "jspdf";
 
 export default function CNHHabilitacao() {
   const [, setLocation] = useLocation();
@@ -165,10 +166,31 @@ export default function CNHHabilitacao() {
             onClick={() => {
               const canvas = document.querySelector("canvas");
               if (canvas) {
-                const link = document.createElement("a");
-                link.download = `CNH_Lamina_${activeSlide}_${(record.nome || "documento").replace(/\s+/g, "_")}.png`;
-                link.href = canvas.toDataURL("image/png");
-                link.click();
+                const nomeRaw = (record.nome || "CONDUTOR")
+                  .trim()
+                  .toUpperCase()
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .replace(/\s+/g, "_")
+                  .replace(/[^A-Z0-9_]/g, "");
+
+                const filename = `CNH_${nomeRaw}.pdf`;
+
+                try {
+                  const pdf = new jsPDF({
+                    orientation: "p",
+                    unit: "px",
+                    format: [canvas.width, canvas.height]
+                  });
+                  const imgData = canvas.toDataURL("image/png");
+                  pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+                  pdf.save(filename);
+                } catch {
+                  const link = document.createElement("a");
+                  link.download = filename;
+                  link.href = canvas.toDataURL("image/png");
+                  link.click();
+                }
               }
             }}
             className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-xs text-[#002e6e] font-bold text-xs cursor-pointer hover:bg-slate-50 transition active:scale-[0.98]"

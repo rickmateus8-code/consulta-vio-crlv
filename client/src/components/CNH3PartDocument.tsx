@@ -31,8 +31,20 @@ export interface CNH3PartDocumentProps {
   codigo_validacao?: string;
   codigo_qr?: string;
   qrCodeUrl?: string;
+  assDigital1?: string;
+  assDigital2?: string;
   previewWidth?: number;
 }
+
+const ESTADOS_POR_EXTENSO: Record<string, string> = {
+  AC: "ACRE", AL: "ALAGOAS", AP: "AMAPÁ", AM: "AMAZONAS", BA: "BAHIA",
+  CE: "CEARÁ", DF: "DISTRITO FEDERAL", ES: "ESPÍRITO SANTO", GO: "GOIÁS",
+  MA: "MARANHÃO", MT: "MATO GROSSO", MS: "MATO GROSSO DO SUL", MG: "MINAS GERAIS",
+  PA: "PARÁ", PB: "PARAIBA", PR: "PARANÁ", PE: "PERNAMBUCO", PI: "PIAUÍ",
+  RJ: "RIO DE JANEIRO", RN: "RIO GRANDE DO NORTE", RS: "RIO GRANDE DO SUL",
+  RO: "RONDÔNIA", RR: "RORAIMA", SC: "SANTA CATARINA", SP: "SÃO PAULO",
+  SE: "SERGIPE", TO: "TOCANTINS"
+};
 
 function fmtDate(d?: string): string {
   if (!d) return "";
@@ -96,21 +108,18 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
     const render = async () => {
       if (slide === 4) {
-        // --- SLIDE 4: QR CODE VIO OFICIAL RECEBIDO DO /CNHCRIA (SQUARE 680x680) ---
+        // --- SLIDE 4: QR CODE VIO OFICIAL DO /CNHCRIA (SQUARE 680x680) ---
         const W = 680;
         const H = 680;
         canvas.width = W;
         canvas.height = H;
 
-        // Moldura em Fundo Cinza Claro como na imagem de referência
         ctx.fillStyle = "#c8cbd0";
         ctx.fillRect(0, 0, W, H);
 
-        // Container Quadrado Branco Interno
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(40, 40, 600, 600);
 
-        // Resgate e Construção do QR Code VIO enviado pelo /cnhcria
         const codeVal = props.codigo_validacao || props.codigo_qr || props.codigoQR || props.id;
         const qrUrl = props.qrCodeUrl?.startsWith("http")
           ? props.qrCodeUrl
@@ -132,7 +141,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         return;
       }
 
-      // --- SLIDES 1, 2, 3: CARDS DA CNH EM ORIENTAÇÃO PORTRAIT 1:1 ESQUERDA (680x963) ---
+      // --- SLIDES 1, 2, 3: CARDS PORTRAIT COM DESLOCAMENTO GERAL (680x963) ---
       const W = 680;
       const H = 963;
       canvas.width = W;
@@ -140,12 +149,14 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
       ctx.clearRect(0, 0, W, H);
 
-      // Criar canvas auxiliar em landscape (963x680)
       const off = document.createElement("canvas");
       off.width = 963;
       off.height = 680;
       const octx = off.getContext("2d");
       if (!octx) return;
+
+      const dx = -48;
+      const dy = 3.5;
 
       if (slide === 1) {
         // --- SLIDE 1: FRENTE (PARTE SUPERIOR) ---
@@ -156,9 +167,9 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
         octx.drawImage(bgImg, 0, 0, 963, 680);
 
-        // 100% FUNDO BRANCO ABSOLUTO PARA A MOLDURA DA FOTO 3X4
+        // 1. MOLDURA DA FOTO 3X4 COM DESLOCAMENTO APLICADO
         octx.fillStyle = "#ffffff";
-        octx.fillRect(175, 190, 255, 340);
+        octx.fillRect(177 + dx, 192 + dy, 250, 335);
 
         // Foto 3x4 do Condutor
         if (props.fotoUrl) {
@@ -168,7 +179,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
             foto.src = props.fotoUrl;
             await new Promise((res) => { foto.onload = res; foto.onerror = res; });
             if (isMounted) {
-              octx.drawImage(foto, 175, 190, 255, 340);
+              octx.drawImage(foto, 177 + dx, 192 + dy, 250, 335);
             }
           } catch {}
         }
@@ -181,60 +192,60 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
             ass.src = props.assinaturaUrl;
             await new Promise((res) => { ass.onload = res; ass.onerror = res; });
             if (isMounted) {
-              octx.drawImage(ass, 185, 575, 235, 60);
+              octx.drawImage(ass, 187 + dx, 580 + dy, 230, 54);
             }
           } catch {}
         }
 
-        // Número do Espelho (Topo)
+        // 2. NÚMERO DO ESPELHO / FORMULÁRIO (TOPO ESQUERDO)
         octx.fillStyle = "#0f172a";
-        octx.font = "bold 26px Times New Roman, serif";
-        octx.fillText(props.espelho || props.registro || "5728237792", 80, 110);
+        octx.font = "bold 24px Times New Roman, serif";
+        octx.fillText(props.espelho || props.registro || "5728237792", 80 + dx, 110 + dy);
 
-        // Campos de Texto da CNH
+        // 3. MAPEAMENTO DE CAMPOS DE TEXTO DA FRENTE
         octx.fillStyle = "#0f172a";
-        octx.font = "bold 20px Rawline, Raleway, sans-serif";
+        octx.font = "bold 19px Rawline, Arial, sans-serif";
 
-        // Nome
-        octx.fillText((props.nome || "").toUpperCase(), 460, 215);
+        // Campo 1 e 2: Nome e Sobrenome (Recuado ~10 espaçamentos para a esquerda)
+        octx.fillText((props.nome || "").toUpperCase(), 400 + dx, 215 + dy);
 
-        // 1a Habilitação
-        octx.fillText(fmtDate(props.primeiraHabilitacao || props.dataEmissao), 820, 215);
+        // Campo 1ª Habilitação
+        octx.fillText(fmtDate(props.primeiraHabilitacao || props.dataEmissao), 820 + dx, 215 + dy);
 
-        // Data, Local e UF Nascimento
+        // Campo 3: Data, Local e UF de Nascimento
         const localNasc = [props.dataNascimento ? fmtDate(props.dataNascimento) : "", props.localNascimento || "BRASÍLIA", props.ufNascimento || "DF"].filter(Boolean).join(" - ");
-        octx.fillText(localNasc.toUpperCase(), 460, 280);
+        octx.fillText(localNasc.toUpperCase(), 460 + dx, 280 + dy);
 
-        // Data Emissão
-        octx.fillText(fmtDate(props.dataEmissao), 460, 345);
+        // Campo 4a: Data de Emissão
+        octx.fillText(fmtDate(props.dataEmissao), 460 + dx, 345 + dy);
 
-        // Validade em Vermelho (#c5221f)
+        // Campo 4b: Validade (Cor Vermelha de Segurança #c5221f)
         octx.fillStyle = "#c5221f";
-        octx.fillText(fmtDate(props.validade), 630, 345);
+        octx.fillText(fmtDate(props.validade), 630 + dx, 345 + dy);
         octx.fillStyle = "#0f172a";
 
-        // Doc Identidade / Órgão Emissor / UF
+        // Campo 4c: Doc Identidade / Órgão Emissor / UF
         const docId = [props.rg || "0000000", props.orgaoEmissor || "SSP", props.ufRG || props.ufEmissao || "DF"].filter(Boolean).join(" ");
-        octx.fillText(docId.toUpperCase(), 460, 410);
+        octx.fillText(docId.toUpperCase(), 460 + dx, 410 + dy);
 
-        // CPF
-        octx.fillText(formatCPF(props.cpf), 460, 475);
+        // Campo 4d: CPF
+        octx.fillText(formatCPF(props.cpf), 460 + dx, 475 + dy);
 
-        // Nº Registro em Vermelho (#c5221f)
+        // Campo 5: Nº Registro (Cor Vermelha de Segurança #c5221f)
         octx.fillStyle = "#c5221f";
-        octx.fillText(props.registro || "00000000000", 660, 475);
+        octx.fillText(props.registro || "00000000000", 660 + dx, 475 + dy);
 
-        // Categoria em Vermelho (#c5221f)
-        octx.fillText((props.categoria || "AB").toUpperCase(), 860, 475);
+        // Campo 9: Categoria (Cor Vermelha de Segurança #c5221f)
+        octx.fillText((props.categoria || "AB").toUpperCase(), 860 + dx, 475 + dy);
         octx.fillStyle = "#0f172a";
 
         // Nacionalidade
-        octx.fillText((props.nacionalidade || "BRASILEIRA").toUpperCase(), 460, 538);
+        octx.fillText((props.nacionalidade || "BRASILEIRA").toUpperCase(), 460 + dx, 538 + dy);
 
-        // Filiação
-        octx.font = "bold 17px Rawline, Raleway, sans-serif";
-        if (props.nomeMae) octx.fillText(props.nomeMae.toUpperCase(), 460, 595);
-        if (props.nomePai) octx.fillText(props.nomePai.toUpperCase(), 460, 625);
+        // Filiação (Nome da Mãe e do Pai)
+        octx.font = "bold 17px Rawline, Arial, sans-serif";
+        if (props.nomeMae) octx.fillText(props.nomeMae.toUpperCase(), 460 + dx, 595 + dy);
+        if (props.nomePai) octx.fillText(props.nomePai.toUpperCase(), 460 + dx, 625 + dy);
 
       } else if (slide === 2) {
         // --- SLIDE 2: VERSO (PARTE INFERIOR) ---
@@ -245,20 +256,42 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
         octx.drawImage(bgImg, 0, 0, 963, 680);
 
-        // Espelho número (Topo)
+        // Número do Espelho (Topo)
         octx.fillStyle = "#0f172a";
-        octx.font = "bold 26px Times New Roman, serif";
-        octx.fillText(props.espelho || props.registro || "5728237792", 80, 110);
+        octx.font = "bold 24px Times New Roman, serif";
+        octx.fillText(props.espelho || props.registro || "5728237792", 80 + dx, 110 + dy);
 
-        octx.font = "bold 19px Rawline, Raleway, sans-serif";
+        // Nome do Estado por Extenso
+        const ufSigla = (props.ufEmissao || "SP").toUpperCase();
+        const estadoExtenso = ESTADOS_POR_EXTENSO[ufSigla] || "SÃO PAULO";
+        octx.font = "bold 32px Rawline, Arial, sans-serif";
+        octx.fillText(estadoExtenso, 80 + dx, 400 + dy);
 
-        // Observações (EAR)
+        // Datas da Tabela de Categorias
+        octx.font = "bold 15px Rawline, Arial, sans-serif";
+        octx.fillStyle = "#c5221f";
+        const catStr = (props.categoria || "AB").toUpperCase();
+        const validFmt = fmtDate(props.validade);
+        
+        if (catStr.includes("A")) octx.fillText(validFmt, 855 + dx, 232 + dy);
+        if (catStr.includes("B")) octx.fillText(validFmt, 855 + dx, 296 + dy);
+        if (catStr.includes("C")) octx.fillText(validFmt, 855 + dx, 360 + dy);
+        if (catStr.includes("D")) octx.fillText(validFmt, 855 + dx, 590 + dy);
+        octx.fillStyle = "#0f172a";
+
+        // Campo 12: Observações (EAR)
+        octx.font = "bold 18px Rawline, Arial, sans-serif";
         const obs = (props.observacoes || "EXERCE ATIVIDADE REMUNERADA").toUpperCase();
-        octx.fillText(obs, 180, 460);
+        octx.fillText(obs, 180 + dx, 220 + dy);
 
-        // Local e UF Emissão
-        const localUF = `${(props.localEmissao || "BRASÍLIA").toUpperCase()}, ${(props.ufEmissao || "DF").toUpperCase()}`;
-        octx.fillText(localUF, 180, 605);
+        // Local e UF de Emissão
+        const localUF = `${(props.localEmissao || "BRASÍLIA").toUpperCase()}, ${ufSigla}`;
+        octx.fillText(localUF, 180 + dx, 595 + dy);
+
+        // Assinatura Digital do Detran
+        octx.font = "bold 12px Rawline, Arial, sans-serif";
+        const assDetran = `${props.assDigital1 || "7386321121"} ${props.assDigital2 || (ufSigla + "54171992")}`;
+        octx.fillText(assDetran, 330 + dx, 635 + dy);
 
       } else if (slide === 3) {
         // --- SLIDE 3: CÓDIGO MRZ ---
@@ -274,13 +307,13 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.font = "bold 26px monospace";
         octx.textAlign = "center";
 
-        octx.fillText(mrzLines[0], 963 / 2, 280);
-        octx.fillText(mrzLines[1], 963 / 2, 350);
-        octx.fillText(mrzLines[2], 963 / 2, 420);
+        octx.fillText(mrzLines[0], (963 / 2) + dx, 280 + dy);
+        octx.fillText(mrzLines[1], (963 / 2) + dx, 350 + dy);
+        octx.fillText(mrzLines[2], (963 / 2) + dx, 420 + dy);
         octx.textAlign = "left";
       }
 
-      // Rotacionar em +90 graus (para a esquerda) para a moldura portrait 1:1 exata (Foto na esquerda, faixa preta na direita)
+      // Rotacionar em +90 graus (para a esquerda) para posicionamento 1:1 perfeito na moldura portrait (680x963)
       ctx.save();
       ctx.translate(W, 0);
       ctx.rotate(Math.PI / 2);

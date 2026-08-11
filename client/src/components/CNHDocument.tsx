@@ -468,7 +468,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // 3. CAIXA 3: DATA, LOCAL E UF DE NASCIMENTO (X=599px + SHIFT_X, Y=523px)
     const dtNasc = p(d(dtNascRaw), "05/03/2003");
     const locNasc = p(locNascRaw, "BARUERI");
-    const ufNasc = p(ufNascRaw, "SP");
+    const ufNasc = normalizeUFDoc(p(ufNascRaw, "SP"));
     txt(`${dtNasc}, ${locNasc}, ${ufNasc}`, 599 + SHIFT_X, 523, 20, 1, "#000000", 335);
 
     // 4. CAIXA 4a: DATA EMISSÃO (X=599px + SHIFT_X, Y=583px)
@@ -484,7 +484,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // 7. CAIXA 4c: DOC IDENTIDADE / ÓRGÃO EMISSOR / UF (X=599px + SHIFT_X, Y=644px)
     const rgFmt = p(rgRaw, "26216797");
     const orgFmt = p(orgRaw, "SSP");
-    const ufRgFmt = p(ufRgRaw, "SP");
+    const ufRgFmt = normalizeUFDoc(p(ufRgRaw, "SP"));
     txt(`${rgFmt} ${orgFmt}/${ufRgFmt}`, 599 + SHIFT_X, 644, 20, 1, "#000000", 335);
 
     // 8. CAIXA 4d: CPF (X=599px + SHIFT_X, Y=704px)
@@ -494,9 +494,9 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // 9. CAIXA 5: Nº REGISTRO (X=805px + SHIFT_X, Y=704px, Vermelho)
     txt(p(regRaw, "37362896284"), 805 + SHIFT_X, 704, 20, 1, "#c0392b", 175);
 
-    // 10. CAIXA 9: CAT HAB (X=1002px + SHIFT_X, Y=704px, Vermelho)
+    // 10. CAIXA 9: CAT HAB (X=1007px + SHIFT_X, Y=704px, Vermelho - Mover 0,2% dir, tam=21.5px)
     const catFmt = p(catRaw, "AB");
-    txt(catFmt, 1002 + SHIFT_X, 704, 21.8, 1, "#c0392b", 80);
+    txt(catFmt, 1007 + SHIFT_X, 704, 21.5, 1, "#c0392b", 80);
 
     // 11. CAIXA NACIONALIDADE (X=599px + SHIFT_X, Y=764px)
     txt(p(nacRaw, "BRASILEIRO(A)"), 599 + SHIFT_X, 764, 20, 1, "#000000", 405);

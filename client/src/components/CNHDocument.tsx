@@ -649,38 +649,47 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     const rawCat = (props.categoria || "AB").toUpperCase().trim();
     const dtValidadeCat = p(d(validadeRaw), "15/09/2026");
 
-    // Identificação estrita dos seletores de categoria
-    const hasA = rawCat.includes("A") && !rawCat.includes("A1");
-    const hasA1 = rawCat.includes("A1");
-    const hasB = rawCat.includes("B") && !rawCat.includes("B1") && !rawCat.includes("BE");
-    const hasB1 = rawCat.includes("B1");
-    const hasC = rawCat.includes("C") && !rawCat.includes("C1") && !rawCat.includes("CE") && !rawCat.includes("C1E");
-    const hasC1 = rawCat.includes("C1");
-    const hasD = rawCat.includes("D") && !rawCat.includes("D1") && !rawCat.includes("DE") && !rawCat.includes("D1E");
-    const hasD1 = rawCat.includes("D1");
-    const hasE = rawCat.includes("E");
-    const hasBE = rawCat.includes("BE");
-    const hasCE = rawCat.includes("CE");
-    const hasDE = rawCat.includes("DE");
+    // Identificação estrita dos seletores de categoria (Padrão CONTRAN / SENATRAN 1:1)
+    const includesA = rawCat.includes("A") && !rawCat.includes("A1");
+    const includesB = rawCat.includes("B") && !rawCat.includes("B1") && !rawCat.includes("BE");
+    const includesC = rawCat.includes("C") && !rawCat.includes("C1") && !rawCat.includes("CE") && !rawCat.includes("C1E");
+    const includesD = rawCat.includes("D") && !rawCat.includes("D1") && !rawCat.includes("DE") && !rawCat.includes("D1E");
+    const includesE = rawCat.includes("E") && !rawCat.includes("BE") && !rawCat.includes("CE") && !rawCat.includes("DE");
 
-    // Regras de Habilitação Estritas:
-    // Categoria A -> A (436, 1099)
-    // Categoria B -> B (436, 1169)
-    // Categoria C -> B e C (431, 1249)
-    // Categoria D -> B, C e D (861, 1099)
-    // Categoria E -> posicionado estritamente em CE (861, 1212)
+    const isA = includesA;
+    const isA1 = rawCat.includes("A1");
+    const isB = includesB || includesC || includesD || includesE;
+    const isB1 = rawCat.includes("B1");
+    const isC = includesC || includesD || includesE;
+    const isC1 = rawCat.includes("C1");
+    const isD = includesD || includesE;
+    const isD1 = rawCat.includes("D1");
+    const isBE = rawCat.includes("BE");
+    const isCE = rawCat.includes("CE");
+    const isC1E = rawCat.includes("C1E");
+    const isDE = rawCat.includes("DE");
+    const isD1E = rawCat.includes("D1E");
+
+    // Mapeamento Estrito:
+    // Categoria A  -> Preenche A (436, 1099)
+    // Categoria B  -> Preenche B (436, 1169)
+    // Categoria C  -> Preenche B e C (431, 1249)
+    // Categoria D  -> Preenche B, C e D (861, 1099)
+    // Categoria AE -> Preenche A, B, C e D (1:1 com CNH Oficial SENATRAN)
     const enabledCats: Record<string, boolean> = {
-      A: hasA,
-      A1: hasA1,
-      B: hasB || hasC || hasD || hasE,
-      B1: hasB1,
-      C: hasC || hasD || hasE,
-      C1: hasC1,
-      D: hasD,
-      D1: hasD1,
-      BE: hasBE,
-      CE: hasE || hasCE, // A categoria E é posicionada na caixa CE conforme mandato estrito
-      DE: hasDE,
+      A: isA,
+      A1: isA1,
+      B: isB,
+      B1: isB1,
+      C: isC,
+      C1: isC1,
+      D: isD,
+      D1: isD1,
+      BE: isBE,
+      CE: isCE,
+      C1E: isC1E,
+      DE: isDE,
+      D1E: isD1E,
     };
 
     Object.entries(catPositions).forEach(([catKey, pos]) => {

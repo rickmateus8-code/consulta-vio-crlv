@@ -114,19 +114,57 @@ export default function Configuracoes() {
     }
   };
 
+  const compressAvatarImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxDim = 300;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(img.src);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = () => reject(new Error("Erro ao carregar imagem"));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      showMsg("error", "Arquivo muito grande. Máximo 2MB.");
+    if (file.size > 5 * 1024 * 1024) {
+      showMsg("error", "Arquivo muito grande. Máximo 5MB.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const dataUrl = ev.target?.result as string;
-      await handleSelectAvatar(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    setSaving(true);
+    try {
+      const compressedDataUrl = await compressAvatarImage(file);
+      await handleSelectAvatar(compressedDataUrl);
+    } catch {
+      showMsg("error", "Erro ao processar a foto de perfil");
+      setSaving(false);
+    }
   };
 
   const tabs = [

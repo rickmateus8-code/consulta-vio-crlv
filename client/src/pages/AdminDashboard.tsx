@@ -1397,16 +1397,17 @@ export default function AdminDashboard() {
               <p className="text-xl font-black text-red-600 dark:text-red-500 mt-1">{users.length}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 min-w-[140px]">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Saldo Total</p>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Saldo Usuários</p>
               <p className="text-xl font-black text-emerald-600 dark:text-emerald-500 mt-1">
                 R$ {(totalBalance / 100).toFixed(2).replace(".", ",")}
               </p>
             </div>
             {gatewayFinancial && (
-              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 min-w-[140px]">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Gateway</p>
-                <p className="text-xl font-black text-purple-600 dark:text-purple-500 mt-1 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 min-w-[150px]">
+                <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest flex items-center gap-1">
+                  <CreditCard className="w-3 h-3" /> Gateway PIX
+                </p>
+                <p className="text-xl font-black text-purple-600 dark:text-purple-400 mt-1">
                   R$ {Number(gatewayFinancial.saldo_disponivel || 0).toFixed(2).replace(".", ",")}
                 </p>
               </div>

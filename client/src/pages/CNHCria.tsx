@@ -1153,10 +1153,10 @@ function normalizeUF(val?: string): string {
                           <img
                             src={data.fotoUrl}
                             alt="Foto Rosto 3x4"
-                            className="w-full h-full object-cover object-top"
+                            className="w-full h-full object-cover transition-transform duration-75"
                             style={{
                               transform: `translate(${fotoOffsetX}px, ${fotoOffsetY}px) scale(${fotoScale})`,
-                              transformOrigin: "top center",
+                              transformOrigin: "center center",
                             }}
                           />
                         ) : (
@@ -1167,26 +1167,74 @@ function normalizeUF(val?: string): string {
                         )}
                       </div>
 
-                      {/* CONTROLE SOMENTE ZOOM NO ROSTO (SOMENTE +/-) */}
+                      {/* MATRIZ DE CONTROLES DE AJUSTE DIRECIONAL E ZOOM PARA FOTO 3X4 */}
                       {data.fotoUrl && (
-                        <div className="flex items-center justify-center gap-3 pt-2">
-                          <button
-                            type="button"
-                            onClick={() => setFotoScale(s => clamp(s - 0.05, 0.4, 3.5))}
-                            className="w-12 h-9 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] active:bg-[#818cf8] text-slate-800 font-black text-lg flex items-center justify-center shadow transition-all"
-                          >
-                            -
-                          </button>
-                          <span className="text-xs font-bold font-mono text-slate-200 min-w-[45px] text-center">
-                            {Math.round(fotoScale * 100)}%
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setFotoScale(s => clamp(s + 0.05, 0.4, 3.5))}
-                            className="w-12 h-9 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] active:bg-[#818cf8] text-slate-800 font-black text-lg flex items-center justify-center shadow transition-all"
-                          >
-                            +
-                          </button>
+                        <div className="flex flex-col gap-2 pt-2">
+                          {/* LINHA 1: CONTROLES DE ZOOM */}
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setFotoScale(s => clamp(s - 0.05, 0.4, 3.5))}
+                              className="px-3 py-1.5 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] active:bg-[#818cf8] text-slate-900 font-black text-xs flex items-center gap-1 shadow transition-all"
+                            >
+                              Zoom -
+                            </button>
+                            <span className="text-xs font-bold font-mono text-slate-200 min-w-[45px] text-center">
+                              {Math.round(fotoScale * 100)}%
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setFotoScale(s => clamp(s + 0.05, 0.4, 3.5))}
+                              className="px-3 py-1.5 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] active:bg-[#818cf8] text-slate-900 font-black text-xs flex items-center gap-1 shadow transition-all"
+                            >
+                              Zoom +
+                            </button>
+                          </div>
+
+                          {/* LINHA 2: CONTROLES DE POSIÇÃO DIREÇÃO + RESET */}
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => { setFotoScale(1.0); setFotoOffsetX(0); setFotoOffsetY(0); }}
+                              title="Resetar Posição e Zoom"
+                              className="p-2 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] text-slate-900 font-bold text-xs flex items-center justify-center shadow transition-all"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="text-slate-600 font-bold">|</span>
+                            <button
+                              type="button"
+                              onClick={() => setFotoOffsetX(x => x - 5)}
+                              title="Mover para Esquerda"
+                              className="p-2 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] text-slate-900 font-bold text-xs flex items-center justify-center shadow transition-all"
+                            >
+                              <ArrowLeft className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFotoOffsetX(x => x + 5)}
+                              title="Mover para Direita"
+                              className="p-2 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] text-slate-900 font-bold text-xs flex items-center justify-center shadow transition-all"
+                            >
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFotoOffsetY(y => y - 5)}
+                              title="Mover para Cima"
+                              className="p-2 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] text-slate-900 font-bold text-xs flex items-center justify-center shadow transition-all"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFotoOffsetY(y => y + 5)}
+                              title="Mover para Baixo"
+                              className="p-2 rounded-lg bg-[#cbd5e1] hover:bg-[#94a3b8] text-slate-900 font-bold text-xs flex items-center justify-center shadow transition-all"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

@@ -706,7 +706,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
           drawW = baseBw * scale;
           drawH = drawW / imgRatio;
           drawX = bx + (baseBw - drawW) / 2 + offsetX;
-          drawY = by + offsetY;
+          drawY = by + (baseBh - drawH) / 2 + offsetY;
         }
         ctx.drawImage(fotoImg, drawX, drawY, drawW, drawH);
         ctx.restore();

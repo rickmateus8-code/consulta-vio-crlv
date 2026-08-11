@@ -590,7 +590,7 @@ function normalizeUF(val?: string): string {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async () => {
-      const compressed = await compressImage(reader.result as string, 500, 150, 0.8, true);
+      const compressed = await compressImage(reader.result as string, 1800, 450, 0.95, true);
       setData(d => ({ ...d, assinaturaUrl: compressed }));
     };
     reader.readAsDataURL(file);
@@ -604,22 +604,27 @@ function normalizeUF(val?: string): string {
     }
     if (!assTexto) setAssTexto(textoFinal);
     const cvs = document.createElement("canvas");
-    cvs.width = 600; cvs.height = 150;
+    cvs.width = 1800; cvs.height = 450;
     const ctx = cvs.getContext("2d");
     if (!ctx) return;
-    ctx.clearRect(0, 0, 600, 150);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.clearRect(0, 0, 1800, 450);
+
     const fonteSelecionada = ESTILOS_ASS[assEstilo]?.font || "'Dancing Script', cursive";
-    let fontSize = 48;
+    let fontSize = 140;
     ctx.font = `${fontSize}px ${fonteSelecionada}`;
-    while (ctx.measureText(textoFinal).width > 560 && fontSize > 16) {
-      fontSize -= 2;
+    while (ctx.measureText(textoFinal).width > 1680 && fontSize > 40) {
+      fontSize -= 4;
       ctx.font = `${fontSize}px ${fonteSelecionada}`;
     }
-    ctx.fillStyle = "#0a0a0a";
+    ctx.fillStyle = "#000000";
     ctx.textBaseline = "middle";
-    ctx.fillText(textoFinal, 20, 75);
-    setData(d => ({ ...d, assinaturaUrl: cvs.toDataURL("image/png") }));
-    toast.success("Assinatura cursiva elegante em PNG (sem fundo) gerada!");
+    ctx.fillText(textoFinal, 40, 225);
+
+    const dataUrl = cvs.toDataURL("image/png");
+    setData(d => ({ ...d, assinaturaUrl: dataUrl }));
+    toast.success("Assinatura cursiva em altíssima definição (HD PNG) gerada com sucesso!");
   }, [assTexto, data.nome, assEstilo]);
 
   // ─── SOLICITAÇÃO E EMISSÃO ────────────────────────────────────────────────
@@ -707,8 +712,8 @@ function normalizeUF(val?: string): string {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070d1e] text-slate-100 font-sans flex flex-col select-text min-h-screen w-full p-5">
-      <div className="w-full max-w-[1280px] mx-auto bg-[#0b1226] border border-[#1e293b] rounded-2xl p-5 shadow-2xl flex flex-col mt-[2vh] mb-24">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070d1e] text-slate-100 font-sans flex flex-col items-center justify-start select-text min-h-screen w-full p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-[1380px] bg-[#0b1226] border border-[#1e293b] rounded-2xl p-6 shadow-2xl flex flex-col mt-[2vh] mb-24 lg:ml-[1.5vw]">
           {/* HEADER SUPERIOR DO CARD (1:1 COM IMAGEM DE REFERÊNCIA) */}
           <div className="bg-[#070e22] border border-[#1e3a8a]/60 rounded-xl p-4 flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">

@@ -10,6 +10,7 @@
  */
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
+import { X } from "lucide-react";
 import PrescricaoDocument from "@/components/PrescricaoDocument";
 import type { PrescricaoItem } from "@/components/PrescricaoDocument";
 import { exportElementToPDF, generatePDFFilename } from "@/lib/pdfExport";

@@ -98,7 +98,7 @@ export default function HistoricoCria() {
     return {
       ...fieldMap,
       carga_horaria: displayCH,
-      dateText: effectiveDateText
+      dateText: effectiveDateText || ""
     };
   }, [fieldMap, totalCH, effectiveDateText]);
 

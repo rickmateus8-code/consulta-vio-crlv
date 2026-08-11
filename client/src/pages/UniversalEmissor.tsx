@@ -384,7 +384,7 @@ export default function UniversalEmissor({ overrideSlug }: { overrideSlug?: stri
                           <button 
                             className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-red-50 text-red-600 text-[11px] font-bold hover:bg-red-100 transition-all"
                             onClick={() => {
-                              const newLayout = template.layout_definition.filter((_, i) => i !== selectedElementIndex);
+                              const newLayout = template.layout_definition.filter((_: any, i: number) => i !== selectedElementIndex);
                               setTemplate({ ...template, layout_definition: newLayout });
                               setSelectedElementIndex(null);
                             }}

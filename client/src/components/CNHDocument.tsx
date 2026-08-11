@@ -686,8 +686,8 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const baseBw = 246, baseBh = 301;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 310 + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 516 + Math.round((baseBh - bh) / 2) + offsetY;
+        const bx = 310 + offsetX;
+        const by = 516 + offsetY;
 
         ctx.save();
         ctx.beginPath();
@@ -700,14 +700,16 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         if (imgRatio > boxRatio) {
           drawH = baseBh * scale;
           drawW = drawH * imgRatio;
-          drawX = bx + (baseBw - drawW) / 2 + offsetX;
-          drawY = by + (baseBh - drawH) / 2 + offsetY;
+          drawX = bx + (baseBw - drawW) / 2;
+          drawY = by + (baseBh - drawH) / 2;
         } else {
           drawW = baseBw * scale;
           drawH = drawW / imgRatio;
-          drawX = bx + (baseBw - drawW) / 2 + offsetX;
-          drawY = by + offsetY;
+          drawX = bx + (baseBw - drawW) / 2;
+          drawY = by;
         }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
         ctx.drawImage(fotoImg, drawX, drawY, drawW, drawH);
         ctx.restore();
       } catch (e) { console.warn("Erro foto 3x4:", e); }
@@ -728,6 +730,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const bx = 311 + Math.round((baseBw - bw) / 2) + offsetX;
         const by = 880 + Math.round((baseBh - bh) / 2) + offsetY;
 
+        const isPng = props.assinaturaUrl.startsWith("data:image/png");
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = assImg.width;
         tempCanvas.height = assImg.height;

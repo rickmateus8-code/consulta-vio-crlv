@@ -203,9 +203,9 @@ export default function HistoricoEditar() {
     if (!pageData) return null;
 
     const props = { 
-      f: { ...fieldMap, dateText: effectiveDateText }, 
+      f: { ...fieldMap, dateText: effectiveDateText || "" }, 
       highlightModified: showHighlights, 
-      profileKey: activeProfile,
+      profileKey: activeProfile || undefined,
     };
     
     if (pageData.type === "fixed") {
@@ -354,9 +354,9 @@ export default function HistoricoEditar() {
       <div style={{ position: "fixed", left: "-9999px", top: 0 }}>
         <HistoricoUNINTERDocument
           ref={printRef}
-          data={{ ...fieldMap, dateText: effectiveDateText }}
+          data={{ ...fieldMap, dateText: effectiveDateText || "" }}
           gradeRows={gradeRows}
-          profileKey={activeProfile}
+          profileKey={activeProfile || undefined}
           highlightModified={showHighlights}
         />
       </div>

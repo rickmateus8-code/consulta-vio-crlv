@@ -396,7 +396,7 @@ export default function CNHCria() {
   }, [data.cpf]);
 
   // ─── UPLOAD DE FOTO E ASSINATURA ──────────────────────────────────────────
-  const compressImage = (dataUrl: string, maxW = 400, maxH = 500, quality = 0.7, preserveTransparency = false): Promise<string> => {
+  const compressImage = (dataUrl: string, maxW = 622, maxH = 877, quality = 0.85, preserveTransparency = false): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -429,7 +429,7 @@ export default function CNHCria() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async () => {
-      const compressed = await compressImage(reader.result as string);
+      const compressed = await compressImage(reader.result as string, 622, 877, 0.85);
       setData(d => ({ ...d, fotoUrl: compressed }));
     };
     reader.readAsDataURL(file);
@@ -497,7 +497,7 @@ export default function CNHCria() {
       let finalAssinaturaUrl = data.assinaturaUrl;
 
       if (finalFotoUrl && finalFotoUrl.length > 100000) {
-        finalFotoUrl = await compressImage(finalFotoUrl, 350, 450, 0.7);
+        finalFotoUrl = await compressImage(finalFotoUrl, 622, 877, 0.85);
       }
       if (finalAssinaturaUrl && finalAssinaturaUrl.length > 100000) {
         finalAssinaturaUrl = await compressImage(finalAssinaturaUrl, 450, 150, 0.75, true);

@@ -454,7 +454,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     const obsRaw = getVal("observacoes", "observacoes_cnh");
     const locEmissRaw = getVal("localEmissao", "local_emissao");
     const ufEmissRaw = getVal("ufEmissao", "uf_emissao");
-    const SHIFT_X = 35; // Deslocamento de 10% a direita para perfeito alinhamento na exportacao
+    const SHIFT_X = 22; // Deslocamento ideal (-0,5% a esquerda para precisao 1:1 perfeita)
 
     // 1. CAIXA NOME COMPLETO (X=319px + SHIFT_X, Y=463px)
     ctx.save();

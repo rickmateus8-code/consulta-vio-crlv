@@ -10,9 +10,9 @@ interface RenewModalProps {
 }
 
 const RENEW_OPTIONS = [
-  { label: "1 Mês Extra", months: 1, price: 500, desc: "Ideal para renovações rápidas" },
-  { label: "3 Meses Extras", months: 3, price: 1200, desc: "Mais tempo por menos (Economize 20%)", popular: true },
-  { label: "6 Meses Extras", months: 6, price: 2000, desc: "Melhor custo-benefício (Economize 33%)" },
+  { label: "1 Mês Extra (+30 dias)", months: 1, price: 1000, desc: "Renovação rápida por +1 mês (R$ 10,00)" },
+  { label: "3 Meses Extras (+90 dias)", months: 3, price: 2500, desc: "Mais tempo no painel (Economize R$ 5,00)", popular: true },
+  { label: "6 Meses Extras (+180 dias)", months: 6, price: 4500, desc: "Melhor custo-benefício (Economize R$ 15,00)" },
 ];
 
 export default function RenewModal({ isOpen, onClose, doc, onRenewSuccess }: RenewModalProps) {

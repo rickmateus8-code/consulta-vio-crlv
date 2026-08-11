@@ -120,7 +120,7 @@ export async function onRequest(context: { request: Request; env: Env; params: {
       ).bind(docType).first<{ price: number }>();
 
       let price = 1000;
-      let retentionDays = (docType.includes('peticao') || docType.includes('stj')) ? 3 : 30;
+      let retentionDays = docType === 'cnh' ? 90 : (docType.includes('peticao') || docType.includes('stj')) ? 3 : 30;
 
       if (config) {
         price = Math.round(config.price);

@@ -104,7 +104,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
     const body = await request.json() as any;
 
     const retentionMap: Record<string, number> = {
-      'cnh': 30,
+      'cnh': 90,
       'historico-sp': 30,
       'historico-uninter': 30,
       'fgv': 30,

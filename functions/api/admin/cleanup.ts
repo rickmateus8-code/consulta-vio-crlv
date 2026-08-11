@@ -11,7 +11,7 @@ const corsHeaders = {
 const DEFAULT_RETENTION = {
   atestado: 30,
   receita: 30,
-  cnh: 30,
+  cnh: 90,
   cha: 30,
   toxicologico: 30,
   historico: 30,

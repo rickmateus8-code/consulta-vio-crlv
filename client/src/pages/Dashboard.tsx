@@ -87,6 +87,7 @@ interface DocRecord {
   nome?: string;
   cpf?: string;
   created_at: string;
+  expires_at?: string;
   status: string;
   codigo_qr?: string;
   codigo_validacao?: string;
@@ -677,10 +678,12 @@ const intelligentStats = [
                           }
 
                           if (activeTab === "cnh" || activeTab === "cha") {
-                            const validadePainel = parsed.validade_cnh || parsed.validade || "—";
+                            const defaultDays = activeTab === "cnh" ? 90 : 30;
+                            const rawExpires = doc.expires_at || (doc.created_at ? new Date(new Date(doc.created_at).getTime() + defaultDays * 24 * 60 * 60 * 1000).toISOString() : "");
+                            const validadePainel = rawExpires || "—";
                             const daysRemaining = getDaysRemaining(validadePainel);
                             const isExpired = daysRemaining !== null && daysRemaining < 0;
-                            const isNearExp = daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 30;
+                            const isNearExp = daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 15;
 
                             return (
                               <tr key={doc.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b border-gray-100 dark:border-gray-800/50">

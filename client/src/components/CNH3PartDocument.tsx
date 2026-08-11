@@ -28,6 +28,9 @@ export interface CNH3PartDocumentProps {
   fotoUrl?: string;
   assinaturaUrl?: string;
   codigoQR?: string;
+  codigo_validacao?: string;
+  codigo_qr?: string;
+  qrCodeUrl?: string;
   previewWidth?: number;
 }
 
@@ -93,7 +96,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
     const render = async () => {
       if (slide === 4) {
-        // --- SLIDE 4: QR CODE VIO OFICIAL DA EMISSÃO (SQUARE 680x680) ---
+        // --- SLIDE 4: QR CODE VIO OFICIAL RECEBIDO DO /CNHCRIA (SQUARE 680x680) ---
         const W = 680;
         const H = 680;
         canvas.width = W;
@@ -107,12 +110,15 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(40, 40, 600, 600);
 
-        // Gerar QR Code VIO Oficial
-        const qrUrl = props.codigoQR?.startsWith("http")
+        // Resgate e Construção do QR Code VIO enviado pelo /cnhcria
+        const codeVal = props.codigo_validacao || props.codigo_qr || props.codigoQR || props.id;
+        const qrUrl = props.qrCodeUrl?.startsWith("http")
+          ? props.qrCodeUrl
+          : props.codigoQR?.startsWith("http")
           ? props.codigoQR
-          : props.id
-          ? `https://validacao-online-vio.digital/consulta/?id=${props.id}`
-          : (props.codigoQR || `https://validacao-online-vio.digital/consulta/?cpf=${props.cpf}`);
+          : codeVal
+          ? `https://validacao-online-vio.digital/consulta/?id=${codeVal}`
+          : `https://validacao-online-vio.digital/consulta/?cpf=${props.cpf.replace(/\D/g, "")}`;
 
         try {
           const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 520 });
@@ -126,7 +132,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         return;
       }
 
-      // --- SLIDES 1, 2, 3: CARDS DA CNH EM ORIENTAÇÃO PORTRAIT (680x963) ---
+      // --- SLIDES 1, 2, 3: CARDS DA CNH EM ORIENTAÇÃO PORTRAIT 1:1 ESQUERDA (680x963) ---
       const W = 680;
       const H = 963;
       canvas.width = W;
@@ -274,10 +280,10 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.textAlign = "left";
       }
 
-      // Rotacionar o canvas landscape (963x680) em -90 graus para a moldura portrait (680x963)
+      // Rotacionar em +90 graus (para a esquerda) para a moldura portrait 1:1 exata (Foto na esquerda, faixa preta na direita)
       ctx.save();
-      ctx.translate(0, H);
-      ctx.rotate(-Math.PI / 2);
+      ctx.translate(W, 0);
+      ctx.rotate(Math.PI / 2);
       ctx.drawImage(off, 0, 0);
       ctx.restore();
     };

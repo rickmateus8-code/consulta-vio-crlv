@@ -628,17 +628,15 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // TABELA EXPANDIDA DE CATEGORIAS (Validades A e B recuadas 0,3% a esquerda -> X=436px, Y_A=1099px, Y_B=1162px)
+    // TABELA DE CATEGORIAS (Mapeamento Estrito das Coordenadas 1:1)
     // ═══════════════════════════════════════════════════════════════════
-    const catsEsq: Record<string, { x: number; y: number }> = {
+    const catPositions: Record<string, { x: number; y: number }> = {
       A:   { x: 436, y: 1099 },
       A1:  { x: 431, y: 1136 },
       B:   { x: 436, y: 1169 },
       B1:  { x: 431, y: 1212 },
       C:   { x: 431, y: 1249 },
       C1:  { x: 431, y: 1286 },
-    };
-    const catsDir: Record<string, { x: number; y: number }> = {
       D:   { x: 861, y: 1099 },
       D1:  { x: 861, y: 1136 },
       BE:  { x: 861, y: 1174 },
@@ -647,29 +645,47 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       DE:  { x: 861, y: 1286 },
       D1E: { x: 861, y: 1324 },
     };
-    const allCats = { ...catsEsq, ...catsDir };
 
-    let userCat = (props.categoria || "AB").toUpperCase();
-    if (userCat.includes("D1E")) userCat += "DCED1CBEB1A1DEDE";
-    else if (userCat.includes("DE")) userCat += "DCED1CBEB1A1";
-    else if (userCat.includes("CE")) userCat += "DCB";
-    else if (userCat.includes("C1E")) userCat += "C1B";
-    else if (userCat.includes("BE")) userCat += "B";
-    else if (userCat.includes("E") && !userCat.includes("BE")) userCat += "DCB";
-    else if (userCat.includes("D")) userCat += "CB";
-    else if (userCat.includes("C")) userCat += "B";
-
-    // ── Renderização das datas de validade nas caixas da tabela de categorias (Validades A e B ampliadas 5% -> 14.7px) ──
+    const rawCat = (props.categoria || "AB").toUpperCase().trim();
     const dtValidadeCat = p(d(validadeRaw), "15/09/2026");
-    Object.entries(allCats).forEach(([catKey, pos]) => {
-      const habilitada = userCat === catKey ||
-        userCat.includes(catKey) ||
-        (catKey === "B" && userCat.includes("B")) ||
-        (catKey === "C" && (userCat.includes("C") || userCat.includes("E"))) ||
-        (catKey === "D" && (userCat.includes("D") || userCat.includes("E")));
 
-      if (habilitada) {
-        const sizeCat = (catKey === "A" || catKey === "B" || catKey === "D") ? 14.7 : 14;
+    // Identificação estrita dos seletores de categoria
+    const hasA = rawCat.includes("A") && !rawCat.includes("A1");
+    const hasA1 = rawCat.includes("A1");
+    const hasB = rawCat.includes("B") && !rawCat.includes("B1") && !rawCat.includes("BE");
+    const hasB1 = rawCat.includes("B1");
+    const hasC = rawCat.includes("C") && !rawCat.includes("C1") && !rawCat.includes("CE") && !rawCat.includes("C1E");
+    const hasC1 = rawCat.includes("C1");
+    const hasD = rawCat.includes("D") && !rawCat.includes("D1") && !rawCat.includes("DE") && !rawCat.includes("D1E");
+    const hasD1 = rawCat.includes("D1");
+    const hasE = rawCat.includes("E");
+    const hasBE = rawCat.includes("BE");
+    const hasCE = rawCat.includes("CE");
+    const hasDE = rawCat.includes("DE");
+
+    // Regras de Habilitação Estritas:
+    // Categoria A -> A (436, 1099)
+    // Categoria B -> B (436, 1169)
+    // Categoria C -> B e C (431, 1249)
+    // Categoria D -> B, C e D (861, 1099)
+    // Categoria E -> posicionado estritamente em CE (861, 1212)
+    const enabledCats: Record<string, boolean> = {
+      A: hasA,
+      A1: hasA1,
+      B: hasB || hasC || hasD || hasE,
+      B1: hasB1,
+      C: hasC || hasD || hasE,
+      C1: hasC1,
+      D: hasD,
+      D1: hasD1,
+      BE: hasBE,
+      CE: hasE || hasCE, // A categoria E é posicionada na caixa CE conforme mandato estrito
+      DE: hasDE,
+    };
+
+    Object.entries(catPositions).forEach(([catKey, pos]) => {
+      if (enabledCats[catKey]) {
+        const sizeCat = (catKey === "A" || catKey === "B" || catKey === "D" || catKey === "CE" || catKey === "C") ? 14.7 : 14;
         txt(dtValidadeCat, pos.x, pos.y, sizeCat, 1, "#000000", 110);
       }
     });

@@ -634,37 +634,8 @@ export default function Consultas() {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                    <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-violet-500/30 text-xs text-white overflow-x-auto">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 pl-2 pr-1 hidden sm:inline">PROVEDOR:</span>
-                      <button
-                        type="button"
-                        onClick={() => setProvider("auto")}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                          provider === "auto" ? "bg-violet-600 text-white shadow" : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        ⚡ Auto (Fallback)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProvider("snoop")}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                          provider === "snoop" ? "bg-violet-600 text-white shadow" : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        🔍 SnoopIntelligence
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProvider("iseek")}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                          provider === "iseek" ? "bg-purple-600 text-white shadow" : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        🌐 iSeek Pro
-                      </button>
-                    </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+
 
                     <div className="flex items-center gap-2">
                       <button

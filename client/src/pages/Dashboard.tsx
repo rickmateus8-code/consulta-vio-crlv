@@ -138,8 +138,9 @@ export default function Dashboard() {
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showModelsModal, setShowModelsModal] = useState(false);
   const [loyaltyData, setLoyaltyData] = useState<any>(null);
-  const [consultasPlan, setConsultasPlan] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [openCategoryDropdown, setOpenCategoryDropdown] = useState<string | null>(null);
+  const [selectedCategoryItem, setSelectedCategoryItem] = useState<{ categoryId: string; itemKey: string } | null>(null);
 
 
   // Additional states for history management
@@ -603,72 +604,166 @@ const intelligentStats = [
           </div>
         </div>
 
-        {/* Meus Documentos - Tabela & Filtros */}
+        {/* Meus Documentos - Tabela & Filtros (Pareado 1:1 com Imagens 02 e 03) */}
         <div id="meus-documentos-section" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-200 uppercase tracking-widest">Meus Documentos</h2>
+          <div className="bg-[#0f172a] rounded-3xl border border-slate-800 p-6 shadow-2xl space-y-4">
+            <h2 className="text-sm md:text-base font-black text-white uppercase tracking-wider m-0">Meus Documentos</h2>
+
+            {/* Primeira Linha: Botões de Categorias Dropdown (Imagens 02 e 03) */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              {[
+                {
+                  id: "pessoais",
+                  label: "Pessoais",
+                  icon: "🎴",
+                  items: [
+                    { key: "cnh", label: "CNH" },
+                    { key: "rg", label: "RG" },
+                    { key: "titulo-digital", label: "TÍTULO DIGITAL" },
+                    { key: "titulo-fisico", label: "TÍTULO FÍSICO" },
+                    { key: "cha", label: "CHA" },
+                  ]
+                },
+                {
+                  id: "certidoes",
+                  label: "Certidões",
+                  icon: "📜",
+                  items: [
+                    { key: "peticao-stj", label: "PETIÇÃO JUDICIAL" },
+                    { key: "fgv", label: "CERTIFICADO FGV" },
+                  ]
+                },
+                {
+                  id: "veiculos",
+                  label: "Veículos",
+                  icon: "🚗",
+                  items: [
+                    { key: "cnh", label: "CNH DIGITAL" },
+                    { key: "crlv", label: "CRLV DIGITAL" },
+                  ]
+                },
+                {
+                  id: "saude",
+                  label: "Saúde",
+                  icon: "💊",
+                  items: [
+                    { key: "atestado", label: "ATESTADO MÉDICO" },
+                    { key: "toxicologico", label: "EXAME TOXICOLÓGICO" },
+                    { key: "toxicria", label: "LAUDO INNOVATOX" },
+                    { key: "receita", label: "DR. CONSULTA" },
+                  ]
+                },
+                {
+                  id: "estudante",
+                  label: "Estudante",
+                  icon: "🎓",
+                  items: [
+                    { key: "historico-sp", label: "HISTÓRICO SP" },
+                    { key: "historicocria", label: "HISTÓRICO UNINTER" },
+                    { key: "diploma-uninter", label: "DIPLOMA UNINTER" },
+                  ]
+                },
+                {
+                  id: "faturas",
+                  label: "Faturas",
+                  icon: "🧾",
+                  items: [
+                    { key: "faturas", label: "FATURAS E RECARGAS" },
+                  ]
+                }
+              ].map(cat => {
+                const isOpen = openCategoryDropdown === cat.id;
+                const isSelectedCat = selectedCategoryItem?.categoryId === cat.id;
+
+                return (
+                  <div key={cat.id} className="relative">
+                    <button
+                      onClick={() => setOpenCategoryDropdown(isOpen ? null : cat.id)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border whitespace-nowrap ${
+                        isSelectedCat || isOpen
+                          ? "bg-blue-600 border-blue-400 text-white shadow-md shadow-blue-600/30"
+                          : "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white"
+                      }`}
+                    >
+                      <span>{cat.icon} {cat.label}</span>
+                      <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {/* Menu Dropdown de Sub-itens (Imagem 03) */}
+                    {isOpen && (
+                      <div 
+                        className="absolute left-0 top-full mt-2 w-56 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden py-1 animate-in zoom-in-95 duration-150"
+                        onMouseLeave={() => setOpenCategoryDropdown(null)}
+                      >
+                        {cat.items.map(subItem => (
+                          <button
+                            key={subItem.key}
+                            onClick={() => {
+                              setSelectedCategoryItem({ categoryId: cat.id, itemKey: subItem.key });
+                              setActiveTab(subItem.key === "titulo-digital" || subItem.key === "titulo-fisico" || subItem.key === "rg" ? "cnh" : subItem.key);
+                              setOpenCategoryDropdown(null);
+                            }}
+                            className={`w-full px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-colors ${
+                              selectedCategoryItem?.itemKey === subItem.key
+                                ? "bg-blue-600/20 text-blue-400"
+                                : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                            }`}
+                          >
+                            <span>{cat.icon}</span>
+                            <span>{subItem.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <div className="relative w-full sm:w-80">
+
+            {/* Segunda Linha: Barra de Busca de Largura Total (Imagem 02 e 03) */}
+            <div className="relative w-full">
               <input 
                 type="text" 
                 value={searchTerm} 
                 onChange={(e) => setSearchTerm(e.target.value)} 
-                placeholder="Pesquisar nome, CPF ou código..." 
-                className="w-full pl-10 pr-9 py-2.5 text-[11px] font-bold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm transition-all uppercase"
+                placeholder="Buscar por nome, CPF, placa ou código..." 
+                className="w-full pl-11 pr-9 py-3 text-xs font-bold text-white bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-slate-500 shadow-inner uppercase font-mono"
               />
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                <Search size={14} />
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                <Search size={16} />
               </div>
               {searchTerm && (
                 <button 
                   onClick={() => setSearchTerm("")} 
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white transition-colors"
                 >
                   <X size={14} />
                 </button>
               )}
             </div>
-          </div>
-          
-          <div className="bg-slate-900/90 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
-            {/* Category Header Bar - Estilo EliteDoc */}
-            <div className="flex border-b border-slate-800/80 overflow-x-auto no-scrollbar p-3.5 gap-2 bg-slate-950/60">
-              {historyTabs.filter(t => isToolAllowed(t.key)).map(tab => {
-                const isActive = activeTab === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border whitespace-nowrap ${isActive ? "bg-blue-600 border-blue-400 text-white shadow-md shadow-blue-600/30" : "bg-slate-900/80 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200"}`}
-                  >
-                    <span>{tab.label}</span>
-                    <ChevronDown className="w-3 h-3 opacity-70" />
-                  </button>
-                );
-              })}
-            </div>
-            <div className="p-4 bg-slate-950/40">
+
+            {/* Área de Tabela ou Mensagem de Carregamento de Registros (Imagem 03) */}
+            <div className="pt-2">
               {historyLoading ? (
-                <div className="py-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" /></div>
+                <div className="py-16 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-400 opacity-80" /></div>
               ) : history.length === 0 ? (
-                <div className="py-20 text-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl">
-                  <FileText className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Nenhum documento emitido nesta categoria ainda</h3>
-                  <button onClick={() => setShowNovoDocModal(true)} className="mt-4 px-5 py-2.5 btn-glow-blue text-white text-[10px] font-black rounded-xl uppercase tracking-wider">Emitir Novo Documento</button>
+                <div className="py-16 text-center bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 p-6">
+                  <FileText className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">
+                    Selecione um documento no menu acima para carregar os registros.
+                  </p>
                 </div>
               ) : filteredHistory.length === 0 ? (
-                <div className="py-20 text-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl">
-                  <Search className="w-12 h-12 text-gray-300 mx-auto mb-3 animate-pulse" />
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Nenhum resultado encontrado para "{searchTerm}"</h3>
-                  <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">Tente buscar por outro termo</p>
+                <div className="py-16 text-center bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 p-6">
+                  <Search className="w-10 h-10 text-slate-600 mx-auto mb-2 animate-pulse" />
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Nenhum resultado encontrado para "{searchTerm}"</h3>
+                  <p className="text-[10px] text-slate-500 mt-1 uppercase font-bold">Tente buscar por outro termo</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-2xl border border-slate-800">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-slate-800 bg-slate-900/80">
+                      <tr className="border-b border-slate-800 bg-slate-900/90">
                         <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">NOME</th>
                         <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">CPF / DOCUMENTO</th>
                         <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">CRIADO EM</th>

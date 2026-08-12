@@ -86,6 +86,25 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       };
     }
 
+    // 3. Processar gabaritos dinâmicos do DocMaster Studio Engine
+    try {
+      const studioTemplates = await env.DB.prepare(
+        "SELECT slug, name, price, category FROM studio_templates"
+      ).all<{ slug: string; name: string; price: number; category: string }>();
+
+      for (const row of studioTemplates.results || []) {
+        if (!priceMap[row.slug]) {
+          const priceInCents = Math.round(row.price);
+          priceMap[row.slug] = {
+            display_name: row.name,
+            price: priceInCents,
+            price_formatted: `R$ ${(priceInCents / 100).toFixed(2).replace('.', ',')}`,
+            is_universal: true,
+          };
+        }
+      }
+    } catch {}
+
     return new Response(JSON.stringify({
       success: true,
       pricing: priceMap,

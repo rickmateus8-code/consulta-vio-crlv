@@ -242,9 +242,124 @@ export default function StudioEngine() {
     toast.info("Caixa de coordenada removida.");
   };
 
+  const [showTsxModal, setShowTsxModal] = useState(false);
+
+  // Transpilador de Código React .tsx
+  const generateTSXCode = () => {
+    const componentName = (docName || "NovoDocumento")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]/g, "");
+
+    return `import React, { useState } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { toast } from "sonner";
+import { exportToPdf } from "@/lib/pdfExport";
+
+export default function ${componentName}Cria() {
+  const [formData, setFormData] = useState({
+${boxes.map((b) => `    ${b.fieldKey}: "",`).join("\n")}
+  });
+
+  return (
+    <DashboardLayout title="Emissão - ${docName || "Novo Documento"}">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+          <h2 className="text-xl font-black text-white uppercase italic">${docName || "Novo Documento"}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+${boxes
+  .map(
+    (b) => `            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">${b.label}</label>
+              <input
+                type="text"
+                value={formData.${b.fieldKey}}
+                onChange={(e) => setFormData(prev => ({ ...prev, ${b.fieldKey}: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500"
+              />
+            </div>`
+  )
+  .join("\n")}
+          </div>
+        </div>
+
+        {/* Overlay Forense 1:1 */}
+        <div className="relative bg-white rounded-2xl border border-slate-800 overflow-hidden shadow-2xl p-4">
+          <div className="relative" style={{ width: 680, height: 480 }}>
+            <img src="${bgImage || ""}" alt="Gabarito PDF" className="w-full h-full object-contain" />
+${boxes
+  .map(
+    (b) => `            <div
+              className="absolute font-mono text-[10px] font-bold uppercase"
+              style={{
+                left: ${b.x},
+                top: ${b.y},
+                width: ${b.width},
+                height: ${b.height},
+                fontSize: ${b.fontSize},
+                color: "${b.color}",
+                textAlign: "${b.textAlign}",
+              }}
+            >
+              {formData.${b.fieldKey} || "${b.label}"}
+            </div>`
+  )
+  .join("\n")}
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+};
+`;
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       
+      {/* Modal de Exibição do Código .tsx Compilado */}
+      {showTsxModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setShowTsxModal(false)}>
+          <div className="bg-[#0b1120] text-white border border-indigo-500/40 rounded-3xl p-6 max-w-3xl w-full flex flex-col shadow-2xl max-h-[85vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center">
+                  <Type className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white uppercase italic tracking-tight m-0">Código React .tsx Compilado</h3>
+                  <p className="text-xs text-slate-400">Transpilado automaticamente no padrão DocMaster</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generateTSXCode());
+                    toast.success("Código .tsx copiado para a área de transferência!");
+                  }}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md"
+                >
+                  Copiar Código .tsx
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowTsxModal(false)}
+                  className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <pre className="flex-1 bg-slate-950 p-4 rounded-2xl border border-slate-800 overflow-auto font-mono text-xs text-emerald-400 custom-scrollbar leading-relaxed">
+              {generateTSXCode()}
+            </pre>
+          </div>
+        </div>
+      )}
+
       {/* Header do Studio Engine */}
       <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -252,12 +367,20 @@ export default function StudioEngine() {
             <Wand2 className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-white uppercase italic tracking-tight m-0">DocMaster Studio Engine</h2>
-            <p className="text-xs text-slate-400 font-medium">Clonador de PDFs & Mapeador Manual de Coordenadas X/Y por Arrasto</p>
+            <h2 className="text-2xl font-black text-white uppercase italic tracking-tight m-0">DocMaster Studio Express</h2>
+            <p className="text-xs text-slate-400 font-medium">Editor Visual Estilo Adobe Express & Transpilador de Código React .tsx</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setShowTsxModal(true)}
+            className="px-4 py-2.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-300 font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-indigo-950/40"
+          >
+            <Type className="w-4 h-4 text-indigo-400" />
+            <span>Ver Código .tsx Compilado</span>
+          </button>
           <button
             type="button"
             onClick={handleExtractLogos}

@@ -145,6 +145,21 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [openCategoryDropdown, setOpenCategoryDropdown] = useState<string | null>(null);
   const [selectedCategoryItem, setSelectedCategoryItem] = useState<{ categoryId: string; itemKey: string } | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getGreeting = () => {
+    const hours = currentTime.getHours();
+    if (hours >= 5 && hours < 12) return "Bom dia";
+    if (hours >= 12 && hours < 18) return "Boa tarde";
+    return "Boa noite";
+  };
 
 
   // Additional states for history management
@@ -240,13 +255,6 @@ export default function Dashboard() {
       .catch(() => {});
   }, [refresh]);
 
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return "Bom dia";
-    if (hour >= 12 && hour < 18) return "Boa tarde";
-    return "Boa noite";
-  };
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "—";
@@ -456,9 +464,37 @@ const intelligentStats = [
   return (
     <DashboardLayout>
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
-        {/* Visão Geral Header */}
-        <div>
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight m-0">Visão Geral</h1>
+        {/* Header Personalizado com Saudação e Relógio/Data em Tempo Real */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+          <div>
+            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight m-0 flex flex-wrap items-center gap-2">
+              <span>Olá, <span className="text-blue-400 capitalize">{user?.name || user?.username || "Usuário"}</span>! {getGreeting()}</span>
+              <span className="text-xl">👋</span>
+            </h1>
+            <p className="text-xs text-slate-400 font-medium mt-1">Seja bem-vindo de volta ao DocMaster</p>
+          </div>
+
+          <div className="flex items-center gap-3 bg-[#0f172a] border border-slate-800 px-4 py-2.5 rounded-2xl shadow-md w-fit">
+            <Clock className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+            <div className="text-xs font-mono">
+              <span className="text-slate-300 font-bold capitalize">
+                {currentTime.toLocaleDateString("pt-BR", {
+                  weekday: "short",
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
+              <span className="mx-2 text-slate-600">•</span>
+              <span className="text-emerald-400 font-black tracking-widest">
+                {currentTime.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Patent Card - Barra de Progresso por Adição de Saldo (Imagens 01 e 02) */}

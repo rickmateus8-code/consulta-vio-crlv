@@ -108,13 +108,14 @@ interface PresenceRow {
 }
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
+  { key: "studio", label: "Studio Engine (PDF & .tsx)", icon: Wand2 },
   { key: "users", label: "Usuários", icon: Users },
-  { key: "tools", label: "Ferramentas (Módulos)", icon: Shield },
-  { key: "monitoring", label: "Monitoramento", icon: Monitor },
-  { key: "pricing", label: "Preços", icon: DollarSign },
-  { key: "notices", label: "Avisos", icon: Bell },
-  { key: "logs", label: "Logs", icon: Activity },
   { key: "emissions", label: "Emissões", icon: FileText },
+  { key: "tools", label: "Ferramentas (Módulos)", icon: Shield },
+  { key: "pricing", label: "Preços", icon: DollarSign },
+  { key: "logs", label: "Logs & Auditoria", icon: Activity },
+  { key: "notices", label: "Avisos", icon: Bell },
+  { key: "monitoring", label: "Monitoramento", icon: Monitor },
   { key: "referral", label: "Indicações", icon: Gift },
   { key: "settings", label: "Configurações", icon: Settings },
 ];
@@ -1528,6 +1529,32 @@ export default function AdminDashboard() {
                 <p className="text-xl font-black text-blue-400 font-mono">{onlineCount}</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Hero Banner Studio Engine - Estilo /dashboard */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-950 via-purple-900 to-slate-950 border border-indigo-500/50 p-6 md:p-8 shadow-2xl shadow-purple-950/40 group hover:border-indigo-400/80 transition-all duration-300">
+          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-500 pointer-events-none" />
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 text-[10px] font-black uppercase tracking-widest">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-spin" /> Motor de Inovação Ativo
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-white italic tracking-tight uppercase m-0">
+                DocMaster Studio Engine
+              </h2>
+              <p className="text-xs text-slate-300 font-medium max-w-2xl leading-relaxed m-0">
+                Clonador de PDFs oficiais estilo Adobe Express. Arraste coordenadas X/Y na tela, extraia brasões e compile código React TypeScript (.tsx) diretamente para o ecossistema.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setTab("studio")}
+              className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all shadow-xl shadow-indigo-600/30 active:scale-95 cursor-pointer shrink-0 border border-indigo-400/50"
+            >
+              <Wand2 className="w-4 h-4 text-indigo-200" />
+              <span>Abrir Studio Engine</span>
+            </button>
           </div>
         </div>
 

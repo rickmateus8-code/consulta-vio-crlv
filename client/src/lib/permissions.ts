@@ -67,24 +67,24 @@ export function isToolLiberated(user: UserForPermission | null | undefined, key:
 
   // Documentos Veiculares
   if (k === "crlv" || k === "crlvcria") {
-    return editaveis.includes("crlv") || free.includes("crlv") || free.includes("crlvcria");
+    return editaveis.includes("crlv") || editaveis.includes("crlvcria") || free.includes("crlv") || free.includes("crlvcria");
   }
   if (k === "cnh" || k === "cnhcria") {
-    return editaveis.includes("cnh") || free.includes("cnh") || free.includes("cnhcria");
+    return editaveis.includes("cnh") || editaveis.includes("cnhcria") || free.includes("cnh") || free.includes("cnhcria");
   }
   if (k === "cha" || k === "chacria") {
-    return editaveis.includes("cha") || free.includes("cha") || free.includes("chacria");
+    return editaveis.includes("cha") || editaveis.includes("chacria") || free.includes("cha") || free.includes("chacria");
   }
 
   // Documentos Médicos
   if (k === "atestado" || k === "atestadocria") {
-    return editaveis.includes("atestado") || free.includes("atestado") || free.includes("atestadocria");
+    return editaveis.includes("atestado") || editaveis.includes("atestadocria") || free.includes("atestado") || free.includes("atestadocria");
   }
   if (k === "receita" || k === "receitacria") {
-    return editaveis.includes("receita") || free.includes("receita") || free.includes("receitacria");
+    return editaveis.includes("receita") || editaveis.includes("receitacria") || free.includes("receita") || free.includes("receitacria");
   }
-  if (k === "toxicologico" || k === "toxicria" || k === "laudocria") {
-    return editaveis.includes("toxicologico") || editaveis.includes("toxicria") || free.includes("toxicologico") || free.includes("toxicria");
+  if (k === "toxicologico" || k === "toxicria" || k === "laudocria" || k === "toxicologia") {
+    return editaveis.includes("toxicologico") || editaveis.includes("toxicria") || editaveis.includes("laudocria") || editaveis.includes("toxicologia") || free.includes("toxicologico") || free.includes("toxicria") || free.includes("laudocria") || free.includes("toxicologia");
   }
 
   // Documentos Escolares & Acadêmicos
@@ -103,13 +103,13 @@ export function isToolLiberated(user: UserForPermission | null | undefined, key:
 
   // Ferramentas & Petições
   if (k === "peticao-stj" || k === "peticaocria" || k === "peticao") {
-    return ferramentas.includes("peticao-stj") || ferramentas.includes("peticaocria") || free.includes("peticao-stj") || free.includes("peticaocria") || free.includes("peticao");
+    return ferramentas.includes("peticao-stj") || ferramentas.includes("peticaocria") || editaveis.includes("peticao-stj") || editaveis.includes("peticaocria") || free.includes("peticao-stj") || free.includes("peticaocria") || free.includes("peticao");
   }
   if (k === "bot-adv") {
-    return ferramentas.includes("bot-adv") || free.includes("bot-adv");
+    return ferramentas.includes("bot-adv") || editaveis.includes("bot-adv") || free.includes("bot-adv");
   }
   if (k === "consultas" || k === "consultar dados") {
-    return ferramentas.includes("consultas") || free.includes("consultas");
+    return ferramentas.includes("consultas") || editaveis.includes("consultas") || free.includes("consultas");
   }
 
   return editaveis.includes(k) || ferramentas.includes(k);

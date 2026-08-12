@@ -66,6 +66,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchMe();
+
+    // Auto-sincronização de saldo e permissões em tempo real quando o usuário volta à aba do navegador
+    const handleFocus = () => {
+      fetchMe();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    // Polling automático a cada 15s para garantir atualização de liberações concedidas pelo Admin
+    const interval = setInterval(() => {
+      fetchMe();
+    }, 15000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
   }, [fetchMe]);
 
   const login = useCallback(async (username: string, password: string) => {

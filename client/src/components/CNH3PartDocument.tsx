@@ -119,16 +119,20 @@ async function drawCleanSignature(
     const data = imgData.data;
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
-      if (a < 50 || (r > 140 && g > 140 && b > 140)) {
+      if (a < 30 || (r > 160 && g > 160 && b > 160)) {
         data[i+3] = 0;
       } else {
         data[i] = 0;
         data[i+1] = 0;
         data[i+2] = 0;
-        data[i+3] = a > 50 ? a : 255;
+        const luminance = (r + g + b) / 3;
+        const factor = Math.max(0, (160 - luminance) / 160);
+        data[i+3] = Math.round(a * factor);
       }
     }
     tctx.putImageData(imgData, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(tempCanvas, x, y, width, height);
   } catch {}
 }

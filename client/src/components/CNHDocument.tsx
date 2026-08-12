@@ -729,7 +729,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // ASSINATURA DO CONDUTOR (Subir 0,2% -> Y=893px)
+    // ASSINATURA DO CONDUTOR (Renderização HD com Anti-Aliasing de Alta Qualidade)
     // ═══════════════════════════════════════════════════════════════════
     if (props.assinaturaUrl) {
       try {
@@ -743,7 +743,6 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const bx = 311 + SHIFT_X + Math.round((baseBw - bw) / 2) + offsetX;
         const by = 893 + Math.round((baseBh - bh) / 2) + offsetY;
 
-        const isPng = props.assinaturaUrl.startsWith("data:image/png");
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = assImg.width;
         tempCanvas.height = assImg.height;
@@ -759,29 +758,26 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
           const b = dataPixels[i + 2];
           const a = dataPixels[i + 3];
 
-          if (a < 50 || (r > 150 && g > 150 && b > 150)) {
+          if (a < 30 || (r > 160 && g > 160 && b > 160)) {
             dataPixels[i + 3] = 0;
           } else {
             dataPixels[i] = 0;
             dataPixels[i + 1] = 0;
             dataPixels[i + 2] = 0;
-            dataPixels[i + 3] = a > 50 ? a : 255;
+            const luminance = (r + g + b) / 3;
+            const factor = Math.max(0, (160 - luminance) / 160);
+            dataPixels[i + 3] = Math.round(a * factor);
           }
         }
         tctx.putImageData(imgData, 0, 0);
-
-        const drawW = bw;
-        const drawH = bh;
-        const drawX = bx;
-        const drawY = by;
 
         ctx.save();
         ctx.beginPath();
         ctx.rect(311 + SHIFT_X, 893, baseBw, baseBh);
         ctx.clip();
-        ctx.drawImage(tempCanvas, drawX, drawY, drawW, drawH);
-        ctx.drawImage(tempCanvas, drawX + 1, drawY, drawW, drawH);
-        ctx.drawImage(tempCanvas, drawX, drawY + 1, drawW, drawH);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(tempCanvas, bx, by, bw, bh);
         ctx.restore();
       } catch (e) { console.warn("Erro assinatura PNG:", e); }
     }

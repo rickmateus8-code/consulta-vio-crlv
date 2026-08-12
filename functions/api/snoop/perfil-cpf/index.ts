@@ -135,19 +135,19 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     } catch {}
   }
 
-  // Agregação paralela limpa sem requisições excessivas a endpoints inexistentes (prevenção de HTTP 429)
-  const [cpfData, fotoData, fotoAllData, parentes, vizinhos, score, profissionais, telefones, veiculos, geoData] = await Promise.all([
+  // Agregação paralela limpa e precisa (sem requisições desnecessárias a CEP vizinhos/entorno)
+  const [cpfData, fotoData, fotoAllData, parentes, score, profissionais, telefones, veiculos, geoData] = await Promise.all([
     snoopGet('generic/cpf', { cpf }, apiKey),
     snoopGet('foto', { cpf }, apiKey),
     snoopGet('foto/all', { cpf }, apiKey),
     snoopGet('parentes', { cpf }, apiKey),
-    snoopGet('vizinhos', { cpf }, apiKey),
     snoopGet('score', { cpf }, apiKey),
     snoopGet('profissionais', { cpf }, apiKey),
     snoopGet('telefone/cpf', { cpf }, apiKey),
     snoopGet('veiculos/jbr', { cpf }, apiKey),
     snoopGet('geo', { cpf }, apiKey),
   ]);
+
 
   const getValidPhoto = (obj: any): string | null => {
     if (!obj) return null;
@@ -276,8 +276,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       all: fotoAllData?.data ?? fotoAllData?.body ?? fotoAllData ?? null,
     },
     parentes: mergedParentes.length > 0 ? mergedParentes : (rawCpf.parentes ?? null),
-    vizinhos: vizinhos?.data ?? vizinhos?.body ?? vizinhos ?? rawCpf.vizinhos ?? null,
+    vizinhos: null,
     score: score?.data ?? score?.body ?? score ?? rawCpf.score ?? null,
+
     profissionais: profissionais?.data ?? profissionais?.body ?? profissionais ?? rawCpf.profissionais ?? null,
     telefones: mergedTelefones.length > 0 ? mergedTelefones : (rawCpf.phones ?? rawCpf.telefones ?? null),
     veiculos: mergedVeiculos.length > 0 ? mergedVeiculos : (rawCpf.vehicles ?? rawCpf.veiculos ?? null),

@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { openRecarregaModal } from "@/components/RecarregaModal";
+import { isToolLiberated } from "@/lib/permissions";
 import {
   X, FileText, Car, Anchor, FlaskConical, GraduationCap,
   Pill, AlertTriangle, Wallet, CreditCard, MessageCircle, Search, Award
@@ -91,17 +92,7 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
     }
   })();
 
-  const isToolAllowed = (key: string) => {
-    if (user?.role === "admin") return true;
-    if (freeDocs.includes(key) || (key === "consultas" && freeDocs.includes("consultas"))) return true;
-    if (["bot-adv", "peticao-stj", "peticaocria", "consultas"].includes(key)) {
-      const toolKey = key === "peticaocria" ? "peticao-stj" : key;
-      return allowedTools.includes(toolKey) || freeDocs.includes(toolKey);
-    }
-    if (key === "toxicria") return allowedEditables.includes("toxicologico") || freeDocs.includes("toxicologico");
-    if (key === "crlv" || key === "crlvcria") return allowedEditables.includes("crlv") || allowedEditables.includes("cnh") || freeDocs.includes("crlv") || true;
-    return allowedEditables.includes(key) || freeDocs.includes(key);
-  };
+  const isToolAllowed = (key: string) => isToolLiberated(user, key);
 
   useEffect(() => {
     if (!open) return;

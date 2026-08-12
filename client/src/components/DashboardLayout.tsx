@@ -8,6 +8,7 @@ import RecarregaModal, { RECARREGA_MODAL_EVENT, RECARREGA_MODAL_PENDING_KEY } fr
 import ExtratoModal from "@/components/ExtratoModal";
 import ReferralModal from "@/components/ReferralModal";
 import UserProfileModal from "@/components/UserProfileModal";
+import { isToolLiberated } from "@/lib/permissions";
 import {
   LayoutDashboard, FileText, CreditCard, Receipt, LogOut,
   ChevronDown, ChevronRight, Menu, X, Sun, Moon,
@@ -317,19 +318,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isAllowed = (label: string) => {
     if (isAdmin) return true;
     const l = label.toLowerCase();
-    const editaveis = Array.isArray(permissions.editaveis) ? permissions.editaveis : [];
-    const ferramentas = Array.isArray(permissions.ferramentas) ? permissions.ferramentas : [];
-
     if (l === "dashboard") return true;
-    if (l === "atestado") return editaveis.includes("atestado");
-    if (l === "cnh digital") return editaveis.includes("cnh");
-    if (l === "crlv digital") return editaveis.includes("cnh") || editaveis.includes("crlv") || true;
-    if (l === "cha náutica") return editaveis.includes("cha");
-    if (l === "petição stj") return ferramentas.includes("peticao-stj");
-    if (l === "bot adv") return ferramentas.includes("bot-adv");
-    if (l === "toxicológico") return editaveis.includes("toxicologico");
-    if (l === "receituário") return editaveis.includes("receita");
-    return false;
+    return isToolLiberated(user, l);
   };
 
   const filteredMenuItems = menuItems.filter(item => isAllowed(item.label));

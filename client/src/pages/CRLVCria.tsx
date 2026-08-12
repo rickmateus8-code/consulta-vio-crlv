@@ -17,6 +17,7 @@ import CRLVDocument, { type CRLVDocumentHandle, type CRLVDocumentProps } from ".
 import { toast } from "sonner";
 import EmissionModal from "@/components/EmissionModal";
 import { snoopPerfilCPF } from "@/lib/snoopApi";
+import { isToolLiberated } from "@/lib/permissions";
 import {
   ArrowLeft, Download, MessageCircle, Copy, Zap, Check, User, Car, RefreshCw,
   ZoomIn, ZoomOut, RotateCcw, ArrowUp, ArrowDown, Maximize2, Sparkles, Search, ShieldCheck, Wrench, FileText,
@@ -187,6 +188,14 @@ export default function CRLVCria() {
     }
     return DEFAULT_CRLV_DATA;
   });
+
+  // Proteção de rota por auditoria de permissão
+  useEffect(() => {
+    if (user && user.role !== "admin" && !isToolLiberated(user, "crlv")) {
+      toast.error("🔒 Acesso não liberado. Seu usuário aguarda auditoria e liberação de permissões pelo Administrador.");
+      setLocation("/dashboard");
+    }
+  }, [user, setLocation]);
 
   // Salvar rascunho automaticamente a cada mudança de campo (se não em modo edição)
   useEffect(() => {

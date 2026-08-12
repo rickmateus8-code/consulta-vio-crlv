@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { validarCPF, formatarCPF as formatarCPFUtil, displayDateToHtml } from "@/lib/utils";
 import EmissionModal from "@/components/EmissionModal";
 import { snoopPerfilCPF } from "@/lib/snoopApi";
+import { isToolLiberated } from "@/lib/permissions";
 import {
   ArrowLeft, Save, Download, MessageCircle, Copy, Zap,
   Upload, Lock, Check, User, Camera, Car, RefreshCw, ZoomIn, ZoomOut,
@@ -147,6 +148,14 @@ export default function CNHCria() {
   });
 
   const routeParams = useParams<{ id?: string }>();
+
+  // Proteção de rota por auditoria de permissão
+  useEffect(() => {
+    if (user && user.role !== "admin" && !isToolLiberated(user, "cnh")) {
+      toast.error("🔒 Acesso não liberado. Seu usuário aguarda auditoria e liberação de permissões pelo Administrador.");
+      setLocation("/dashboard");
+    }
+  }, [user, setLocation]);
 
   // Carregar documento se em edição (suporta /cnh/editar/:id ou ?edit_id=UUID)
   useEffect(() => {

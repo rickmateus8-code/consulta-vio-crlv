@@ -6,6 +6,7 @@ import { exportElementToPDF, generatePDFFilename } from "@/lib/pdfExport";
 import { useAuth } from "@/contexts/AuthContext";
 import { validarCPF } from "@/lib/utils";
 import { useSettings } from "@/hooks/useSettings";
+import { isToolLiberated } from "@/lib/permissions";
 
 // ─── SearchSelect: select com campo de busca integrado no dropdown ────────────
 function SearchSelect({
@@ -1369,10 +1370,14 @@ export default function AtestadoCria() {
     }
   };
 
-  const isFree = user?.role === 'admin' || (Array.isArray(user?.free_documents) && (
-    (documentType === 'atestado' && user.free_documents.includes('atestado')) ||
-    (documentType === 'laudo' && (user.free_documents.includes('laudocria') || user.free_documents.includes('toxicria')))
-  ));
+  useEffect(() => {
+    if (user && user.role !== "admin" && !isToolLiberated(user, "atestado")) {
+      toast.error("🔒 Acesso não liberado. Seu usuário aguarda auditoria e liberação de permissões pelo Administrador.");
+      setLocation("/dashboard");
+    }
+  }, [user, setLocation]);
+
+  const isFree = user?.role === 'admin' || isToolLiberated(user, documentType === 'laudo' ? 'toxicria' : 'atestado');
 
   console.log(`[AtestadoCria] documentType: ${documentType}, isFree: ${isFree}, Balance: ${user?.balance}`);
 

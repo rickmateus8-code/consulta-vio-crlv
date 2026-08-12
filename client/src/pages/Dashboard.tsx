@@ -25,6 +25,7 @@ import { createElement } from "react";
 import CertificadoFGVDocument from "@/components/CertificadoFGVDocument";
 import AttestationDocument from "@/components/AttestationDocument";
 import { usePDFExport, generatePDFFilename } from "@/lib/pdfExport";
+import { isToolLiberated } from "@/lib/permissions";
 
 const quickActionsRaw = [
   { key: "atestado", icon: FileText, label: "Novo Atestado", desc: "Emitir atestado médico", path: "/atestadocria", color: "yellow" },
@@ -404,16 +405,7 @@ export default function Dashboard() {
     }
   })();
 
-  const isToolAllowed = (key: string) => {
-    if (user?.role === "admin") return true;
-    if (freeDocs.includes(key) || (key === "consultas" && freeDocs.includes("consultas"))) return true;
-    if (["bot-adv", "peticao-stj", "consultas"].includes(key)) {
-      return allowedTools.includes(key) || freeDocs.includes(key);
-    }
-    if (key === "toxicria") return allowedEditables.includes("toxicologico") || freeDocs.includes("toxicologico");
-    if (key === "crlv" || key === "crlvcria") return allowedEditables.includes("crlv") || allowedEditables.includes("cnh") || freeDocs.includes("crlv") || true;
-    return allowedEditables.includes(key) || freeDocs.includes(key);
-  };
+  const isToolAllowed = (key: string) => isToolLiberated(user, key);
 
   const filteredQuickActions = quickActionsRaw.filter(action => isToolAllowed(action.key));
   const hasAnyPermission = user?.role === "admin" || filteredQuickActions.length > 0 || freeDocs.length > 0 || allowedEditables.length > 0 || allowedTools.length > 0;

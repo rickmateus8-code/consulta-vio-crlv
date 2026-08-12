@@ -98,159 +98,111 @@ export default function PatentCard({ loyalty }: PatentCardProps) {
   }, [loyalty.resetDate]);
 
   const progress = Math.min(100, (loyalty.thisWeekVolume / 25000) * 100);
-  
-  // Status para semana que vem: baseia-se apenas no volume DESTA SEMANA
-  const isGuaranteed = loyalty.thisWeekVolume >= 10000;
-  const earnedBonusThisWeek = (() => {
-    if (loyalty.thisWeekVolume >= 25000) return "40%";
-    if (loyalty.thisWeekVolume >= 18000) return "30%";
-    if (loyalty.thisWeekVolume >= 10000) return "25%";
-    return "20%";
-  })();
 
   const getRankColor = (rank: string) => {
     switch (rank) {
-      case "BRONZE": return "text-orange-500";
+      case "BRONZE": return "text-amber-500";
       case "PRATA": return "text-blue-400";
-      case "OURO": return "text-amber-500";
+      case "OURO": return "text-amber-400";
       default: return "text-slate-400";
     }
   };
 
-  const getRankBadge = (rank: string) => {
-    switch (rank) {
-      case "BRONZE": return "bg-orange-500 shadow-orange-500/20";
-      case "PRATA": return "bg-blue-500 shadow-blue-500/20";
-      case "OURO": return "bg-amber-500 shadow-amber-500/20";
-      default: return "bg-slate-500 shadow-slate-500/20";
-    }
-  };
+  const nextNeeded = Math.max(0, loyalty.nextGoal - loyalty.thisWeekVolume);
 
   return (
-    <div className="bg-[#0f172a] text-white rounded-[2.5rem] p-8 border border-slate-800 shadow-2xl mb-8 animate-in fade-in slide-in-from-top-4 duration-500 overflow-hidden relative group">
+    <div className="bg-[#0f172a] text-white rounded-3xl p-6 md:p-8 border border-slate-800 shadow-2xl mb-8 animate-in fade-in duration-500 overflow-hidden relative">
       {/* Glow Effect */}
-      <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none" />
-      
-      {/* Header Info */}
-      <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-10 relative z-10">
-        <div className="flex items-center gap-6">
-          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 shadow-inner transition-transform group-hover:scale-110 duration-500 ${getRankColor(loyalty.currentRank)}`}>
-            <Crown size={36} />
+      <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
+
+      {/* Header Info - Estilo EliteDoc */}
+      <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-8 relative z-10">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/10">
+            <Crown size={28} />
           </div>
           <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-3xl font-black tracking-tighter dark:text-white uppercase m-0 italic">{loyalty.currentRank}</h2>
-              <span className={`px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-wider shadow-lg ${getRankBadge(loyalty.currentRank)}`}>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-2xl font-black tracking-tight text-white uppercase italic m-0">{loyalty.currentRank}</h2>
+              <span className="px-3 py-1 rounded-full text-[10px] font-black bg-amber-500/20 border border-amber-500/40 text-amber-300 uppercase tracking-wider">
                 {loyalty.currentBonus}% BÔNUS
               </span>
             </div>
-            <div className="flex items-center gap-2 mt-2">
-              <Hourglass size={12} className="text-gray-400" />
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest m-0">
-                ESTE STATUS EXPIRA EM: <span className="text-blue-600 dark:text-blue-400">{timeLeft}</span>
+            <div className="flex flex-wrap items-center gap-4 mt-2">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 m-0">
+                <Hourglass size={12} className="text-amber-400" />
+                ESTE STATUS EXPIRA EM: <span className="text-blue-400 font-mono font-black">{timeLeft}</span>
               </p>
-            </div>
-            <div className="flex items-center gap-2 mt-3">
-               <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-[9px] font-black text-slate-500 uppercase tracking-tighter">Sua Patente Atual</span>
-               <button 
-                 onClick={() => setShowRules(true)} 
-                 className="flex items-center gap-1.5 text-[10px] font-black text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-widest bg-transparent border-none cursor-pointer p-0 group/btn"
-               >
-                 Saiba Mais <ChevronRight size={12} className="group-hover/btn:translate-x-0.5 transition-transform" />
-               </button>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SUA PATENTE ATUAL ●</span>
+                <button 
+                  onClick={() => setShowRules(true)} 
+                  className="text-[10px] font-black text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-wider bg-transparent border-none cursor-pointer p-0 underline"
+                >
+                  SAIBA MAIS
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
-        <div className="w-full md:w-auto flex flex-col items-center md:items-end text-right bg-slate-50 dark:bg-white/[0.02] p-4 rounded-2xl border border-slate-100 dark:border-white/5">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Status para semana que vem</p>
-            {isGuaranteed ? (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
-                <CheckCircle2 size={14} />
-                <span className="text-[11px] font-black uppercase tracking-wider">GARANTIDO ({earnedBonusThisWeek})</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-400">
-                <AlertTriangle size={14} />
-                <span className="text-[11px] font-black uppercase tracking-wider">PENDENTE</span>
-              </div>
-            )}
-        </div>
       </div>
 
-      {/* Progress Roadmap */}
-      <div className="relative pt-8 pb-4">
-        {/* Markers Labels */}
-        <div className="flex justify-between px-2 mb-4">
-           <div className="flex flex-col items-center">
-             <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">BRONZE</span>
-             <span className="text-[11px] font-black text-orange-500 italic">25%</span>
-           </div>
-           <div className="flex flex-col items-center">
-             <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">PRATA</span>
-             <span className="text-[11px] font-black text-blue-400 italic">30%</span>
-           </div>
-           <div className="flex flex-col items-center">
-             <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">OURO</span>
-             <span className="text-[11px] font-black text-amber-500 italic">40%</span>
-           </div>
+      {/* Progress Roadmap - Estilo EliteDoc */}
+      <div className="relative pt-2 pb-2">
+        {/* Progress Markers Top */}
+        <div className="flex justify-between px-2 mb-2 text-[10px] font-black tracking-wider">
+          <span className="text-amber-500">BRONZE (25%)</span>
+          <span className="text-blue-400">PRATA (30%)</span>
+          <span className="text-amber-400">OURO (40% - OBJETIVO R$ 250,00)</span>
         </div>
 
         {/* Progress Bar Container */}
-        <div className="h-5 w-full bg-gray-100 dark:bg-white/5 rounded-2xl relative overflow-hidden shadow-inner border border-gray-200/50 dark:border-white/5">
-          {/* Active Progress */}
+        <div className="h-4 w-full bg-slate-900 rounded-full relative overflow-hidden shadow-inner border border-slate-800">
           <div 
-            className="h-full bg-gradient-to-r from-orange-500 via-blue-500 to-amber-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(59,130,246,0.3)] relative"
+            className="h-full bg-gradient-to-r from-amber-500 via-blue-500 to-amber-400 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(245,158,11,0.4)]"
             style={{ width: `${progress}%` }}
-          >
-             <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-[length:20px_20px] animate-[progress-stripe_1s_linear_infinite]" />
-          </div>
+          />
         </div>
 
-        <div className="flex items-center justify-between mt-6 px-1">
-          <div className="flex flex-col">
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Investido</span>
-             <span className="text-xl font-black text-blue-600 dark:text-blue-400 tracking-tight tabular-nums">R$ {(loyalty.thisWeekVolume / 100).toFixed(2).replace('.', ',')}</span>
-          </div>
-          <div className="w-12 h-px bg-slate-100 dark:bg-white/5 mx-4" />
-          <div className="flex flex-col text-right">
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Objetivo</span>
-             <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums">R$ 250,00</span>
-          </div>
+        {/* Sub-labels abaixo da barra */}
+        <div className="flex items-center justify-between mt-2 px-1 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+          <span>INVESTIDO: <strong className="text-blue-400">R$ {(loyalty.thisWeekVolume / 100).toFixed(2).replace('.', ',')}</strong></span>
+          <span>25%</span>
+          <span>30%</span>
+          <span>40%</span>
         </div>
       </div>
 
-      {/* Next Step Box */}
-      {loyalty.nextGoal > 0 && (
-        <div className="mt-8 p-6 rounded-3xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 flex flex-col md:flex-row items-center gap-6 group/next">
-          <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20 group-hover/next:rotate-12 transition-transform">
-            <Rocket size={24} />
+      {/* Next Level Box - Estilo EliteDoc */}
+      <div className="mt-6 p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0">
+            <Rocket size={20} />
           </div>
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.15em] mb-1">
-              Próximo Nível: <span className={getRankColor(loyalty.nextRank)}>{loyalty.nextRank}</span>
+          <div>
+            <h3 className="text-xs font-black text-white uppercase tracking-wider m-0">
+              PRÓXIMO NÍVEL: <span className={getRankColor(loyalty.nextRank)}>{loyalty.nextRank}</span>
             </h3>
-            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-              Faltam <span className="text-blue-600 dark:text-blue-400">R$ {((loyalty.nextGoal - loyalty.thisWeekVolume) / 100).toFixed(2).replace('.', ',')}</span> para você subir sua lucratividade.
+            <p className="text-xs font-medium text-slate-300 mt-0.5">
+              {nextNeeded > 0 ? (
+                <>Faltam <strong className="text-blue-400">R$ {(nextNeeded / 100).toFixed(2).replace('.', ',')}</strong> na semana atual para subir a patente da próxima semana.</>
+              ) : (
+                <>Você atingiu a patente máxima <strong className="text-amber-400">OURO (40%)</strong>!</>
+              )}
             </p>
           </div>
-          <div className="flex flex-col items-center md:items-end gap-1.5 shrink-0 border-l border-blue-200 dark:border-blue-800/50 pl-6">
-             <div className="flex items-center gap-2 text-rose-500">
-                <RefreshCw size={14} className="animate-spin-slow" />
-                <span className="text-[10px] font-black uppercase tracking-widest">RESETA EM: {timeLeft}</span>
-             </div>
-          </div>
         </div>
-      )}
-      <style>{`
-        @keyframes progress-stripe {
-          0% { background-position: 0 0; }
-          100% { background-position: 20px 0; }
-        }
-        .animate-spin-slow {
-          animation: spin 3s linear infinite;
-        }
-      `}</style>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 font-mono font-black text-[10px] uppercase">
+            SEMANA QUE VEM: {loyalty.currentRank} ({loyalty.currentBonus}%)
+          </span>
+          <span className="px-3 py-1 rounded-lg bg-rose-950/60 border border-rose-500/40 text-rose-300 font-mono font-black text-[10px] uppercase flex items-center gap-1">
+            <RefreshCw size={12} className="animate-spin" /> RESETA EM: {timeLeft}
+          </span>
+        </div>
+      </div>
+
       <PatentRulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
     </div>
   );

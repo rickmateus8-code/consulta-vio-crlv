@@ -44,6 +44,8 @@ export default function StudioEngine() {
   const [extractedLogos, setExtractedLogos] = useState<string[]>([]);
 
   const [bgImage, setBgImage] = useState<string | null>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 794, height: 1123 }); // Proporção nativa A4 / PDF
+  const [zoom, setZoom] = useState(1);
   const [boxes, setBoxes] = useState<CoordinateBox[]>([]);
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
 
@@ -57,6 +59,19 @@ export default function StudioEngine() {
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
+  const updateCanvasSizeFromImage = (url: string) => {
+    const img = new Image();
+    img.onload = () => {
+      // Preservar a proporção exata e dimensões nativas do PDF/Imagem
+      const maxW = 920;
+      const aspect = img.height / img.width;
+      const computedW = Math.min(img.width, maxW);
+      const computedH = Math.round(computedW * aspect);
+      setCanvasSize({ width: computedW, height: computedH });
+    };
+    img.src = url;
+  };
+
   useEffect(() => {
     loadTemplates();
     createBlankCanvas();
@@ -64,33 +79,35 @@ export default function StudioEngine() {
 
   const createBlankCanvas = () => {
     const canvas = document.createElement("canvas");
-    canvas.width = 680;
-    canvas.height = 480;
+    canvas.width = 794;
+    canvas.height = 1123;
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, 680, 480);
+      ctx.fillRect(0, 0, 794, 1123);
 
       ctx.strokeStyle = "#cbd5e1";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(10, 10, 660, 460);
+      ctx.lineWidth = 3;
+      ctx.strokeRect(15, 15, 764, 1093);
 
-      ctx.fillStyle = "#94a3b8";
-      ctx.font = "bold 16px sans-serif";
+      ctx.fillStyle = "#64748b";
+      ctx.font = "bold 20px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("GABARITO PADRÃO DOCMASTER STUDIO", 340, 40);
+      ctx.fillText("GABARITO PADRÃO DOCMASTER STUDIO (FOLHA NATIVA A4)", 397, 60);
 
       ctx.strokeStyle = "#e2e8f0";
       ctx.beginPath();
-      ctx.moveTo(20, 55);
-      ctx.lineTo(660, 55);
+      ctx.moveTo(30, 80);
+      ctx.lineTo(764, 80);
       ctx.stroke();
 
-      ctx.fillStyle = "#64748b";
-      ctx.font = "13px sans-serif";
-      ctx.fillText("Clique e arraste o mouse em qualquer área para delimitar caixas de coordenadas X/Y", 340, 240);
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "15px sans-serif";
+      ctx.fillText("Clique e arraste o mouse em qualquer área para delimitar caixas de coordenadas X/Y", 397, 560);
     }
-    setBgImage(canvas.toDataURL("image/png"));
+    const dataUrl = canvas.toDataURL("image/png");
+    setBgImage(dataUrl);
+    updateCanvasSizeFromImage(dataUrl);
   };
 
   const renderPDFToImage = async (file: File): Promise<string> => {
@@ -130,22 +147,25 @@ export default function StudioEngine() {
     }
   };
 
-  // Upload do Gabarito PDF/Imagem com conversão HD
+  // Upload do Gabarito PDF/Imagem com conversão HD e proporção natural
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.type.includes("pdf")) {
-      toast.info("Gabarito PDF recebido! Convertendo página para Canvas HD...");
+      toast.info("Gabarito PDF recebido! Convertendo para proporções nativas HD...");
       try {
         const pngDataUrl = await renderPDFToImage(file);
         setBgImage(pngDataUrl);
-        toast.success("PDF convertido e carregado no Canvas do Studio!");
+        updateCanvasSizeFromImage(pngDataUrl);
+        toast.success("PDF convertido nas proporções originais do documento!");
       } catch (err: any) {
         console.error("PDF render error:", err);
         const reader = new FileReader();
         reader.onload = (evt) => {
-          setBgImage(evt.target?.result as string);
+          const url = evt.target?.result as string;
+          setBgImage(url);
+          updateCanvasSizeFromImage(url);
           toast.success("Gabarito carregado no Canvas!");
         };
         reader.readAsDataURL(file);
@@ -153,7 +173,9 @@ export default function StudioEngine() {
     } else {
       const reader = new FileReader();
       reader.onload = (evt) => {
-        setBgImage(evt.target?.result as string);
+        const url = evt.target?.result as string;
+        setBgImage(url);
+        updateCanvasSizeFromImage(url);
         toast.success("Gabarito de Imagem carregado no Canvas do Studio!");
       };
       reader.readAsDataURL(file);
@@ -261,7 +283,9 @@ export default function StudioEngine() {
     setPrice(String(tpl.price || 15.00));
     setTargetStructure(tpl.target_structure || "cnh");
     if ((tpl as any).pdf_bg_base64) {
-      setBgImage((tpl as any).pdf_bg_base64);
+      const url = (tpl as any).pdf_bg_base64;
+      setBgImage(url);
+      updateCanvasSizeFromImage(url);
     } else {
       createBlankCanvas();
     }
@@ -759,6 +783,37 @@ ${boxes
                   </select>
                 )}
 
+                {/* Controles de Zoom HD */}
+                <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
+                  <button
+                    type="button"
+                    onClick={() => setZoom((z) => Math.max(0.4, Math.round((z - 0.1) * 10) / 10))}
+                    className="px-2 py-1 text-xs font-bold text-slate-300 hover:text-white transition-colors"
+                    title="Diminuir Zoom"
+                  >
+                    🔍 -
+                  </button>
+                  <span className="text-[10px] font-mono font-bold text-blue-400 px-1">
+                    {Math.round(zoom * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setZoom((z) => Math.min(2.5, Math.round((z + 0.1) * 10) / 10))}
+                    className="px-2 py-1 text-xs font-bold text-slate-300 hover:text-white transition-colors"
+                    title="Aumentar Zoom"
+                  >
+                    🔍 +
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setZoom(1)}
+                    className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-white border-l border-slate-800 transition-colors"
+                    title="Redefinir Zoom para 100%"
+                  >
+                    100%
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={createBlankCanvas}
@@ -777,15 +832,15 @@ ${boxes
             </div>
 
             {/* Container do Canvas HD */}
-            <div className="relative overflow-auto custom-scrollbar bg-slate-950 rounded-2xl border border-slate-800 min-h-[480px] flex items-center justify-center p-4">
+            <div className="relative overflow-auto custom-scrollbar bg-slate-950 rounded-2xl border border-slate-800 min-h-[560px] flex items-center justify-center p-6">
               {bgImage ? (
                 <div
                   ref={canvasRef}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
-                  className="relative select-none cursor-crosshair shadow-2xl border border-slate-700 rounded-lg overflow-hidden bg-white"
-                  style={{ width: 680, height: 480 }}
+                  className="relative select-none cursor-crosshair shadow-2xl border border-slate-700 rounded-lg overflow-hidden bg-white transition-all duration-150"
+                  style={{ width: canvasSize.width * zoom, height: canvasSize.height * zoom }}
                 >
                   {/* Gabarito Base em Imagem/PDF */}
                   <img src={bgImage} alt="Gabarito PDF" className="w-full h-full object-contain pointer-events-none" />

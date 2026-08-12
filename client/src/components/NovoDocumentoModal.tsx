@@ -206,58 +206,61 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
     : docs.filter(d => getDocCategory(d.key) === selectedCategory);
 
   return (
-    <div className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
-      <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-emerald-600 dark:text-emerald-400 uppercase italic tracking-tight">Qual documento deseja emitir?</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Selecione a categoria para filtrar os modelos</p>
-            </div>
+    <div className="fixed inset-0 z-[9998] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
+      <div className="bg-[#0f172a] text-white rounded-3xl w-full max-w-2xl flex flex-col shadow-2xl border border-blue-500/30 overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Header EliteDoc */}
+        <div className="p-6 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900/60">
+          <div>
+            <h2 className="text-lg font-black text-blue-400 uppercase tracking-wide">Novo Documento</h2>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">O que você deseja emitir hoje?</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
             <X size={18} />
           </button>
         </div>
 
-        {/* Categorias Bar */}
-        <div className="px-5 pt-4 pb-2 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap ${selectedCategory === cat.id ? "bg-emerald-600 text-white shadow-sm" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-          <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-3.5 mb-5 flex items-center justify-between shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Saldo Atual</span>
-            </div>
-            <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">R$ {(userBalance / 100).toFixed(2).replace(".", ",")}</span>
+        {/* Categorias Bar - Estilo EliteDoc */}
+        <div className="px-6 pt-5 pb-3 bg-slate-900/40 border-b border-slate-800 flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border ${selectedCategory === cat.id ? "bg-blue-600 border-blue-400 text-white shadow-md shadow-blue-600/30" : "bg-slate-800/80 border-slate-700/60 text-slate-300 hover:bg-slate-700 hover:text-white"}`}
+              >
+                {cat.id === "pessoais" && <FileText className="w-3.5 h-3.5" />}
+                {cat.id === "veiculos" && <Car className="w-3.5 h-3.5" />}
+                {cat.id === "saude" && <Pill className="w-3.5 h-3.5" />}
+                {cat.id === "certidoes" && <FileText className="w-3.5 h-3.5" />}
+                {cat.id === "estudante" && <GraduationCap className="w-3.5 h-3.5" />}
+                {cat.id === "faturas" && <CreditCard className="w-3.5 h-3.5" />}
+                {cat.label}
+              </button>
+            ))}
           </div>
 
+          {selectedCategory !== "todos" && (
+            <button onClick={() => setSelectedCategory("todos")} className="text-[11px] font-bold text-slate-400 hover:text-blue-400 transition-colors flex items-center gap-1">
+              ← Ver Todos
+            </button>
+          )}
+        </div>
+
+        {/* Corpo de Seleção de Documentos - Estilo EliteDoc */}
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar max-h-[60vh]">
           {selectedCategory === "faturas" ? (
-            <div className="py-8 text-center bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-6">
-              <CreditCard className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-              <h3 className="text-sm font-black text-gray-800 dark:text-white uppercase mb-1">Adicionar Saldo / Faturas</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Adicione créditos para liberar instantaneamente suas emissões.</p>
-              <button onClick={() => { onClose(); handleRecarregar(); }} className="btn-glow-emerald px-6 py-2.5 rounded-xl font-bold text-xs">Recarregar Saldo Agora</button>
+            <div className="py-10 text-center bg-slate-900/50 rounded-2xl border border-dashed border-slate-700 p-6">
+              <CreditCard className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+              <h3 className="text-sm font-black text-white uppercase mb-1">Adicionar Saldo / Faturas</h3>
+              <p className="text-xs text-slate-400 mb-4">Adicione créditos para liberar instantaneamente suas emissões.</p>
+              <button onClick={() => { onClose(); handleRecarregar(); }} className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-950/50 transition-all">Recarregar Saldo Agora</button>
             </div>
           ) : loading ? (
-            <div className="py-12 text-center text-gray-400 text-xs font-bold uppercase tracking-widest animate-pulse">Carregando catálogo...</div>
+            <div className="py-16 text-center text-slate-400 text-xs font-bold uppercase tracking-widest animate-pulse">Carregando modelos de emissão...</div>
           ) : filteredDocs.length === 0 ? (
-            <div className="py-12 text-center text-gray-400 text-xs font-black uppercase italic tracking-widest">Nenhum documento nesta categoria.</div>
+            <div className="py-16 text-center text-slate-500 text-xs font-black uppercase italic tracking-widest">Nenhum documento nesta categoria.</div>
           ) : (
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {filteredDocs.map(doc => {
                 const Icon = doc.icon;
                 const freeDocsArr = Array.isArray(user?.free_documents) ? user.free_documents : [];
@@ -274,14 +277,14 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
                   <button 
                     key={doc.key} 
                     onClick={() => handleSelectDoc(doc)} 
-                    className={`flex flex-col items-center text-center p-4 rounded-2xl border transition-all duration-200 hover-lift active:scale-95 ${canAfford ? 'bg-white dark:bg-slate-800/80 border-gray-200/80 dark:border-gray-700/60 hover:border-emerald-500 hover:shadow-lg shadow-2xs' : 'bg-gray-50 dark:bg-slate-900/60 border-gray-200/50 dark:border-gray-800 opacity-60'}`}
+                    className={`flex flex-col items-center text-center p-4 rounded-2xl border transition-all duration-200 group hover:scale-[1.02] active:scale-95 ${canAfford ? 'bg-slate-900/80 border-blue-900/50 hover:border-blue-400/80 hover:bg-slate-800' : 'bg-slate-900/40 border-slate-800 opacity-60'}`}
                   >
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mb-3 transition-transform ${canAfford ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2.5 transition-colors ${canAfford ? 'bg-blue-950/60 text-blue-400 group-hover:bg-blue-600 group-hover:text-white' : 'bg-slate-800 text-slate-500'}`}>
                       <Icon className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-tight mb-2 min-h-[24px] flex items-center justify-center">{doc.label}</span>
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${isFree ? 'bg-emerald-600 text-white shadow-2xs' : canAfford ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300'}`}>
-                      {isFree ? 'GRÁTIS' : doc.priceFormatted}
+                    <span className="text-[12px] font-black text-slate-100 uppercase tracking-tight leading-tight mb-2 min-h-[28px] flex items-center justify-center">{doc.label}</span>
+                    <span className={`text-[10px] font-black px-3 py-1 rounded-lg border ${isFree ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300' : canAfford ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300' : 'bg-rose-950/60 border-rose-500/50 text-rose-300'}`}>
+                      {isFree ? 'R$ 0,00' : doc.priceFormatted}
                     </span>
                   </button>
                 );
@@ -290,9 +293,13 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-slate-900/80 shrink-0 flex items-center justify-between gap-4">
-          <button onClick={() => { onClose(); handleRecarregar(); }} className="flex items-center gap-2 text-xs font-black text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 transition-colors"><CreditCard size={15} />RECARREGAR CRÉDITOS</button>
-          <button onClick={onClose} className="text-xs font-black text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 uppercase tracking-widest">Fechar</button>
+        {/* Rodapé do Modal */}
+        <div className="p-4 border-t border-slate-800 bg-slate-900/90 shrink-0 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-bold text-slate-300">Saldo: <strong className="text-emerald-400">R$ {(userBalance / 100).toFixed(2).replace(".", ",")}</strong></span>
+          </div>
+          <button onClick={() => { onClose(); handleRecarregar(); }} className="text-xs font-black text-blue-400 hover:text-blue-300 uppercase tracking-wider flex items-center gap-1.5"><CreditCard size={14} /> Recarregar</button>
         </div>
       </div>
     </div>

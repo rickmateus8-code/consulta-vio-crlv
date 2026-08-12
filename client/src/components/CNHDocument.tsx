@@ -622,22 +622,23 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // TABELA DE CATEGORIAS (Microajustes C, D, D1)
+    // ═══════════════════════════════════════════════════════════════════
+    // TABELA DE CATEGORIAS (Mover todas as validades inferiores 10% / +118px a direita)
     // ═══════════════════════════════════════════════════════════════════
     const catPositions: Record<string, { x: number; y: number }> = {
-      A:   { x: 436 + SHIFT_X, y: 1099 },
-      A1:  { x: 431 + SHIFT_X, y: 1136 },
-      B:   { x: 433 + SHIFT_X, y: 1169 },
-      B1:  { x: 431 + SHIFT_X, y: 1212 },
-      C:   { x: 434 + SHIFT_X, y: 1238 }, // Descer C 0,2% -> Y=1238px
-      C1:  { x: 431 + SHIFT_X, y: 1286 },
-      D:   { x: 871 + SHIFT_X, y: 1099 }, // Mover D 0,2% dir -> 871px
-      D1:  { x: 869 + SHIFT_X, y: 1136 }, // Mover D1 0,1% dir -> 869px
-      BE:  { x: 861 + SHIFT_X, y: 1174 },
-      CE:  { x: 861 + SHIFT_X, y: 1212 },
-      C1E: { x: 861 + SHIFT_X, y: 1249 },
-      DE:  { x: 861 + SHIFT_X, y: 1286 },
-      D1E: { x: 861 + SHIFT_X, y: 1324 },
+      A:   { x: 554 + SHIFT_X, y: 1099 },
+      A1:  { x: 549 + SHIFT_X, y: 1136 },
+      B:   { x: 551 + SHIFT_X, y: 1169 },
+      B1:  { x: 549 + SHIFT_X, y: 1212 },
+      C:   { x: 552 + SHIFT_X, y: 1238 },
+      C1:  { x: 549 + SHIFT_X, y: 1286 },
+      D:   { x: 989 + SHIFT_X, y: 1099 },
+      D1:  { x: 987 + SHIFT_X, y: 1136 },
+      BE:  { x: 979 + SHIFT_X, y: 1174 },
+      CE:  { x: 979 + SHIFT_X, y: 1212 },
+      C1E: { x: 979 + SHIFT_X, y: 1249 },
+      DE:  { x: 979 + SHIFT_X, y: 1286 },
+      D1E: { x: 979 + SHIFT_X, y: 1324 },
     };
 
     const rawCat = (props.categoria || "AB").toUpperCase().trim();

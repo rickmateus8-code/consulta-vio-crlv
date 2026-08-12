@@ -447,40 +447,57 @@ const intelligentStats = [
   return (
     <DashboardLayout>
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
-        {/* Banner de Boas-vindas */}
-        <div className="glass-card rounded-3xl p-6 md:p-8 relative overflow-hidden">
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="badge-pill-emerald px-3 py-1 text-[10px] uppercase tracking-wider">Painel Oficial</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase">• Status em tempo real</span>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2">
-              {getGreeting()}, {user?.displayName || user?.username}!
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base font-medium max-w-2xl">
-              Bem-vindo ao ecossistema de emissão e gestão — <span className="text-blue-600 dark:text-blue-400 font-bold">DocMaster</span>
-            </p>
-            {hasAnyPermission && (
-              <div className="mt-6 flex flex-wrap gap-3">
-                <button onClick={() => setShowNovoDocModal(true)} className="btn-glow-blue px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest active:scale-95 flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> Novo Documento
-                </button>
-                <button onClick={() => setShowModelsModal(true)} className="bg-white/80 dark:bg-gray-800/80 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/40 hover:bg-blue-50 dark:hover:bg-gray-800 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95 shadow-2xs">
-                  <Camera className="w-4 h-4" /> Modelos de Emissão
-                </button>
-                <button onClick={() => setShowReferralModal(true)} className="bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200/50 dark:border-emerald-800/40 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95 shadow-2xs">
-                  <Gift className="w-4 h-4" /> Indique e Ganhe
-                </button>
-              </div>
-            )}
-            {!hasAnyPermission && user?.role !== "admin" && (
-              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800 rounded-2xl">
-                <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" /> Aguardando Liberação do Administrador
-                </p>
-                <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-1">Sua conta está ativa, mas você ainda não possui ferramentas liberadas.</p>
-              </div>
-            )}
+        {/* Visão Geral Header e Botões de Ação (Pareado 1:1 com Imagens 01 e 02) */}
+        <div className="space-y-4">
+          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight m-0">Visão Geral</h1>
+
+          {/* Linha 1: 3 Botões Superiores (Instruções, Notificações, Suporte) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <button
+              onClick={() => setShowReferralModal(true)}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <FileText className="w-4 h-4 text-slate-300" />
+              <span>Instruções</span>
+            </button>
+
+            <button
+              onClick={() => setShowNotificationsModal(true)}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <Bell className="w-4 h-4 text-amber-400" />
+              <span>Notificações</span>
+            </button>
+
+            <button
+              onClick={() => {
+                const phone = supportWhatsapp.replace(/\D/g, "") || "5511999999999";
+                window.open(`https://wa.me/${phone}?text=${encodeURIComponent("Olá! Preciso de suporte no DocMaster.")}`, "_blank");
+              }}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4 text-emerald-400" />
+              <span>Suporte</span>
+            </button>
+          </div>
+
+          {/* Linha 2: 2 Botões (Modelos de Emissão & Indique e Ganhe com borda verde) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <button
+              onClick={() => setShowModelsModal(true)}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-indigo-500/40 text-indigo-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <Camera className="w-4 h-4 text-indigo-400" />
+              <span>Modelos de Emissão</span>
+            </button>
+
+            <button
+              onClick={() => setShowReferralModal(true)}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-emerald-500/50 text-emerald-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <Gift className="w-4 h-4 text-emerald-400" />
+              <span>Indique e Ganhe</span>
+            </button>
           </div>
         </div>
 
@@ -919,6 +936,12 @@ const intelligentStats = [
           </div>
         </div>
       )}
+      <NotificationsModal
+        isOpen={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+        userDocuments={history}
+        onRenewDoc={(doc) => setShowRenewModal(doc)}
+      />
     </DashboardLayout>
   );
 }

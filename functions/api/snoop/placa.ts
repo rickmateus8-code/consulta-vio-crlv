@@ -100,19 +100,30 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     return new Response(JSON.stringify({ success: false, error: 'Placa invalida' }), { status: 400, headers: CORS });
   }
 
-  // Agregação paralela: consulta /placa e /veiculos/jbr
-  const [placaRes, jbrRes] = await Promise.all([
+  // Agregação paralela: consulta /placa, /veiculos/jbr e /generic/placa
+  const [placaRes, jbrRes, genRes] = await Promise.all([
     snoopGet('placa', { placa: rawPlaca }, apiKey),
     snoopGet('veiculos/jbr', { placa: rawPlaca }, apiKey),
+    snoopGet('generic/placa', { placa: rawPlaca }, apiKey),
   ]);
 
-  const pData = placaRes?.body || placaRes?.data || (placaRes?.brand || placaRes?.marca || placaRes?.owner ? placaRes : null);
-  const jData = jbrRes?.data || jbrRes?.body || (jbrRes?.marca_modelo ? jbrRes : null);
+  const extractObj = (res: any) => {
+    if (!res) return null;
+    if (Array.isArray(res)) return res[0] || null;
+    if (Array.isArray(res.data)) return res.data[0] || null;
+    if (Array.isArray(res.body)) return res.body[0] || null;
+    return res.body || res.data || res.result || res;
+  };
+
+  const pData = extractObj(placaRes);
+  const jData = extractObj(jbrRes);
+  const gData = extractObj(genRes);
 
   // Verificar se há dados reais do veículo
   const hasRealData = !!(
-    pData?.brand || pData?.marca || pData?.marca_modelo || pData?.owner || pData?.proprietario || pData?.renavam || pData?.chassi || pData?.color || pData?.cor ||
-    jData?.marca_modelo || jData?.chassi || jData?.renavam || jData?.proprietario
+    pData?.brand || pData?.marca || pData?.marca_modelo || pData?.owner || pData?.proprietario || pData?.renavam || pData?.chassi || pData?.color || pData?.cor || pData?.placa ||
+    jData?.marca_modelo || jData?.chassi || jData?.renavam || jData?.proprietario || jData?.placa ||
+    gData?.marca_modelo || gData?.chassi || gData?.renavam || gData?.proprietario || gData?.placa
   );
 
   if (!hasRealData) {
@@ -125,7 +136,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   // Formatar restrições
   let restricoesStr = "SEM RESTRIÇÕES";
-  const rawRestr = pData?.restrictions || jData?.restricoes;
+  const rawRestr = pData?.restrictions || pData?.restricoes || jData?.restricoes || gData?.restricoes;
   if (typeof rawRestr === 'string' && rawRestr.trim()) {
     restricoesStr = rawRestr;
   } else if (typeof rawRestr === 'object' && rawRestr !== null) {
@@ -135,35 +146,41 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     if (list.length > 0) restricoesStr = list.join(' | ');
   }
 
-  const propNome = pData?.owner || pData?.proprietario || pData?.NOME_PROPRIETARIO || jData?.proprietario || "Não informado";
-  const propCpf = pData?.owner_cpf || pData?.cpf || pData?.cpf_cnpj || pData?.CPF_PROPRIETARIO || jData?.cpf_cnpj || "Não informado";
+  const propNome = (typeof pData?.proprietario === 'object' ? pData?.proprietario?.nome : pData?.owner || pData?.proprietario || pData?.NOME_PROPRIETARIO) ||
+                   (typeof jData?.proprietario === 'object' ? jData?.proprietario?.nome : jData?.proprietario) ||
+                   (typeof gData?.proprietario === 'object' ? gData?.proprietario?.nome : gData?.proprietario) || "Não informado";
 
-  const marcaModelo = pData?.marca_modelo || pData?.brand || jData?.marca_modelo || (pData?.marca ? `${pData.marca} ${pData.modelo || ''}` : "") || "Não informado";
+  const propCpf = (typeof pData?.proprietario === 'object' ? pData?.proprietario?.cpf_cnpj : pData?.owner_cpf || pData?.cpf || pData?.cpf_cnpj || pData?.CPF_PROPRIETARIO) ||
+                  (typeof jData?.proprietario === 'object' ? jData?.proprietario?.cpf_cnpj : jData?.cpf_cnpj) ||
+                  (typeof gData?.proprietario === 'object' ? gData?.proprietario?.cpf_cnpj : gData?.cpf_cnpj) || "Não informado";
+
+  const marcaModelo = pData?.marca_modelo || pData?.brand || jData?.marca_modelo || gData?.marca_modelo || (pData?.marca ? `${pData.marca} ${pData.modelo || ''}` : "") || "Não informado";
 
   const merged = {
-    placa: pData?.plate || pData?.placa || jData?.placa || rawPlaca,
-    placa_mercosul: pData?.placa_nova || jData?.placa_nova || pData?.placa_mercosul || pData?.plate || rawPlaca,
-    placa_antiga: pData?.placa_antiga || jData?.placa_antiga || pData?.plate || rawPlaca,
-    chassi: pData?.chassi || pData?.chassis || jData?.chassi || "Não informado",
-    renavam: pData?.renavam || jData?.renavam || "Não informado",
-    motor: pData?.motor || pData?.engine || jData?.motor || pData?.NUMERO_MOTOR || "Não informado",
-    marca: pData?.brand || pData?.marca || jData?.marca || "",
-    modelo: pData?.model || pData?.modelo || jData?.modelo || "",
+    placa: pData?.plate || pData?.placa || jData?.placa || gData?.placa || rawPlaca,
+    placa_mercosul: pData?.placa_nova || jData?.placa_nova || pData?.placa_mercosul || gData?.placa_mercosul || rawPlaca,
+    placa_antiga: pData?.placa_antiga || jData?.placa_antiga || gData?.placa_antiga || rawPlaca,
+    chassi: pData?.chassi || pData?.chassis || jData?.chassi || gData?.chassi || "Não informado",
+    renavam: pData?.renavam || jData?.renavam || gData?.renavam || "Não informado",
+    motor: pData?.motor || pData?.engine || jData?.motor || gData?.motor || pData?.NUMERO_MOTOR || "Não informado",
+    marca: pData?.brand || pData?.marca || jData?.marca || gData?.marca || "",
+    modelo: pData?.model || pData?.modelo || jData?.modelo || gData?.modelo || "",
     marca_modelo: marcaModelo,
-    ano_fabricacao: String(pData?.year_fab || pData?.ano_fabricacao || jData?.ano_fabricacao || pData?.year_model || "Não informado"),
-    ano_modelo: String(pData?.year_model || pData?.ano_modelo || jData?.ano_modelo || pData?.year_fab || "Não informado"),
-    cor: pData?.color || pData?.cor || jData?.cor || "Não informado",
-    combustivel: pData?.fuel || pData?.combustivel || jData?.combustivel || "Não informado",
-    uf: pData?.address?.state || pData?.uf || jData?.uf || pData?.estado || "",
-    municipio: pData?.address?.city || pData?.municipio || jData?.municipio || pData?.cidade || "",
+    ano_fabricacao: String(pData?.year_fab || pData?.ano_fabricacao || jData?.ano_fabricacao || gData?.ano_fabricacao || pData?.year_model || "Não informado"),
+    ano_modelo: String(pData?.year_model || pData?.ano_modelo || jData?.ano_modelo || gData?.ano_modelo || pData?.year_fab || "Não informado"),
+    cor: pData?.color || pData?.cor || jData?.cor || gData?.cor || "Não informado",
+    combustivel: pData?.fuel || pData?.combustivel || jData?.combustivel || gData?.combustivel || "Não informado",
+    uf: pData?.address?.state || pData?.uf || jData?.uf || gData?.uf || pData?.estado || "",
+    municipio: pData?.address?.city || pData?.municipio || jData?.municipio || gData?.municipio || pData?.cidade || "",
     proprietario: {
       nome: propNome,
       cpf_cnpj: propCpf,
     },
     restricoes: restricoesStr,
-    situacao_veiculo: pData?.situacao_veiculo || jData?.situacao_veiculo || "EM CIRCULAÇÃO",
-    situacao_chassi: pData?.situacao_chassi || jData?.situacao_chassi || "REGULAR",
+    situacao_veiculo: pData?.situacao_veiculo || jData?.situacao_veiculo || gData?.situacao_veiculo || "EM CIRCULAÇÃO",
+    situacao_chassi: pData?.situacao_chassi || jData?.situacao_chassi || gData?.situacao_chassi || "REGULAR",
   };
+
 
   try {
     await env.DB.prepare('INSERT INTO consultas_logs (user_id, modulo) VALUES (?, ?)').bind(user.id, 'placa').run();

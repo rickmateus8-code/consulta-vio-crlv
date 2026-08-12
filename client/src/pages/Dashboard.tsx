@@ -545,9 +545,11 @@ const intelligentStats = [
                 </span>
               </div>
 
-              <h2 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                Master Buscas — Consultas de CPF, Veículos & Fotos 🚀
+              <h2 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-3">
+                <img src="/master_buscas_logo.png" alt="Master Buscas Logo" className="w-8 h-8 object-contain drop-shadow shrink-0" />
+                <span>Master Buscas — Consultas de CPF, Veículos & Fotos 🚀</span>
               </h2>
+
 
               <p className="text-sm text-violet-200/90 max-w-2xl font-medium leading-relaxed">
                 Aproveite o seu <strong>Teste Grátis de 1 Dia</strong> para realizar pesquisas completas de <strong>CPFs, Veículos, Score, Fotos, Endereços, Parentes, Vizinhos</strong> e mais de <strong>44 módulos em tempo real</strong>.

@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import AttestationDocument from "@/components/AttestationDocument";
+import StudioEngine from "@/components/StudioEngine";
 import { toast } from "sonner";
 import { triggerPermissionsUpdate } from "@/lib/permissions";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,10 +15,10 @@ import {
   Download, Pencil, Wifi, WifiOff, Monitor, Globe, Anchor,
   CreditCard, AlertCircle, Filter, Gift, Percent, Wallet,
   Link, Copy, Calendar, Trash, Lock, UserPlus, Clock, User, TrendingUp,
-  Car, FlaskConical, GraduationCap, Pill
+  Car, FlaskConical, GraduationCap, Pill, Wand2
 } from "lucide-react";
 
-type Tab = "users" | "tools" | "pricing" | "notices" | "logs" | "emissions" | "monitoring" | "referral" | "settings" | "database";
+type Tab = "users" | "tools" | "studio" | "pricing" | "notices" | "logs" | "emissions" | "monitoring" | "referral" | "settings" | "database";
 
 interface EmissionRow {
   id: string;
@@ -2151,6 +2152,11 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── STUDIO ENGINE TAB ── */}
+        {tab === "studio" && (
+          <StudioEngine />
         )}
 
         {/* ── PRICING TAB ── */}

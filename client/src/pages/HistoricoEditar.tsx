@@ -54,7 +54,7 @@ export default function HistoricoEditar() {
   useEffect(() => {
     const fetchDoc = async () => {
       try {
-        const res = await fetch(`/api/documents/historico-uninter/${docId}`, { credentials: "include" });
+        const res = await fetch(`/api/documents/${docId}`, { credentials: "include" });
         if (res.ok) {
           const json = await res.json();
           const docData = json.data || json;
@@ -151,7 +151,7 @@ export default function HistoricoEditar() {
         gradeRows,
         data: { ...fieldMap, gradeRows },
       };
-      const res = await fetch(`/api/documents/historico-uninter/${docId}`, {
+      const res = await fetch(`/api/documents/${docId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

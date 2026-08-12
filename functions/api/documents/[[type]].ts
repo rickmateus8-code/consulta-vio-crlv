@@ -305,6 +305,26 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     }
 
     const DOCUMENT_TYPES = ['cnh', 'crlv', 'crlvcria', 'cha', 'toxicologico', 'historico-sp', 'historico-uninter', 'historicocria', 'peticaocria', 'peticao-stj', 'toxicria', 'laudocria', 'diploma-uninter', 'receita', 'fgv'];
+
+    const rawType = params.type;
+    const typeList = Array.isArray(rawType) ? rawType : [rawType];
+    const firstSegment = (typeList[0] || '').toLowerCase().trim();
+    const lastSegment = (typeList[typeList.length - 1] || '').trim();
+
+    let idOrType = '';
+    if (DOCUMENT_TYPES.includes(firstSegment) && typeList.length > 1) {
+      idOrType = lastSegment;
+    } else {
+      idOrType = firstSegment;
+    }
+
+    if (!idOrType) {
+      const rows = user.role === 'admin'
+        ? await env.DB.prepare('SELECT d.*, u.username as user_name FROM documents d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.created_at DESC LIMIT 100').all()
+        : await env.DB.prepare('SELECT * FROM documents WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').bind(user.id).all();
+      return new Response(JSON.stringify({ success: true, data: rows.results || [] }), { headers: CORS_HEADERS });
+    }
+
     const isType = DOCUMENT_TYPES.includes(idOrType);
 
     if (isType) {
@@ -362,8 +382,9 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, env, params })
     const user = await getAuthUser(request, env);
     if (!user) return new Response(JSON.stringify({ success: false, error: 'Não autenticado' }), { status: 401, headers: CORS_HEADERS });
 
-    const typeParam = Array.isArray(params.type) ? params.type.join('/') : (params.type || '');
-    const docId = typeParam.trim();
+    const rawType = params.type;
+    const typeList = Array.isArray(rawType) ? rawType : [rawType];
+    const docId = (typeList[typeList.length - 1] || '').trim();
 
     const doc = await env.DB.prepare('SELECT * FROM documents WHERE id = ? LIMIT 1').bind(docId).first<any>();
     if (!doc) return new Response(JSON.stringify({ success: false, error: 'Documento não encontrado' }), { status: 404, headers: CORS_HEADERS });
@@ -401,8 +422,9 @@ export const onRequestDelete: PagesFunction<Env> = async ({ request, env, params
     const user = await getAuthUser(request, env);
     if (!user) return new Response(JSON.stringify({ success: false, error: 'Não autenticado' }), { status: 401, headers: CORS_HEADERS });
 
-    const typeParam = Array.isArray(params.type) ? params.type.join('/') : (params.type || '');
-    const docId = typeParam.trim();
+    const rawType = params.type;
+    const typeList = Array.isArray(rawType) ? rawType : [rawType];
+    const docId = (typeList[typeList.length - 1] || '').trim();
 
     const doc = await env.DB.prepare('SELECT id, user_id FROM documents WHERE id = ? LIMIT 1').bind(docId).first<any>();
     if (!doc) return new Response(JSON.stringify({ success: false, error: 'Documento não encontrado' }), { status: 404, headers: CORS_HEADERS });

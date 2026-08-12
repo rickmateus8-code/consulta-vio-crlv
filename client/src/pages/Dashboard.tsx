@@ -293,13 +293,22 @@ export default function Dashboard() {
   };
 
   const loadHistory = async (type: string) => {
+    if (!type) return;
     setHistoryLoading(true);
     try {
-      const endpoint = type === "atestado" ? `/api/attestations?limit=50` : type === "receita" ? `/api/receitas?limit=50` : `/api/documents/${type}?limit=50`;
+      let endpoint = `/api/documents/${type}?limit=50`;
+      if (type === "atestado") {
+        endpoint = `/api/attestations?limit=50`;
+      } else if (type === "receita") {
+        endpoint = `/api/receitas?limit=50`;
+      }
       const res = await fetch(endpoint, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
-        setHistory(data.data || data.attestations || data.documents || []);
+        const records = data.data || data.attestations || data.documents || data.receitas || [];
+        setHistory(Array.isArray(records) ? records : []);
+      } else {
+        setHistory([]);
       }
     } catch {
       setHistory([]);

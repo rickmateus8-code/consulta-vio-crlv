@@ -215,7 +215,7 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
 
   return (
     <div className="fixed inset-0 z-[9998] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
-      <div className="bg-[#0b1120] text-white rounded-3xl w-full max-w-4xl flex flex-col shadow-2xl border border-blue-500/30 overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#0b1120] text-white rounded-3xl w-full max-w-2xl flex flex-col shadow-2xl border border-blue-500/40 overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header EliteDoc - Estilo Imagem 04 */}
         <div className="p-6 md:p-8 border-b border-slate-800 flex items-center justify-between shrink-0 bg-[#0f172a]/90">
           <div>

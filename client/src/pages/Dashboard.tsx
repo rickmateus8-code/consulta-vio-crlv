@@ -15,7 +15,7 @@ import {
   Wallet, TrendingUp, BarChart3, ChevronRight, Plus,
   Clock, CheckCircle, Bell, Download, Trash2, Pill, Pencil, QrCode,
   Copy, X, Send, RefreshCw, Search, Save, Smartphone, AlertTriangle, Gift, Users, Loader2, Settings,
-  Eye, Trash, Receipt, Camera, Award, ShieldCheck, ChevronDown
+  Eye, Trash, Receipt, Camera, Award, ShieldCheck, ChevronDown, CreditCard, Folder, FilePlus
 } from "lucide-react";
 import AttestationActionButtons from "@/components/AttestationActionButtons";
 import { downloadAttestationPdf, fetchLatestAttestationRecord, buildAttestationData } from "@/lib/attestationActions";
@@ -610,13 +610,13 @@ const intelligentStats = [
           <div className="bg-[#0f172a] rounded-3xl border border-slate-800 p-6 shadow-2xl space-y-4">
             <h2 className="text-sm md:text-base font-black text-white uppercase tracking-wider m-0">Meus Documentos</h2>
 
-            {/* Primeira Linha: Botões de Categorias Dropdown (Imagens 02 e 03) */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            {/* Primeira Linha: Botões de Categorias Dropdown (Pareado 1:1 com Imagem 01 e 03) */}
+            <div className="relative z-30 flex items-center gap-2 flex-wrap pb-1">
               {[
                 {
                   id: "pessoais",
                   label: "Pessoais",
-                  icon: "🎴",
+                  icon: CreditCard,
                   items: [
                     { key: "cnh", label: "CNH" },
                     { key: "rg", label: "RG" },
@@ -628,7 +628,7 @@ const intelligentStats = [
                 {
                   id: "certidoes",
                   label: "Certidões",
-                  icon: "📜",
+                  icon: Folder,
                   items: [
                     { key: "peticao-stj", label: "PETIÇÃO JUDICIAL" },
                     { key: "fgv", label: "CERTIFICADO FGV" },
@@ -637,7 +637,7 @@ const intelligentStats = [
                 {
                   id: "veiculos",
                   label: "Veículos",
-                  icon: "🚗",
+                  icon: Car,
                   items: [
                     { key: "cnh", label: "CNH DIGITAL" },
                     { key: "crlv", label: "CRLV DIGITAL" },
@@ -646,7 +646,7 @@ const intelligentStats = [
                 {
                   id: "saude",
                   label: "Saúde",
-                  icon: "💊",
+                  icon: FilePlus,
                   items: [
                     { key: "atestado", label: "ATESTADO MÉDICO" },
                     { key: "toxicologico", label: "EXAME TOXICOLÓGICO" },
@@ -657,7 +657,7 @@ const intelligentStats = [
                 {
                   id: "estudante",
                   label: "Estudante",
-                  icon: "🎓",
+                  icon: GraduationCap,
                   items: [
                     { key: "historico-sp", label: "HISTÓRICO SP" },
                     { key: "historicocria", label: "HISTÓRICO UNINTER" },
@@ -667,38 +667,41 @@ const intelligentStats = [
                 {
                   id: "faturas",
                   label: "Faturas",
-                  icon: "🧾",
+                  icon: Receipt,
                   items: [
                     { key: "faturas", label: "FATURAS E RECARGAS" },
                   ]
                 }
               ].map(cat => {
+                const IconComponent = cat.icon;
                 const isOpen = openCategoryDropdown === cat.id;
-                const isSelectedCat = selectedCategoryItem?.categoryId === cat.id;
+                const isSelectedCat = selectedCategoryItem?.categoryId === cat.id || activeTab === cat.id || (cat.id === "pessoais" && !selectedCategoryItem);
 
                 return (
                   <div key={cat.id} className="relative">
                     <button
+                      type="button"
                       onClick={() => setOpenCategoryDropdown(isOpen ? null : cat.id)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border whitespace-nowrap ${
+                      className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border whitespace-nowrap ${
                         isSelectedCat || isOpen
-                          ? "bg-blue-600 border-blue-400 text-white shadow-md shadow-blue-600/30"
-                          : "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white"
+                          ? "bg-slate-900 border-blue-500 text-blue-500 shadow-md shadow-blue-500/20"
+                          : "bg-slate-900 border-slate-800 text-white hover:border-slate-700"
                       }`}
                     >
-                      <span>{cat.icon} {cat.label}</span>
+                      <IconComponent className={`w-4 h-4 ${isSelectedCat || isOpen ? "text-blue-500" : "text-white"}`} />
+                      <span>{cat.label}</span>
                       <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
                     </button>
 
-                    {/* Menu Dropdown de Sub-itens (Imagem 03) */}
+                    {/* Menu Dropdown de Sub-itens (Expande para baixo sobre a busca e tabela) */}
                     {isOpen && (
                       <div 
-                        className="absolute left-0 top-full mt-2 w-56 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden py-1 animate-in zoom-in-95 duration-150"
-                        onMouseLeave={() => setOpenCategoryDropdown(null)}
+                        className="absolute left-0 top-full mt-2 w-56 bg-[#0f172a] border border-slate-700/80 rounded-2xl shadow-2xl z-[9999] overflow-hidden py-1.5 animate-in fade-in zoom-in-95 duration-150"
                       >
                         {cat.items.map(subItem => (
                           <button
                             key={subItem.key}
+                            type="button"
                             onClick={() => {
                               setSelectedCategoryItem({ categoryId: cat.id, itemKey: subItem.key });
                               setActiveTab(subItem.key === "titulo-digital" || subItem.key === "titulo-fisico" || subItem.key === "rg" ? "cnh" : subItem.key);
@@ -707,10 +710,10 @@ const intelligentStats = [
                             className={`w-full px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-colors ${
                               selectedCategoryItem?.itemKey === subItem.key
                                 ? "bg-blue-600/20 text-blue-400"
-                                : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                : "text-slate-200 hover:bg-slate-800 hover:text-white"
                             }`}
                           >
-                            <span>{cat.icon}</span>
+                            <IconComponent className="w-3.5 h-3.5 opacity-80" />
                             <span>{subItem.label}</span>
                           </button>
                         ))}

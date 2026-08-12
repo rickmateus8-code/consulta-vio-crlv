@@ -138,6 +138,7 @@ export default function Dashboard() {
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showModelsModal, setShowModelsModal] = useState(false);
   const [loyaltyData, setLoyaltyData] = useState<any>(null);
+  const [consultasPlan, setConsultasPlan] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [openCategoryDropdown, setOpenCategoryDropdown] = useState<string | null>(null);
   const [selectedCategoryItem, setSelectedCategoryItem] = useState<{ categoryId: string; itemKey: string } | null>(null);

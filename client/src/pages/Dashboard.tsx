@@ -464,36 +464,55 @@ const intelligentStats = [
   return (
     <DashboardLayout>
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
-        {/* Header Personalizado com Saudação e Relógio/Data em Tempo Real */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
-          <div>
-            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight m-0 flex flex-wrap items-center gap-2">
-              <span>Olá, <span className="text-blue-400 capitalize">{user?.name || user?.username || "Usuário"}</span>! {getGreeting()}</span>
-              <span className="text-xl">👋</span>
-            </h1>
-            <p className="text-xs text-slate-400 font-medium mt-1">Seja bem-vindo de volta ao DocMaster</p>
+        {/* Botões de Ação Principais (Instruções, Notificações, Suporte, Modelos de Emissão & Indique e Ganhe) */}
+        <div className="space-y-3">
+          {/* Linha 1: 3 Botões (Instruções, Notificações, Suporte) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <button
+              onClick={() => setShowReferralModal(true)}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <FileText className="w-4 h-4 text-slate-300" />
+              <span>Instruções</span>
+            </button>
+
+            <button
+              onClick={() => setShowNotificationsModal(true)}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <Bell className="w-4 h-4 text-amber-400" />
+              <span>Notificações</span>
+            </button>
+
+            <button
+              onClick={() => {
+                const phone = supportWhatsapp.replace(/\D/g, "") || "5511999999999";
+                window.open(`https://wa.me/${phone}?text=${encodeURIComponent("Olá! Preciso de suporte no DocMaster.")}`, "_blank");
+              }}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4 text-emerald-400" />
+              <span>Suporte</span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-3 bg-[#0f172a] border border-slate-800 px-4 py-2.5 rounded-2xl shadow-md w-fit">
-            <Clock className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
-            <div className="text-xs font-mono">
-              <span className="text-slate-300 font-bold capitalize">
-                {currentTime.toLocaleDateString("pt-BR", {
-                  weekday: "short",
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </span>
-              <span className="mx-2 text-slate-600">•</span>
-              <span className="text-emerald-400 font-black tracking-widest">
-                {currentTime.toLocaleTimeString("pt-BR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                })}
-              </span>
-            </div>
+          {/* Linha 2: 2 Botões (Modelos de Emissão & Indique e Ganhe com borda verde) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <button
+              onClick={() => setShowNovoDocModal(true)}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-indigo-500/40 text-indigo-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <Camera className="w-4 h-4 text-indigo-400" />
+              <span>Modelos de Emissão</span>
+            </button>
+
+            <button
+              onClick={() => setShowReferralModal(true)}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-emerald-500/50 text-emerald-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <Gift className="w-4 h-4 text-emerald-400" />
+              <span>Indique e Ganhe</span>
+            </button>
           </div>
         </div>
 

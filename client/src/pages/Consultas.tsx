@@ -5,8 +5,8 @@ import ConsultasPlanModal from "@/components/ConsultasPlanModal";
 import UnifiedProfileView, { isValidCPF } from "@/components/UnifiedProfileView";
 import { getPlanoStatus } from "@/lib/snoopApi";
 import * as SnoopAPI from "@/lib/snoopApi";
-import * as iseekAPI from "@/lib/iseekApi";
 import { toast } from "sonner";
+
 import {
   Search, X, Loader2, Star, StarOff, Radar,
   User, Phone, Mail, MapPin, CreditCard, Camera, Car,
@@ -147,10 +147,10 @@ export default function Consultas() {
   // Estado da busca
   const [activeTabId, setActiveTabId] = useState("cpf");
   const [quickInput, setQuickInput] = useState("");
-  const [provider, setProvider] = useState<"auto" | "snoop" | "iseek">("auto");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
 
   // Carregar status do plano e uso real em 24h
   const fetchStatus = useCallback(() => {
@@ -288,34 +288,8 @@ export default function Consultas() {
       return await SnoopAPI.snoopPerfilCPF(cleanVal || val);
     };
 
-    const executeIseek = async () => {
-      if (activeTabId === "cpf" || activeTabId === "enriquecimento" || activeTabId === "foto") return await iseekAPI.iseekCPF(cleanVal || val);
-      if (activeTabId === "rg") return await iseekAPI.iseekRG(val);
-      if (activeTabId === "cep") return await iseekAPI.iseekCEP(cleanVal || val);
-      if (activeTabId === "email") return await iseekAPI.iseekEmail(val);
-      if (activeTabId === "telefone" || activeTabId === "operadora") return await iseekAPI.iseekTelefone(cleanVal || val);
-      if (activeTabId === "nome") {
-        const sanitizedNome = val.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
-        return await iseekAPI.iseekNome({ nome: sanitizedNome });
-      }
-      return await iseekAPI.iseekCPF(cleanVal || val);
-    };
-
     try {
-      let data: any;
-      if (provider === "iseek") {
-        data = await executeIseek();
-      } else if (provider === "snoop") {
-        data = await executeSnoop();
-      } else {
-        try {
-          data = await executeSnoop();
-        } catch (e: any) {
-          if (e.code === "PLANO_INATIVO") throw e;
-          console.warn("Snoop Intelligence indisponível/erro, tentando fallback iSeek Pro:", e);
-          data = await executeIseek();
-        }
-      }
+      const data = await executeSnoop();
       setResult(data);
       fetchStatus();
     } catch (e: any) {
@@ -328,6 +302,7 @@ export default function Consultas() {
     } finally {
       setLoading(false);
     }
+
   };
 
   // Selecionar pessoa da lista por nome

@@ -67,30 +67,28 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
   const [, setLocation] = useLocation();
   const [docs, setDocs] = useState<DocOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("todos");
   const [insufficientDoc, setInsufficientDoc] = useState<DocOption | null>(null);
   const [supportWhatsapp, setSupportWhatsapp] = useState("");
 
-  const perms = (() => {
-    if (!user?.permissions) return { editaveis: [], ferramentas: [] };
-    if (typeof user.permissions === "object") return user.permissions;
-    try {
-      return JSON.parse(user.permissions);
-    } catch {
-      return { editaveis: [], ferramentas: [] };
-    }
-  })();
-  const allowedEditables = Array.isArray(perms.editaveis) ? perms.editaveis : [];
-  const allowedTools = Array.isArray(perms.ferramentas) ? perms.ferramentas : [];
+  const categories = [
+    { id: "todos", label: "Todos" },
+    { id: "veiculos", label: "Veículos" },
+    { id: "certidoes", label: "Certidões" },
+    { id: "pessoais", label: "Pessoais" },
+    { id: "saude", label: "Saúde" },
+    { id: "estudante", label: "Estudante" },
+    { id: "faturas", label: "Faturas" },
+  ];
 
-  const freeDocs = (() => {
-    if (!user?.free_documents) return [];
-    if (Array.isArray(user.free_documents)) return user.free_documents;
-    try {
-      return JSON.parse(user.free_documents);
-    } catch {
-      return [];
-    }
-  })();
+  const getDocCategory = (key: string): string => {
+    if (key === "crlv") return "veiculos";
+    if (key === "peticaocria" || key === "bot-adv") return "certidoes";
+    if (key === "cnh" || key === "cha") return "pessoais";
+    if (key === "atestado" || key === "toxicologico" || key === "toxicria" || key === "receita") return "saude";
+    if (key === "historico-sp" || key === "historicocria" || key === "diploma-uninter" || key === "fgv") return "estudante";
+    return "pessoais";
+  };
 
   const isToolAllowed = (key: string) => isToolLiberated(user, key);
 
@@ -114,7 +112,6 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
         
         if (list.length === 0) list = getFallbackDocs();
 
-        // FILTRAR POR PERMISSÕES
         const filtered = list.filter(d => isToolAllowed(d.key));
         filtered.sort((a, b) => a.label.localeCompare(b.label));
         setDocs(filtered);
@@ -157,7 +154,6 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
   const handleSelectDoc = (doc: DocOption) => {
     const freeDocsArr = Array.isArray(user?.free_documents) ? user.free_documents : [];
     
-    // Lógica de verificação de gratuidade unificada (Sincronizada com Sidebar e Backend)
     const isFree = user?.role === 'admin' || 
       freeDocsArr.includes(doc.key) ||
       (doc.key === "peticaocria" && (freeDocsArr.includes("peticao-stj") || freeDocsArr.includes("peticao"))) ||
@@ -203,22 +199,41 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
     );
   }
 
+  const filteredDocs = selectedCategory === "todos" 
+    ? docs 
+    : selectedCategory === "faturas"
+    ? []
+    : docs.filter(d => getDocCategory(d.key) === selectedCategory);
+
   return (
     <div className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
-      <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-emerald-600 dark:text-emerald-400 uppercase italic tracking-tight">Novo Documento</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Selecione o modelo que você deseja emitir hoje</p>
+              <h2 className="text-xl font-black text-emerald-600 dark:text-emerald-400 uppercase italic tracking-tight">Qual documento deseja emitir?</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Selecione a categoria para filtrar os modelos</p>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
             <X size={18} />
           </button>
+        </div>
+
+        {/* Categorias Bar */}
+        <div className="px-5 pt-4 pb-2 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap ${selectedCategory === cat.id ? "bg-emerald-600 text-white shadow-sm" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
+            >
+              {cat.label}
+            </button>
+          ))}
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
@@ -230,13 +245,20 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
             <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">R$ {(userBalance / 100).toFixed(2).replace(".", ",")}</span>
           </div>
 
-          {loading ? (
+          {selectedCategory === "faturas" ? (
+            <div className="py-8 text-center bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-6">
+              <CreditCard className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+              <h3 className="text-sm font-black text-gray-800 dark:text-white uppercase mb-1">Adicionar Saldo / Faturas</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Adicione créditos para liberar instantaneamente suas emissões.</p>
+              <button onClick={() => { onClose(); handleRecarregar(); }} className="btn-glow-emerald px-6 py-2.5 rounded-xl font-bold text-xs">Recarregar Saldo Agora</button>
+            </div>
+          ) : loading ? (
             <div className="py-12 text-center text-gray-400 text-xs font-bold uppercase tracking-widest animate-pulse">Carregando catálogo...</div>
-          ) : docs.length === 0 ? (
-            <div className="py-12 text-center text-gray-400 text-xs font-black uppercase italic tracking-widest">Nenhuma ferramenta liberada ainda.</div>
+          ) : filteredDocs.length === 0 ? (
+            <div className="py-12 text-center text-gray-400 text-xs font-black uppercase italic tracking-widest">Nenhum documento nesta categoria.</div>
           ) : (
             <div className="grid grid-cols-2 gap-3.5">
-              {docs.map(doc => {
+              {filteredDocs.map(doc => {
                 const Icon = doc.icon;
                 const freeDocsArr = Array.isArray(user?.free_documents) ? user.free_documents : [];
                 

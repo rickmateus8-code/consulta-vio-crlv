@@ -535,222 +535,207 @@ const intelligentStats = [
           </div>
         </div>
 
-        {/* Stats */}
-        {hasEmissions && (
-          <div className="mb-8 animate-in fade-in duration-500">
-            <div className="flex items-center gap-2 mb-4">
-              <BarChart3 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              <h2 className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-200 uppercase tracking-widest">Estatísticas</h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {intelligentStats.map((s, i) => (
-                <div key={i} className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800 shadow-sm group hover:-translate-y-1 transition-all duration-300">
-                  <div className={`w-12 h-12 rounded-2xl mb-4 flex items-center justify-center ${colorMap[s.color].iconBg}`}>
-                    <s.icon className={`w-6 h-6 ${colorMap[s.color].text}`} />
+        {/* Meus Documentos - Estatísticas por Categoria */}
+        <div className="animate-in fade-in duration-500">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <h2 className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-200 uppercase tracking-widest">Documentos Ativos por Categoria</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[
+              { id: "pessoais", label: "Pessoais", icon: Car, keys: ["cnh", "cha"] },
+              { id: "veiculos", label: "Veículos", icon: ShieldCheck, keys: ["crlv", "crlvcria"] },
+              { id: "saude", label: "Saúde", icon: Pill, keys: ["atestado", "toxicologico", "toxicria", "receita"] },
+              { id: "estudante", label: "Estudante", icon: GraduationCap, keys: ["historico-sp", "historico-uninter", "diploma-uninter", "fgv"] },
+              { id: "certidoes", label: "Certidões", icon: FileText, keys: ["peticao-stj", "peticaocria", "bot-adv"] },
+            ].map((cat, i) => {
+              const count = cat.keys.reduce((sum, k) => sum + (stats[k] || 0), 0);
+              const CatIcon = cat.icon;
+              return (
+                <div key={i} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm group hover:-translate-y-1 transition-all duration-300">
+                  <div className="w-10 h-10 rounded-xl mb-3 flex items-center justify-center bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+                    <CatIcon className="w-5 h-5" />
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{s.label}</p>
-                  <p className="text-3xl font-black text-gray-900 dark:text-white mt-1 group-hover:text-blue-600 transition-colors tabular-nums">{s.value}</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{cat.label}</p>
+                  <p className="text-2xl font-black text-gray-900 dark:text-white mt-1 group-hover:text-blue-600 transition-colors tabular-nums">{count} <span className="text-[10px] font-bold text-gray-400 uppercase">ativos</span></p>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Meus Documentos - Tabela & Filtros */}
+        <div id="meus-documentos-section" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <h2 className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-200 uppercase tracking-widest">Meus Documentos</h2>
+            </div>
+            <div className="relative w-full sm:w-80">
+              <input 
+                type="text" 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+                placeholder="Pesquisar nome, CPF ou código..." 
+                className="w-full pl-10 pr-9 py-2.5 text-[11px] font-bold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm transition-all uppercase"
+              />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                <Search size={14} />
+              </div>
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm("")} 
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
-        )}
-
-        {/* History */}
-        {hasEmissions && (
-          <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                <h2 className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-200 uppercase tracking-widest">Histórico de Emissões</h2>
-              </div>
-              <div className="relative w-full sm:w-80">
-                <input 
-                  type="text" 
-                  value={searchTerm} 
-                  onChange={(e) => setSearchTerm(e.target.value)} 
-                  placeholder="Pesquisar nome, CPF ou código..." 
-                  className="w-full pl-10 pr-9 py-2.5 text-[11px] font-bold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm transition-all uppercase"
-                />
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                  <Search size={14} />
-                </div>
-                {searchTerm && (
-                  <button 
-                    onClick={() => setSearchTerm("")} 
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
-            
-            <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
-              <div className="flex border-b border-gray-100 dark:border-gray-800 overflow-x-auto no-scrollbar">
-                {historyTabs.filter(t => isToolAllowed(t.key)).map(tab => (
-                  <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`px-6 py-4 text-xs font-black uppercase tracking-widest transition-all border-b-2 whitespace-nowrap ${activeTab === tab.key ? "border-blue-600 text-blue-600 bg-blue-50/30" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              <div className="p-4">
-                {historyLoading ? (
-                  <div className="py-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" /></div>
-                ) : history.length === 0 ? (
-                  <div className="py-20 text-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl">
-                    <FileText className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Nenhuma {TAB_LABELS[activeTab] || activeTab} emitida ainda</h3>
-                    <button onClick={() => setLocation(quickActionsRaw.find(a => a.key === activeTab)?.path || "/dashboard")} className="mt-4 px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg uppercase">Emitir Documento</button>
-                  </div>
-                ) : filteredHistory.length === 0 ? (
-                  <div className="py-20 text-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl">
-                    <Search className="w-12 h-12 text-gray-300 mx-auto mb-3 animate-pulse" />
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Nenhum resultado encontrado para "{searchTerm}"</h3>
-                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">Tente buscar por outro termo</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Documento / Nome</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">CPF / Registro</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Criado Em</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Validade no Painel</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                        {filteredHistory.map(doc => {
-                          const parsed = parseDocData(doc);
-                          const cpf = doc.cpf || parsed.cpf || parsed.cpf_paciente || "—";
-                          const codigoQR = doc.codigo_qr || doc.codigo_validacao || (doc.id && doc.id.includes("-") ? doc.id.slice(0, 8) : "—");
-
-                          let docTitle = "Documento";
-                          if (doc.type === "fgv") {
-                            docTitle = `Certificado FGV - ${parsed.nome_aluno || "—"}`;
-                          } else if (doc.type === "historico-uninter") {
-                            docTitle = `Histórico UNINTER - ${parsed.nome_aluno || parsed.nome || "—"}`;
-                          } else if (doc.type === "historico-sp") {
-                            docTitle = `Histórico SP - ${parsed.nome || "—"}`;
-                          } else if (doc.type === "peticao-stj") {
-                            docTitle = `Petição STJ - ${parsed.nome_parte || parsed.nome || "—"}`;
-                          } else if (doc.type === "crlv" || doc.type === "crlvcria") {
-                            docTitle = `CRLV Digital - ${parsed.proprietario_nome || doc.nome || "—"}`;
-                          } else if (doc.type === "atestado") {
-                            docTitle = `Atestado Médico - ${doc.paciente || doc.nome || parsed.nome_paciente || "—"}`;
-                          } else if (doc.type === "receita") {
-                            docTitle = `Receituário Médico - ${doc.paciente || doc.nome || parsed.nome_paciente || "—"}`;
-                          } else if (doc.type === "cnh") {
-                            docTitle = `CNH Digital - ${doc.nome || parsed.nome || "—"}`;
-                          } else if (doc.type === "cha") {
-                            docTitle = `CHA Náutica - ${doc.nome || parsed.nome || "—"}`;
-                          } else {
-                            const typeStr = doc.type ? String(doc.type).toUpperCase() : "";
-                            const patientStr = doc.paciente || doc.nome || parsed.nome || "—";
-                            docTitle = typeStr ? `${typeStr} - ${patientStr}` : patientStr;
-                          }
-
-                          const defaultDays = doc.type === "cnh" ? 90 : (doc.type === "peticao-stj" || doc.type === "peticaocria") ? 3 : 30;
-                          const rawExpires = doc.expires_at || (doc.created_at ? new Date(new Date(doc.created_at).getTime() + defaultDays * 24 * 60 * 60 * 1000).toISOString() : "");
-                          const validadePainel = rawExpires || "—";
-                          const daysRemaining = getDaysRemaining(validadePainel);
-                          const isExpired = daysRemaining !== null && daysRemaining < 0;
-                          const isNearExp = daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 15;
-
-                          return (
-                            <tr key={doc.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b border-gray-100 dark:border-gray-800/50">
-                              <td className="px-6 py-5">
-                                <div className="flex flex-col">
-                                  <span className="text-[13px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{docTitle}</span>
-                                  {codigoQR && codigoQR !== "—" && (
-                                    <span 
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(codigoQR);
-                                        toast.success("Código copiado!");
-                                      }}
-                                      className="text-[10px] text-blue-600 font-mono font-bold uppercase mt-0.5 cursor-pointer hover:underline"
-                                      title="Clique para copiar código"
-                                    >
-                                      Código: {codigoQR}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-6 py-5">
-                                <span className="text-[11px] font-black text-gray-600 dark:text-gray-400 font-mono tracking-tighter">{cpf}</span>
-                              </td>
-                              <td className="px-6 py-5">
-                                <div className="flex flex-col">
-                                  <span className="text-[11px] font-black text-gray-700 dark:text-gray-300">
-                                    {new Date(doc.created_at).toLocaleDateString("pt-BR")}
-                                  </span>
-                                  <span className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">
-                                    {new Date(doc.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-5">
-                                <div className="flex flex-col gap-1">
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${isExpired ? "bg-red-500 animate-pulse" : isNearExp ? "bg-amber-500" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"}`} />
-                                    <span className={`text-[11px] font-black uppercase ${isExpired ? "text-red-600" : isNearExp ? "text-amber-600" : "text-emerald-600 dark:text-emerald-400"}`}>
-                                      {formatDate(validadePainel)}
-                                    </span>
-                                  </div>
-                                  {daysRemaining !== null && (
-                                    <span className={`text-[9px] font-black uppercase tracking-widest ${isExpired ? "text-red-500" : isNearExp ? "text-amber-500" : "text-gray-400"}`}>
-                                      {isExpired ? "EXPIRADO" : isNearExp ? `EXPIRA EM ${daysRemaining} DIAS` : `${daysRemaining} DIAS RESTANTES`}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-6 py-5 text-right">
-                                <div className="flex justify-end scale-90 origin-right">
-                                  <AttestationActionButtons
-                                    onRenew={() => handleRenew(doc)}
-                                    onView={() => openViewAtestado(doc)}
-                                    onDownload={doc.type === "atestado" ? () => handleDirectDownloadAtestado(doc) : () => handleDirectDownloadGeneric(doc)}
-                                    isDownloading={downloadingAtestadoId === doc.id}
-                                    onEdit={() => setLocation(getEditPath(doc))}
-                                    onWhatsApp={() => handleWhatsAppHistory(doc)}
-                                    onDelete={() => setConfirmDeleteId(doc.id)}
-                                  />
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Quick Access */}
-        {hasAnyPermission && (
-          <div className="animate-in fade-in slide-in-from-bottom-6 duration-1000">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              <h2 className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-200 uppercase tracking-widest">Acesso Rápido</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {filteredQuickActions.map((action, i) => (
-                <button key={i} onClick={() => setLocation(action.path)} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left group">
-                  <div className={`w-10 h-10 rounded-xl mb-3 flex items-center justify-center ${colorMap[action.color].iconBg}`}>
-                    <action.icon className={`w-5 h-5 ${colorMap[action.color].text}`} />
-                  </div>
-                  <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight group-hover:text-blue-600 transition-colors">{action.label}</h3>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase mt-1">{action.desc}</p>
+          
+          <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+            <div className="flex border-b border-gray-100 dark:border-gray-800 overflow-x-auto no-scrollbar">
+              {historyTabs.filter(t => isToolAllowed(t.key)).map(tab => (
+                <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`px-6 py-4 text-xs font-black uppercase tracking-widest transition-all border-b-2 whitespace-nowrap ${activeTab === tab.key ? "border-blue-600 text-blue-600 bg-blue-50/30" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+                  {tab.label}
                 </button>
               ))}
             </div>
+            <div className="p-4">
+              {historyLoading ? (
+                <div className="py-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" /></div>
+              ) : history.length === 0 ? (
+                <div className="py-20 text-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl">
+                  <FileText className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Nenhum documento emitido nesta categoria ainda</h3>
+                  <button onClick={() => setShowNovoDocModal(true)} className="mt-4 px-5 py-2.5 btn-glow-blue text-white text-[10px] font-black rounded-xl uppercase tracking-wider">Emitir Novo Documento</button>
+                </div>
+              ) : filteredHistory.length === 0 ? (
+                <div className="py-20 text-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl">
+                  <Search className="w-12 h-12 text-gray-300 mx-auto mb-3 animate-pulse" />
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Nenhum resultado encontrado para "{searchTerm}"</h3>
+                  <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">Tente buscar por outro termo</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Documento / Nome</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">CPF / Registro</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Criado Em</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Validade no Painel</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                      {filteredHistory.map(doc => {
+                        const parsed = parseDocData(doc);
+                        const cpf = doc.cpf || parsed.cpf || parsed.cpf_paciente || "—";
+                        const codigoQR = doc.codigo_qr || doc.codigo_validacao || (doc.id && doc.id.includes("-") ? doc.id.slice(0, 8) : "—");
+
+                        let docTitle = "Documento";
+                        if (doc.type === "fgv") {
+                          docTitle = `Certificado FGV - ${parsed.nome_aluno || "—"}`;
+                        } else if (doc.type === "historico-uninter") {
+                          docTitle = `Histórico UNINTER - ${parsed.nome_aluno || parsed.nome || "—"}`;
+                        } else if (doc.type === "historico-sp") {
+                          docTitle = `Histórico SP - ${parsed.nome || "—"}`;
+                        } else if (doc.type === "peticao-stj") {
+                          docTitle = `Petição STJ - ${parsed.nome_parte || parsed.nome || "—"}`;
+                        } else if (doc.type === "crlv" || doc.type === "crlvcria") {
+                          docTitle = `CRLV Digital - ${parsed.proprietario_nome || doc.nome || "—"}`;
+                        } else if (doc.type === "atestado") {
+                          docTitle = `Atestado Médico - ${doc.paciente || doc.nome || parsed.nome_paciente || "—"}`;
+                        } else if (doc.type === "receita") {
+                          docTitle = `Receituário Médico - ${doc.paciente || doc.nome || parsed.nome_paciente || "—"}`;
+                        } else if (doc.type === "cnh") {
+                          docTitle = `CNH Digital - ${doc.nome || parsed.nome || "—"}`;
+                        } else if (doc.type === "cha") {
+                          docTitle = `CHA Náutica - ${doc.nome || parsed.nome || "—"}`;
+                        } else {
+                          const typeStr = doc.type ? String(doc.type).toUpperCase() : "";
+                          const patientStr = doc.paciente || doc.nome || parsed.nome || "—";
+                          docTitle = typeStr ? `${typeStr} - ${patientStr}` : patientStr;
+                        }
+
+                        const defaultDays = doc.type === "cnh" ? 90 : (doc.type === "peticao-stj" || doc.type === "peticaocria") ? 3 : 30;
+                        const rawExpires = doc.expires_at || (doc.created_at ? new Date(new Date(doc.created_at).getTime() + defaultDays * 24 * 60 * 60 * 1000).toISOString() : "");
+                        const validadePainel = rawExpires || "—";
+                        const daysRemaining = getDaysRemaining(validadePainel);
+                        const isExpired = daysRemaining !== null && daysRemaining < 0;
+                        const isNearExp = daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 15;
+
+                        return (
+                          <tr key={doc.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b border-gray-100 dark:border-gray-800/50">
+                            <td className="px-6 py-5">
+                              <div className="flex flex-col">
+                                <span className="text-[13px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{docTitle}</span>
+                                {codigoQR && codigoQR !== "—" && (
+                                  <span 
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(codigoQR);
+                                      toast.success("Código copiado!");
+                                    }}
+                                    className="text-[10px] text-blue-600 font-mono font-bold uppercase mt-0.5 cursor-pointer hover:underline"
+                                    title="Clique para copiar código"
+                                  >
+                                    Código: {codigoQR}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className="text-[11px] font-black text-gray-600 dark:text-gray-400 font-mono tracking-tighter">{cpf}</span>
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="flex flex-col">
+                                <span className="text-[11px] font-black text-gray-700 dark:text-gray-300">
+                                  {new Date(doc.created_at).toLocaleDateString("pt-BR")}
+                                </span>
+                                <span className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">
+                                  {new Date(doc.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${isExpired ? "bg-red-500 animate-pulse" : isNearExp ? "bg-amber-500" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"}`} />
+                                  <span className={`text-[11px] font-black uppercase ${isExpired ? "text-red-600" : isNearExp ? "text-amber-600" : "text-emerald-600 dark:text-emerald-400"}`}>
+                                    {formatDate(validadePainel)}
+                                  </span>
+                                </div>
+                                {daysRemaining !== null && (
+                                  <span className={`text-[9px] font-black uppercase tracking-widest ${isExpired ? "text-red-500" : isNearExp ? "text-amber-500" : "text-gray-400"}`}>
+                                    {isExpired ? "EXPIRADO" : isNearExp ? `EXPIRA EM ${daysRemaining} DIAS` : `${daysRemaining} DIAS RESTANTES`}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                              <div className="flex justify-end scale-90 origin-right">
+                                <AttestationActionButtons
+                                  onRenew={() => handleRenew(doc)}
+                                  onView={() => openViewAtestado(doc)}
+                                  onDownload={doc.type === "atestado" ? () => handleDirectDownloadAtestado(doc) : () => handleDirectDownloadGeneric(doc)}
+                                  isDownloading={downloadingAtestadoId === doc.id}
+                                  onEdit={() => setLocation(getEditPath(doc))}
+                                  onWhatsApp={() => handleWhatsAppHistory(doc)}
+                                  onDelete={() => setConfirmDeleteId(doc.id)}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       <NovoDocumentoModal open={showNovoDocModal} onClose={() => setShowNovoDocModal(false)} userBalance={user?.balance || 0} username={user?.username || ""} />

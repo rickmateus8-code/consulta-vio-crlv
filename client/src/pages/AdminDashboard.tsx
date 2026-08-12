@@ -1393,49 +1393,49 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="p-7 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-wrap items-center gap-5 mb-8 animate-in fade-in duration-700">
-          <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-900 shadow-xl flex items-center justify-center overflow-hidden border border-gray-100 dark:border-gray-800 group hover:scale-105 transition-transform duration-500">
-            <img src="/assets/logo-elite-dm.png" alt="DocMaster Elite" className="w-12 h-12 object-contain" />
+      <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+        {/* Header Admin - Estilo EliteDoc */}
+        <div className="flex flex-wrap items-center gap-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-blue-950/80 border border-blue-500/30 shadow-lg flex items-center justify-center overflow-hidden shrink-0">
+            <img src="/assets/logo-elite-dm.png" alt="DocMaster Elite" className="w-10 h-10 object-contain" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Painel Administrativo</h1>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-0.5">Gestão de Operações — <span className="text-red-600 font-bold tracking-tighter">DOCMASTER ELITE</span></p>
+            <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight m-0">Painel Administrativo</h1>
+            <p className="text-xs font-bold text-slate-400 mt-1">Gestão de Operações — <span className="text-blue-400 font-bold tracking-wider uppercase">DOCMASTER ELITE</span></p>
           </div>
-          <div className="ml-auto flex items-center gap-4 flex-wrap">
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 min-w-[120px]">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Usuários</p>
-              <p className="text-xl font-black text-red-600 dark:text-red-500 mt-1">{users.length}</p>
+          <div className="ml-auto flex items-center gap-3 flex-wrap">
+            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl px-5 py-3 shadow-sm min-w-[120px]">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Usuários</p>
+              <p className="text-xl font-black text-blue-400 mt-0.5">{users.length}</p>
             </div>
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 min-w-[140px]">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Saldo Usuários</p>
-              <p className="text-xl font-black text-emerald-600 dark:text-emerald-500 mt-1">
+            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl px-5 py-3 shadow-sm min-w-[140px]">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Saldo Usuários</p>
+              <p className="text-xl font-black text-emerald-400 mt-0.5 font-mono">
                 R$ {(totalBalance / 100).toFixed(2).replace(".", ",")}
               </p>
             </div>
             {gatewayFinancial && (
-              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 min-w-[150px]">
-                <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest flex items-center gap-1">
-                  <CreditCard className="w-3 h-3" /> Gateway PIX
+              <div className="bg-slate-950/60 border border-slate-800 rounded-2xl px-5 py-3 shadow-sm min-w-[150px]">
+                <p className="text-[10px] font-black text-purple-400 uppercase tracking-wider flex items-center gap-1">
+                  <CreditCard className="w-3.5 h-3.5" /> Gateway PIX
                 </p>
-                <p className="text-xl font-black text-purple-600 dark:text-purple-400 mt-1">
+                <p className="text-xl font-black text-purple-300 mt-0.5 font-mono">
                   R$ {Number(gatewayFinancial.saldo_disponivel || 0).toFixed(2).replace(".", ",")}
                 </p>
               </div>
             )}
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 min-w-[120px]">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Online</p>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <p className="text-xl font-black text-blue-600 dark:text-blue-400">{onlineCount}</p>
+            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl px-5 py-3 shadow-sm min-w-[120px]">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Online</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <p className="text-xl font-black text-blue-400 font-mono">{onlineCount}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-2.5 p-2 mb-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+        {/* Tabs Bar Admin - Estilo EliteDoc */}
+        <div className="flex items-center gap-2 p-2.5 bg-slate-900/90 rounded-2xl border border-slate-800 shadow-xl overflow-x-auto no-scrollbar">
           {TABS.map(t => {
             const Icon = t.icon;
             const isActive = tab === t.key;
@@ -1443,16 +1443,16 @@ export default function AdminDashboard() {
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex-shrink-0 ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border whitespace-nowrap shrink-0 ${
                   isActive
-                    ? "bg-red-600 text-white shadow-lg shadow-red-900/20 translate-y-[-1px]"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200"
+                    ? "bg-blue-600 border-blue-400 text-white shadow-md shadow-blue-600/30"
+                    : "bg-slate-900/80 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-gray-400"}`} />
-                <span className="whitespace-nowrap">{t.label}</span>
+                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-slate-400"}`} />
+                <span>{t.label}</span>
                 {t.key === "monitoring" && onlineCount > 0 && (
-                  <span className={`ml-1 w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold ${isActive ? "bg-white text-red-600" : "bg-red-600 text-white"}`}>
+                  <span className={`ml-1 px-1.5 py-0.5 rounded-md text-[9px] font-black font-mono ${isActive ? "bg-white text-blue-600" : "bg-blue-600 text-white"}`}>
                     {onlineCount}
                   </span>
                 )}

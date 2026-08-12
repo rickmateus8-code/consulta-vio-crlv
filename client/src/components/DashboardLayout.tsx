@@ -24,7 +24,6 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-  { icon: FileText, label: "Meus Documentos", path: "/dashboard#documentos" },
   { icon: Database, label: "Consultar Dados", path: "/consultas" },
   { icon: Search, label: "Bot Adv", path: "/bot-adv" },
 ];

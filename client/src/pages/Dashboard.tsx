@@ -618,8 +618,8 @@ const intelligentStats = [
 
         {/* Meus Documentos - Tabela & Filtros (Pareado 1:1 com Imagens 02 e 03) */}
         <div id="meus-documentos-section" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="bg-[#0f172a] rounded-3xl border border-slate-800 p-6 shadow-2xl space-y-4">
-            <h2 className="text-sm md:text-base font-black text-white uppercase tracking-wider m-0">Meus Documentos</h2>
+          <div className="bg-[#0f172a] rounded-2xl border border-slate-800 p-6 shadow-2xl">
+            <h2 className="text-sm md:text-base font-black text-white uppercase tracking-wider mb-5">Meus Documentos</h2>
 
             {/* Primeira Linha: Botões de Categorias Dropdown (Apenas documentos reais do DocMaster) */}
             <div className="relative z-30 flex items-center gap-2 flex-wrap pb-1">
@@ -691,7 +691,7 @@ const intelligentStats = [
                     <button
                       type="button"
                       onClick={() => setOpenCategoryDropdown(isOpen ? null : cat.id)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border whitespace-nowrap ${
+                      className={`px-3.5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border whitespace-nowrap ${
                         isSelectedCat || isOpen
                           ? "bg-slate-900 border-blue-500 text-blue-500 shadow-md shadow-blue-500/20"
                           : "bg-slate-900 border-slate-800 text-white hover:border-slate-700"

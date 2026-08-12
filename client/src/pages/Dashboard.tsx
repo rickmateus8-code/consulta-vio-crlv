@@ -556,19 +556,16 @@ const intelligentStats = [
           </div>
         )}
 
-        {/* Resumo Financeiro Rápido */}
+        {/* Resumo Financeiro Rápido - Limpo sem moldura azul */}
         <div>
-          <div className="bg-gradient-to-br from-blue-700 via-indigo-700 to-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-blue-900/20 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
-               <Wallet size={120} />
-            </div>
+          <div className="bg-[#0f172a] rounded-3xl p-6 md:p-8 text-white border border-slate-800 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
             <div className="relative z-10">
-              <p className="text-blue-100 text-xs font-black uppercase tracking-[0.2em] mb-2 opacity-80">Saldo Disponível</p>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tighter tabular-nums mb-1">
+              <p className="text-slate-400 text-xs font-black uppercase tracking-wider mb-1">Saldo Disponível</p>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tight tabular-nums mb-1 font-mono text-emerald-400">
                 R$ {((user?.balance || 0) / 100).toFixed(2).replace('.', ',')}
               </h2>
-              <div className="flex items-center gap-2 mt-4">
-                <div className="px-3 py-1 rounded-full bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+              <div className="flex items-center gap-2 mt-3">
+                <div className="px-3 py-1 rounded-md bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[10px] font-black font-mono uppercase tracking-wider flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Conta Ativa
                 </div>
               </div>
@@ -579,15 +576,15 @@ const intelligentStats = [
                   const event = new CustomEvent("docmaster:open-recarrega-modal");
                   window.dispatchEvent(event);
                 }}
-                className="bg-white text-blue-700 hover:bg-blue-50 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95"
+                className="bg-blue-600 hover:bg-blue-500 text-white border border-blue-500 px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95"
               >
                 <Plus className="w-4 h-4" /> Recarregar
               </button>
               <button 
                 onClick={() => setShowExtratoModal(true)}
-                className="bg-blue-800/40 hover:bg-blue-800/60 backdrop-blur-md text-white border border-white/10 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95"
+                className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95"
               >
-                <Receipt className="w-4 h-4" /> Ver Extrato
+                <Receipt className="w-4 h-4 text-blue-400" /> Ver Extrato
               </button>
             </div>
           </div>

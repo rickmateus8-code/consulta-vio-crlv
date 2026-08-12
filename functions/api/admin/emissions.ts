@@ -174,6 +174,37 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   }
 };
 
+export const onRequestPut: PagesFunction<Env> = async ({ request, env }) => {
+  const corsHeaders = getCorsHeaders(request);
+  try {
+    const admin = await getAuthAdmin(request, env);
+    if (!admin) {
+      return new Response(JSON.stringify({ success: false, error: 'Não autorizado' }), { status: 401, headers: corsHeaders });
+    }
+
+    const body = await request.json<any>();
+    const emissionId = String(body.id || body.emission_id || '');
+    const tableSource = String(body.table_source || 'documents');
+    const expiresAt = String(body.expires_at || '');
+
+    if (!emissionId || !expiresAt) {
+      return new Response(JSON.stringify({ success: false, error: 'id e expires_at são obrigatórios' }), { status: 400, headers: corsHeaders });
+    }
+
+    if (tableSource === 'attestations') {
+      await env.DB.prepare('UPDATE attestations SET expires_at = ? WHERE id = ?').bind(expiresAt, emissionId).run();
+    } else if (tableSource === 'receitas') {
+      await env.DB.prepare('UPDATE receitas SET expires_at = ? WHERE id = ?').bind(expiresAt, emissionId).run();
+    } else {
+      await env.DB.prepare('UPDATE documents SET expires_at = ? WHERE id = ?').bind(expiresAt, emissionId).run();
+    }
+
+    return new Response(JSON.stringify({ success: true, message: 'Validade atualizada com sucesso!' }), { headers: corsHeaders });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: err?.message || 'Erro ao atualizar validade' }), { status: 500, headers: corsHeaders });
+  }
+};
+
 export const onRequestOptions: PagesFunction = async ({ request }) => {
   return new Response(null, { headers: getCorsHeaders(request) });
 };

@@ -216,8 +216,8 @@ export const onRequestDelete: PagesFunction<Env> = async ({ request, env }) => {
       results.push('Admin logs limpos');
     }
     if (clearType === 'all' || clearType === 'payment') {
-      // Don't delete transactions, just clear the view
-      results.push('Payment logs marcados como limpos');
+      try { await env.DB.prepare('DELETE FROM transactions').run(); results.push('Logs de pagamento (transactions) limpos com sucesso'); } catch (e) {}
+      try { await env.DB.prepare("DELETE FROM system_logs WHERE category = 'payment'").run(); } catch (e) {}
     }
     if (clearType === 'all' || clearType === 'system') {
       try { await env.DB.prepare('DELETE FROM system_logs').run(); results.push('System logs limpos'); } catch (e) {}

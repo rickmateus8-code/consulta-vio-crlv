@@ -622,8 +622,10 @@ export default function AdminDashboard() {
   const clearLogs = (clearType: string = "all") => {
     setConfirmModal({
       open: true,
-      title: "Limpar Logs",
-      message: `Tem certeza que deseja limpar os logs (${clearType})? Esta acao nao pode ser desfeita.`,
+      title: clearType === "payment" ? "Limpar Logs de Pagamento" : "Limpar Logs",
+      message: clearType === "payment"
+        ? "Tem certeza que deseja apagar todos os registros de transações e pagamentos? Esta ação é irreversível."
+        : `Tem certeza que deseja limpar os logs (${clearType})? Esta ação não pode ser desfeita.`,
       type: "danger",
       onConfirm: async () => {
         setConfirmModal(m => ({ ...m, open: false }));
@@ -631,7 +633,7 @@ export default function AdminDashboard() {
           const res = await fetch(`/api/admin/system-logs?clear=${clearType}`, { method: "DELETE", credentials: "include" });
           const data = await res.json();
           if (data.success) { 
-            toast.success("Logs limpos com sucesso!"); 
+            toast.success(clearType === "payment" ? "Logs de pagamento limpos com sucesso!" : "Logs limpos com sucesso!"); 
             if (tab === "logs") loadLogs();
             if (tab === "monitoring") loadPresence();
           }
@@ -639,6 +641,38 @@ export default function AdminDashboard() {
         } catch { toast.error("Erro de conexão"); }
       },
     });
+  };
+
+  const handleUpdateDocValidity = async (emission: EmissionRow, daysToAdd: number, is2099 = false) => {
+    let targetDate = new Date();
+    if (is2099) {
+      targetDate = new Date('2099-12-31T20:59:00.000Z');
+    } else {
+      targetDate.setDate(targetDate.getDate() + daysToAdd);
+    }
+    const expiresIso = targetDate.toISOString();
+
+    try {
+      const res = await fetch("/api/admin/emissions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          id: emission.id,
+          table_source: emission.table_source || 'documents',
+          expires_at: expiresIso,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Validade de ${emission.nome || 'documento'} alterada em tempo real!`, { duration: 2000 });
+        loadEmissions();
+      } else {
+        toast.error(data.error || "Erro ao alterar validade.");
+      }
+    } catch {
+      toast.error("Erro de conexão.");
+    }
   };
 
   const loadReferral = useCallback(async () => {
@@ -2408,13 +2442,16 @@ export default function AdminDashboard() {
                   </button>
                 ))}
               </div>
-              <button onClick={loadLogs} style={{ display: "none" }} className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors" title="Atualizar">
-                <RefreshCw className="w-4 h-4" />
-              </button>
-              <button onClick={() => clearLogs("all")} className="flex items-center gap-1 px-3 py-2 rounded-xl bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-200 transition-colors text-xs font-semibold" title="Limpar todos os logs">
-                <Trash className="w-3.5 h-3.5" />
-                Limpar
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => clearLogs("payment")} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-950/80 border border-purple-500/40 text-purple-300 hover:bg-purple-900 transition-all text-xs font-black uppercase tracking-wider shadow-lg shadow-purple-950/40" title="Limpar logs de transações e pagamentos financeiras">
+                  <Trash className="w-3.5 h-3.5 text-purple-400" />
+                  Limpar Logs de Payment
+                </button>
+                <button onClick={() => clearLogs("all")} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 hover:bg-red-900 transition-all text-xs font-black uppercase tracking-wider shadow-lg shadow-red-950/40" title="Limpar todos os logs de auditoria">
+                  <Trash className="w-3.5 h-3.5 text-red-400" />
+                  Limpar Todos
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               <Calendar className="w-4 h-4 text-gray-400" />

@@ -18,6 +18,8 @@ export type ProfileKey =
   | "pedagogia"
   | "engenharia_controle_automacao"
   | "engenharia_eletrica"
+  | "engenharia_producao"
+  | "gestao_producao_industrial"
   | "administracao"
   | "letras"
   | "direito"
@@ -46,6 +48,8 @@ export const HISTORICOS_DISPONIVEIS: HistoricoDisponivel[] = [
   { key: "enfermagem", label: "ENFERMAGEM", shortLabel: "ENF" },
   { key: "engenharia_controle_automacao", label: "ENG. CONTROLE E AUTOMAÇÃO", shortLabel: "ENG" },
   { key: "engenharia_eletrica", label: "ENGENHARIA ELÉTRICA", shortLabel: "ELET" },
+  { key: "engenharia_producao", label: "ENGENHARIA DE PRODUÇÃO", shortLabel: "PROD" },
+  { key: "gestao_producao_industrial", label: "GESTÃO DE PRODUÇÃO INDUSTRIAL", shortLabel: "GPI" },
   { key: "gestao_recursos_humanos", label: "GESTÃO DE REC. HUMANOS", shortLabel: "RH" },
   { key: "historia", label: "HISTÓRIA", shortLabel: "HIST" },
   { key: "letras", label: "LETRAS", shortLabel: "LET" },
@@ -162,6 +166,8 @@ export const PROFILES: Record<ProfileKey, Profile> = {
   enfermagem: { name: "", label: "Enfermagem", curso: "BACHARELADO EM ENFERMAGEM", cursoAbreviado: "Enfermagem", fields: { ...BASE_FIELDS } },
   engenharia_controle_automacao: { name: "", label: "Eng. Controle e Automação", curso: "BACHARELADO EM ENGENHARIA DE CONTROLE E AUTOMAÇÃO", cursoAbreviado: "Eng. Controle e Automação", fields: { ...BASE_FIELDS } },
   engenharia_eletrica: { name: "", label: "Engenharia Elétrica", curso: "BACHARELADO EM ENGENHARIA ELÉTRICA", cursoAbreviado: "Engenharia Elétrica", fields: { ...BASE_FIELDS } },
+  engenharia_producao: { name: "", label: "Engenharia de Produção", curso: "BACHARELADO EM ENGENHARIA DE PRODUÇÃO", cursoAbreviado: "Engenharia de Produção", fields: { ...BASE_FIELDS } },
+  gestao_producao_industrial: { name: "", label: "Gestão de Prod. Industrial", curso: "TECNOLOGIA EM GESTÃO DE PRODUÇÃO INDUSTRIAL", cursoAbreviado: "Gestão de Prod. Industrial", fields: { ...BASE_FIELDS } },
   gestao_recursos_humanos: { name: "", label: "Gestão de RH", curso: "TECNOLOGIA EM GESTÃO DE RECURSOS HUMANOS", cursoAbreviado: "Gestão RH", fields: { ...BASE_FIELDS } },
   historia: { name: "", label: "História", curso: "LICENCIATURA EM HISTÓRIA", cursoAbreviado: "História", fields: { ...BASE_FIELDS } },
   letras: { name: "", label: "Letras", curso: "LICENCIATURA EM LETRAS", cursoAbreviado: "Letras", fields: { ...BASE_FIELDS } },
@@ -192,6 +198,8 @@ export const COURSE_METADATA: Record<ProfileKey, CourseMetadata> = {
   enfermagem: { ...BASE_META },
   engenharia_controle_automacao: { ...BASE_META },
   engenharia_eletrica: { ...BASE_META },
+  engenharia_producao: { ...BASE_META },
+  gestao_producao_industrial: { ...BASE_META },
   gestao_recursos_humanos: { ...BASE_META },
   historia: { ...BASE_META },
   letras: { ...BASE_META },

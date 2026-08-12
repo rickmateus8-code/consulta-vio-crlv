@@ -78,6 +78,28 @@ const SUBJECTS_DATABASE: Record<string, string[]> = {
     "Eficiência Energética", "Automação e Controle Industrial", "Redes de Comunicação Industrial", "Engenharia Econômica", "Administração para Engenheiros",
     "Ética e Legislação Profissional", "Atividades Complementares", "Estágio Supervisionado", "Trabalho de Conclusão de Curso (TCC) I", "Trabalho de Conclusão de Curso (TCC) II"
   ],
+  engenharia_producao: [
+    "Cálculo Diferencial e Integral I", "Cálculo Diferencial e Integral II", "Cálculo Diferencial e Integral III", "Álgebra Linear e Geometria Analítica", "Física Geral e Experimental I",
+    "Física Geral e Experimental II", "Física Geral e Experimental III", "Química Geral e Tecnológica", "Algoritmos e Programação de Computadores", "Desenho Técnico Assistido por Computador",
+    "Introdução à Engenharia de Produção", "Probabilidade e Estatística Aplicada", "Fenômenos de Transporte", "Resistência dos Materiais", "Ciência e Tecnologia dos Materiais",
+    "Mecânica dos Sólidos e dos Fluidos", "Eletrotécnica Geral e Instalações Industriais", "Processos de Fabricação Mecânica I", "Processos de Fabricação Mecânica II", "Metrologia e Controle Dimensional",
+    "Engenharia de Métodos e Tempos", "Ergonomia e Segurança do Trabalho", "Planejamento e Controle da Produção (PCP) I", "Planejamento e Controle da Produção (PCP) II", "Gestão da Qualidade e Metrologia Industrial",
+    "Controle Estatístico de Processos (CEP)", "Logística e Gestão da Cadeia de Suprimentos", "Engenharia Econômica e Análise de Custos", "Gestão de Custos de Produção", "Pesquisa Operacional I (Modelagem e Otimização)",
+    "Pesquisa Operacional II (Simulação de Processos)", "Gestão de Projetos Industriais", "Automação Industrial e Robótica", "Sistemas Integrados de Manufatura (CIM / Indústria 4.0)", "Gestão da Manutenção Industrial (TPM)",
+    "Gestão Ambiental e Sustentabilidade Industrial", "Empreendedorismo e Gestão da Inovação", "Organização Industrial e Gestão de Pessoas", "Ética, Legislação e Direitos Humanos na Engenharia", "Modelagem e Simulação de Sistemas Produtivos",
+    "Liderança e Gestão Estratégica", "Libras - Língua Brasileira de Sinais", "Atividades Complementares (AACC)", "Estágio Supervisionado I em Engenharia de Produção", "Estágio Supervisionado II em Engenharia de Produção",
+    "Trabalho de Conclusão de Curso (TCC) I", "Trabalho de Conclusão de Curso (TCC) II"
+  ],
+  gestao_producao_industrial: [
+    "Comunicação Empresarial e Redação Técnica", "Introdução à Gestão de Produção Industrial", "Matemática Aplicada à Gestão Industrial", "Estatística Aplicada aos Processos Industriais", "Fundamentos de Administração e Organização Industrial",
+    "Desenho e Leitura de Plantas Industriais", "Química Industrial e Ciência dos Materiais", "Segurança, Higiene e Medicina do Trabalho", "Ergonomia Aplicada aos Postos de Trabalho", "Métodos, Tempos e Racionalização de Processos",
+    "Processos Industriais de Fabricação", "Metrologia Industrial e Normalização", "Planejamento, Programação e Controle da Produção (PPCP) I", "Planejamento, Programação e Controle da Produção (PPCP) II", "Gestão da Qualidade Total (TQM)",
+    "Ferramentas da Qualidade e Controle Estatístico de Processos", "Gestão de Custos Industriais e Formação de Preços", "Logística Industrial e Armazenagem", "Movimentação e Transporte de Materiais", "Gestão da Cadeia de Suprimentos",
+    "Automação dos Processos Produtivos", "Manutenção Industrial e Confiabilidade (PCM)", "Arranjo Físico (Layout) e Fluxo de Produção", "Gestão Ambiental e Tratamento de Resíduos Industriais", "Sistemas Integrados de Gestão (ERP/SAP)",
+    "Gestão de Pessoas e Liderança de Equipes de Produção", "Legislação Trabalhista e Ambiental para a Indústria", "Gestão de Projetos e Melhoria Contínua (Lean/Six Sigma)", "Indicadores de Desempenho Industrial (KPIs)", "Gestão da Inovação e Manufatura Enxuta",
+    "Ética e Responsabilidade Social Corporativa", "Libras - Língua Brasileira de Sinais", "Projeto Integrador em Produção Industrial I", "Projeto Integrador em Produção Industrial II", "Estágio Supervisionado em Gestão de Produção Industrial",
+    "Trabalho de Conclusão de Curso (TCC) I", "Trabalho de Conclusão de Curso (TCC) II"
+  ],
   gestao_recursos_humanos: [
     "Rotinas Trabalhistas", "Gestão de Cargos e Salários", "Recrutamento e Seleção", "Treinamento e Desenvolvimento", "Comportamento Organizacional",
     "Legislação Trabalhista e Previdenciária", "Saúde e Segurança no Trabalho", "Gestão de Desempenho", "Cultura e Clima Organizacional", "Psicologia Organizacional",

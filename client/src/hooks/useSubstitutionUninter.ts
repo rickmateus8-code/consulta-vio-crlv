@@ -19,6 +19,8 @@ const HISTORICO_TO_PROFILE: Record<HistoricoDisponivelKey, ProfileKey> = {
   enfermagem: "enfermagem",
   engenharia_controle_automacao: "engenharia_controle_automacao",
   engenharia_eletrica: "engenharia_eletrica",
+  engenharia_producao: "engenharia_producao",
+  gestao_producao_industrial: "gestao_producao_industrial",
   gestao_recursos_humanos: "gestao_recursos_humanos",
   historia: "historia",
   letras: "letras",
@@ -79,6 +81,8 @@ function detectHistoricoByCurso(curso: string): HistoricoDisponivelKey | null {
   if (text.includes("ENFERM")) return "enfermagem";
   if (text.includes("ENGENHARIA DE CONTROLE") || text.includes("AUTOMA")) return "engenharia_controle_automacao";
   if (text.includes("ENGENHARIA ELETRICA") || text.includes("ELÉTRICA")) return "engenharia_eletrica";
+  if (text.includes("ENGENHARIA DE PRODUÇÃO") || text.includes("ENGENHARIA DE PRODUCAO") || (text.includes("ENG") && text.includes("PRODUÇ"))) return "engenharia_producao";
+  if (text.includes("GESTÃO DE PRODUÇÃO INDUSTRIAL") || text.includes("GESTAO DE PRODUCAO INDUSTRIAL") || text.includes("PRODUÇÃO INDUSTRIAL") || text.includes("PRODUCAO INDUSTRIAL")) return "gestao_producao_industrial";
   if (text.includes("RH") || text.includes("HUMANO")) return "gestao_recursos_humanos";
   if (text.includes("HIST")) return "historia";
   if (text.includes("LETRAS")) return "letras";
@@ -289,6 +293,8 @@ function parseImportText(text: string): {
 function normalizeHistoricoKey(input?: string): HistoricoDisponivelKey | null {
   if (!input) return null;
   const value = normalizeUpper(input);
+  if (value.includes("GPI")) return "gestao_producao_industrial";
+  if (value.includes("PROD")) return "engenharia_producao";
   if (value.includes("ENG")) return "engenharia_controle_automacao";
   if (value.includes("PED")) return "pedagogia";
   if (value.includes("ADM")) return "administracao";

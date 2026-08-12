@@ -216,11 +216,11 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
         octx.drawImage(bgImg, 0, 0, 963, 680);
 
-        // 1. MOLDURA DA FOTO 3X4 COM ENQUADRAMENTO BRANCO PURO
+        // 1. MOLDURA DA FOTO 3X4 COM ENQUADRAMENTO BRANCO PURO (177, 192, 250, 335)
         octx.fillStyle = "#ffffff";
         octx.fillRect(177, 192, 250, 335);
 
-        // Foto 3x4 do Condutor
+        // Foto 3x4 do Condutor com recorte perfeito na moldura
         if (props.fotoUrl) {
           try {
             const foto = new Image();
@@ -228,12 +228,17 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
             foto.src = props.fotoUrl;
             await new Promise((res) => { foto.onload = res; foto.onerror = res; });
             if (isMounted) {
+              octx.save();
+              octx.beginPath();
+              octx.rect(177, 192, 250, 335);
+              octx.clip();
               octx.drawImage(foto, 177, 192, 250, 335);
+              octx.restore();
             }
           } catch {}
         }
 
-        // Assinatura do Condutor com tratamento de transparência forense
+        // Assinatura do Condutor com tratamento de transparência forense (187, 580, 230, 54)
         if (props.assinaturaUrl) {
           await drawCleanSignature(octx, props.assinaturaUrl, 187, 580, 230, 54);
         }

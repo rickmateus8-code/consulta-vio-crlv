@@ -264,7 +264,7 @@ export default function HistoricoEditar() {
         <aside className={`transition-all duration-300 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-xl z-10 flex flex-col ${sidebarOpen ? "w-[420px]" : "w-0 overflow-hidden"}`}>
             <SubstitutionPanelUninter
               fields={fields}
-              activeHistorico={activeHistorico}
+              activeHistorico={activeHistorico || "historia"}
               modifiedCount={modifiedCount}
               importText={importText}
               onUpdateImportText={setImportText}

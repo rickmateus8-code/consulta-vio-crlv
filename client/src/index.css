@@ -150,6 +150,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  /* Remove o cursor piscando | (caret) de todos os textos e elementos nao editaveis */
+  *:not(input):not(textarea):not([contenteditable="true"]) {
+    caret-color: transparent !important;
+  }
+
+  *:not(input):not(textarea):not([contenteditable="true"]):focus {
+    outline: none !important;
+    caret-color: transparent !important;
+  }
+
   body {
     @apply bg-background text-foreground;
   }

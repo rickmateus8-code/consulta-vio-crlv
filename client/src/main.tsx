@@ -7,8 +7,13 @@ import "./index.css";
   // Desabilitar menu de contexto (clique direito)
   document.addEventListener("contextmenu", (e) => e.preventDefault(), false);
 
-  // Desabilitar atalhos de teclado para inspeção
+  // Desabilitar atalhos de teclado para inspeção e Caret Browsing
   document.addEventListener("keydown", (e) => {
+    // F7 (Caret Browsing / Navegação por cursor)
+    if (e.key === "F7") {
+      e.preventDefault();
+      return false;
+    }
     // F12 (DevTools)
     if (e.key === "F12") {
       e.preventDefault();
@@ -40,6 +45,10 @@ import "./index.css";
       return false;
     }
   }, false);
+
+  try {
+    document.designMode = "off";
+  } catch {}
 
   // Desabilitar seleção de texto (opcional - comentado por padrão)
   // document.body.style.userSelect = "none";

@@ -1,21 +1,16 @@
 import { useState, useEffect } from "react";
-import { X, Copy, Check, AlertCircle, Loader2, Wallet, ArrowLeft } from "lucide-react";
+import { X, MessageCircle, Copy, Check, Wallet, AlertCircle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const RECARREGA_MODAL_EVENT = "docmaster:open-recarrega-modal";
 export const RECARREGA_MODAL_PENDING_KEY = "docmaster:pending-recarrega-modal";
 
-/**
- * Função global para abrir o modal de recarga de qualquer lugar.
- */
 export function openRecarregaModal() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(RECARREGA_MODAL_EVENT));
 }
 
-/**
- * Enfileira a abertura do modal de recarga para a próxima carga de página (ou imediato).
- */
 export function queueRecarregaModalOpen() {
   if (typeof window === "undefined") return;
   window.sessionStorage.setItem(RECARREGA_MODAL_PENDING_KEY, "1");
@@ -29,266 +24,180 @@ interface RecarregaModalProps {
   userCpf?: string;
 }
 
-/**
- * RecarregaModal — Interface de recarga de saldo via PIX.
- * Seguindo a nova identidade visual "Elite" (Red Theme).
- */
 export default function RecarregaModal({
   isOpen,
   onClose,
   userName = "",
-  userCpf = "",
 }: RecarregaModalProps) {
-  const [amount, setAmount] = useState<number>(20);
-  const [loading, setLoading] = useState(false);
-  const [pixData, setPixData] = useState<any>(null);
+  const { user } = useAuth();
+  const [amount, setAmount] = useState<number>(50);
   const [copied, setCopied] = useState(false);
-  const [step, setStep] = useState<"amount" | "pix">("amount");
+  const [whatsappNumber, setWhatsappNumber] = useState<string>("");
 
-  const handleGeneratePix = async () => {
-    if (!amount || amount < 20 || amount > 1000) {
-      toast.error("Valor deve estar entre R$ 20,00 e R$ 1.000,00");
+  const effectiveUserName = userName || user?.displayName || user?.username || "Cliente";
+
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch("/api/settings/public")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.support_whatsapp) {
+          const clean = data.support_whatsapp.replace(/\D/g, "");
+          setWhatsappNumber(clean);
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
+
+  const getMessageText = () => {
+    return `Olá! Gostaria de adicionar R$ ${amount},00 de saldo na minha conta DocMaster.\n\n👤 Usuário: ${effectiveUserName}\n💰 Valor da Recarga: R$ ${amount},00\n\nPor favor, envie a chave PIX para adicionar meu saldo.`;
+  };
+
+  const handleOpenWhatsapp = () => {
+    if (!amount || amount < 10) {
+      toast.error("Valor mínimo para recarga é de R$ 10,00");
       return;
     }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/pix/deposit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          amount,
-          user_name: userName,
-          user_cpf: userCpf,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!data.success) {
-        toast.error(data.error || "Erro ao gerar PIX");
-        return;
-      }
-
-      setPixData(data);
-      setStep("pix");
-    } catch (err) {
-      console.error("Erro ao gerar PIX:", err);
-      toast.error("Erro ao gerar PIX");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    toast.success("Código PIX copiado!");
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleClose = () => {
-    setStep("amount");
-    setPixData(null);
-    setAmount(50);
-    setCopied(false);
+    const phone = whatsappNumber || "5511999999999";
+    const text = encodeURIComponent(getMessageText());
+    window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
+    toast.success("Redirecionando para o WhatsApp do Administrador...");
     onClose();
   };
 
-  // Atalho teclado (Esc)
+  const handleCopyMessage = () => {
+    navigator.clipboard.writeText(getMessageText());
+    setCopied(true);
+    toast.success("Mensagem copiada para a área de transferência!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   useEffect(() => {
     if (!isOpen) return;
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") handleClose();
+      if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto custom-scrollbar"
-      onClick={handleClose}
+      className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto custom-scrollbar"
+      onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-[40px] p-8 md:p-10 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 my-auto"
+        className="bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-white/10 rounded-[36px] p-6 md:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-950/20 flex items-center justify-center text-[#059669]">
-              <Wallet className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <Wallet className="w-5 h-5" />
             </div>
-            <h2 className="text-2xl font-black text-[#059669] tracking-tight m-0">
-              Recarga PIX
-            </h2>
-          </div>
-          <button
-            onClick={handleClose}
-            className="w-9 h-9 rounded-full border-none bg-gray-100 dark:bg-white/5 cursor-pointer flex items-center justify-center text-gray-500 hover:text-[#059669] transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-          {step === "amount"
-            ? "Selecione ou digite o valor que deseja recarregar agora."
-            : "Pagamento via PIX com aprovação imediata em sua conta."}
-        </p>
-
-        {step === "amount" ? (
-          <div className="space-y-6">
-            {/* Seletor de Valor com Botões + e - */}
-            <div className="flex flex-col items-center gap-4">
-              <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] px-1">
-                Escolha o valor da recarga
-              </label>
-              
-              <div className="flex items-center justify-between w-full bg-gray-50 dark:bg-white/5 rounded-3xl p-2 border-2 border-gray-100 dark:border-white/5">
-                <button
-                  onClick={() => setAmount(prev => Math.max(20, prev - 20))}
-                  disabled={amount <= 20}
-                  className="w-14 h-14 rounded-2xl bg-white dark:bg-white/5 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-[#059669] hover:bg-green-50 dark:hover:bg-green-950/20 transition-all border-none cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
-                >
-                  <span className="text-3xl font-light">−</span>
-                </button>
-
-                <div className="flex flex-col items-center">
-                  <div className="text-3xl font-black text-gray-900 dark:text-white flex items-baseline gap-1">
-                    <span className="text-lg opacity-40 font-bold">R$</span>
-                    {amount},00
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setAmount(prev => Math.min(150, prev + 20))}
-                  disabled={amount >= 150}
-                  className="w-14 h-14 rounded-2xl bg-white dark:bg-white/5 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-[#059669] hover:bg-green-50 dark:hover:bg-green-950/20 transition-all border-none cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
-                >
-                  <span className="text-3xl font-light">+</span>
-                </button>
-              </div>
-
-              {amount >= 150 && (
-                <div className="bg-amber-50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl p-3 flex gap-3 items-center w-full">
-                  <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
-                  <p className="text-[11px] text-amber-800 dark:text-amber-400 font-medium leading-tight">
-                    Para valores superiores a R$ 150,00, por favor entre em contato com nosso <a href="https://wa.me/5511999999999" target="_blank" className="font-bold underline decoration-amber-500/30">Suporte VIP</a>.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Botão Principal */}
-            <button
-              onClick={handleGeneratePix}
-              disabled={loading || !amount || amount < 20}
-              className="w-full py-5 bg-[#059669] hover:bg-[#047857] disabled:bg-gray-200 dark:disabled:bg-white/5 disabled:text-gray-400 text-white font-black text-base rounded-2xl shadow-xl shadow-green-500/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                  <span>PROCESSANDO...</span>
-                </>
-              ) : (
-                <>
-                  <span>GERAR PAGAMENTO PIX</span>
-                </>
-              )}
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Box do QR Code */}
-            <div className="flex flex-col items-center gap-5">
-              <div className="bg-white p-6 rounded-[32px] border-2 border-gray-100 dark:border-white/5 shadow-2xl relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-tr from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                {pixData?.qr_code_base64 ? (
-                  <img
-                    src={pixData.qr_code_base64.startsWith("data:") 
-                      ? pixData.qr_code_base64 
-                      : `data:image/png;base64,${pixData.qr_code_base64}`}
-                    alt="QR Code PIX"
-                    className="w-52 h-52 relative z-10"
-                  />
-                ) : (
-                  <div className="w-52 h-52 flex items-center justify-center bg-gray-50 rounded-2xl">
-                    <Loader2 className="w-10 h-10 animate-spin text-green-500" />
-                  </div>
-                )}
-              </div>
-
-              <div className="text-center">
-                <div className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">
-                  Total a Pagar
-                </div>
-                <div className="text-4xl font-black text-gray-900 dark:text-white flex items-baseline justify-center gap-1">
-                  <span className="text-lg opacity-40">R$</span>
-                  {pixData?.amount?.toFixed(2).replace(".", ",")}
-                </div>
-              </div>
-            </div>
-
-            {/* Ações do PIX */}
-            <div className="space-y-3">
-              <button
-                onClick={() => copyToClipboard(pixData?.qr_code || "")}
-                className={`w-full py-5 font-black rounded-2xl transition-all flex items-center justify-center gap-3 border-2 ${
-                  copied
-                    ? "bg-green-50 border-green-500 text-green-600 dark:bg-green-950/10"
-                    : "bg-white border-gray-200 text-gray-700 hover:border-[#059669] hover:text-[#059669] dark:bg-white/5 dark:border-white/10 dark:text-gray-300"
-                }`}
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-6 h-6" />
-                    CÓDIGO COPIADO!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-5 h-5" />
-                    COPIAR CÓDIGO PIX
-                  </>
-                )}
-              </button>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setStep("amount");
-                    setPixData(null);
-                  }}
-                  className="flex-1 py-4 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 font-black rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  VOLTAR
-                </button>
-                <button
-                  onClick={handleClose}
-                  className="flex-1 py-4 bg-white dark:bg-transparent border border-gray-200 dark:border-white/10 hover:border-gray-400 text-gray-500 font-black rounded-xl transition-all text-sm"
-                >
-                  FECHAR
-                </button>
-              </div>
-            </div>
-
-            {/* Alerta de confirmação */}
-            <div className="bg-green-50/50 dark:bg-green-950/10 rounded-2xl p-4 flex gap-4 items-start border border-green-100 dark:border-green-900/20">
-              <div className="w-10 h-10 rounded-full bg-white dark:bg-white/5 flex items-center justify-center shrink-0 shadow-sm">
-                <AlertCircle className="w-5 h-5 text-[#059669]" />
-              </div>
-              <p className="text-[13px] text-green-900/70 dark:text-green-300/60 leading-relaxed font-medium">
-                Seu saldo será atualizado <span className="text-[#059669] font-bold">automaticamente</span> após a confirmação do pagamento.
+            <div>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight m-0">
+                Adicionar Saldo
+              </h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                Atendimento Direto via WhatsApp
               </p>
             </div>
           </div>
-        )}
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full border-none bg-slate-100 dark:bg-white/10 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Card Informativo de Contato Direto */}
+        <div className="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl p-4 mb-6 flex gap-3 items-start">
+          <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+          <div className="text-xs text-emerald-900 dark:text-emerald-300 leading-relaxed font-medium">
+            <span className="font-bold block text-emerald-700 dark:text-emerald-400 mb-0.5">Recarga Segura e Imediata</span>
+            As solicitações de adição de saldo no DocMaster são realizadas diretamente com a equipe de atendimento via WhatsApp.
+          </div>
+        </div>
+
+        {/* Seleção de Valor */}
+        <div className="space-y-5">
+          <div>
+            <label className="block text-[11px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-2">
+              Escolha o valor da recarga
+            </label>
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              {[20, 50, 100, 200].map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setAmount(val)}
+                  className={`py-2.5 rounded-xl font-black text-xs transition-all border ${
+                    amount === val
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30"
+                      : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-emerald-500"
+                  }`}
+                >
+                  R$ {val}
+                </button>
+              ))}
+            </div>
+
+            {/* Ajuste com incremento / decremento */}
+            <div className="flex items-center justify-between w-full bg-slate-50 dark:bg-white/5 rounded-2xl p-2 border border-slate-200 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => setAmount((prev) => Math.max(10, prev - 10))}
+                disabled={amount <= 10}
+                className="w-10 h-10 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center text-slate-700 dark:text-white font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all border-none disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+              >
+                −
+              </button>
+              <div className="text-center">
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Valor Selecionado</span>
+                <span className="text-2xl font-black text-slate-900 dark:text-white">R$ {amount},00</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAmount((prev) => prev + 10)}
+                className="w-10 h-10 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center text-slate-700 dark:text-white font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all border-none shadow-sm"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Botão Principal WhatsApp */}
+          <button
+            onClick={handleOpenWhatsapp}
+            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-600/30 transition-all flex items-center justify-center gap-2.5 active:scale-[0.98]"
+          >
+            <MessageCircle className="w-5 h-5 fill-current" />
+            <span>SOLICITAR SALDO VIA WHATSAPP</span>
+          </button>
+
+          {/* Copiar mensagem */}
+          <button
+            onClick={handleCopyMessage}
+            className="w-full py-3 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2"
+          >
+            {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+            <span>{copied ? "MENSAGEM COPIADA!" : "COPIAR MENSAGEM DE SOLICITAÇÃO"}</span>
+          </button>
+        </div>
+
+        {/* Rodapé explicativo */}
+        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+          <div className="flex items-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Atendimento Rápido</span>
+          </div>
+          <span className="font-bold text-slate-500 dark:text-slate-400">DocMaster Suporte</span>
+        </div>
       </div>
     </div>
   );

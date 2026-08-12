@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import AttestationDocument from "@/components/AttestationDocument";
 import { toast } from "sonner";
+import { triggerPermissionsUpdate } from "@/lib/permissions";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Settings, Plus, Minus, Shield,
@@ -226,6 +227,7 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (data.success) {
         toast.success(data.message || "Plano atualizado com sucesso!");
+        triggerPermissionsUpdate();
         if (typeof (window as any).fetchUsers === 'function') (window as any).fetchUsers();
         window.location.reload();
         setGrantPlanModalUser(null);
@@ -279,6 +281,7 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (data.success) {
         toast.success("Acessos liberados com sucesso!");
+        triggerPermissionsUpdate();
         // Atualizar estado local com objetos PARSEADOS para paridade com o load inicial
         setUsers(prev => prev.map(u => u.id === aclSelectedUser.id ? { 
           ...u, 

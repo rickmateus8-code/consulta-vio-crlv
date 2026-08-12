@@ -9,6 +9,16 @@ export interface UserForPermission {
   free_documents?: string[] | string;
 }
 
+export const PERMISSIONS_UPDATED_EVENT = "docmaster:permissions-updated";
+
+/**
+ * Dispara um evento global de atualização de permissões no navegador.
+ */
+export function triggerPermissionsUpdate() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(PERMISSIONS_UPDATED_EVENT));
+}
+
 export function parsePermissions(raw: any): UserPermissions {
   if (!raw) return { editaveis: [], ferramentas: [] };
   if (typeof raw === "object" && raw !== null) {
@@ -46,9 +56,37 @@ export function parseFreeDocs(raw: any): string[] {
 }
 
 /**
- * Audit central para liberação de documentos e ferramentas para usuários.
- * Por padrão, novos usuários com permissões vazias NÃO possuem liberação para NENHUM documento
- * até que o Administrador realize a auditoria e faça a liberação no painel /admin.
+ * Normaliza qualquer slug de documento (atual ou futuro) para sua forma canônica base,
+ * removendo automaticamente sufixos de ação como 'cria', 'salvos', 'editar', 'view', etc.
+ */
+export function getCanonicalSlug(rawSlug: string): string {
+  if (!rawSlug) return "";
+  let s = rawSlug.toLowerCase().trim();
+
+  // Mapeamentos conhecidos de aliases DocMaster
+  if (s === "crlv" || s === "crlvcria" || s === "crlvsalvos") return "crlv";
+  if (s === "cnh" || s === "cnhcria" || s === "cnhsalvas" || s === "cnh-do-brasil") return "cnh";
+  if (s === "cha" || s === "chacria" || s === "chasalvas") return "cha";
+  if (s === "atestado" || s === "atestadocria" || s === "atestadosalvos" || s === "atestadoview") return "atestado";
+  if (s === "receita" || s === "receitacria" || s === "receitassalvas") return "receita";
+  if (s === "toxicologico" || s === "toxicria" || s === "laudocria" || s === "toxicologia" || s === "toxicriasalvos") return "toxicologico";
+  if (s === "historico-sp") return "historico-sp";
+  if (s === "historico-uninter" || s === "historicocria" || s === "historicossalvos") return "historico-uninter";
+  if (s === "diploma-uninter") return "diploma-uninter";
+  if (s === "fgv" || s === "certificado-fgv" || s === "fgvcria") return "fgv";
+  if (s === "peticao-stj" || s === "peticaocria" || s === "peticao" || s === "peticaocria-salvos") return "peticao-stj";
+  if (s === "bot-adv") return "bot-adv";
+  if (s === "consultas" || s === "consultar dados" || s === "consultar-dados") return "consultas";
+
+  // Motor dinâmico universal para novos documentos futuros:
+  // Se o slug terminar com 'cria', '-cria', 'salvos', '-salvos', 'editar', '-editar', 'view', '-view', remove o sufixo
+  s = s.replace(/(-)?(cria|salvos|salvas|editar|view)$/i, "");
+  return s || rawSlug.toLowerCase().trim();
+}
+
+/**
+ * Motor Universal de Auditoria e Liberação em Tempo Real do DocMaster.
+ * Funciona de forma universal e dinâmica para todos os documentos atuais e futuros.
  */
 export function isToolLiberated(user: UserForPermission | null | undefined, key: string): boolean {
   if (!user) return false;
@@ -56,61 +94,27 @@ export function isToolLiberated(user: UserForPermission | null | undefined, key:
 
   const perms = parsePermissions(user.permissions);
   const freeDocs = parseFreeDocs(user.free_documents);
-  const k = key.toLowerCase().trim();
+  
+  const rawKey = key.toLowerCase().trim();
+  const canonicalKey = getCanonicalSlug(rawKey);
 
-  const editaveis = perms.editaveis.map(s => s.toLowerCase());
-  const ferramentas = perms.ferramentas.map(s => s.toLowerCase());
-  const free = freeDocs.map(s => s.toLowerCase());
+  const editaveisRaw = perms.editaveis.map(s => s.toLowerCase().trim());
+  const ferramentasRaw = perms.ferramentas.map(s => s.toLowerCase().trim());
+  const freeRaw = freeDocs.map(s => s.toLowerCase().trim());
 
-  // Verificação direta no free_documents
-  if (free.includes(k)) return true;
+  const editaveisCanonical = editaveisRaw.map(getCanonicalSlug);
+  const ferramentasCanonical = ferramentasRaw.map(getCanonicalSlug);
+  const freeCanonical = freeRaw.map(getCanonicalSlug);
 
-  // Documentos Veiculares
-  if (k === "crlv" || k === "crlvcria") {
-    return editaveis.includes("crlv") || editaveis.includes("crlvcria") || free.includes("crlv") || free.includes("crlvcria");
-  }
-  if (k === "cnh" || k === "cnhcria") {
-    return editaveis.includes("cnh") || editaveis.includes("cnhcria") || free.includes("cnh") || free.includes("cnhcria");
-  }
-  if (k === "cha" || k === "chacria") {
-    return editaveis.includes("cha") || editaveis.includes("chacria") || free.includes("cha") || free.includes("chacria");
+  // 1. Checagem por correspondência exata do slug bruto
+  if (freeRaw.includes(rawKey) || editaveisRaw.includes(rawKey) || ferramentasRaw.includes(rawKey)) {
+    return true;
   }
 
-  // Documentos Médicos
-  if (k === "atestado" || k === "atestadocria") {
-    return editaveis.includes("atestado") || editaveis.includes("atestadocria") || free.includes("atestado") || free.includes("atestadocria");
-  }
-  if (k === "receita" || k === "receitacria") {
-    return editaveis.includes("receita") || editaveis.includes("receitacria") || free.includes("receita") || free.includes("receitacria");
-  }
-  if (k === "toxicologico" || k === "toxicria" || k === "laudocria" || k === "toxicologia") {
-    return editaveis.includes("toxicologico") || editaveis.includes("toxicria") || editaveis.includes("laudocria") || editaveis.includes("toxicologia") || free.includes("toxicologico") || free.includes("toxicria") || free.includes("laudocria") || free.includes("toxicologia");
+  // 2. Checagem Universal por correspondência de slug canônico (Garante compatibilidade total com documentos atuais e futuros)
+  if (freeCanonical.includes(canonicalKey) || editaveisCanonical.includes(canonicalKey) || ferramentasCanonical.includes(canonicalKey)) {
+    return true;
   }
 
-  // Documentos Escolares & Acadêmicos
-  if (k === "historico-sp") {
-    return editaveis.includes("historico-sp") || free.includes("historico-sp");
-  }
-  if (k === "historico-uninter" || k === "historicocria") {
-    return editaveis.includes("historico-uninter") || editaveis.includes("historicocria") || free.includes("historico-uninter") || free.includes("historicocria");
-  }
-  if (k === "diploma-uninter") {
-    return editaveis.includes("diploma-uninter") || free.includes("diploma-uninter");
-  }
-  if (k === "fgv" || k === "certificado-fgv") {
-    return editaveis.includes("fgv") || editaveis.includes("certificado-fgv") || free.includes("fgv") || free.includes("certificado-fgv");
-  }
-
-  // Ferramentas & Petições
-  if (k === "peticao-stj" || k === "peticaocria" || k === "peticao") {
-    return ferramentas.includes("peticao-stj") || ferramentas.includes("peticaocria") || editaveis.includes("peticao-stj") || editaveis.includes("peticaocria") || free.includes("peticao-stj") || free.includes("peticaocria") || free.includes("peticao");
-  }
-  if (k === "bot-adv") {
-    return ferramentas.includes("bot-adv") || editaveis.includes("bot-adv") || free.includes("bot-adv");
-  }
-  if (k === "consultas" || k === "consultar dados") {
-    return ferramentas.includes("consultas") || editaveis.includes("consultas") || free.includes("consultas");
-  }
-
-  return editaveis.includes(k) || ferramentas.includes(k);
+  return false;
 }

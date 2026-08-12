@@ -67,19 +67,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchMe();
 
-    // Auto-sincronização de saldo e permissões em tempo real quando o usuário volta à aba do navegador
-    const handleFocus = () => {
-      fetchMe();
-    };
-    window.addEventListener("focus", handleFocus);
+    // Ouvinte universal de eventos de atualização de permissão
+    const handleSync = () => fetchMe();
 
-    // Polling automático a cada 15s para garantir atualização de liberações concedidas pelo Admin
-    const interval = setInterval(() => {
-      fetchMe();
-    }, 15000);
+    window.addEventListener("focus", handleSync);
+    window.addEventListener("visibilitychange", handleSync);
+    window.addEventListener("online", handleSync);
+    window.addEventListener("docmaster:permissions-updated", handleSync);
+
+    // Polling universal a cada 10 segundos em segundo plano para capturar liberações em tempo real do Admin
+    const interval = setInterval(handleSync, 10000);
 
     return () => {
-      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("focus", handleSync);
+      window.removeEventListener("visibilitychange", handleSync);
+      window.removeEventListener("online", handleSync);
+      window.removeEventListener("docmaster:permissions-updated", handleSync);
       clearInterval(interval);
     };
   }, [fetchMe]);

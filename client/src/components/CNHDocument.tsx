@@ -688,7 +688,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // FOTO DO CONDUTOR (Mover 0,2% esq -> X=297px, Aumentar 2% -> 263x322px)
+    // FOTO DO CONDUTOR (Mover 0,3% esq -> X=289px, 263x322px)
     // ═══════════════════════════════════════════════════════════════════
     if (props.fotoUrl) {
       try {
@@ -696,15 +696,15 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const scale = (props.fotoScale ?? 1.0) * 0.999;
         const offsetX = props.fotoOffsetX ?? 0;
         const offsetY = props.fotoOffsetY ?? 0;
-        const baseBw = 263, baseBh = 322; // Aumentado 2% (258*1.02=263, 316*1.02=322)
+        const baseBw = 263, baseBh = 322;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 297 + SHIFT_X + offsetX;
+        const bx = 289 + SHIFT_X + offsetX;
         const by = 562 + offsetY;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(297 + SHIFT_X, 562, baseBw, baseBh);
+        ctx.rect(289 + SHIFT_X, 562, baseBw, baseBh);
         ctx.clip();
 
         const imgRatio = fotoImg.width / fotoImg.height;

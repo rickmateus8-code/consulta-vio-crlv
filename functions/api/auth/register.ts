@@ -1,4 +1,5 @@
 import type { Env } from '../../types';
+import { insertConsultasPlano } from '../../utils/db';
 
 const getCorsHeaders = (origin: string | null) => ({
   'Access-Control-Allow-Origin': origin || '*',
@@ -43,21 +44,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
     // Conceder automaticamente o Teste Grátis de 1 dia para /consultas ao cadastrar novo usuário
     try {
-      await env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS consultas_planos (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id TEXT NOT NULL,
-          plano TEXT NOT NULL,
-          valor REAL NOT NULL DEFAULT 0,
-          created_at TEXT NOT NULL DEFAULT (datetime('now')),
-          expires_at TEXT NOT NULL
-        )
-      `).run();
-
       const trialExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-      await env.DB.prepare(
-        'INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, 0, ?)'
-      ).bind(id, 'Teste Grátis 1 Dia', trialExpiresAt).run();
+      await insertConsultasPlano(env, id, 'Teste Grátis 1 Dia', 0, trialExpiresAt);
     } catch (e) {
       console.error('[Register] Erro ao criar plano de teste grátis 1 dia:', e);
     }

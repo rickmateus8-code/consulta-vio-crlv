@@ -429,25 +429,29 @@ const intelligentStats = [
 
   return (
     <DashboardLayout>
-      <div className="p-7 max-w-7xl mx-auto">
+      <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
         {/* Banner de Boas-vindas */}
-        <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-100 dark:border-gray-800 shadow-sm mb-8 relative overflow-hidden">
+        <div className="glass-card rounded-3xl p-6 md:p-8 relative overflow-hidden">
           <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="badge-pill-emerald px-3 py-1 text-[10px] uppercase tracking-wider">Painel Oficial</span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase">• Status em tempo real</span>
+            </div>
             <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2">
               {getGreeting()}, {user?.displayName || user?.username}!
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base font-medium max-w-2xl">
-              Bem-vindo ao maior e melhor painel da atualidade — <span className="text-blue-600 font-bold">DocMaster</span>
+              Bem-vindo ao ecossistema de emissão e gestão — <span className="text-blue-600 dark:text-blue-400 font-bold">DocMaster</span>
             </p>
             {hasAnyPermission && (
               <div className="mt-6 flex flex-wrap gap-3">
-                <button onClick={() => setShowNovoDocModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center gap-2">
+                <button onClick={() => setShowNovoDocModal(true)} className="btn-glow-blue px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest active:scale-95 flex items-center gap-2">
                   <Plus className="w-4 h-4" /> Novo Documento
                 </button>
-                <button onClick={() => setShowModelsModal(true)} className="bg-white text-blue-600 border border-blue-100 hover:bg-blue-50 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95">
+                <button onClick={() => setShowModelsModal(true)} className="bg-white/80 dark:bg-gray-800/80 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/40 hover:bg-blue-50 dark:hover:bg-gray-800 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95 shadow-2xs">
                   <Camera className="w-4 h-4" /> Modelos de Emissão
                 </button>
-                <button onClick={() => setShowReferralModal(true)} className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95">
+                <button onClick={() => setShowReferralModal(true)} className="bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200/50 dark:border-emerald-800/40 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95 shadow-2xs">
                   <Gift className="w-4 h-4" /> Indique e Ganhe
                 </button>
               </div>
@@ -468,14 +472,14 @@ const intelligentStats = [
 
         {/* Sua Rede de Indicações (Resumo) */}
         {loyaltyData && (
-          <div className="mb-8 p-6 bg-emerald-50/50 dark:bg-emerald-900/5 rounded-[2rem] border border-emerald-100/50 dark:border-emerald-800/30 flex flex-col md:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="p-6 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-3xl border border-emerald-200/60 dark:border-emerald-800/40 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                <div className="w-12 h-12 rounded-2xl btn-glow-emerald flex items-center justify-center text-white">
                    <Gift size={24} />
                 </div>
                 <div>
-                   <h3 className="text-sm font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-tight m-0">Sua Rede de Indicações</h3>
-                   <p className="text-[10px] text-emerald-600/70 dark:text-emerald-500/70 font-bold uppercase tracking-widest mt-1">Ganhe 10% de todas as recargas da sua rede</p>
+                   <h3 className="text-sm font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-tight m-0">Sua Rede de Indicações</h3>
+                   <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/80 font-bold uppercase tracking-widest mt-1">Ganhe 10% de todas as recargas da sua rede</p>
                 </div>
              </div>
              <div className="flex items-center gap-6">
@@ -486,7 +490,7 @@ const intelligentStats = [
                 <div className="w-px h-8 bg-emerald-200 dark:bg-emerald-800/50" />
                 <button 
                   onClick={() => setShowReferralModal(true)}
-                  className="bg-white dark:bg-slate-900 border-2 border-emerald-500 text-emerald-600 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all active:scale-95 flex items-center gap-2"
+                  className="bg-white dark:bg-slate-900 border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all active:scale-95 flex items-center gap-2 shadow-2xs"
                 >
                   <Users size={14} /> Minha Rede
                 </button>
@@ -494,9 +498,9 @@ const intelligentStats = [
           </div>
         )}
 
-        {/* Resumo Financeiro Rapido */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2.5rem] p-8 text-white shadow-xl shadow-blue-900/20 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
+        {/* Resumo Financeiro Rápido */}
+        <div>
+          <div className="bg-gradient-to-br from-blue-700 via-indigo-700 to-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-blue-900/20 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
                <Wallet size={120} />
             </div>

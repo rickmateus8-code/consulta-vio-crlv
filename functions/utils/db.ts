@@ -256,3 +256,76 @@ export async function getAttestationCount(env: Env): Promise<number> {
 
   return result?.count || 0;
 }
+
+/**
+ * Garante a criação da tabela consultas_planos sem a CHECK constraint restritiva legada
+ */
+export async function ensureConsultasPlanosTable(env: Env): Promise<void> {
+  try {
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS consultas_planos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        plano TEXT NOT NULL,
+        valor REAL NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        expires_at TEXT NOT NULL
+      )
+    `).run();
+  } catch {}
+}
+
+/**
+ * Insere um registro na tabela consultas_planos, migrando automaticamente a tabela
+ * caso ela ainda possua a CHECK constraint legada em SQLite D1.
+ */
+export async function insertConsultasPlano(
+  env: Env,
+  userId: string | number,
+  plano: string,
+  valor: number,
+  expiresAt: string
+): Promise<any> {
+  await ensureConsultasPlanosTable(env);
+  try {
+    return await env.DB.prepare(
+      'INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, ?, ?)'
+    ).bind(String(userId), plano, valor, expiresAt).run();
+  } catch (err: any) {
+    // Se falhar por causa da CHECK constraint legada do D1, executa a migração automática para remover a restrição
+    const errMsg = String(err?.message || err || '');
+    if (errMsg.includes('CHECK constraint failed') || errMsg.includes('SQLITE_CONSTRAINT_CHECK') || errMsg.includes('CHECK')) {
+      try {
+        await env.DB.batch([
+          env.DB.prepare(`
+            CREATE TABLE IF NOT EXISTS consultas_planos_new (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              user_id TEXT NOT NULL,
+              plano TEXT NOT NULL,
+              valor REAL NOT NULL DEFAULT 0,
+              created_at TEXT NOT NULL DEFAULT (datetime('now')),
+              expires_at TEXT NOT NULL
+            )
+          `),
+          env.DB.prepare(`
+            INSERT INTO consultas_planos_new (id, user_id, plano, valor, created_at, expires_at)
+            SELECT id, user_id, plano, valor, created_at, expires_at FROM consultas_planos
+          `),
+          env.DB.prepare('DROP TABLE consultas_planos'),
+          env.DB.prepare('ALTER TABLE consultas_planos_new RENAME TO consultas_planos'),
+          env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_consultas_planos_user_id ON consultas_planos(user_id)'),
+          env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_consultas_planos_expires ON consultas_planos(expires_at)'),
+        ]);
+
+        return await env.DB.prepare(
+          'INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, ?, ?)'
+        ).bind(String(userId), plano, valor, expiresAt).run();
+      } catch (migrationErr) {
+        console.error('[insertConsultasPlano] Erro na migracao de remocao de CHECK constraint:', migrationErr);
+        throw err;
+      }
+    }
+    throw err;
+  }
+}
+

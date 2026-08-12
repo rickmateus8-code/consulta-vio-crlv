@@ -284,3 +284,134 @@ body.is-validation-page #root {
   margin: 0 !important;
   padding: 0 !important;
 }
+
+/* 🎨 REFORMULAÇÃO DE DESIGN SYSTEM DOCMASTER (SaaS Modern UI) */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.dark .glass-card {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+}
+
+.glass-header {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+}
+
+.dark .glass-header {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-glow-emerald {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.35);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-glow-emerald:hover {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-glow-blue {
+  background: linear-gradient(135deg, #005CA9 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.35);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-glow-blue:hover {
+  background: linear-gradient(135deg, #004580 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.5);
+  transform: translateY(-1px);
+}
+
+.badge-pill-emerald {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-weight: 600;
+  border-radius: 9999px;
+}
+
+.dark .badge-pill-emerald {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+}
+
+/* 🎯 TOKEN DA REFERÊNCIA (Pill Buttons & Segmented Control) */
+.btn-pill-primary {
+  border-radius: 9999px;
+  background-color: #127DFF;
+  color: #FFFFFF;
+  font-weight: 500;
+  padding: 8px 18px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(18, 125, 255, 0.25);
+}
+
+.btn-pill-primary:hover {
+  background-color: #0F70E6;
+  box-shadow: 0 6px 18px rgba(18, 125, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-pill-secondary {
+  border-radius: 9999px;
+  background-color: #EDF0F2;
+  color: #454545;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+}
+
+.dark .btn-pill-secondary {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #E2E8F0;
+}
+
+.btn-pill-secondary:hover {
+  background-color: #E2E7EB;
+  color: #000000;
+}
+
+.dark .btn-pill-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
+
+.segmented-tab-pill {
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+

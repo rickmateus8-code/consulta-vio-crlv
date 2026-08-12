@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { validarCPF } from "@/lib/utils";
 import { useSettings } from "@/hooks/useSettings";
 import { isToolLiberated } from "@/lib/permissions";
+import { toast } from "sonner";
 
 // ─── SearchSelect: select com campo de busca integrado no dropdown ────────────
 function SearchSelect({
@@ -1373,9 +1374,9 @@ export default function AtestadoCria() {
   useEffect(() => {
     if (user && user.role !== "admin" && !isToolLiberated(user, "atestado")) {
       toast.error("🔒 Acesso não liberado. Seu usuário aguarda auditoria e liberação de permissões pelo Administrador.");
-      setLocation("/dashboard");
+      navigate("/dashboard");
     }
-  }, [user, setLocation]);
+  }, [user, navigate]);
 
   const isFree = user?.role === 'admin' || isToolLiberated(user, documentType === 'laudo' ? 'toxicria' : 'atestado');
 

@@ -174,7 +174,7 @@ export default function RecarregaModal({
           {/* Botão Principal WhatsApp */}
           <button
             onClick={handleOpenWhatsapp}
-            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-600/30 transition-all flex items-center justify-center gap-2.5 active:scale-[0.98]"
+            className="w-full py-4 btn-glow-emerald font-black text-sm rounded-2xl transition-all flex items-center justify-center gap-2.5 active:scale-[0.98]"
           >
             <MessageCircle className="w-5 h-5 fill-current" />
             <span>SOLICITAR SALDO VIA WHATSAPP</span>
@@ -194,7 +194,7 @@ export default function RecarregaModal({
         <div className="mt-5 pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px] text-slate-400">
           <div className="flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Atendimento Rápido</span>
+            <span>Atendimento Imediato</span>
           </div>
           <span className="font-bold text-slate-500 dark:text-slate-400">DocMaster Suporte</span>
         </div>

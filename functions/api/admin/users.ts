@@ -1,4 +1,5 @@
 import type { Env } from '../../types';
+import { insertConsultasPlano } from '../../utils/db';
 
 const getCorsHeaders = (request: Request) => {
   const origin = request.headers.get('Origin') || 'https://docmaster.store';
@@ -288,12 +289,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     // Conceder automaticamente o Teste Grátis de 1 dia para /consultas ao cadastrar novo usuário pelo Admin
     try {
       const trialExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-      await env.DB.prepare(
-        'INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, 0, ?)'
-      ).bind(id, 'Teste Grátis 1 Dia', trialExpiresAt).run();
+      await insertConsultasPlano(env, id, 'Teste Grátis 1 Dia', 0, trialExpiresAt);
     } catch (e) {
       console.error('[AdminUsers] Erro ao criar teste grátis 1 dia:', e);
     }
+
 
     await logAdminAction(env, admin.id, 'create_user', id, { username, email, role, balance });
     return new Response(JSON.stringify({ success: true, userId: id }), { status: 201, headers: corsHeaders });

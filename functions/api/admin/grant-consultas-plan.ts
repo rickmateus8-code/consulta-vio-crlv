@@ -3,6 +3,7 @@
  * ou ilimitado ao módulo /consultas (Master Buscas) para qualquer usuário.
  */
 import type { Env } from '../../types';
+import { insertConsultasPlano } from '../../utils/db';
 
 const getCorsHeaders = (request: Request) => {
   const origin = request.headers.get('Origin') || 'https://docmaster.store';
@@ -167,8 +168,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const expiresIso = expiresDate.toISOString();
 
     // Inserir registro de plano ativo
-    await env.DB.prepare('INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, 0, ?)')
-      .bind(userId, label, expiresIso).run();
+    await insertConsultasPlano(env, userId, label, 0, expiresIso);
+
 
     return new Response(JSON.stringify({
       success: true,

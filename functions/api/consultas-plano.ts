@@ -1,7 +1,5 @@
-/**
- * /api/consultas-plano — Gerencia planos de consulta SnoopIntelligence
- */
 import type { Env } from '../types';
+import { insertConsultasPlano } from '../utils/db';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -64,9 +62,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
       if (!anyPlanEver) {
         const trialExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-        await env.DB.prepare(
-          'INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, 0, ?)'
-        ).bind(user.id, 'Teste Grátis 1 Dia', trialExpiresAt).run();
+        await insertConsultasPlano(env, user.id, 'Teste Grátis 1 Dia', 0, trialExpiresAt);
 
         dbPlan = {
           user_id: user.id,
@@ -75,7 +71,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
           expires_at: trialExpiresAt
         };
       }
-    } catch {}
+    } catch (e) {
+      console.error('[consultas-plano] Erro ao atribuir teste gratis:', e);
+    }
   }
 
   let lastExpiredPlan: any = null;
@@ -140,11 +138,14 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return new Response(JSON.stringify({ success: false, error: 'Saldo insuficiente', required: cfg.valor, balance: user.balance }), { status: 402, headers: CORS });
   }
   const expiresAt = new Date(Date.now() + cfg.horas * 3600_000).toISOString();
-  await env.DB.batch([
-    env.DB.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').bind(cfg.valor, user.id),
-    env.DB.prepare('INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, ?, ?)').bind(user.id, plano, cfg.valor, expiresAt),
-    env.DB.prepare('INSERT INTO transactions (user_id, type, amount, description, created_at) VALUES (?, \'debit\', ?, ?, datetime(\'now\'))').bind(user.id, cfg.valor, 'Plano de Consultas ' + plano),
-  ]);
+  
+  await env.DB.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').bind(cfg.valor, user.id).run();
+  await insertConsultasPlano(env, user.id, plano, cfg.valor, expiresAt);
+  try {
+    await env.DB.prepare('INSERT INTO transactions (id, user_id, type, amount, description, created_at) VALUES (?, ?, \'debit\', ?, ?, datetime(\'now\'))')
+      .bind(crypto.randomUUID(), user.id, cfg.valor, 'Plano de Consultas ' + plano).run();
+  } catch {}
+
   const updatedUser = await env.DB.prepare('SELECT balance FROM users WHERE id = ?').bind(user.id).first<any>();
   return new Response(JSON.stringify({ success: true, message: 'Plano ativado com sucesso!', plano, expires_at: expiresAt, new_balance: updatedUser?.balance ?? 0 }), { headers: CORS });
 };

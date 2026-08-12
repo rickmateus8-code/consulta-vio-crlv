@@ -17,7 +17,7 @@ function PatentRulesModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={onClose}>
-      <div className="bg-[#0f172a] border border-white/10 rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#0f172a] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
         <div className="p-8 border-b border-white/5 flex items-center justify-between bg-blue-600/10">
           <div className="flex items-center gap-4">
              <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white">
@@ -129,7 +129,7 @@ export default function PatentCard({ loyalty }: PatentCardProps) {
   const nextNeeded = Math.max(0, loyalty.nextGoal - loyalty.thisWeekVolume);
 
   return (
-    <div className="bg-[#0f172a] text-white rounded-3xl p-6 md:p-8 border border-slate-800 shadow-2xl mb-8 animate-in fade-in duration-500 overflow-hidden relative">
+    <div className="bg-[#0f172a] text-white rounded-2xl p-6 md:p-8 border border-slate-800 shadow-2xl mb-8 animate-in fade-in duration-500 overflow-hidden relative">
       {/* Glow Effect */}
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
 

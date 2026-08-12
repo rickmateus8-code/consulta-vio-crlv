@@ -527,19 +527,19 @@ const intelligentStats = [
         }} />
 
         {/* Banner Promocional / Status de Teste Grátis Master Buscas */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-950 via-purple-900 to-indigo-950 border border-violet-500/40 p-6 md:p-8 shadow-2xl shadow-purple-950/40 group hover:border-violet-400/60 transition-all duration-300">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-950 via-purple-900 to-indigo-950 border border-violet-500/40 p-6 md:p-8 shadow-2xl shadow-purple-950/40 group hover:border-violet-400/60 transition-all duration-300">
           {/* Efeitos Glow e Fundo */}
           <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-violet-500/20 rounded-full blur-3xl group-hover:bg-violet-400/30 transition-all"></div>
           <div className="absolute bottom-0 left-1/3 -mb-10 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl"></div>
 
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse">
-                  <Gift className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="space-y-3 flex-1">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="px-3 py-1 rounded-full text-[10px] font-black bg-amber-500/20 border border-amber-500/40 text-amber-300 uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" />
                   🎁 Teste Grátis de 1 Dia Liberado
                 </span>
-                <span className="text-xs font-bold text-violet-300/90 bg-violet-900/60 px-2.5 py-0.5 rounded-md border border-violet-700/60">
+                <span className="px-3 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 uppercase tracking-wider">
                   Master Buscas
                 </span>
               </div>
@@ -555,8 +555,8 @@ const intelligentStats = [
               </p>
 
               {consultasPlan?.plan?.expires_at && (
-                <div className="flex items-center gap-2 text-xs font-semibold text-violet-300/80 pt-1">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-300/90 bg-amber-950/40 border border-amber-500/30 px-3.5 py-1.5 rounded-xl w-fit">
+                  <Clock className="w-3.5 h-3.5" />
                   <span>Válido até: {new Date(consultasPlan.plan.expires_at).toLocaleDateString('pt-BR')} às {new Date(consultasPlan.plan.expires_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               )}
@@ -575,7 +575,7 @@ const intelligentStats = [
 
         {/* Sua Rede de Indicações (Resumo) */}
         {loyaltyData && (
-          <div className="p-6 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-3xl border border-emerald-200/60 dark:border-emerald-800/40 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+          <div className="p-6 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-2xl border border-emerald-200/60 dark:border-emerald-800/40 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
              <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl btn-glow-emerald flex items-center justify-center text-white">
                    <Gift size={24} />

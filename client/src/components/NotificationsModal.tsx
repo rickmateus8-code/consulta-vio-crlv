@@ -122,8 +122,8 @@ export default function NotificationsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
-      <div className="bg-[#0b1120] text-white border border-blue-500/40 rounded-3xl w-full max-w-2xl flex flex-col shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
+      <div className="bg-[#0b1120] text-white border border-blue-500/40 rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         
         {/* Header do Modal */}
         <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-[#0f172a]/90">

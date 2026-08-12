@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Wand2, Upload, Move, Type, Trash2, Plus, CheckCircle, 
-  DollarSign, Layers, Eye, RefreshCw, Sparkles, Tag, Shield, Sliders
+  DollarSign, Layers, Eye, RefreshCw, Sparkles, Tag, Shield, Sliders, ArrowLeft, Folder, QrCode, Save
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,6 +48,7 @@ export default function StudioEngine() {
   const [zoom, setZoom] = useState(1);
   const [boxes, setBoxes] = useState<CoordinateBox[]>([]);
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
+  const [activeTool, setActiveTool] = useState<"presets" | "boxes" | "qr" | "pricing" | "logos">("boxes");
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
@@ -712,7 +713,7 @@ ${boxes
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[9990] bg-[#070a12] text-slate-100 flex flex-col h-screen w-screen overflow-hidden select-none font-sans">
       
       {/* Modal de Exibição do Código .tsx Compilado */}
       {showTsxModal && (
@@ -757,44 +758,81 @@ ${boxes
         </div>
       )}
 
-      {/* Header do Studio Engine */}
-      <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center">
-            <Wand2 className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-black text-white uppercase italic tracking-tight m-0">DocMaster Studio Express</h2>
-            <p className="text-xs text-slate-400 font-medium">Editor Visual Estilo Adobe Express & Transpilador de Código React .tsx</p>
+      {/* Header Superior Estilo Adobe Express */}
+      <header className="h-14 bg-[#0d1322] border-b border-slate-800/80 px-4 flex items-center justify-between shrink-0 z-20">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => window.location.hash = "/admin"}
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+            title="Voltar ao Painel Admin"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center">
+              <Wand2 className="w-4 h-4" />
+            </div>
+            <div>
+              <input
+                type="text"
+                value={docName}
+                onChange={(e) => setDocName(e.target.value)}
+                placeholder="Nome do Documento..."
+                className="bg-transparent font-black text-sm text-white uppercase italic tracking-tight focus:outline-none border-b border-transparent focus:border-indigo-500 transition-colors w-48 md:w-64"
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-slate-400">{docSlug || "slug-nao-definido"}</span>
+                <span className="px-2 py-0.2 rounded-full text-[9px] font-black uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {category}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Seletor de Documentos Existentes do DocMaster */}
-          <select
-            onChange={(e) => {
-              if (e.target.value) handleLoadExistingDocPreset(e.target.value);
-            }}
-            className="px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-blue-300 font-bold focus:outline-none cursor-pointer shadow-md"
+        {/* Controles de Zoom Centrais */}
+        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1">
+          <button
+            type="button"
+            onClick={() => setZoom((z) => Math.max(0.4, Math.round((z - 0.1) * 10) / 10))}
+            className="text-xs font-bold text-slate-400 hover:text-white transition-colors"
+            title="Diminuir Zoom"
           >
-            <option value="">Editar Documento Existente...</option>
-            <option value="atestado">🩺 Atestado Médico Oficial IDAB</option>
-            <option value="cnh">🪪 CNH Digital VIO</option>
-            <option value="crlv">🚗 CRLV Digital Senatran</option>
-            <option value="receita">📜 Receituário Médico</option>
-            <option value="historico_sp">🎓 Histórico Escolar SP (SED)</option>
-            <option value="historico_uninter">🎓 Histórico UNINTER</option>
-            <option value="toxicologico">🧪 Laudo Toxicológico Sodré</option>
-          </select>
+            🔍 -
+          </button>
+          <span className="text-[11px] font-mono font-bold text-indigo-400 px-1">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={() => setZoom((z) => Math.min(2.5, Math.round((z + 0.1) * 10) / 10))}
+            className="text-xs font-bold text-slate-400 hover:text-white transition-colors"
+            title="Aumentar Zoom"
+          >
+            🔍 +
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoom(1)}
+            className="text-[10px] font-bold text-slate-500 hover:text-white border-l border-slate-800 pl-2 transition-colors"
+            title="Redefinir Zoom para 100%"
+          >
+            100%
+          </button>
+        </div>
 
-          {/* Botões de Reversão de Erros (Undo / Redo) */}
+        {/* Barra de Ações Rápidas à Direita */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Desfazer / Refazer */}
           <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
             <button
               type="button"
               onClick={handleUndo}
               disabled={historyIndex <= 0}
-              className="px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-40 transition-colors flex items-center gap-1"
-              title="Desfazer alteração (Undo)"
+              className="px-2.5 py-1 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
+              title="Desfazer (Undo)"
             >
               ↩️ Undo
             </button>
@@ -802,8 +840,8 @@ ${boxes
               type="button"
               onClick={handleRedo}
               disabled={historyIndex >= history.length - 1}
-              className="px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-40 transition-colors flex items-center gap-1 border-l border-slate-800"
-              title="Refazer alteração (Redo)"
+              className="px-2.5 py-1 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-30 border-l border-slate-800 transition-colors"
+              title="Refazer (Redo)"
             >
               ↪️ Redo
             </button>
@@ -812,457 +850,545 @@ ${boxes
           <button
             type="button"
             onClick={() => setShowTsxModal(true)}
-            className="px-4 py-2.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-300 font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-indigo-950/40"
+            className="px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-300 font-black text-xs uppercase tracking-wider flex items-center gap-1 transition-all"
           >
-            <Type className="w-4 h-4 text-indigo-400" />
-            <span>Ver Código .tsx Compilado</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleExtractLogos}
-            className="px-4 py-2.5 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-500/40 text-blue-300 font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-950/40"
-          >
-            <Layers className="w-4 h-4 text-blue-400" />
-            <span>Extrair Logos / Imagens</span>
+            <Type className="w-3.5 h-3.5 text-indigo-400" />
+            <span>.tsx</span>
           </button>
 
           <button
             type="button"
             onClick={handleAutoOCR}
-            className="px-4 py-2.5 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-300 font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-purple-950/40"
+            className="px-3 py-1.5 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-300 font-black text-xs uppercase tracking-wider flex items-center gap-1 transition-all"
           >
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span>Sugerir OCR Automatizado</span>
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <span>OCR IA</span>
           </button>
           
           <button
             type="button"
             onClick={handleSaveTemplate}
             disabled={saving}
-            className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg shadow-emerald-950/50 cursor-pointer disabled:opacity-50"
+            className="px-5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-lg shadow-emerald-950/50 cursor-pointer disabled:opacity-50"
           >
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-            <span>{saving ? "Salvando Modelo..." : "Publicar Modelo Studio"}</span>
+            {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+            <span>{saving ? "Salvando..." : "Publicar Modelo"}</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Grid Principal: Formulário de Configuração + Canvas de Edição Direct Drag */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Corpo Principal da Suite: Barra Lateral de Ferramentas + Inspetor + Canvas */}
+      <div className="flex-1 flex overflow-hidden">
 
-        {/* Coluna Esquerda: Configurações do Novo Documento e Propriedades da Caixa */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* 1. Barra de Ferramentas Vertical Esquerda (60px - Estilo Adobe Express) */}
+        <aside className="w-16 bg-[#090d16] border-r border-slate-800/80 flex flex-col items-center py-4 space-y-4 shrink-0 z-10">
+          <button
+            type="button"
+            onClick={() => setActiveTool("boxes")}
+            className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
+              activeTool === "boxes"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+            title="Coordenadas & Texto"
+          >
+            <Sliders className="w-5 h-5" />
+            <span>Texto</span>
+          </button>
 
-          {/* Configurações Gerais do Gabarito */}
-          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-5 space-y-4 shadow-lg">
-            <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2 m-0 border-b border-slate-800 pb-3">
-              <Tag className="w-4 h-4 text-indigo-400" />
-              <span>1. Configuração do Modelo</span>
-            </h3>
+          <button
+            type="button"
+            onClick={() => setActiveTool("presets")}
+            className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
+              activeTool === "presets"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+            title="Documentos Existentes / Modelos"
+          >
+            <Folder className="w-5 h-5" />
+            <span>Modelos</span>
+          </button>
 
-            <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => setActiveTool("qr")}
+            className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
+              activeTool === "qr"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+            title="QR Code & Validador"
+          >
+            <QrCode className="w-5 h-5" />
+            <span>QR Code</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTool("pricing")}
+            className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
+              activeTool === "pricing"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+            title="Preço & Categorias"
+          >
+            <Tag className="w-5 h-5" />
+            <span>Config</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTool("logos")}
+            className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
+              activeTool === "logos"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+            title="Extração de Logos & Imagens"
+          >
+            <Layers className="w-5 h-5" />
+            <span>Logos</span>
+          </button>
+        </aside>
+
+        {/* 2. Gaveta Inspetora de Propriedades da Ferramenta Ativa (300px) */}
+        <div className="w-80 bg-[#0d1322] border-r border-slate-800/80 p-4 space-y-4 overflow-y-auto custom-scrollbar shrink-0 z-10">
+
+          {/* Aba: Coordenadas & Texto */}
+          {activeTool === "boxes" && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center justify-between m-0 border-b border-slate-800 pb-3">
+                <span className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-emerald-400" />
+                  Propriedades da Caixa X/Y
+                </span>
+                {selectedBox && (
+                  <button
+                    type="button"
+                    onClick={() => deleteBox(selectedBox.id)}
+                    className="p-1 rounded-lg text-rose-400 hover:bg-rose-950/50 transition-colors"
+                    title="Excluir Caixa"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </h3>
+
+              {selectedBox ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Chave da Variável</label>
+                      <input
+                        type="text"
+                        value={selectedBox.fieldKey}
+                        onChange={(e) => updateSelectedBox("fieldKey", e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Rótulo Exibição</label>
+                      <input
+                        type="text"
+                        value={selectedBox.label}
+                        onChange={(e) => updateSelectedBox("label", e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 text-center font-mono">
+                    <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
+                      <span className="text-[9px] text-slate-500 block">X (px)</span>
+                      <input
+                        type="number"
+                        value={selectedBox.x}
+                        onChange={(e) => updateSelectedBox("x", Number(e.target.value))}
+                        className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
+                      <span className="text-[9px] text-slate-500 block">Y (px)</span>
+                      <input
+                        type="number"
+                        value={selectedBox.y}
+                        onChange={(e) => updateSelectedBox("y", Number(e.target.value))}
+                        className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
+                      <span className="text-[9px] text-slate-500 block">LARG.</span>
+                      <input
+                        type="number"
+                        value={selectedBox.width}
+                        onChange={(e) => updateSelectedBox("width", Number(e.target.value))}
+                        className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
+                      <span className="text-[9px] text-slate-500 block">ALT.</span>
+                      <input
+                        type="number"
+                        value={selectedBox.height}
+                        onChange={(e) => updateSelectedBox("height", Number(e.target.value))}
+                        className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tamanho Fonte (pt)</label>
+                      <input
+                        type="number"
+                        value={selectedBox.fontSize}
+                        onChange={(e) => updateSelectedBox("fontSize", Number(e.target.value))}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Família Fonte</label>
+                      <select
+                        value={selectedBox.fontFamily}
+                        onChange={(e) => updateSelectedBox("fontFamily", e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer"
+                      >
+                        <option value="Helvetica">Helvetica / Arial</option>
+                        <option value="OCR-B">OCR-B (Documentos)</option>
+                        <option value="Courier">Courier New</option>
+                        <option value="Times">Times New Roman</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cor da Fonte (Hex)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedBox.color || "#000000"}
+                          onChange={(e) => updateSelectedBox("color", e.target.value)}
+                          className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedBox.color || "#000000"}
+                          onChange={(e) => updateSelectedBox("color", e.target.value)}
+                          className="w-full px-3 py-1.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Alinhamento Texto</label>
+                      <select
+                        value={selectedBox.textAlign}
+                        onChange={(e) => updateSelectedBox("textAlign", e.target.value as any)}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer"
+                      >
+                        <option value="left">Esquerda ⬅️</option>
+                        <option value="center">Centro ↔️</option>
+                        <option value="right">Direita ➡️</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-8 text-center bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-4">
+                  <Move className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  <p className="text-xs text-slate-400">Clique em qualquer caixa no Canvas para editar suas propriedades de fonte e coordenadas.</p>
+                </div>
+              )}
+
+              {/* Lista de Caixas Mapeadas */}
+              {boxes.length > 0 && (
+                <div className="space-y-2 pt-3 border-t border-slate-800">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Camadas Mapeadas ({boxes.length})</span>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar">
+                    {boxes.map((b) => (
+                      <div
+                        key={b.id}
+                        onClick={() => setSelectedBoxId(b.id)}
+                        className={`p-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ${
+                          b.id === selectedBoxId
+                            ? "bg-indigo-950/80 border-indigo-500 text-indigo-300 font-bold"
+                            : "bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700"
+                        }`}
+                      >
+                        <span className="truncate">{b.label}</span>
+                        <span className="text-[9px] font-mono text-slate-500">({b.x},{b.y})</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Aba: Modelos Existentes */}
+          {activeTool === "presets" && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
+                <Folder className="w-4 h-4 text-indigo-400" />
+                <span>Carregar Documento Existente</span>
+              </h3>
+
+              <select
+                onChange={(e) => {
+                  if (e.target.value) handleLoadExistingDocPreset(e.target.value);
+                }}
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-blue-300 font-bold focus:outline-none cursor-pointer shadow-md"
+              >
+                <option value="">Selecione um Documento Nativo...</option>
+                <option value="atestado">🩺 Atestado Médico Oficial IDAB</option>
+                <option value="cnh">🪪 CNH Digital VIO</option>
+                <option value="crlv">🚗 CRLV Digital Senatran</option>
+                <option value="receita">📜 Receituário Médico</option>
+                <option value="historico_sp">🎓 Histórico Escolar SP (SED)</option>
+                <option value="historico_uninter">🎓 Histórico UNINTER</option>
+                <option value="toxicologico">🧪 Laudo Toxicológico Sodré</option>
+              </select>
+
+              {savedTemplates.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-slate-800">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Modelos Publicados ({savedTemplates.length})</span>
+                  <div className="space-y-1.5">
+                    {savedTemplates.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => handleSelectTemplate(t)}
+                        className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500 text-left text-xs font-medium text-slate-200 transition-all flex items-center justify-between"
+                      >
+                        <span className="truncate">{t.name}</span>
+                        <span className="text-[9px] font-mono text-emerald-400">R$ {t.price}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Aba: QR Code & Validador */}
+          {activeTool === "qr" && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <h3 className="text-xs font-black text-amber-300 uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-amber-400" />
+                <span>QR Code & Validação Publica</span>
+              </h3>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Formato do Código</label>
+                <select
+                  value={qrFormat}
+                  onChange={(e) => setQrFormat(e.target.value as any)}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-amber-300 font-mono focus:outline-none cursor-pointer"
+                >
+                  <option value="XXXX-XXXX">XXXX-XXXX (Exclusivo Atestados)</option>
+                  <option value="UUID-32">UUID 32 Char (CNH / VIO / CRLV)</option>
+                  <option value="CPF">Consulta CPF Direct</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Validador (Source URL)</label>
+                <input
+                  type="text"
+                  value={qrSourceUrl}
+                  onChange={(e) => setQrSourceUrl(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono focus:outline-none"
+                  placeholder="https://atestados-idab.pages.dev"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Aba: Preço & Configurações do Modelo */}
+          {activeTool === "pricing" && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
+                <Tag className="w-4 h-4 text-indigo-400" />
+                <span>Configurações Gerais</span>
+              </h3>
+
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Nome do Documento *</label>
                 <input
                   type="text"
-                  placeholder="ex: Carteira de Habilitação Náutica"
                   value={docName}
                   onChange={(e) => setDocName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none focus:border-indigo-500 font-medium"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Slug de Acesso *</label>
-                  <input
-                    type="text"
-                    placeholder="ex: nauticacria"
-                    value={docSlug}
-                    onChange={(e) => setDocSlug(e.target.value.toLowerCase().replace(/\s+/g, ""))}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none focus:border-indigo-500 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Preço (R$) *</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 font-bold focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Slug de Acesso *</label>
+                <input
+                  type="text"
+                  value={docSlug}
+                  onChange={(e) => setDocSlug(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none font-mono"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Categoria Alvo</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
-                  >
-                    <option value="veiculos">🚗 Veículos / CNH</option>
-                    <option value="saude">🏥 Saúde / Médicos</option>
-                    <option value="estudante">🎓 Acadêmicos</option>
-                    <option value="certidoes">📜 Certidões & Outros</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estrutura Alvo</label>
-                  <select
-                    value={targetStructure}
-                    onChange={(e) => setTargetStructure(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
-                  >
-                    <option value="cnh">Modelo CNH Digital</option>
-                    <option value="atestado">Modelo Atestado Médico</option>
-                    <option value="receita">Modelo Receituário</option>
-                    <option value="historico">Modelo Histórico/Diploma</option>
-                  </select>
-                </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Preço (R$) *</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 font-bold focus:outline-none"
+                />
               </div>
 
-              {/* Bloco de Configuração do QR Code & Validador Forense */}
-              <div className="pt-3 border-t border-slate-800 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-[10px] font-black text-amber-300 uppercase tracking-wider">QR Code & Validador Publico</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Formato do Código</label>
-                    <select
-                      value={qrFormat}
-                      onChange={(e) => setQrFormat(e.target.value as any)}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-amber-300 font-mono focus:outline-none cursor-pointer"
-                    >
-                      <option value="XXXX-XXXX">XXXX-XXXX (Exclusivo Atestados)</option>
-                      <option value="UUID-32">UUID 32 Char (CNH / VIO / CRLV)</option>
-                      <option value="CPF">Consulta CPF Direct</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Validador (Source)</label>
-                    <input
-                      type="text"
-                      value={qrSourceUrl}
-                      onChange={(e) => setQrSourceUrl(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono focus:outline-none"
-                      placeholder="https://atestados-idab.pages.dev"
-                    />
-                  </div>
-                </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Categoria Alvo</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="veiculos">🚗 Veículos / CNH</option>
+                  <option value="saude">🏥 Saúde / Médicos</option>
+                  <option value="estudante">🎓 Acadêmicos</option>
+                  <option value="certidoes">📜 Certidões & Outros</option>
+                </select>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Propriedades da Caixa Selecionada (Ajuste Fino por Coordenadas) */}
-          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-5 space-y-4 shadow-lg">
-            <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center justify-between m-0 border-b border-slate-800 pb-3">
-              <span className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-emerald-400" />
-                2. Propriedades da Caixa X/Y
-              </span>
-              {selectedBox && (
-                <button
-                  type="button"
-                  onClick={() => deleteBox(selectedBox.id)}
-                  className="p-1 rounded-lg text-rose-400 hover:bg-rose-950/50 transition-colors"
-                  title="Excluir Caixa"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </h3>
-
-            {selectedBox ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Chave da Variável</label>
-                    <input
-                      type="text"
-                      value={selectedBox.fieldKey}
-                      onChange={(e) => updateSelectedBox("fieldKey", e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Rótulo Exibição</label>
-                    <input
-                      type="text"
-                      value={selectedBox.label}
-                      onChange={(e) => updateSelectedBox("label", e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2 text-center font-mono">
-                  <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
-                    <span className="text-[9px] text-slate-500 block">X (px)</span>
-                    <input
-                      type="number"
-                      value={selectedBox.x}
-                      onChange={(e) => updateSelectedBox("x", Number(e.target.value))}
-                      className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
-                    />
-                  </div>
-                  <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
-                    <span className="text-[9px] text-slate-500 block">Y (px)</span>
-                    <input
-                      type="number"
-                      value={selectedBox.y}
-                      onChange={(e) => updateSelectedBox("y", Number(e.target.value))}
-                      className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
-                    />
-                  </div>
-                  <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
-                    <span className="text-[9px] text-slate-500 block">LARG.</span>
-                    <input
-                      type="number"
-                      value={selectedBox.width}
-                      onChange={(e) => updateSelectedBox("width", Number(e.target.value))}
-                      className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
-                    />
-                  </div>
-                  <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
-                    <span className="text-[9px] text-slate-500 block">ALT.</span>
-                    <input
-                      type="number"
-                      value={selectedBox.height}
-                      onChange={(e) => updateSelectedBox("height", Number(e.target.value))}
-                      className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tamanho Fonte (pt)</label>
-                    <input
-                      type="number"
-                      value={selectedBox.fontSize}
-                      onChange={(e) => updateSelectedBox("fontSize", Number(e.target.value))}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Família Fonte</label>
-                    <select
-                      value={selectedBox.fontFamily}
-                      onChange={(e) => updateSelectedBox("fontFamily", e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer"
-                    >
-                      <option value="Helvetica">Helvetica / Arial</option>
-                      <option value="OCR-B">OCR-B (Documentos)</option>
-                      <option value="Courier">Courier New</option>
-                      <option value="Times">Times New Roman</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 text-center bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-4">
-                <Move className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                <p className="text-xs text-slate-400">Desenhe ou clique em uma caixa no Canvas para editar suas coordenadas X/Y.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Coluna Direita: Canvas Interativo de Edição Direct Drag sobre Gabarito PDF */}
-        <div className="lg:col-span-8 space-y-6">
-
-          {/* Area do Canvas do Gabarito */}
-          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-            
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-              <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+          {/* Aba: Extração de Logos & Elementos */}
+          {activeTool === "logos" && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <h3 className="text-xs font-black text-blue-400 uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-blue-400" />
-                <span>3. Canvas Visual de Mapeamento (Drag & Drop)</span>
-              </span>
+                <span>Logos & Elementos do PDF</span>
+              </h3>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                {savedTemplates.length > 0 && (
-                  <select
-                    onChange={(e) => {
-                      const found = savedTemplates.find(t => t.id === e.target.value);
-                      if (found) handleSelectTemplate(found);
-                    }}
-                    className="px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-indigo-300 font-medium focus:outline-none cursor-pointer"
-                  >
-                    <option value="">Carregar Modelo Salvo...</option>
-                    {savedTemplates.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name} ({t.slug})</option>
-                    ))}
-                  </select>
-                )}
+              <button
+                type="button"
+                onClick={handleExtractLogos}
+                className="w-full py-2.5 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-500/40 text-blue-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md"
+              >
+                <Layers className="w-4 h-4 text-blue-400" />
+                <span>Extrair Logos do PDF</span>
+              </button>
 
-                {/* Controles de Zoom HD */}
-                <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
-                  <button
-                    type="button"
-                    onClick={() => setZoom((z) => Math.max(0.4, Math.round((z - 0.1) * 10) / 10))}
-                    className="px-2 py-1 text-xs font-bold text-slate-300 hover:text-white transition-colors"
-                    title="Diminuir Zoom"
-                  >
-                    🔍 -
-                  </button>
-                  <span className="text-[10px] font-mono font-bold text-blue-400 px-1">
-                    {Math.round(zoom * 100)}%
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setZoom((z) => Math.min(2.5, Math.round((z + 0.1) * 10) / 10))}
-                    className="px-2 py-1 text-xs font-bold text-slate-300 hover:text-white transition-colors"
-                    title="Aumentar Zoom"
-                  >
-                    🔍 +
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setZoom(1)}
-                    className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-white border-l border-slate-800 transition-colors"
-                    title="Redefinir Zoom para 100%"
-                  >
-                    100%
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={createBlankCanvas}
-                  className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 text-xs font-bold transition-all cursor-pointer"
-                  title="Limpar e criar canvas padrão em branco"
-                >
-                  Canvas em Branco
-                </button>
-
-                <label className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-950/40">
-                  <Upload className="w-4 h-4" />
-                  <span>Subir PDF Gabarito</span>
-                  <input type="file" accept="application/pdf,image/*" onChange={handleFileUpload} className="hidden" />
-                </label>
-              </div>
-            </div>
-
-            {/* Container do Canvas HD (Sem espaços em branco superiores/inferiores) */}
-            <div className="relative overflow-auto custom-scrollbar bg-slate-950 rounded-2xl border border-slate-800 flex items-center justify-center p-0 m-0 w-full overflow-x-auto overflow-y-auto">
-              {bgImage ? (
-                <div
-                  ref={canvasRef}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  className="relative select-none cursor-crosshair shadow-2xl border border-slate-700 rounded-lg overflow-hidden bg-white transition-all duration-150"
-                  style={{ width: canvasSize.width * zoom, height: canvasSize.height * zoom }}
-                >
-                  {/* Gabarito Base em Imagem/PDF */}
-                  <img src={bgImage} alt="Gabarito PDF" className="w-full h-full object-contain pointer-events-none" />
-
-                  {/* Renderização das Caixas Mapeadas */}
-                  {boxes.map((box) => {
-                    const isSelected = box.id === selectedBoxId;
-                    return (
-                      <div
-                        key={box.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedBoxId(box.id);
-                        }}
-                        className={`absolute border-2 rounded transition-all flex items-center justify-between px-2 font-mono text-[10px] font-bold ${
-                          isSelected
-                            ? "border-emerald-400 bg-emerald-500/20 shadow-lg shadow-emerald-500/30 z-30"
-                            : "border-indigo-500/70 bg-indigo-500/10 hover:border-indigo-400 z-20"
-                        }`}
-                        style={{
-                          left: box.x,
-                          top: box.y,
-                          width: box.width,
-                          height: box.height,
-                          color: box.color || "#000",
-                        }}
-                      >
-                        <span className="truncate">{box.label || box.fieldKey}</span>
-                        <span className="text-[8px] opacity-70">({box.x},{box.y})</span>
-                      </div>
-                    );
-                  })}
-
-                  {/* Retângulo dinâmico enquanto o usuário arrasta o mouse */}
-                  {isDrawing && startPos && currentPos && (
-                    <div
-                      className="absolute border-2 border-dashed border-amber-400 bg-amber-400/20 z-40 pointer-events-none"
-                      style={{
-                        left: Math.min(startPos.x, currentPos.x),
-                        top: Math.min(startPos.y, currentPos.y),
-                        width: Math.abs(currentPos.x - startPos.x),
-                        height: Math.abs(currentPos.y - startPos.y),
-                      }}
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="py-20 text-center space-y-3">
-                  <Upload className="w-12 h-12 text-slate-600 mx-auto animate-bounce" />
-                  <h4 className="text-sm font-black text-white uppercase tracking-wider">Nenhum Gabarito Carregado</h4>
-                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                    Faça o upload do PDF oficial ou Imagem Gabarito do documento para começar a arrastar e delimitar as caixas de coordenadas X/Y.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Tabela Resumo das Caixas Mapeadas */}
-            {boxes.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-slate-800">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-white uppercase tracking-wider">
-                    Caixas Mapeadas no Studio ({boxes.length})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setBoxes([])}
-                    className="text-[10px] font-bold text-rose-400 hover:underline uppercase"
-                  >
-                    Limpar Todas
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  {boxes.map((b) => (
-                    <div
-                      key={b.id}
-                      onClick={() => setSelectedBoxId(b.id)}
-                      className={`p-2.5 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ${
-                        b.id === selectedBoxId
-                          ? "bg-emerald-950/60 border-emerald-500/60 text-emerald-300"
-                          : "bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700"
-                      }`}
-                    >
-                      <div className="truncate">
-                        <span className="font-black block">{b.label}</span>
-                        <span className="text-[9px] font-mono text-slate-400">
-                          {b.fieldKey} • {b.x}x,{b.y}y
-                        </span>
-                      </div>
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                        {b.fontSize}pt
-                      </span>
+              {extractedLogos.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  {extractedLogos.map((url, i) => (
+                    <div key={i} className="p-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center min-h-[60px]">
+                      <img src={url} alt={`Logo ${i}`} className="max-h-12 max-w-full object-contain" />
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-          </div>
+              )}
+            </div>
+          )}
 
         </div>
+
+        {/* 3. Estágio Central de Trabalho (Adobe Express Stage Viewport) */}
+        <main className="flex-1 bg-[#060911] flex flex-col overflow-hidden relative">
+
+          {/* Sub-Header do Canvas */}
+          <div className="h-10 bg-[#0b101d] border-b border-slate-800/80 px-4 flex items-center justify-between shrink-0 z-10">
+            <span className="text-[11px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+              <Layers className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Canvas Visual de Mapeamento Direct Drag</span>
+            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={createBlankCanvas}
+                className="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 text-[10px] font-bold transition-all cursor-pointer"
+              >
+                Canvas em Branco
+              </button>
+
+              <label className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-blue-950/40">
+                <Upload className="w-3.5 h-3.5" />
+                <span>Subir PDF Gabarito</span>
+                <input type="file" accept="application/pdf,image/*" onChange={handleFileUpload} className="hidden" />
+              </label>
+            </div>
+          </div>
+
+          {/* Container do Canvas Stage HD (Sem Espaços em Branco Superiores/Inferiores) */}
+          <div className="flex-1 overflow-auto custom-scrollbar bg-[#060911] flex items-center justify-center p-0 m-0 relative">
+            {bgImage ? (
+              <div
+                ref={canvasRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                className="relative select-none cursor-crosshair shadow-2xl border border-slate-700 rounded-lg overflow-hidden bg-white transition-all duration-150 my-auto"
+                style={{ width: canvasSize.width * zoom, height: canvasSize.height * zoom }}
+              >
+                {/* Gabarito Base em Imagem/PDF */}
+                <img src={bgImage} alt="Gabarito PDF" className="w-full h-full object-contain pointer-events-none" />
+
+                {/* Renderização das Caixas Mapeadas */}
+                {boxes.map((box) => {
+                  const isSelected = box.id === selectedBoxId;
+                  return (
+                    <div
+                      key={box.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedBoxId(box.id);
+                        setActiveTool("boxes");
+                      }}
+                      className={`absolute border-2 rounded transition-all flex items-center justify-between px-2 font-mono text-[10px] font-bold ${
+                        isSelected
+                          ? "border-emerald-400 bg-emerald-500/20 shadow-lg shadow-emerald-500/30 z-30 ring-2 ring-emerald-400/40"
+                          : "border-indigo-500/70 bg-indigo-500/10 hover:border-indigo-400 z-20"
+                      }`}
+                      style={{
+                        left: box.x * zoom,
+                        top: box.y * zoom,
+                        width: box.width * zoom,
+                        height: box.height * zoom,
+                        color: box.color || "#000",
+                      }}
+                    >
+                      <span className="truncate">{box.label || box.fieldKey}</span>
+                      <span className="text-[8px] opacity-70">({box.x},{box.y})</span>
+                    </div>
+                  );
+                })}
+
+                {/* Retângulo dinâmico enquanto o usuário arrasta o mouse */}
+                {isDrawing && startPos && currentPos && (
+                  <div
+                    className="absolute border-2 border-dashed border-amber-400 bg-amber-400/20 z-40 pointer-events-none"
+                    style={{
+                      left: Math.min(startPos.x, currentPos.x),
+                      top: Math.min(startPos.y, currentPos.y),
+                      width: Math.abs(currentPos.x - startPos.x),
+                      height: Math.abs(currentPos.y - startPos.y),
+                    }}
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="py-20 text-center space-y-3">
+                <Upload className="w-12 h-12 text-slate-600 mx-auto animate-bounce" />
+                <h4 className="text-sm font-black text-white uppercase tracking-wider">Nenhum Gabarito Carregado</h4>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Faça o upload do PDF oficial ou Imagem Gabarito do documento para começar a arrastar e delimitar as caixas de coordenadas X/Y.
+                </p>
+              </div>
+            )}
+          </div>
+
+        </main>
 
       </div>
 

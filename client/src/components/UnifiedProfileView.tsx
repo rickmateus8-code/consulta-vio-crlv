@@ -1210,11 +1210,23 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
   const pis = sanitizeField(cpfData.pis || cpfData.PIS || cpfData.cns);
   const cnh = sanitizeField(cpfData.cnh || cpfData.NUMERO_CNH || cpfData.CNH);
   
-  const rawNaturalidade = sanitizeField(cpfData.birth_city || cpfData.naturalidade || cpfData.NATURALIDADE || cpfData.cidade_nascimento || cpfData.uf_nascimento);
-  let naturalidade = rawNaturalidade || (cpf ? getCPFStateFromNinthDigit(cpf) : null);
+  const rawNaturalidade = sanitizeField(
+    cpfData.birth_city || 
+    cpfData.naturalidade || 
+    cpfData.NATURALIDADE || 
+    cpfData.cidade_nascimento || 
+    cpfData.municipio_nascimento || 
+    cpfData.naturalidade_cidade ||
+    cpfData.birth_place ||
+    cpfData.local_nascimento ||
+    cpfData.cidade_nasc ||
+    (cpfData.cidade_nascimento && cpfData.uf_nascimento ? `${cpfData.cidade_nascimento} / ${cpfData.uf_nascimento}` : (cpfData.uf_nascimento ? `UF: ${cpfData.uf_nascimento}` : null))
+  );
+  let naturalidade = rawNaturalidade || null;
   if (naturalidade) {
     naturalidade = naturalidade.replace(/\s*\(\d+ª?\s*Regiã[o|o]\s*Fiscal\)/gi, "").trim();
   }
+
 
   // Socioeconômico & Tratar Score para NUNCA gerar [object Object]
   const renda = cpfData.income || cpfData.renda || cpfData.renda_mensal || cpfData.RENDA || null;

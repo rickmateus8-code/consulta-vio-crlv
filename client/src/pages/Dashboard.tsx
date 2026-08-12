@@ -456,58 +456,9 @@ const intelligentStats = [
   return (
     <DashboardLayout>
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
-        {/* Visão Geral Header e Botões de Ação (Pareado 1:1 com Imagens 01 e 02) */}
-        <div className="space-y-4">
+        {/* Visão Geral Header */}
+        <div>
           <h1 className="text-xl md:text-2xl font-black text-white tracking-tight m-0">Visão Geral</h1>
-
-          {/* Linha 1: 3 Botões Superiores (Instruções, Notificações, Suporte) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <button
-              onClick={() => setShowReferralModal(true)}
-              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
-            >
-              <FileText className="w-4 h-4 text-slate-300" />
-              <span>Instruções</span>
-            </button>
-
-            <button
-              onClick={() => setShowNotificationsModal(true)}
-              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
-            >
-              <Bell className="w-4 h-4 text-amber-400" />
-              <span>Notificações</span>
-            </button>
-
-            <button
-              onClick={() => {
-                const phone = supportWhatsapp.replace(/\D/g, "") || "5511999999999";
-                window.open(`https://wa.me/${phone}?text=${encodeURIComponent("Olá! Preciso de suporte no DocMaster.")}`, "_blank");
-              }}
-              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
-            >
-              <MessageCircle className="w-4 h-4 text-emerald-400" />
-              <span>Suporte</span>
-            </button>
-          </div>
-
-          {/* Linha 2: 2 Botões (Modelos de Emissão & Indique e Ganhe com borda verde) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <button
-              onClick={() => setShowModelsModal(true)}
-              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-indigo-500/40 text-indigo-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
-            >
-              <Camera className="w-4 h-4 text-indigo-400" />
-              <span>Modelos de Emissão</span>
-            </button>
-
-            <button
-              onClick={() => setShowReferralModal(true)}
-              className="w-full py-3.5 px-4 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] border border-emerald-500/50 text-emerald-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
-            >
-              <Gift className="w-4 h-4 text-emerald-400" />
-              <span>Indique e Ganhe</span>
-            </button>
-          </div>
         </div>
 
         {/* Patent Card - Barra de Progresso por Adição de Saldo (Imagens 01 e 02) */}

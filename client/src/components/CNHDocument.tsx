@@ -688,7 +688,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // FOTO DO CONDUTOR (Mover 0,5% esq -> X=277px, 263x322px)
+    // FOTO DO CONDUTOR (Mover 0,2% dir -> X=282px, 263x322px)
     // ═══════════════════════════════════════════════════════════════════
     if (props.fotoUrl) {
       try {
@@ -699,12 +699,12 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         const baseBw = 263, baseBh = 322;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 277 + SHIFT_X + offsetX;
+        const bx = 282 + SHIFT_X + offsetX;
         const by = 562 + offsetY;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(277 + SHIFT_X, 562, baseBw, baseBh);
+        ctx.rect(282 + SHIFT_X, 562, baseBw, baseBh);
         ctx.clip();
 
         const imgRatio = fotoImg.width / fotoImg.height;

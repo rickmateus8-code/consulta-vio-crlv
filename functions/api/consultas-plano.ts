@@ -78,6 +78,15 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     } catch {}
   }
 
+  let lastExpiredPlan: any = null;
+  if (!isFree && !dbPlan) {
+    try {
+      lastExpiredPlan = await env.DB.prepare(
+        'SELECT * FROM consultas_planos WHERE user_id = ? ORDER BY datetime(expires_at) DESC LIMIT 1'
+      ).bind(user.id).first<any>();
+    } catch {}
+  }
+
   const activePlan = isFree ? {
     id: 'free-admin-granted',
     plano: 'Concedido pelo Admin (Gratuito)',
@@ -107,6 +116,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     success: true,
     is_free: isFree,
     plan: activePlan || null,
+    expired_plan: lastExpiredPlan || null,
+    is_expired: !isFree && !dbPlan && !!lastExpiredPlan,
     balance: user.balance,
     usage_24h: usage24h,
     usage_by_modulo: usageByModulo,

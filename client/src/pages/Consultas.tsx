@@ -541,17 +541,26 @@ export default function Consultas() {
                       <Clock className="w-5 h-5 text-violet-400" />
                       <div>
                         <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
-                          {planStatus?.plan?.expires_at && !planStatus?.is_free ? "PLANO / EXPIRAÇÃO" : "MODO DE ACESSO"}
+                          {planStatus?.plan?.expires_at && !planStatus?.is_free ? `PLANO (${planStatus.plan.plano || 'Degustação 1D'})` : "MODO DE ACESSO"}
                         </span>
-                        <span className="text-emerald-400 font-bold text-xs">
+                        <span className={`font-bold text-xs ${planStatus?.is_free || user?.role === "admin" || planStatus?.plan ? "text-emerald-400" : "text-red-400"}`}>
                           {planStatus?.is_free || user?.role === "admin"
                             ? "🟢 Gratuito / Liberado"
                             : planStatus?.plan?.expires_at
-                            ? `Ativo até ${new Date(planStatus.plan.expires_at).toLocaleDateString('pt-BR')}`
-                            : "🔴 Requer Plano"}
+                            ? `Ativo até ${new Date(planStatus.plan.expires_at).toLocaleDateString('pt-BR')} às ${new Date(planStatus.plan.expires_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+                            : "🔴 Degustação Expirada (Requer Plano)"}
                         </span>
                       </div>
                     </div>
+
+                    {(!planStatus?.plan && !(planStatus?.is_free || user?.role === "admin")) && (
+                      <button
+                        onClick={() => setShowPlanModal(true)}
+                        className="px-3 py-1.5 rounded-xl font-black text-[11px] bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg flex items-center gap-1.5 active:scale-95 transition-all"
+                      >
+                        ⚡ Renovar Plano
+                      </button>
+                    )}
 
                     <div className="h-7 w-px bg-violet-500/20" />
 

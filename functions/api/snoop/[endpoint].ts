@@ -30,7 +30,7 @@ async function checkActivePlan(user: any, env: Env): Promise<boolean> {
       freeDocs = typeof user.free_documents === 'string' ? JSON.parse(user.free_documents) : user.free_documents;
     }
   } catch {}
-  if (Array.isArray(freeDocs) && (freeDocs.includes('consultas') || freeDocs.includes('atestado'))) return true;
+  if (Array.isArray(freeDocs) && freeDocs.includes('consultas')) return true;
 
   let perms: any = {};
   try {

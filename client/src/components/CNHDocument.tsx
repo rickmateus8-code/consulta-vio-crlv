@@ -477,9 +477,9 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
     // 5. CAIXA 4b: VALIDADE (X=786px + SHIFT_X, Y=583px, Vermelho - Mover 0,1% a direita)
     txt(p(d(validadeRaw), "15/09/2026"), 786 + SHIFT_X, 583, 20, 1, "#c0392b", 160);
 
-    // 6. CAIXA ACC / TIPO CNH (X=1062px + SHIFT_X, Y=572px)
+    // 6. CAIXA ACC / TIPO CNH (X=1074px + SHIFT_X, Y=572px - Mover 0,5% a direita)
     const tipoLetra = tipoRaw === "Permissão" ? "P" : "D";
-    txt(p(accRaw, tipoLetra), 1062 + SHIFT_X, 572, 46.5, 1, "#000000", 60);
+    txt(p(accRaw, tipoLetra), 1074 + SHIFT_X, 572, 46.5, 1, "#000000", 60);
 
     // 7. CAIXA 4c: DOC IDENTIDADE / ÓRGÃO EMISSOR / UF (X=599px + SHIFT_X, Y=644px)
     const rgFmt = p(rgRaw, "26216797");

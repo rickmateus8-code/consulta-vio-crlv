@@ -593,32 +593,16 @@ const intelligentStats = [
           </div>
         </div>
 
-        {/* Meus Documentos - Estatísticas por Categoria */}
-        <div className="animate-in fade-in duration-500">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            <h2 className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-200 uppercase tracking-widest">Documentos Ativos por Categoria</h2>
+        {/* Documentos Ativos Card - Estilo EliteDoc */}
+        <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 flex items-center gap-4 shadow-xl">
+          <div className="w-11 h-11 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-950/50">
+            <ShieldCheck className="w-6 h-6" />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              { id: "pessoais", label: "Pessoais", icon: Car, keys: ["cnh", "cha"] },
-              { id: "veiculos", label: "Veículos", icon: ShieldCheck, keys: ["crlv", "crlvcria"] },
-              { id: "saude", label: "Saúde", icon: Pill, keys: ["atestado", "toxicologico", "toxicria", "receita"] },
-              { id: "estudante", label: "Estudante", icon: GraduationCap, keys: ["historico-sp", "historico-uninter", "diploma-uninter", "fgv"] },
-              { id: "certidoes", label: "Certidões", icon: FileText, keys: ["peticao-stj", "peticaocria", "bot-adv"] },
-            ].map((cat, i) => {
-              const count = cat.keys.reduce((sum, k) => sum + (stats[k] || 0), 0);
-              const CatIcon = cat.icon;
-              return (
-                <div key={i} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm group hover:-translate-y-1 transition-all duration-300">
-                  <div className="w-10 h-10 rounded-xl mb-3 flex items-center justify-center bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
-                    <CatIcon className="w-5 h-5" />
-                  </div>
-                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{cat.label}</p>
-                  <p className="text-2xl font-black text-gray-900 dark:text-white mt-1 group-hover:text-blue-600 transition-colors tabular-nums">{count} <span className="text-[10px] font-bold text-gray-400 uppercase">ativos</span></p>
-                </div>
-              );
-            })}
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Documentos Ativos</p>
+            <p className="text-2xl font-black text-white tabular-nums tracking-tight mt-0.5">
+              {Object.values(stats || {}).reduce((a, b) => a + b, 0)}
+            </p>
           </div>
         </div>
 
@@ -651,15 +635,24 @@ const intelligentStats = [
             </div>
           </div>
           
-          <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
-            <div className="flex border-b border-gray-100 dark:border-gray-800 overflow-x-auto no-scrollbar">
-              {historyTabs.filter(t => isToolAllowed(t.key)).map(tab => (
-                <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`px-6 py-4 text-xs font-black uppercase tracking-widest transition-all border-b-2 whitespace-nowrap ${activeTab === tab.key ? "border-blue-600 text-blue-600 bg-blue-50/30" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-                  {tab.label}
-                </button>
-              ))}
+          <div className="bg-slate-900/90 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
+            {/* Category Header Bar - Estilo EliteDoc */}
+            <div className="flex border-b border-slate-800/80 overflow-x-auto no-scrollbar p-3.5 gap-2 bg-slate-950/60">
+              {historyTabs.filter(t => isToolAllowed(t.key)).map(tab => {
+                const isActive = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border whitespace-nowrap ${isActive ? "bg-blue-600 border-blue-400 text-white shadow-md shadow-blue-600/30" : "bg-slate-900/80 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200"}`}
+                  >
+                    <span>{tab.label}</span>
+                    <ChevronDown className="w-3 h-3 opacity-70" />
+                  </button>
+                );
+              })}
             </div>
-            <div className="p-4">
+            <div className="p-4 bg-slate-950/40">
               {historyLoading ? (
                 <div className="py-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" /></div>
               ) : history.length === 0 ? (
@@ -676,113 +669,79 @@ const intelligentStats = [
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left">
+                  <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Documento / Nome</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">CPF / Registro</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Criado Em</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Validade no Painel</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Ações</th>
+                      <tr className="border-b border-slate-800 bg-slate-900/80">
+                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">NOME</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">CPF / DOCUMENTO</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">CRIADO EM</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">VALIDADE PAINEL</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">AÇÕES</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                    <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
                       {filteredHistory.map(doc => {
                         const parsed = parseDocData(doc);
                         const cpf = doc.cpf || parsed.cpf || parsed.cpf_paciente || "—";
                         const codigoQR = doc.codigo_qr || doc.codigo_validacao || (doc.id && doc.id.includes("-") ? doc.id.slice(0, 8) : "—");
 
-                        let docTitle = "Documento";
-                        if (doc.type === "fgv") {
-                          docTitle = `Certificado FGV - ${parsed.nome_aluno || "—"}`;
-                        } else if (doc.type === "historico-uninter") {
-                          docTitle = `Histórico UNINTER - ${parsed.nome_aluno || parsed.nome || "—"}`;
-                        } else if (doc.type === "historico-sp") {
-                          docTitle = `Histórico SP - ${parsed.nome || "—"}`;
-                        } else if (doc.type === "peticao-stj") {
-                          docTitle = `Petição STJ - ${parsed.nome_parte || parsed.nome || "—"}`;
-                        } else if (doc.type === "crlv" || doc.type === "crlvcria") {
-                          docTitle = `CRLV Digital - ${parsed.proprietario_nome || doc.nome || "—"}`;
-                        } else if (doc.type === "atestado") {
-                          docTitle = `Atestado Médico - ${doc.paciente || doc.nome || parsed.nome_paciente || "—"}`;
-                        } else if (doc.type === "receita") {
-                          docTitle = `Receituário Médico - ${doc.paciente || doc.nome || parsed.nome_paciente || "—"}`;
-                        } else if (doc.type === "cnh") {
-                          docTitle = `CNH Digital - ${doc.nome || parsed.nome || "—"}`;
-                        } else if (doc.type === "cha") {
-                          docTitle = `CHA Náutica - ${doc.nome || parsed.nome || "—"}`;
-                        } else {
-                          const typeStr = doc.type ? String(doc.type).toUpperCase() : "";
-                          const patientStr = doc.paciente || doc.nome || parsed.nome || "—";
-                          docTitle = typeStr ? `${typeStr} - ${patientStr}` : patientStr;
-                        }
+                        let personName = doc.nome || doc.paciente || parsed.nome || parsed.nome_paciente || parsed.nome_aluno || parsed.proprietario_nome || "—";
 
                         const defaultDays = doc.type === "cnh" ? 90 : (doc.type === "peticao-stj" || doc.type === "peticaocria") ? 3 : 30;
                         const rawExpires = doc.expires_at || (doc.created_at ? new Date(new Date(doc.created_at).getTime() + defaultDays * 24 * 60 * 60 * 1000).toISOString() : "");
                         const validadePainel = rawExpires || "—";
                         const daysRemaining = getDaysRemaining(validadePainel);
                         const isExpired = daysRemaining !== null && daysRemaining < 0;
-                        const isNearExp = daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 15;
 
                         return (
-                          <tr key={doc.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b border-gray-100 dark:border-gray-800/50">
-                            <td className="px-6 py-5">
+                          <tr key={doc.id} className="hover:bg-slate-900/60 transition-colors border-b border-slate-800/40">
+                            <td className="px-6 py-4">
                               <div className="flex flex-col">
-                                <span className="text-[13px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{docTitle}</span>
+                                <span className="text-[12px] font-black text-slate-100 uppercase tracking-tight">{personName}</span>
                                 {codigoQR && codigoQR !== "—" && (
                                   <span 
                                     onClick={() => {
                                       navigator.clipboard.writeText(codigoQR);
                                       toast.success("Código copiado!");
                                     }}
-                                    className="text-[10px] text-blue-600 font-mono font-bold uppercase mt-0.5 cursor-pointer hover:underline"
+                                    className="text-[9px] text-blue-400 font-mono font-bold uppercase mt-0.5 cursor-pointer hover:underline"
                                     title="Clique para copiar código"
                                   >
-                                    Código: {codigoQR}
+                                    CÓDIGO: {codigoQR}
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-6 py-5">
-                              <span className="text-[11px] font-black text-gray-600 dark:text-gray-400 font-mono tracking-tighter">{cpf}</span>
+                            <td className="px-6 py-4">
+                              <span className="text-[11px] font-black text-slate-300 font-mono tracking-tighter">{cpf}</span>
                             </td>
-                            <td className="px-6 py-5">
-                              <div className="flex flex-col">
-                                <span className="text-[11px] font-black text-gray-700 dark:text-gray-300">
-                                  {new Date(doc.created_at).toLocaleDateString("pt-BR")}
-                                </span>
-                                <span className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">
-                                  {new Date(doc.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                                </span>
-                              </div>
+                            <td className="px-6 py-4">
+                              <span className="text-[11px] font-bold text-slate-300 font-mono">
+                                {new Date(doc.created_at).toLocaleDateString("pt-BR")}, {new Date(doc.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
                             </td>
-                            <td className="px-6 py-5">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-1.5 h-1.5 rounded-full ${isExpired ? "bg-red-500 animate-pulse" : isNearExp ? "bg-amber-500" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"}`} />
-                                  <span className={`text-[11px] font-black uppercase ${isExpired ? "text-red-600" : isNearExp ? "text-amber-600" : "text-emerald-600 dark:text-emerald-400"}`}>
-                                    {formatDate(validadePainel)}
-                                  </span>
-                                </div>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col items-start gap-1">
+                                <span className="text-[10px] font-bold text-slate-300 font-mono">
+                                  Até {formatDate(validadePainel)}
+                                </span>
                                 {daysRemaining !== null && (
-                                  <span className={`text-[9px] font-black uppercase tracking-widest ${isExpired ? "text-red-500" : isNearExp ? "text-amber-500" : "text-gray-400"}`}>
-                                    {isExpired ? "EXPIRADO" : isNearExp ? `EXPIRA EM ${daysRemaining} DIAS` : `${daysRemaining} DIAS RESTANTES`}
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black font-mono tracking-wider border ${isExpired ? "bg-rose-950/60 border-rose-500/40 text-rose-300" : "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"}`}>
+                                    {isExpired ? "EXPIRADO" : `${daysRemaining}D RESTANTES`}
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-6 py-5 text-right">
-                              <div className="flex justify-end scale-90 origin-right">
-                                <AttestationActionButtons
-                                  onRenew={() => handleRenew(doc)}
-                                  onView={() => openViewAtestado(doc)}
-                                  onDownload={doc.type === "atestado" ? () => handleDirectDownloadAtestado(doc) : () => handleDirectDownloadGeneric(doc)}
-                                  isDownloading={downloadingAtestadoId === doc.id}
-                                  onEdit={() => setLocation(getEditPath(doc))}
-                                  onWhatsApp={() => handleWhatsAppHistory(doc)}
-                                  onDelete={() => setConfirmDeleteId(doc.id)}
-                                />
-                              </div>
+                            <td className="px-6 py-4 text-right">
+                              <AttestationActionButtons
+                                onRenew={() => handleRenew(doc)}
+                                onView={() => openViewAtestado(doc)}
+                                onDownload={doc.type === "atestado" ? () => handleDirectDownloadAtestado(doc) : () => handleDirectDownloadGeneric(doc)}
+                                isDownloading={downloadingAtestadoId === doc.id}
+                                onEdit={() => setLocation(getEditPath(doc))}
+                                onWhatsApp={() => handleWhatsAppHistory(doc)}
+                                onDelete={() => setConfirmDeleteId(doc.id)}
+                              />
                             </td>
                           </tr>
                         );

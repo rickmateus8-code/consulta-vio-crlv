@@ -114,9 +114,9 @@ function UserProfileHeader({
   return (
     <button
       onClick={onOpenProfile}
-      className={`flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-50/80 dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-200/60 dark:border-gray-700/50 transition-all duration-200 w-full group ${collapsed ? "justify-center px-2" : ""}`}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 transition-all duration-200 w-full group ${collapsed ? "justify-center px-2" : ""}`}
     >
-      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-white dark:border-gray-800 shadow-sm">
+      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
         {user.profilePhoto ? (
           <img src={user.profilePhoto} alt="Avatar" className="w-full h-full object-cover" />
         ) : (
@@ -126,14 +126,11 @@ function UserProfileHeader({
       {!collapsed && (
         <>
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <p className="text-xs font-black text-white uppercase tracking-tight truncate">
               {user.displayName || user.username}
             </p>
-            <p className="text-[10px] text-gray-400 dark:text-gray-400 capitalize font-medium">
-              {user.role === "admin" ? "Administrador" : "Usuário VIP"}
-            </p>
           </div>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+          <Shield className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 transition-colors" />
         </>
       )}
     </button>
@@ -268,22 +265,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {(!collapsed || mobile) && (
-            <div className="p-3 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-950/20 dark:to-slate-900/40 rounded-xl border border-emerald-200/60 dark:border-emerald-800/30 flex flex-col gap-2 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-emerald-800/70 dark:text-emerald-400/80 uppercase tracking-wider">Saldo Disponível</p>
-                  <p className="text-base font-black text-emerald-600 dark:text-emerald-400">{balanceFormatted}</p>
-                </div>
-                <button onClick={() => handleOpenRecarregaModal(mobile)} className="w-8 h-8 rounded-lg btn-glow-emerald flex items-center justify-center">
-                  <Plus className="w-4 h-4" />
+            <div className="p-4 bg-slate-900/90 rounded-2xl border border-slate-800 flex flex-col gap-2.5 shadow-lg">
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SALDO DISPONÍVEL</p>
+                <p className="text-xl font-black text-white mt-0.5">{balanceFormatted}</p>
+              </div>
+
+              <div className="space-y-1 pt-1 border-t border-slate-800/60 text-[10px] font-bold">
+                <p className="text-emerald-400 flex items-center justify-between">
+                  <span>Histórico de Bônus</span>
+                  <span>+ R$ 949,50</span>
+                </p>
+                <p className="text-emerald-400 flex items-center justify-between">
+                  <span>Histórico Afiliados</span>
+                  <span>+ R$ 400,00</span>
+                </p>
+              </div>
+
+              <div className="pt-2 space-y-2">
+                <button 
+                  onClick={() => { setShowExtratoModal(true); if (mobile) setMobileOpen(false); }}
+                  className="w-full py-2 px-3 rounded-xl bg-slate-800/80 border border-slate-700/80 text-[10px] font-black text-slate-200 uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-slate-700 hover:text-white transition-all shadow-xs"
+                >
+                  <Receipt className="w-3.5 h-3.5 text-blue-400" /> VER EXTRATO FINANCEIRO
+                </button>
+                <button 
+                  onClick={() => handleOpenRecarregaModal(mobile)} 
+                  className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-blue-900/40 transition-all active:scale-95"
+                >
+                  <CreditCard className="w-3.5 h-3.5" /> RECARREGAR
                 </button>
               </div>
-              <button 
-                onClick={() => { setShowExtratoModal(true); if (mobile) setMobileOpen(false); }}
-                className="w-full py-1.5 px-2 rounded-lg bg-white/80 dark:bg-gray-800/80 border border-emerald-200/50 dark:border-emerald-800/30 text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest flex items-center justify-center gap-1.5 hover:bg-emerald-50 dark:hover:bg-gray-800 transition-all shadow-2xs"
-              >
-                <Receipt className="w-3.5 h-3.5" /> Ver Extrato
-              </button>
             </div>
           )}
         </div>
@@ -356,7 +368,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="relative z-50 shadow-2xl"><SidebarContent mobile /></div>
         </div>
       )}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-[#0b1120]">
+        {/* Header Mobile */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 glass-header shadow-sm z-30">
           <div className="flex items-center gap-3">
             <button onClick={() => setMobileOpen(true)} className="p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><Menu className="w-5 h-5" /></button>
@@ -369,7 +382,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 relative">
+
+        {/* Header Desktop - Estilo EliteDoc */}
+        <header className="hidden md:flex items-center justify-between px-8 py-4 bg-[#0b1120] border-b border-slate-800/80 z-30 shrink-0">
+          <h1 className="text-xl font-black text-white uppercase tracking-tight">Visão Geral</h1>
+          <div className="flex items-center gap-3">
+            <button onClick={() => window.open("https://wa.me/5511965355468?text=Instrucoes", "_blank")} className="px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-1.5">
+              <HelpCircle className="w-3.5 h-3.5 text-blue-400" /> Instruções
+            </button>
+            <button onClick={() => setLocation("/dashboard")} className="px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-1.5">
+              <Bell className="w-3.5 h-3.5 text-amber-400" /> Notificações
+            </button>
+            <button onClick={() => window.open("https://wa.me/5511965355468?text=Suporte", "_blank")} className="px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-1.5">
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-400" /> Suporte
+            </button>
+            <button onClick={() => setShowNovoDocModal(true)} className="px-4 py-1.5 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-300 hover:bg-blue-600/40 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5">
+              <FilePlus className="w-3.5 h-3.5 text-blue-400" /> Modelos de Emissão
+            </button>
+            <button onClick={() => setShowReferralModal(true)} className="px-4 py-1.5 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-600/40 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5">
+              <Gift className="w-3.5 h-3.5 text-emerald-400" /> Indique e Ganhe
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto bg-[#0b1120] relative">
           <div className="w-full max-w-full overflow-x-hidden">{children}</div>
         </main>
       </div>

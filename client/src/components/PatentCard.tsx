@@ -127,7 +127,7 @@ export default function PatentCard({ loyalty }: PatentCardProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-sm mb-8 animate-in fade-in slide-in-from-top-4 duration-500 overflow-hidden relative group">
+    <div className="bg-[#0f172a] text-white rounded-[2.5rem] p-8 border border-slate-800 shadow-2xl mb-8 animate-in fade-in slide-in-from-top-4 duration-500 overflow-hidden relative group">
       {/* Glow Effect */}
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none" />
       

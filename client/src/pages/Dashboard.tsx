@@ -510,6 +510,17 @@ const intelligentStats = [
           </div>
         </div>
 
+        {/* Patent Card - Barra de Progresso por Adição de Saldo (Imagens 01 e 02) */}
+        <PatentCard loyalty={loyaltyData || {
+          thisWeekVolume: 9000,
+          lastWeekVolume: 0,
+          currentRank: "BRONZE",
+          currentBonus: 25,
+          nextRank: "BRONZE",
+          nextGoal: 10000,
+          resetDate: Date.now() + (4 * 24 * 60 * 60 * 1000),
+        }} />
+
         {/* Banner Promocional / Status de Teste Grátis Master Buscas */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-950 via-purple-900 to-indigo-950 border border-violet-500/40 p-6 md:p-8 shadow-2xl shadow-purple-950/40 group hover:border-violet-400/60 transition-all duration-300">
           {/* Efeitos Glow e Fundo */}
@@ -554,17 +565,6 @@ const intelligentStats = [
             </button>
           </div>
         </div>
-
-        {/* Patent Card - Barra de Progresso por Adição de Saldo (Imagens 01 e 02) */}
-        <PatentCard loyalty={loyaltyData || {
-          thisWeekVolume: 9000,
-          lastWeekVolume: 0,
-          currentRank: "BRONZE",
-          currentBonus: 25,
-          nextRank: "BRONZE",
-          nextGoal: 10000,
-          resetDate: Date.now() + (4 * 24 * 60 * 60 * 1000),
-        }} />
 
         {/* Sua Rede de Indicações (Resumo) */}
         {loyaltyData && (

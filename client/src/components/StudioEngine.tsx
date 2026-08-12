@@ -101,12 +101,15 @@ export default function StudioEngine() {
         qrFormat: "XXXX-XXXX",
         qrSourceUrl: "https://validaratestado.digital",
         boxes: [
-          { id: "atest-1", fieldKey: "paciente", label: "Nome do Paciente", x: 120, y: 220, width: 450, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-2", fieldKey: "cpf", label: "CPF do Paciente", x: 120, y: 260, width: 220, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-3", fieldKey: "cid", label: "Código CID-10", x: 420, y: 260, width: 160, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-4", fieldKey: "medico", label: "Nome do Médico", x: 120, y: 720, width: 350, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-5", fieldKey: "crm", label: "CRM / UF", x: 120, y: 750, width: 200, height: 24, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-6", fieldKey: "codigoQR", label: "Código Validação IDAB", x: 480, y: 820, width: 180, height: 28, fontSize: 14, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "atest-1", fieldKey: "instituicao", label: "Instituição / UPA", x: 120, y: 140, width: 500, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-2", fieldKey: "paciente", label: "Nome do Paciente", x: 120, y: 220, width: 450, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-3", fieldKey: "cpf", label: "CPF do Paciente", x: 120, y: 260, width: 220, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-4", fieldKey: "cid", label: "Código CID-10", x: 420, y: 260, width: 160, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-5", fieldKey: "dias_repouso", label: "Dias de Repouso", x: 120, y: 310, width: 180, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-6", fieldKey: "data_emissao", label: "Data de Emissão", x: 420, y: 310, width: 180, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-7", fieldKey: "medico", label: "Nome do Médico", x: 120, y: 720, width: 350, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-8", fieldKey: "crm", label: "CRM / UF", x: 120, y: 750, width: 200, height: 24, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-9", fieldKey: "codigoQR", label: "Código Validação IDAB", x: 480, y: 820, width: 180, height: 28, fontSize: 14, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
         ],
       },
       cnh: {
@@ -120,9 +123,11 @@ export default function StudioEngine() {
         boxes: [
           { id: "cnh-1", fieldKey: "nome", label: "Nome do Condutor", x: 140, y: 110, width: 420, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
           { id: "cnh-2", fieldKey: "cpf", label: "CPF Condutor", x: 140, y: 155, width: 200, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "cnh-3", fieldKey: "renach", label: "RENACH", x: 360, y: 155, width: 200, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "cnh-4", fieldKey: "categoria", label: "Categoria CNH", x: 580, y: 110, width: 80, height: 40, fontSize: 20, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: true },
-          { id: "cnh-5", fieldKey: "validade", label: "Validade CNH", x: 140, y: 200, width: 160, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-3", fieldKey: "rg_ssp", label: "Doc Identidade / Órgão Emissor", x: 140, y: 195, width: 260, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-4", fieldKey: "data_nascimento", label: "Data de Nascimento", x: 410, y: 195, width: 160, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-5", fieldKey: "renach", label: "RENACH", x: 360, y: 155, width: 200, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-6", fieldKey: "categoria", label: "Categoria CNH", x: 580, y: 110, width: 80, height: 40, fontSize: 20, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "cnh-7", fieldKey: "validade", label: "Validade CNH", x: 140, y: 240, width: 160, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
         ],
       },
       crlv: {
@@ -136,8 +141,9 @@ export default function StudioEngine() {
         boxes: [
           { id: "crlv-1", fieldKey: "placa", label: "Placa do Veículo", x: 100, y: 120, width: 180, height: 32, fontSize: 16, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
           { id: "crlv-2", fieldKey: "renavam", label: "RENAVAM", x: 300, y: 120, width: 220, height: 32, fontSize: 16, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
-          { id: "crlv-3", fieldKey: "proprietario", label: "Nome do Proprietário", x: 100, y: 180, width: 500, height: 28, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "crlv-4", fieldKey: "chassi", label: "Número do Chassi", x: 100, y: 230, width: 340, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "crlv-3", fieldKey: "ano_fabricacao", label: "Ano Fabricação", x: 540, y: 120, width: 100, height: 32, fontSize: 14, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "crlv-4", fieldKey: "proprietario", label: "Nome do Proprietário", x: 100, y: 180, width: 500, height: 28, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "crlv-5", fieldKey: "chassi", label: "Número do Chassi", x: 100, y: 230, width: 340, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
         ],
       },
       receita: {
@@ -152,6 +158,48 @@ export default function StudioEngine() {
           { id: "rec-1", fieldKey: "paciente", label: "Nome do Paciente", x: 120, y: 180, width: 450, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
           { id: "rec-2", fieldKey: "medicamentos", label: "Prescrição Médica", x: 120, y: 260, width: 520, height: 300, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: false },
           { id: "rec-3", fieldKey: "medico", label: "Médico Prescritor", x: 120, y: 780, width: 350, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+        ],
+      },
+      historico_sp: {
+        name: "Histórico Escolar SP (SED)",
+        slug: "historico-sp",
+        category: "estudantes",
+        price: "15.00",
+        targetStructure: "historico",
+        qrFormat: "UUID-32",
+        qrSourceUrl: "https://sed.educacao.sp.gov.br",
+        boxes: [
+          { id: "hsp-1", fieldKey: "aluno", label: "Nome do Aluno", x: 140, y: 160, width: 450, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "hsp-2", fieldKey: "ra", label: "Registro do Aluno (RA)", x: 140, y: 200, width: 220, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "hsp-3", fieldKey: "escola", label: "Nome da Escola Estadual", x: 140, y: 240, width: 480, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+        ],
+      },
+      historico_uninter: {
+        name: "Histórico Escolar UNINTER",
+        slug: "historicocria",
+        category: "estudantes",
+        price: "15.00",
+        targetStructure: "historico",
+        qrFormat: "UUID-32",
+        qrSourceUrl: "https://uninter.com/validacao",
+        boxes: [
+          { id: "huni-1", fieldKey: "aluno", label: "Nome do Aluno UNINTER", x: 140, y: 150, width: 450, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "huni-2", fieldKey: "ru", label: "RU do Aluno", x: 140, y: 190, width: 180, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "huni-3", fieldKey: "curso", label: "Nome do Curso Superior", x: 140, y: 230, width: 480, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+        ],
+      },
+      toxicologico: {
+        name: "Laudo Toxicológico Sodré",
+        slug: "toxicria",
+        category: "saude",
+        price: "15.00",
+        targetStructure: "toxicologico",
+        qrFormat: "UUID-32",
+        qrSourceUrl: "https://sodrelab.com.br/validacao",
+        boxes: [
+          { id: "toxi-1", fieldKey: "doador", label: "Nome do Doador", x: 140, y: 160, width: 450, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "toxi-2", fieldKey: "cpf", label: "CPF do Doador", x: 140, y: 200, width: 220, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "toxi-3", fieldKey: "amostra", label: "Código da Amostra", x: 400, y: 200, width: 200, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
         ],
       },
     };
@@ -610,10 +658,13 @@ ${boxes
             className="px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-blue-300 font-bold focus:outline-none cursor-pointer shadow-md"
           >
             <option value="">Editar Documento Existente...</option>
-            <option value="atestado">🩺 Atestado Médico Oficial</option>
+            <option value="atestado">🩺 Atestado Médico Oficial IDAB</option>
             <option value="cnh">🪪 CNH Digital VIO</option>
             <option value="crlv">🚗 CRLV Digital Senatran</option>
             <option value="receita">📜 Receituário Médico</option>
+            <option value="historico_sp">🎓 Histórico Escolar SP (SED)</option>
+            <option value="historico_uninter">🎓 Histórico UNINTER</option>
+            <option value="toxicologico">🧪 Laudo Toxicológico Sodré</option>
           </select>
 
           {/* Botões de Reversão de Erros (Undo / Redo) */}
@@ -980,8 +1031,8 @@ ${boxes
               </div>
             </div>
 
-            {/* Container do Canvas HD */}
-            <div className="relative overflow-auto custom-scrollbar bg-slate-950 rounded-2xl border border-slate-800 min-h-[560px] flex items-center justify-center p-6">
+            {/* Container do Canvas HD (Sem espaços em branco superiores/inferiores) */}
+            <div className="relative overflow-auto custom-scrollbar bg-slate-950 rounded-2xl border border-slate-800 flex items-center justify-center p-0 m-0 w-full overflow-x-auto overflow-y-auto">
               {bgImage ? (
                 <div
                   ref={canvasRef}

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import AttestationActionButtons from "@/components/AttestationActionButtons";
 import { downloadAttestationPdf, fetchLatestAttestationRecord, buildAttestationData } from "@/lib/attestationActions";
+import { downloadCNHPdfDirect, buildCNHPropsFromRecord } from "@/components/CNHDocument";
 import { toast } from "sonner";
 import { createRoot } from "react-dom/client";
 import { createElement } from "react";
@@ -348,7 +349,10 @@ export default function Dashboard() {
       const latestDoc = await fetchLatestAttestationRecord(doc);
       const parsed = typeof latestDoc.data === "string" ? JSON.parse(latestDoc.data) : (latestDoc.data || {});
       
-      if (doc.type === "fgv") {
+      if (doc.type === "cnh") {
+        const cnhProps = buildCNHPropsFromRecord(latestDoc);
+        await downloadCNHPdfDirect(cnhProps);
+      } else if (doc.type === "fgv") {
         const container = document.createElement("div");
         container.style.cssText = "position:fixed;left:-9999px;top:0;width:1123px;background:white;";
         document.body.appendChild(container);

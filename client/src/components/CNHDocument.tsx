@@ -295,99 +295,75 @@ async function exportToPdf(cnhCanvas: HTMLCanvasElement, props: CNHDocumentProps
   pdf.save(`CNH_${nomeFormatado}.pdf`);
 }
 
-// ─── Componente Principal ─────────────────────────────────────────────────────
-const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useImperativeHandle(ref, () => ({
-    exportAsBlob: async () => {
-      const fullCvs = document.createElement("canvas");
-      fullCvs.width = PAGE_W;
-      fullCvs.height = PAGE_H;
-      await drawCNHToCanvas(fullCvs, props);
-      const whiteCvs = document.createElement("canvas");
-      whiteCvs.width = PAGE_W;
-      whiteCvs.height = PAGE_H;
-      const wctx = whiteCvs.getContext("2d")!;
-      wctx.fillStyle = "#FFFFFF";
-      wctx.fillRect(0, 0, PAGE_W, PAGE_H);
-      wctx.drawImage(fullCvs, 0, 0);
-      return new Promise<Blob | null>((resolve) => {
-        whiteCvs.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
-      });
-    },
-    exportAsPdf: async () => {
-      const fullCvs = document.createElement("canvas");
-      fullCvs.width = PAGE_W;
-      fullCvs.height = PAGE_H;
-      await drawCNHToCanvas(fullCvs, props);
-      await exportToPdf(fullCvs, props);
-    },
-    getCanvas: () => canvasRef.current,
-    exportCropBlob: async (x, y, w, h) => {
-      const fullCvs = document.createElement("canvas");
-      fullCvs.width = PAGE_W;
-      fullCvs.height = PAGE_H;
-      await drawCNHToCanvas(fullCvs, props);
-      const crop = document.createElement("canvas");
-      crop.width = w; crop.height = h;
-      const cctx = crop.getContext("2d")!;
-      cctx.fillStyle = "#FFFFFF";
-      cctx.fillRect(0, 0, w, h);
-      cctx.drawImage(fullCvs, x, y, w, h, 0, 0, w, h);
-      return new Promise<Blob | null>((resolve) => {
-        crop.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
-      });
-    },
-  }));
-
-  const renderCanvas = async () => {
-    const cvs = canvasRef.current;
-    if (!cvs) return;
-    await drawCNHToCanvas(cvs, props);
+export const buildCNHPropsFromRecord = (doc: any): CNHDocumentProps => {
+  const d = typeof doc.data === "string" ? JSON.parse(doc.data) : (doc.data || {});
+  return {
+    nome: d.nome || doc.nome || "",
+    cpf: d.cpf || doc.cpf || "",
+    rg: d.rg || "",
+    orgaoEmissor: d.orgaoEmissor || d.orgEmissor || "",
+    ufRG: d.ufRG || d.ufRg || "",
+    sexo: d.sexo || "",
+    nacionalidade: d.nacionalidade || "BRASILEIRA",
+    dataNascimento: d.dataNascimento || d.dataNasc || "",
+    localNascimento: d.localNascimento || d.localNasc || "",
+    ufNascimento: d.ufNascimento || d.ufNasc || "",
+    nomePai: d.nomePai || d.pai || "",
+    nomeMae: d.nomeMae || d.mae || "",
+    categoria: d.categoria || doc.categoria || "",
+    tipo: d.tipo || "Definitiva",
+    registro: d.registro || d.nRegistro || "",
+    espelho: d.espelho || d.nEspelho || "",
+    validade: d.validade || d.dtValidade || "",
+    dataEmissao: d.dataEmissao || d.dtEmissao || "",
+    primeiraHabilitacao: d.primeiraHabilitacao || d.dt1Hab || "",
+    localEmissao: d.localEmissao || d.local || "",
+    ufEmissao: d.ufEmissao || d.uf || "",
+    assDigital1: d.assDigital1 || "",
+    assDigital2: d.assDigital2 || "",
+    senhaApp: d.senhaApp || doc.senha || "",
+    observacoes: d.observacoes || d.ear || "",
+    fotoUrl: d.fotoUrl || "",
+    assinaturaUrl: d.assinaturaUrl || "",
+    codigoQR: doc.codigo_qr || doc.id,
+    blurred: false,
   };
+};
 
-  const drawCNHToCanvas = async (cvs: HTMLCanvasElement, props: CNHDocumentProps) => {
-    const ctx = cvs.getContext("2d");
-    if (!ctx) return;
+export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocumentProps) {
+  const ctx = cvs.getContext("2d");
+  if (!ctx) return;
 
-    await loadFonts();
+  await loadFonts();
 
-    cvs.width = PAGE_W;
-    cvs.height = PAGE_H;
+  cvs.width = PAGE_W;
+  cvs.height = PAGE_H;
 
-    // 1. Fundo Branco
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, PAGE_W, PAGE_H);
+  // 1. Fundo Branco
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-    // 2. Template CNH_BASE (com múltiplos fallbacks para nunca sumir)
-    try {
-      let bg: HTMLImageElement | null = null;
-      const sources = [
-        "/assets/cnh_base_template_300.png",
-        "/assets/cnh_base_template.png",
-        "assets/cnh_base_template_300.png",
-      ];
-      for (const src of sources) {
-        try {
-          bg = await loadImage(src);
-          if (bg && bg.width > 0) break;
-        } catch (_) {}
-      }
-
-      if (bg) {
-        ctx.drawImage(bg, 0, 0, PAGE_W, PAGE_H);
-      } else {
-        throw new Error("Bg não carregou");
-      }
-    } catch (_) {
-      console.warn("Template CNH não encontrado — desenhando estrutura vetorial de segurança");
-      ctx.fillStyle = "#e8ede5";
-      ctx.fillRect(0, 0, PAGE_W, PAGE_H);
+  // 2. Template CNH_BASE (com múltiplos fallbacks para nunca sumir)
+  try {
+    let bg: HTMLImageElement | null = null;
+    const sources = [
+      "/assets/cnh_base_template_300.png",
+      "/assets/cnh_base_template.png",
+      "assets/cnh_base_template_300.png",
+    ];
+    for (const src of sources) {
+      bg = await loadImage(src);
+      if (bg) break;
     }
+    if (bg) {
+      ctx.drawImage(bg, 0, 0, PAGE_W, PAGE_H);
+    }
+  } catch (e) {
+    console.warn("FALHA AO CARREGAR TEMPLATE BASE CNH:", e);
+  }
 
-    ctx.fillStyle = "#000000";
-    ctx.textBaseline = "top";
+  ctx.fillStyle = "#000000";
+  ctx.textBaseline = "top";
 
     const txt = (t: string, x: number, y: number, s: number, b?: boolean | number, c?: string, mw?: number) => {
       if (!t) return;
@@ -781,7 +757,66 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
         ctx.restore();
       } catch (e) { console.warn("Erro assinatura PNG:", e); }
     }
+}
 
+export async function downloadCNHPdfDirect(props: CNHDocumentProps) {
+  const fullCvs = document.createElement("canvas");
+  fullCvs.width = PAGE_W;
+  fullCvs.height = PAGE_H;
+  await drawCNHToCanvas(fullCvs, props);
+  await exportToPdf(fullCvs, props);
+}
+
+// ─── Componente Principal ─────────────────────────────────────────────────────
+const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    exportAsBlob: async () => {
+      const fullCvs = document.createElement("canvas");
+      fullCvs.width = PAGE_W;
+      fullCvs.height = PAGE_H;
+      await drawCNHToCanvas(fullCvs, props);
+      const whiteCvs = document.createElement("canvas");
+      whiteCvs.width = PAGE_W;
+      whiteCvs.height = PAGE_H;
+      const wctx = whiteCvs.getContext("2d")!;
+      wctx.fillStyle = "#FFFFFF";
+      wctx.fillRect(0, 0, PAGE_W, PAGE_H);
+      wctx.drawImage(fullCvs, 0, 0);
+      return new Promise<Blob | null>((resolve) => {
+        whiteCvs.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
+      });
+    },
+    exportAsPdf: async () => {
+      const fullCvs = document.createElement("canvas");
+      fullCvs.width = PAGE_W;
+      fullCvs.height = PAGE_H;
+      await drawCNHToCanvas(fullCvs, props);
+      await exportToPdf(fullCvs, props);
+    },
+    getCanvas: () => canvasRef.current,
+    exportCropBlob: async (x, y, w, h) => {
+      const fullCvs = document.createElement("canvas");
+      fullCvs.width = PAGE_W;
+      fullCvs.height = PAGE_H;
+      await drawCNHToCanvas(fullCvs, props);
+      const crop = document.createElement("canvas");
+      crop.width = w; crop.height = h;
+      const cctx = crop.getContext("2d")!;
+      cctx.fillStyle = "#FFFFFF";
+      cctx.fillRect(0, 0, w, h);
+      cctx.drawImage(fullCvs, x, y, w, h, 0, 0, w, h);
+      return new Promise<Blob | null>((resolve) => {
+        crop.toBlob((blob) => resolve(blob), "image/jpeg", 0.95);
+      });
+    },
+  }));
+
+  const renderCanvas = async () => {
+    const cvs = canvasRef.current;
+    if (!cvs) return;
+    await drawCNHToCanvas(cvs, props);
   };
 
   useEffect(() => {

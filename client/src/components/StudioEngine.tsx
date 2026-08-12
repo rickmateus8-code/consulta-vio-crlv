@@ -59,7 +59,63 @@ export default function StudioEngine() {
 
   useEffect(() => {
     loadTemplates();
+    createBlankCanvas();
   }, []);
+
+  const createBlankCanvas = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 680;
+    canvas.height = 480;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, 680, 480);
+
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(10, 10, 660, 460);
+
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "bold 16px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("GABARITO PADRÃO DOCMASTER STUDIO", 340, 40);
+
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.beginPath();
+      ctx.moveTo(20, 55);
+      ctx.lineTo(660, 55);
+      ctx.stroke();
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "13px sans-serif";
+      ctx.fillText("Clique e arraste o mouse em qualquer área para delimitar caixas de coordenadas X/Y", 340, 240);
+    }
+    setBgImage(canvas.toDataURL("image/png"));
+  };
+
+  const renderPDFToImage = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    if (!(window as any).pdfjsLib) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+    const pdfjsLib = (window as any).pdfjsLib;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    await page.render({ canvasContext: context, viewport }).promise;
+    return canvas.toDataURL("image/png");
+  };
 
   const loadTemplates = async () => {
     setLoadingTemplates(true);
@@ -74,21 +130,34 @@ export default function StudioEngine() {
     }
   };
 
-  // Upload do Gabarito PDF/Imagem
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload do Gabarito PDF/Imagem com conversão HD
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.type.includes("pdf")) {
       toast.info("Gabarito PDF recebido! Convertendo página para Canvas HD...");
+      try {
+        const pngDataUrl = await renderPDFToImage(file);
+        setBgImage(pngDataUrl);
+        toast.success("PDF convertido e carregado no Canvas do Studio!");
+      } catch (err: any) {
+        console.error("PDF render error:", err);
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          setBgImage(evt.target?.result as string);
+          toast.success("Gabarito carregado no Canvas!");
+        };
+        reader.readAsDataURL(file);
+      }
+    } else {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        setBgImage(evt.target?.result as string);
+        toast.success("Gabarito de Imagem carregado no Canvas do Studio!");
+      };
+      reader.readAsDataURL(file);
     }
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      setBgImage(evt.target?.result as string);
-      toast.success("Gabarito carregado no Canvas do Studio!");
-    };
-    reader.readAsDataURL(file);
   };
 
   // Leitura OCR Automatizada (Simulada para rápida geração de caixas)
@@ -182,6 +251,29 @@ export default function StudioEngine() {
     setIsDrawing(false);
     setStartPos(null);
     setCurrentPos(null);
+  };
+
+  // Carregar Modelo Salvo no Canvas
+  const handleSelectTemplate = (tpl: StudioTemplate) => {
+    setDocName(tpl.name);
+    setDocSlug(tpl.slug);
+    setCategory(tpl.category || "veiculos");
+    setPrice(String(tpl.price || 15.00));
+    setTargetStructure(tpl.target_structure || "cnh");
+    if ((tpl as any).pdf_bg_base64) {
+      setBgImage((tpl as any).pdf_bg_base64);
+    } else {
+      createBlankCanvas();
+    }
+    try {
+      const parsedBoxes = typeof tpl.coordinates_json === "string"
+        ? JSON.parse(tpl.coordinates_json)
+        : tpl.coordinates_json;
+      setBoxes(parsedBoxes || []);
+    } catch {
+      setBoxes([]);
+    }
+    toast.success(`Modelo "${tpl.name}" carregado no Canvas do Studio!`);
   };
 
   // Salvar Gabarito no Studio API
@@ -645,17 +737,43 @@ ${boxes
           {/* Area do Canvas do Gabarito */}
           <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
             
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
               <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
                 <Layers className="w-4 h-4 text-blue-400" />
                 <span>3. Canvas Visual de Mapeamento (Drag & Drop)</span>
               </span>
 
-              <label className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-950/40">
-                <Upload className="w-4 h-4" />
-                <span>Subir PDF Gabarito</span>
-                <input type="file" accept="application/pdf,image/*" onChange={handleFileUpload} className="hidden" />
-              </label>
+              <div className="flex items-center gap-2 flex-wrap">
+                {savedTemplates.length > 0 && (
+                  <select
+                    onChange={(e) => {
+                      const found = savedTemplates.find(t => t.id === e.target.value);
+                      if (found) handleSelectTemplate(found);
+                    }}
+                    className="px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-indigo-300 font-medium focus:outline-none cursor-pointer"
+                  >
+                    <option value="">Carregar Modelo Salvo...</option>
+                    {savedTemplates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name} ({t.slug})</option>
+                    ))}
+                  </select>
+                )}
+
+                <button
+                  type="button"
+                  onClick={createBlankCanvas}
+                  className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 text-xs font-bold transition-all cursor-pointer"
+                  title="Limpar e criar canvas padrão em branco"
+                >
+                  Canvas em Branco
+                </button>
+
+                <label className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-950/40">
+                  <Upload className="w-4 h-4" />
+                  <span>Subir PDF Gabarito</span>
+                  <input type="file" accept="application/pdf,image/*" onChange={handleFileUpload} className="hidden" />
+                </label>
+              </div>
             </div>
 
             {/* Container do Canvas HD */}

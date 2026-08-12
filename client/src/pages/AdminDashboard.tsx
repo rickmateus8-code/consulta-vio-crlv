@@ -15,7 +15,7 @@ import {
   Download, Pencil, Wifi, WifiOff, Monitor, Globe, Anchor,
   CreditCard, AlertCircle, Filter, Gift, Percent, Wallet,
   Link, Copy, Calendar, Trash, Lock, UserPlus, Clock, User, TrendingUp,
-  Car, FlaskConical, GraduationCap, Pill, Wand2
+  Car, FlaskConical, GraduationCap, Pill, Wand2, Sparkles
 } from "lucide-react";
 
 type Tab = "users" | "tools" | "studio" | "pricing" | "notices" | "logs" | "emissions" | "monitoring" | "referral" | "settings" | "database";

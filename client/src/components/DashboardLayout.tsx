@@ -13,7 +13,7 @@ import {
   LayoutDashboard, FileText, CreditCard, Receipt, LogOut,
   ChevronDown, ChevronRight, Menu, X, Sun, Moon,
   Shield, GraduationCap, Car, Anchor, FlaskConical,
-  User, Wallet, Settings, HelpCircle, Plus, Bell, Pill, Gift, FilePlus, Search, AlertCircle, Database, ShieldCheck, MessageCircle
+  User, Wallet, Settings, HelpCircle, Plus, Bell, Pill, Gift, FilePlus, Search, AlertCircle, Database, ShieldCheck, MessageCircle, Clock
 } from "lucide-react";
 
 interface MenuItem {
@@ -151,6 +151,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [bonusTotal, setBonusTotal] = useState<number>(0);
   const [affiliatesTotal, setAffiliatesTotal] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getGreeting = () => {
+    const hours = currentTime.getHours();
+    if (hours >= 5 && hours < 12) return "Bom dia";
+    if (hours >= 12 && hours < 18) return "Boa tarde";
+    return "Boa noite";
+  };
 
   useEffect(() => {
     fetch("/api/referral", { credentials: "include" })
@@ -396,25 +411,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Header Desktop - Estilo EliteDoc */}
+        {/* Header Desktop - Estilo EliteDoc Superior */}
         <header className="hidden md:flex items-center justify-between px-8 py-4 bg-[#0b1120] border-b border-slate-800/80 z-30 shrink-0">
-          <h1 className="text-xl font-black text-white uppercase tracking-tight">Visão Geral</h1>
           <div className="flex items-center gap-3">
-            <button onClick={() => window.open("https://wa.me/5511965355468?text=Instrucoes", "_blank")} className="px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-1.5">
-              <HelpCircle className="w-3.5 h-3.5 text-blue-400" /> Instruções
-            </button>
-            <button onClick={() => setLocation("/dashboard")} className="px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-1.5">
-              <Bell className="w-3.5 h-3.5 text-amber-400" /> Notificações
-            </button>
-            <button onClick={() => window.open("https://wa.me/5511965355468?text=Suporte", "_blank")} className="px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-1.5">
-              <MessageCircle className="w-3.5 h-3.5 text-emerald-400" /> Suporte
-            </button>
-            <button onClick={() => setShowNovoDocModal(true)} className="px-4 py-1.5 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-300 hover:bg-blue-600/40 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5">
-              <FilePlus className="w-3.5 h-3.5 text-blue-400" /> Modelos de Emissão
-            </button>
-            <button onClick={() => setShowReferralModal(true)} className="px-4 py-1.5 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-600/40 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5">
-              <Gift className="w-3.5 h-3.5 text-emerald-400" /> Indique e Ganhe
-            </button>
+            <h1 className="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2 m-0">
+              <span>Olá, <span className="text-blue-400 capitalize">{user?.displayName || user?.username || "Usuário"}</span>! {getGreeting()}</span>
+              <span className="text-lg">👋</span>
+            </h1>
+          </div>
+
+          {/* Data e Horário em Tempo Real */}
+          <div className="flex items-center gap-3 bg-[#0f172a] border border-slate-800 px-4 py-2 rounded-2xl shadow-md">
+            <Clock className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+            <div className="text-xs font-mono">
+              <span className="text-slate-300 font-bold capitalize">
+                {currentTime.toLocaleDateString("pt-BR", {
+                  weekday: "short",
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
+              <span className="mx-2 text-slate-600">•</span>
+              <span className="text-emerald-400 font-black tracking-widest">
+                {currentTime.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}
+              </span>
+            </div>
           </div>
         </header>
 

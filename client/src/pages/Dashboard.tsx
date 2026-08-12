@@ -16,7 +16,7 @@ import {
   Wallet, TrendingUp, BarChart3, ChevronRight, Plus,
   Clock, CheckCircle, Bell, Download, Trash2, Pill, Pencil, QrCode,
   Copy, X, Send, RefreshCw, Search, Save, Smartphone, AlertTriangle, Gift, Users, Loader2, Settings,
-  Eye, Trash, Receipt, Camera, Award, ShieldCheck, ChevronDown, CreditCard, Folder, FilePlus, MessageCircle
+  Eye, Trash, Receipt, Camera, Award, ShieldCheck, ChevronDown, CreditCard, Folder, FilePlus, MessageCircle, Sparkles
 } from "lucide-react";
 import AttestationActionButtons from "@/components/AttestationActionButtons";
 import { downloadAttestationPdf, fetchLatestAttestationRecord, buildAttestationData } from "@/lib/attestationActions";

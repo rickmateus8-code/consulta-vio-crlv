@@ -138,6 +138,12 @@ export const onRequestGet: PagesFunction<{ DB: D1Database }> = async ({ request,
     LIMIT 50
   `).bind(userId).all();
 
+  // Cálculo exato da próxima segunda-feira às 00:00:00 (Reset Semanal de Patentes)
+  const daysUntilNextMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+  const nextMondayReset = new Date(now);
+  nextMondayReset.setDate(now.getDate() + daysUntilNextMonday);
+  nextMondayReset.setHours(0, 0, 0, 0);
+
   return new Response(JSON.stringify({
     success: true,
     code: refCode.code,
@@ -153,7 +159,7 @@ export const onRequestGet: PagesFunction<{ DB: D1Database }> = async ({ request,
       currentBonus: bonus,
       nextRank,
       nextGoal,
-      resetDate: startOfThisWeek.getTime() + (7 * 24 * 60 * 60 * 1000), // Próxima Segunda
+      resetDate: nextMondayReset.getTime(), // Próxima Segunda-feira às 00:00:00
     },
     network: referredUsers.results || [],
     earnings: earningsHistory.results || [],

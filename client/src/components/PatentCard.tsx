@@ -78,24 +78,40 @@ export default function PatentCard({ loyalty }: PatentCardProps) {
   const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const distance = loyalty.resetDate - now;
+    const calculateNextMondayReset = () => {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const daysUntilNextMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+      const nextMonday = new Date(now);
+      nextMonday.setDate(now.getDate() + daysUntilNextMonday);
+      nextMonday.setHours(0, 0, 0, 0);
+      return nextMonday.getTime();
+    };
 
-      if (distance < 0) {
-        setTimeLeft("00d 00h 00m");
+    const targetReset = loyalty?.resetDate || calculateNextMondayReset();
+
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+      const distance = targetReset - now;
+
+      if (distance <= 0) {
+        setTimeLeft("00d 00h 00m 00s");
         return;
       }
 
       const days = Math.floor(distance / (1000 * 60 * 60 * 24));
       const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-      setTimeLeft(`${days.toString().padStart(2, '0')}d ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m`);
-    }, 1000);
+      setTimeLeft(`${days.toString().padStart(2, '0')}d ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`);
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
 
     return () => clearInterval(timer);
-  }, [loyalty.resetDate]);
+  }, [loyalty?.resetDate]);
 
   const progress = Math.min(100, (loyalty.thisWeekVolume / 25000) * 100);
 

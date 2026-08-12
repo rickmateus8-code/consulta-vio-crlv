@@ -56,6 +56,7 @@ export default function StudioEngine() {
   const [savedTemplates, setSavedTemplates] = useState<StudioTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [saving, setSaving] = useState(false);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   // Histórico de Reversão de Erros (Undo / Redo)
   const [history, setHistory] = useState<Array<{ boxes: CoordinateBox[]; bgImage: string | null }>>([]);

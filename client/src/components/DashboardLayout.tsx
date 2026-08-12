@@ -13,7 +13,7 @@ import {
   LayoutDashboard, FileText, CreditCard, Receipt, LogOut,
   ChevronDown, ChevronRight, Menu, X, Sun, Moon,
   Shield, GraduationCap, Car, Anchor, FlaskConical,
-  User, Wallet, Settings, HelpCircle, Plus, Bell, Pill, Gift, FilePlus, Search, AlertCircle, Database, ShieldCheck
+  User, Wallet, Settings, HelpCircle, Plus, Bell, Pill, Gift, FilePlus, Search, AlertCircle, Database, ShieldCheck, MessageCircle
 } from "lucide-react";
 
 interface MenuItem {

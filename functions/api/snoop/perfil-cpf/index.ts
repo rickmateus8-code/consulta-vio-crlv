@@ -187,17 +187,75 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const cleanFotoCNH = getValidPhoto(rawCpf.foto_cnh) ?? getValidPhoto(rawCpf.cnh_foto) ?? null;
   const cleanFotoRG = getValidPhoto(rawCpf.foto_rg) ?? getValidPhoto(rawCpf.rg_foto) ?? null;
 
+  const toArray = (v: any): any[] => {
+    if (!v) return [];
+    if (Array.isArray(v)) return v;
+    if (Array.isArray(v.data)) return v.data;
+    if (Array.isArray(v.body)) return v.body;
+    if (typeof v === 'object') return [v];
+    return [];
+  };
+
+  // Fusão e Desduplicação de Telefones
+  const rawPhones = [
+    ...toArray(telefones),
+    ...toArray(rawCpf.phones),
+    ...toArray(rawCpf.telefones),
+    ...(rawCpf.phone ? [rawCpf.phone] : []),
+    ...(rawCpf.celular ? [rawCpf.celular] : []),
+  ];
+  const uniquePhonesMap = new Map();
+  rawPhones.forEach(p => {
+    const num = typeof p === 'string' ? p : p?.numero || p?.phone || p?.telefone || p?.number;
+    if (!num) return;
+    const cleanNum = String(num).replace(/\D/g, '');
+    if (cleanNum && !uniquePhonesMap.has(cleanNum)) {
+      uniquePhonesMap.set(cleanNum, typeof p === 'object' ? p : { numero: String(num) });
+    }
+  });
+  const mergedTelefones = Array.from(uniquePhonesMap.values());
+
+  // Fusão e Desduplicação de Parentes
+  const rawParentes = [
+    ...toArray(parentes),
+    ...toArray(rawCpf.parentes),
+    ...toArray(rawCpf.relatives),
+  ];
+  const uniqueParentesMap = new Map();
+  rawParentes.forEach(p => {
+    const key = (p?.cpf || p?.CPF || p?.nome || p?.NOME || JSON.stringify(p));
+    if (key && !uniqueParentesMap.has(key)) {
+      uniqueParentesMap.set(key, p);
+    }
+  });
+  const mergedParentes = Array.from(uniqueParentesMap.values());
+
+  // Fusão e Desduplicação de Veículos
+  const rawVeiculos = [
+    ...toArray(veiculos),
+    ...toArray(rawCpf.vehicles),
+    ...toArray(rawCpf.veiculos),
+  ];
+  const uniqueVeiculosMap = new Map();
+  rawVeiculos.forEach(v => {
+    const placa = (v?.placa || v?.PLACA || v?.chassi || v?.renavam || JSON.stringify(v));
+    if (placa && !uniqueVeiculosMap.has(placa)) {
+      uniqueVeiculosMap.set(placa, v);
+    }
+  });
+  const mergedVeiculos = Array.from(uniqueVeiculosMap.values());
+
   const fontesConsultadas = {
     receita_federal: !!(rawCpf.name || rawCpf.nome || rawCpf.cpf),
     foto_nacional: !!cleanFotoNacional,
     foto_sp: !!cleanFotoSP,
     foto_ma: !!cleanFotoMA,
     foto_ro: !!cleanFotoRO,
-    telefones: Array.isArray(telefones?.data || telefones?.body || telefones || rawCpf.phones) && (telefones?.data || telefones?.body || telefones || rawCpf.phones).length > 0,
+    telefones: mergedTelefones.length > 0,
     enderecos: Array.isArray(rawCpf.all_addresses || rawCpf.enderecos) && (rawCpf.all_addresses || rawCpf.enderecos).length > 0,
-    parentes: Array.isArray(parentes?.data || parentes?.body || parentes || rawCpf.parentes) && (parentes?.data || parentes?.body || parentes || rawCpf.parentes).length > 0,
+    parentes: mergedParentes.length > 0,
     score: !!(score?.data || score?.body || score || rawCpf.score),
-    veiculos: Array.isArray(veiculos?.data || veiculos?.body || veiculos || rawCpf.vehicles) && (veiculos?.data || veiculos?.body || veiculos || rawCpf.vehicles).length > 0,
+    veiculos: mergedVeiculos.length > 0,
   };
 
   const perfil: any = {
@@ -217,15 +275,16 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       rg: cleanFotoRG,
       all: fotoAllData?.data ?? fotoAllData?.body ?? fotoAllData ?? null,
     },
-    parentes: parentes?.data ?? parentes?.body ?? parentes ?? rawCpf.parentes ?? null,
+    parentes: mergedParentes.length > 0 ? mergedParentes : (rawCpf.parentes ?? null),
     vizinhos: vizinhos?.data ?? vizinhos?.body ?? vizinhos ?? rawCpf.vizinhos ?? null,
     score: score?.data ?? score?.body ?? score ?? rawCpf.score ?? null,
     profissionais: profissionais?.data ?? profissionais?.body ?? profissionais ?? rawCpf.profissionais ?? null,
-    telefones: telefones?.data ?? telefones?.body ?? telefones ?? rawCpf.phones ?? rawCpf.telefones ?? null,
-    veiculos: veiculos?.data ?? veiculos?.body ?? veiculos ?? rawCpf.vehicles ?? rawCpf.veiculos ?? null,
+    telefones: mergedTelefones.length > 0 ? mergedTelefones : (rawCpf.phones ?? rawCpf.telefones ?? null),
+    veiculos: mergedVeiculos.length > 0 ? mergedVeiculos : (rawCpf.vehicles ?? rawCpf.veiculos ?? null),
     geo: geoData?.data ?? geoData?.body ?? geoData ?? null,
     fontes_consultadas: fontesConsultadas,
   };
+
 
   try {
     await env.DB.prepare(

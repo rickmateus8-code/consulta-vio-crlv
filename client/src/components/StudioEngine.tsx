@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Wand2, Upload, Move, Type, Trash2, Plus, CheckCircle, 
-  DollarSign, Layers, Eye, RefreshCw, Sparkles, Tag, Shield, Sliders, ArrowLeft, Folder, QrCode, Save
+  DollarSign, Layers, Eye, RefreshCw, Sparkles, Tag, Shield, Sliders, ArrowLeft, Folder, QrCode, Save, Undo2, Redo2, FileText
 } from "lucide-react";
 import { toast } from "sonner";
 

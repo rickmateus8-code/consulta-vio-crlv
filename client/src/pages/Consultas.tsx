@@ -538,10 +538,10 @@ export default function Consultas() {
                   {/* BANNER DE PLANO ATIVO & USO 24H */}
                   <div className="hidden sm:flex items-center gap-4 px-5 py-2.5 rounded-2xl bg-[#0d0f26]/90 border border-violet-500/30 text-xs shadow-inner">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-violet-400" />
+                      <Clock className="w-5 h-5 text-emerald-400 animate-pulse" />
                       <div>
                         <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
-                          {planStatus?.plan?.expires_at && !planStatus?.is_free ? `PLANO (${planStatus.plan.plano || 'Degustação 1D'})` : "MODO DE ACESSO"}
+                          {planStatus?.plan?.valor === 0 ? "🎁 TESTE GRÁTIS ATIVADO" : planStatus?.plan?.expires_at && !planStatus?.is_free ? `PLANO (${planStatus.plan.plano})` : "MODO DE ACESSO"}
                         </span>
                         <span className={`font-bold text-xs ${planStatus?.is_free || user?.role === "admin" || planStatus?.plan ? "text-emerald-400" : "text-red-400"}`}>
                           {planStatus?.is_free || user?.role === "admin"
@@ -558,9 +558,10 @@ export default function Consultas() {
                         onClick={() => setShowPlanModal(true)}
                         className="px-3 py-1.5 rounded-xl font-black text-[11px] bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg flex items-center gap-1.5 active:scale-95 transition-all"
                       >
-                        ⚡ Renovar Plano
+                        ⚡ Ativar Plano
                       </button>
                     )}
+
 
                     <div className="h-7 w-px bg-violet-500/20" />
 

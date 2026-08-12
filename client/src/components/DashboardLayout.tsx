@@ -87,8 +87,18 @@ function SidebarItem({
         }`}
     >
       <Icon className={`w-4.5 h-4.5 flex-shrink-0 transition-colors ${isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300"}`} />
-      {!collapsed && <span className="tracking-tight">{item.label}</span>}
+      {!collapsed && (
+        <span className="tracking-tight flex items-center justify-between w-full">
+          {item.label}
+          {item.path === "/consultas" && (
+            <span className="ml-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-[9px] uppercase px-1.5 py-0.5 rounded-md animate-pulse shadow-2xs">
+              GRÁTIS 1D
+            </span>
+          )}
+        </span>
+      )}
     </button>
+
   );
 }
 

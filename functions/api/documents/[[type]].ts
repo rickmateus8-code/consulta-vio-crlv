@@ -295,9 +295,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     `).run().catch(() => null);
 
     const typeParam = Array.isArray(params.type) ? params.type.join('/') : (params.type || '');
-    const idOrType = typeParam.toLowerCase().trim();
+    const initialCheck = typeParam.toLowerCase().trim();
 
-    if (!idOrType) {
+    if (!initialCheck) {
       const rows = user.role === 'admin'
         ? await env.DB.prepare('SELECT d.*, u.username as user_name FROM documents d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.created_at DESC LIMIT 100').all()
         : await env.DB.prepare('SELECT * FROM documents WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').bind(user.id).all();

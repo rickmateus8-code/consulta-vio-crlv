@@ -314,34 +314,43 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
             </div>
           </div>
         ) : (
-          /* Nível 2: Catálogo de Documentos com Filtros em Pills (Estilo Imagem 05/EliteDoc) */
-          <div className="flex flex-col flex-1 overflow-hidden">
-            {/* Categorias Bar - Estilo EliteDoc */}
-            <div className="px-6 pt-5 pb-3 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
-                {categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border whitespace-nowrap ${selectedCategory === cat.id ? "bg-blue-600 border-blue-400 text-white shadow-md shadow-blue-600/30" : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white"}`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
+          /* Nível 2: Catálogo de Documentos de uma Categoria (Pareado 1:1 com Imagem 01) */
+          <div className="p-6 md:p-8 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+            {/* Banner da Categoria com Botão Voltar (Imagem 01) */}
+            <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 md:p-5 flex items-center justify-between shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0">
+                  {selectedCategory === "veiculos" && <Car size={22} />}
+                  {selectedCategory === "certidoes" && <Folder size={22} />}
+                  {selectedCategory === "pessoais" && <FileText size={22} />}
+                  {selectedCategory === "saude" && <Plus size={22} />}
+                  {selectedCategory === "estudante" && <GraduationCap size={22} />}
+                  {selectedCategory === "faturas" && <CreditCard size={22} />}
+                </div>
+                <span className="text-base font-black text-white uppercase tracking-wider">
+                  {selectedCategory === "veiculos" && "VEÍCULOS"}
+                  {selectedCategory === "certidoes" && "CERTIDÕES"}
+                  {selectedCategory === "pessoais" && "PESSOAIS"}
+                  {selectedCategory === "saude" && "SAÚDE"}
+                  {selectedCategory === "estudante" && "ESTUDANTE"}
+                  {selectedCategory === "faturas" && "FATURAS"}
+                </span>
               </div>
 
-              <button 
-                onClick={() => setViewMode("categories")} 
-                className="text-xs font-black text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5 uppercase tracking-wider"
+              <button
+                type="button"
+                onClick={() => setViewMode("categories")}
+                className="px-4 py-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white flex items-center gap-2 transition-all cursor-pointer shadow-md"
               >
-                <ArrowLeft size={14} /> Voltar Categorias
+                <ArrowLeft size={14} />
+                <span>Voltar</span>
               </button>
             </div>
 
-            {/* Corpo de Seleção de Documentos */}
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar max-h-[60vh]">
+            {/* Grid de Cards de Documentos (Imagem 01) */}
+            <div>
               {selectedCategory === "faturas" ? (
-                <div className="py-10 text-center bg-slate-900/50 rounded-2xl border border-dashed border-slate-700 p-6">
+                <div className="py-10 text-center bg-[#0f172a] rounded-2xl border border-dashed border-slate-700 p-6">
                   <CreditCard className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
                   <h3 className="text-sm font-black text-white uppercase mb-1">Adicionar Saldo / Faturas</h3>
                   <p className="text-xs text-slate-400 mb-4">Adicione créditos para liberar instantaneamente suas emissões.</p>
@@ -352,7 +361,7 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
               ) : filteredDocs.length === 0 ? (
                 <div className="py-16 text-center text-slate-500 text-xs font-black uppercase italic tracking-widest">Nenhum documento nesta categoria.</div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {filteredDocs.map(doc => {
                     const Icon = doc.icon;
                     const freeDocsArr = Array.isArray(user?.free_documents) ? user.free_documents : [];
@@ -369,12 +378,12 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
                       <button 
                         key={doc.key} 
                         onClick={() => handleSelectDoc(doc)} 
-                        className={`flex flex-col items-center text-center p-5 rounded-2xl border transition-all duration-200 group hover:scale-[1.02] active:scale-95 ${canAfford ? 'bg-[#0f172a] border-slate-800 hover:border-blue-500/80 hover:bg-[#1e293b]' : 'bg-[#0f172a]/40 border-slate-800 opacity-60'}`}
+                        className={`bg-[#0f172a] hover:bg-[#1e293b] border border-slate-800 hover:border-blue-500/80 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 transition-all duration-200 group shadow-lg cursor-pointer ${!canAfford && 'opacity-60'}`}
                       >
-                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 transition-colors ${canAfford ? 'bg-blue-950/80 border border-blue-500/30 text-blue-400 group-hover:bg-blue-600 group-hover:text-white' : 'bg-slate-800 text-slate-500'}`}>
-                          <Icon className="w-5 h-5" />
+                        <div className="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Icon size={26} />
                         </div>
-                        <span className="text-xs font-black text-white uppercase tracking-wider mb-2.5 min-h-[32px] flex items-center justify-center">{doc.label}</span>
+                        <span className="text-xs font-black text-white uppercase tracking-wider min-h-[32px] flex items-center justify-center">{doc.label}</span>
                         <span className="text-[10px] font-black px-3.5 py-1 rounded-full border bg-emerald-950/60 border-emerald-500/40 text-emerald-300 font-mono">
                           {isFree ? 'R$ 0,00' : doc.priceFormatted}
                         </span>

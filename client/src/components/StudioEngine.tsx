@@ -47,17 +47,119 @@ export default function StudioEngine() {
   const [canvasSize, setCanvasSize] = useState({ width: 794, height: 1123 }); // Proporção nativa A4 / PDF
   const [zoom, setZoom] = useState(1);
   const [boxes, setBoxes] = useState<CoordinateBox[]>([]);
-  const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
+  // Histórico de Reversão de Erros (Undo / Redo)
+  const [history, setHistory] = useState<Array<{ boxes: CoordinateBox[]; bgImage: string | null }>>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
-  const [currentPos, setCurrentPos] = useState<{ x: number; y: number } | null>(null);
+  const pushHistory = (newBoxes: CoordinateBox[], newBgImage: string | null) => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push({ boxes: JSON.parse(JSON.stringify(newBoxes)), bgImage: newBgImage });
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
 
-  const [savedTemplates, setSavedTemplates] = useState<StudioTemplate[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const prev = history[historyIndex - 1];
+      setBoxes(JSON.parse(JSON.stringify(prev.boxes)));
+      if (prev.bgImage) setBgImage(prev.bgImage);
+      setHistoryIndex(historyIndex - 1);
+      toast.info("Alteração desfeita (Undo ↩️)");
+    }
+  };
 
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const next = history[historyIndex + 1];
+      setBoxes(JSON.parse(JSON.stringify(next.boxes)));
+      if (next.bgImage) setBgImage(next.bgImage);
+      setHistoryIndex(historyIndex + 1);
+      toast.info("Alteração refeita (Redo ↪️)");
+    }
+  };
+
+  // Carregar Documento Existente do DocMaster para Edição Direta
+  const handleLoadExistingDocPreset = (presetKey: string) => {
+    const presetMap: Record<string, any> = {
+      atestado: {
+        name: "Atestado Médico Oficial IDAB",
+        slug: "atestadocria",
+        category: "saude",
+        price: "10.00",
+        targetStructure: "atestado",
+        qrFormat: "XXXX-XXXX",
+        qrSourceUrl: "https://validaratestado.digital",
+        boxes: [
+          { id: "atest-1", fieldKey: "paciente", label: "Nome do Paciente", x: 120, y: 220, width: 450, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-2", fieldKey: "cpf", label: "CPF do Paciente", x: 120, y: 260, width: 220, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-3", fieldKey: "cid", label: "Código CID-10", x: 420, y: 260, width: 160, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-4", fieldKey: "medico", label: "Nome do Médico", x: 120, y: 720, width: 350, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-5", fieldKey: "crm", label: "CRM / UF", x: 120, y: 750, width: 200, height: 24, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-6", fieldKey: "codigoQR", label: "Código Validação IDAB", x: 480, y: 820, width: 180, height: 28, fontSize: 14, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
+        ],
+      },
+      cnh: {
+        name: "CNH Digital VIO",
+        slug: "cnhcria",
+        category: "pessoais",
+        price: "15.00",
+        targetStructure: "cnh",
+        qrFormat: "UUID-32",
+        qrSourceUrl: "https://carteira-digital-transito-vio.digital",
+        boxes: [
+          { id: "cnh-1", fieldKey: "nome", label: "Nome do Condutor", x: 140, y: 110, width: 420, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-2", fieldKey: "cpf", label: "CPF Condutor", x: 140, y: 155, width: 200, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-3", fieldKey: "renach", label: "RENACH", x: 360, y: 155, width: 200, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-4", fieldKey: "categoria", label: "Categoria CNH", x: 580, y: 110, width: 80, height: 40, fontSize: 20, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "cnh-5", fieldKey: "validade", label: "Validade CNH", x: 140, y: 200, width: 160, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+        ],
+      },
+      crlv: {
+        name: "CRLV Digital Senatran",
+        slug: "crlvcria",
+        category: "veiculos",
+        price: "15.00",
+        targetStructure: "crlv",
+        qrFormat: "UUID-32",
+        qrSourceUrl: "https://consulta-crlv-vio.digital",
+        boxes: [
+          { id: "crlv-1", fieldKey: "placa", label: "Placa do Veículo", x: 100, y: 120, width: 180, height: 32, fontSize: 16, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "crlv-2", fieldKey: "renavam", label: "RENAVAM", x: 300, y: 120, width: 220, height: 32, fontSize: 16, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "crlv-3", fieldKey: "proprietario", label: "Nome do Proprietário", x: 100, y: 180, width: 500, height: 28, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "crlv-4", fieldKey: "chassi", label: "Número do Chassi", x: 100, y: 230, width: 340, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+        ],
+      },
+      receita: {
+        name: "Receituário Médico Dr. Consulta",
+        slug: "receitacria",
+        category: "saude",
+        price: "10.00",
+        targetStructure: "receita",
+        qrFormat: "XXXX-XXXX",
+        qrSourceUrl: "https://verificamed.digital",
+        boxes: [
+          { id: "rec-1", fieldKey: "paciente", label: "Nome do Paciente", x: 120, y: 180, width: 450, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "rec-2", fieldKey: "medicamentos", label: "Prescrição Médica", x: 120, y: 260, width: 520, height: 300, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: false },
+          { id: "rec-3", fieldKey: "medico", label: "Médico Prescritor", x: 120, y: 780, width: 350, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+        ],
+      },
+    };
+
+    const p = presetMap[presetKey];
+    if (!p) return;
+
+    setDocName(p.name);
+    setDocSlug(p.slug);
+    setCategory(p.category);
+    setPrice(p.price);
+    setTargetStructure(p.targetStructure);
+    setQrFormat(p.qrFormat);
+    setQrSourceUrl(p.qrSourceUrl);
+    setBoxes(p.boxes);
+    createBlankCanvas();
+    pushHistory(p.boxes, bgImage);
+    toast.success(`Documento Existente "${p.name}" carregado para EDIÇÃO VISUAL DIRETA!`);
+  };
 
   const updateCanvasSizeFromImage = (url: string) => {
     const img = new Image();
@@ -489,6 +591,42 @@ ${boxes
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          {/* Seletor de Documentos Existentes do DocMaster */}
+          <select
+            onChange={(e) => {
+              if (e.target.value) handleLoadExistingDocPreset(e.target.value);
+            }}
+            className="px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-blue-300 font-bold focus:outline-none cursor-pointer shadow-md"
+          >
+            <option value="">Editar Documento Existente...</option>
+            <option value="atestado">🩺 Atestado Médico Oficial</option>
+            <option value="cnh">🪪 CNH Digital VIO</option>
+            <option value="crlv">🚗 CRLV Digital Senatran</option>
+            <option value="receita">📜 Receituário Médico</option>
+          </select>
+
+          {/* Botões de Reversão de Erros (Undo / Redo) */}
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
+            <button
+              type="button"
+              onClick={handleUndo}
+              disabled={historyIndex <= 0}
+              className="px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-40 transition-colors flex items-center gap-1"
+              title="Desfazer alteração (Undo)"
+            >
+              ↩️ Undo
+            </button>
+            <button
+              type="button"
+              onClick={handleRedo}
+              disabled={historyIndex >= history.length - 1}
+              className="px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-40 transition-colors flex items-center gap-1 border-l border-slate-800"
+              title="Refazer alteração (Redo)"
+            >
+              ↪️ Redo
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => setShowTsxModal(true)}

@@ -176,7 +176,7 @@ const LOG_CATEGORIES = [
 ];
 
 export default function AdminDashboard() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, refresh } = useAuth();
   const [, setLocation] = useLocation();
   const [tab, setTab] = useState<Tab>("users");
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -847,17 +847,18 @@ export default function AdminDashboard() {
   // ── Users ──────────────────────────────────────────────────────────────────
   const adjustBalance = async (userId: string, amount: number) => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}/balance`, {
-        method: "POST",
+      const res = await fetch("/api/admin/users", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ delta: amount }),
+        body: JSON.stringify({ user_id: userId, balance_adjustment: amount }),
         credentials: "include"
       });
       const data = await res.json();
       if (data.success) {
         toast.success(`Saldo ${amount > 0 ? "adicionado" : "removido"} com sucesso`);
         loadUsers(showPasswords);
-        refresh();
+        await refresh();
+        triggerPermissionsUpdate();
       } else {
         toast.error(data.error || "Erro ao ajustar saldo");
       }

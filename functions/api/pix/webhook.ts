@@ -75,18 +75,40 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const thisWeekVol = await env.DB.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total FROM transactions 
       WHERE user_id = ? AND type = 'credit' AND status = 'completed'
+      AND (
+        description LIKE '%PIX%' 
+        OR description LIKE '%Pix%' 
+        OR description LIKE '%Recarga%' 
+        OR external_id IS NOT NULL
+      )
+      AND description NOT LIKE '%Admin%' 
+      AND description NOT LIKE '%admin%' 
+      AND description NOT LIKE '%Administrador%' 
       AND description NOT LIKE '%Bônus%' 
       AND description NOT LIKE '%Indicação%' 
       AND description NOT LIKE '%Cashback%'
+      AND description NOT LIKE '%Concessão%'
+      AND description NOT LIKE '%Ajuste%'
       AND created_at >= ?
     `).bind(userId, startOfThisWeek.toISOString()).first<{ total: number }>();
 
     const lastWeekVol = await env.DB.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total FROM transactions 
       WHERE user_id = ? AND type = 'credit' AND status = 'completed'
+      AND (
+        description LIKE '%PIX%' 
+        OR description LIKE '%Pix%' 
+        OR description LIKE '%Recarga%' 
+        OR external_id IS NOT NULL
+      )
+      AND description NOT LIKE '%Admin%' 
+      AND description NOT LIKE '%admin%' 
+      AND description NOT LIKE '%Administrador%' 
       AND description NOT LIKE '%Bônus%' 
       AND description NOT LIKE '%Indicação%' 
       AND description NOT LIKE '%Cashback%'
+      AND description NOT LIKE '%Concessão%'
+      AND description NOT LIKE '%Ajuste%'
       AND created_at >= ? AND created_at < ?
     `).bind(userId, startOfLastWeek.toISOString(), startOfThisWeek.toISOString()).first<{ total: number }>();
 

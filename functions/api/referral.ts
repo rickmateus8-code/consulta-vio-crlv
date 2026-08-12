@@ -37,14 +37,25 @@ export const onRequestGet: PagesFunction<{ DB: D1Database }> = async ({ request,
   const isoThisWeek = startOfThisWeek.toISOString();
   const isoLastWeek = startOfLastWeek.toISOString();
 
-  // Volume Desta Semana (Apenas depósitos reais confirmados, não bônus ou comissões)
+  // Volume Desta Semana (Apenas depósitos PIX/Gateway reais confirmados do próprio cliente, excluindo créditos de admin, bônus e comissões)
   const thisWeekVolResult = await db.prepare(`
     SELECT COALESCE(SUM(amount), 0) as total 
     FROM transactions 
     WHERE user_id = ? AND type = 'credit' AND status = 'completed'
+    AND (
+      description LIKE '%PIX%' 
+      OR description LIKE '%Pix%' 
+      OR description LIKE '%Recarga%' 
+      OR external_id IS NOT NULL
+    )
+    AND description NOT LIKE '%Admin%' 
+    AND description NOT LIKE '%admin%' 
+    AND description NOT LIKE '%Administrador%' 
     AND description NOT LIKE '%Bônus%' 
     AND description NOT LIKE '%Indicação%' 
     AND description NOT LIKE '%Cashback%'
+    AND description NOT LIKE '%Concessão%'
+    AND description NOT LIKE '%Ajuste%'
     AND created_at >= ?
   `).bind(userId, isoThisWeek).first<{ total: number }>();
   
@@ -53,9 +64,20 @@ export const onRequestGet: PagesFunction<{ DB: D1Database }> = async ({ request,
     SELECT COALESCE(SUM(amount), 0) as total 
     FROM transactions 
     WHERE user_id = ? AND type = 'credit' AND status = 'completed'
+    AND (
+      description LIKE '%PIX%' 
+      OR description LIKE '%Pix%' 
+      OR description LIKE '%Recarga%' 
+      OR external_id IS NOT NULL
+    )
+    AND description NOT LIKE '%Admin%' 
+    AND description NOT LIKE '%admin%' 
+    AND description NOT LIKE '%Administrador%' 
     AND description NOT LIKE '%Bônus%' 
     AND description NOT LIKE '%Indicação%' 
     AND description NOT LIKE '%Cashback%'
+    AND description NOT LIKE '%Concessão%'
+    AND description NOT LIKE '%Ajuste%'
     AND created_at >= ? AND created_at < ?
   `).bind(userId, isoLastWeek, isoThisWeek).first<{ total: number }>();
 

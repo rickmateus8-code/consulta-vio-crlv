@@ -979,18 +979,19 @@ export default function AdminDashboard() {
       if (data.success) {
         toast.success(`Senha de ${changePwUsername} alterada com sucesso!`);
         setChangePwUserId(null); setChangePwUsername(""); setChangePwValue("");
-        // Reload users to reflect new plain_password if passwords are visible
-        loadUsers(showPasswords);
+        loadUsers(showPasswords, true);
       } else {
         toast.error(data.error || "Erro ao alterar senha");
       }
     } catch { toast.error("Erro de conexão"); } finally { setChangingPw(false); }
   };
 
-  // ── Pricing ────────────────────────────────────────────────────────────────────────────
-  const savePrice = async (docType: string) => {
-    const priceReais = parseFloat(editingPrice[docType] || "0");
-    if (isNaN(priceReais) || priceReais < 0) { toast.error("Preço inválido"); return; }
+  // ── Pricing & Auto-Save Engine ────────────────────────────────────────────────────────────
+  const priceDebounceRef = useRef<Record<string, any>>({});
+
+  const savePriceAuto = async (docType: string, valStr: string) => {
+    const priceReais = parseFloat(valStr || "0");
+    if (isNaN(priceReais) || priceReais < 0) return;
     const price = Math.round(priceReais * 100);
     try {
       const res = await fetch("/api/admin/pricing", {
@@ -1006,12 +1007,73 @@ export default function AdminDashboard() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("Preço atualizado!");
+        toast.success(`Preço de ${DOC_TYPE_LABELS[docType] || docType} salvo em tempo real!`, { duration: 1500 });
         loadPricing();
-      } else {
-        toast.error(data.error || "Erro ao salvar preço");
       }
-    } catch { toast.error("Erro de conexão"); }
+    } catch {}
+  };
+
+  const savePrice = async (docType: string) => {
+    const priceReais = parseFloat(editingPrice[docType] || "0");
+    if (isNaN(priceReais) || priceReais < 0) { toast.error("Preço inválido"); return; }
+    await savePriceAuto(docType, editingPrice[docType]);
+  };
+
+  const toggleUserPermission = async (user: UserRow, docKey: string) => {
+    const currentFree = Array.isArray(user.free_documents) ? [...user.free_documents] : [];
+    const currentPerms = typeof user.permissions === 'object' && user.permissions !== null
+      ? { ...user.permissions }
+      : { editaveis: [], ferramentas: [] };
+    
+    let currentEditaveis = Array.isArray(currentPerms.editaveis) ? [...currentPerms.editaveis] : [];
+    let currentFerramentas = Array.isArray(currentPerms.ferramentas) ? [...currentPerms.ferramentas] : [];
+
+    const isCurrentlyFree = currentFree.includes(docKey);
+    const isCurrentlyEdit = currentEditaveis.includes(docKey);
+    const isCurrentlyTool = currentFerramentas.includes(docKey);
+
+    const hasAccess = isCurrentlyFree || isCurrentlyEdit || isCurrentlyTool;
+
+    let nextFree = currentFree;
+    let nextEditaveis = currentEditaveis;
+    let nextFerramentas = currentFerramentas;
+
+    if (hasAccess) {
+      nextFree = nextFree.filter(k => k !== docKey);
+      nextEditaveis = nextEditaveis.filter(k => k !== docKey);
+      nextFerramentas = nextFerramentas.filter(k => k !== docKey);
+    } else {
+      if (docKey === "consultas") {
+        if (!nextFerramentas.includes("consultas")) nextFerramentas.push("consultas");
+        if (!nextFree.includes("consultas")) nextFree.push("consultas");
+      } else if (["bot-adv", "peticao-stj"].includes(docKey)) {
+        if (!nextFerramentas.includes(docKey)) nextFerramentas.push(docKey);
+      } else {
+        if (!nextEditaveis.includes(docKey)) nextEditaveis.push(docKey);
+      }
+    }
+
+    const updatedPermissions = { editaveis: nextEditaveis, ferramentas: nextFerramentas };
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          user_id: user.id,
+          permissions: updatedPermissions,
+          free_documents: nextFree,
+        }),
+      });
+      if (res.ok) {
+        triggerPermissionsUpdate();
+        toast.success(hasAccess ? `Acesso a ${DOC_TYPE_LABELS[docKey] || docKey} revogado em tempo real!` : `Acesso a ${DOC_TYPE_LABELS[docKey] || docKey} liberado em tempo real!`, { duration: 2000 });
+        loadUsers(showPasswords, true);
+      }
+    } catch {
+      toast.error("Erro ao salvar permissão.");
+    }
   };
 
   const initDefaultPricing = async () => {

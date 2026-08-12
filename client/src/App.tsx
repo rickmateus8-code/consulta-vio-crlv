@@ -85,6 +85,7 @@ import AtestadoEditar from "./pages/AtestadoEditar";
 import ReceitaEditar from "./pages/ReceitaEditar";
 import CNHEditar from "./pages/CNHEditar";
 import CHAEditar from "./pages/CHAEditar";
+import HistoricoEditar from "./pages/HistoricoEditar";
 import ValidationReceita from "./pages/ValidationReceita";
 import Extrato from "./pages/Extrato";
 import Recargas from "./pages/Recargas";
@@ -323,8 +324,17 @@ function DocMasterRouter() {
       <Route path="/historicocria">
         <ProtectedRoute component={HistoricoCria} />
       </Route>
+      <Route path="/historicocria/editar/:id">
+        {(params) => <ProtectedRoute component={HistoricoEditar} params={params} />}
+      </Route>
+      <Route path="/editar/historicocria/:id">
+        {(params) => <ProtectedRoute component={HistoricoEditar} params={params} />}
+      </Route>
       <Route path="/historico-uninter">
         <ProtectedRoute component={HistoricoCria} />
+      </Route>
+      <Route path="/historico-uninter/editar/:id">
+        {(params) => <ProtectedRoute component={HistoricoEditar} params={params} />}
       </Route>
       <Route path="/historico-uninter-salvos">
         <ProtectedRoute component={HistoricoUNINTERSalvos} />

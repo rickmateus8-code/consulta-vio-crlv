@@ -78,21 +78,23 @@ export default function PatentCard({ loyalty }: PatentCardProps) {
   const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
-    const calculateNextMondayReset = () => {
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const daysUntilNextMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
-      const nextMonday = new Date(now);
-      nextMonday.setDate(now.getDate() + daysUntilNextMonday);
-      nextMonday.setHours(0, 0, 0, 0);
-      return nextMonday.getTime();
-    };
-
-    const targetReset = loyalty?.resetDate || calculateNextMondayReset();
-
     const updateCountdown = () => {
-      const now = new Date().getTime();
-      const distance = targetReset - now;
+      const now = new Date();
+      
+      // Se houver resetDate vindo do backend, usa ele; senao calcula a proxima Segunda-feira as 00:00:00
+      let targetTime: number;
+      if (loyalty?.resetDate && Number(loyalty.resetDate) > now.getTime()) {
+        targetTime = Number(loyalty.resetDate);
+      } else {
+        const dayOfWeek = now.getDay();
+        const daysUntilNextMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+        const nextMonday = new Date(now);
+        nextMonday.setDate(now.getDate() + daysUntilNextMonday);
+        nextMonday.setHours(0, 0, 0, 0);
+        targetTime = nextMonday.getTime();
+      }
+
+      const distance = targetTime - now.getTime();
 
       if (distance <= 0) {
         setTimeLeft("00d 00h 00m 00s");

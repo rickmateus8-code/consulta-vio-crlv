@@ -524,7 +524,6 @@ const intelligentStats = [
           currentBonus: 20,
           nextRank: "BRONZE",
           nextGoal: 10000,
-          resetDate: Date.now() + (4 * 24 * 60 * 60 * 1000),
         }} />
 
         {/* Banner Promocional / Status de Teste Grátis Master Buscas */}

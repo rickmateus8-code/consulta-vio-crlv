@@ -15,7 +15,7 @@ import {
   Download, Pencil, Wifi, WifiOff, Monitor, Globe, Anchor,
   CreditCard, AlertCircle, Filter, Gift, Percent, Wallet,
   Link, Copy, Calendar, Trash, Lock, UserPlus, Clock, User, TrendingUp,
-  Car, FlaskConical, GraduationCap, Pill, Wand2, Sparkles
+  Car, FlaskConical, GraduationCap, Pill, Wand2, Sparkles, ChevronLeft, ChevronRight
 } from "lucide-react";
 
 type Tab = "users" | "tools" | "studio" | "pricing" | "notices" | "logs" | "emissions" | "monitoring" | "referral" | "settings" | "database";
@@ -179,6 +179,14 @@ export default function AdminDashboard() {
   const { isAdmin } = useAuth();
   const [, setLocation] = useLocation();
   const [tab, setTab] = useState<Tab>("users");
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollTabs = (direction: "left" | "right") => {
+    if (tabsContainerRef.current) {
+      const scrollAmount = direction === "left" ? -260 : 260;
+      tabsContainerRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
 
   // Users
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -1558,31 +1566,61 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Tabs Bar Admin - Estilo EliteDoc */}
-        <div className="flex items-center gap-2 p-2.5 bg-slate-900/90 rounded-2xl border border-slate-800 shadow-xl overflow-x-auto no-scrollbar">
-          {TABS.map(t => {
-            const Icon = t.icon;
-            const isActive = tab === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border whitespace-nowrap shrink-0 ${
-                  isActive
-                    ? "bg-blue-600 border-blue-400 text-white shadow-md shadow-blue-600/30"
-                    : "bg-slate-900/80 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-slate-400"}`} />
-                <span>{t.label}</span>
-                {t.key === "monitoring" && onlineCount > 0 && (
-                  <span className={`ml-1 px-1.5 py-0.5 rounded-md text-[9px] font-black font-mono ${isActive ? "bg-white text-blue-600" : "bg-blue-600 text-white"}`}>
-                    {onlineCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        {/* Tabs Bar Admin - Estilo EliteDoc com NAVEGAÇÃO POR SETAS (Esquerda e Direita) */}
+        <div className="relative flex items-center gap-2">
+          {/* Botão Seta Esquerda */}
+          <button
+            type="button"
+            onClick={() => scrollTabs("left")}
+            className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center shrink-0 shadow-lg active:scale-95 transition-all cursor-pointer z-10"
+            title="Navegar para esquerda"
+          >
+            <ChevronLeft className="w-5 h-5 text-blue-400" />
+          </button>
+
+          {/* Container de Abas com Rolagem Suave */}
+          <div
+            ref={tabsContainerRef}
+            className="flex-1 flex items-center gap-2 p-2.5 bg-slate-900/90 rounded-2xl border border-slate-800 shadow-xl overflow-x-auto no-scrollbar scroll-smooth"
+          >
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              const isActive = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border whitespace-nowrap shrink-0 ${
+                    isActive
+                      ? "bg-blue-600 border-blue-400 text-white shadow-md shadow-blue-600/30"
+                      : "bg-slate-900/80 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-slate-400"}`} />
+                  <span>{t.label}</span>
+                  {t.key === "monitoring" && onlineCount > 0 && (
+                    <span
+                      className={`ml-1 px-1.5 py-0.5 rounded-md text-[9px] font-black font-mono ${
+                        isActive ? "bg-white text-blue-600" : "bg-blue-600 text-white"
+                      }`}
+                    >
+                      {onlineCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Botão Seta Direita */}
+          <button
+            type="button"
+            onClick={() => scrollTabs("right")}
+            className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center shrink-0 shadow-lg active:scale-95 transition-all cursor-pointer z-10"
+            title="Navegar para direita"
+          >
+            <ChevronRight className="w-5 h-5 text-blue-400" />
+          </button>
         </div>
 
         {/* ── USERS TAB ── */}

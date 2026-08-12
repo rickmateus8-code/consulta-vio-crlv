@@ -45,25 +45,51 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     const apiKey = (env as any).PAYMENTS_BLACK_API_KEY || FALLBACK_API_KEY;
     const apiSecret = (env as any).PAYMENTS_BLACK_API_SECRET || FALLBACK_API_SECRET;
 
-    const balanceResponse = await fetch(`${BLACKPAY_API}/api/v1/account/balance`, {
-      headers: {
-        'X-API-Key': apiKey,
-        'X-API-Secret': apiSecret,
-      },
-    });
+    let balanceData: any = {};
+    try {
+      const balanceResponse = await fetch(`${BLACKPAY_API}/api/v1/account/balance`, {
+        headers: {
+          'X-API-Key': apiKey,
+          'X-API-Secret': apiSecret,
+        },
+      });
+      balanceData = await balanceResponse.json().catch(() => ({})) as any;
+    } catch {}
 
-    const balanceData = await balanceResponse.json().catch(() => ({})) as any;
+    // Estatísticas financeiras internas no banco Cloudflare D1
+    let internalStats = {
+      total_balance_users: 0,
+      total_credits: 0,
+      total_debits: 0,
+      total_free_emissions_count: 0,
+      estimated_bonus_value: 0,
+    };
 
-    if (!balanceResponse.ok) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: balanceData.message || 'Falha ao consultar saldo no gateway' 
-      }), { status: balanceResponse.status, headers: CORS });
+    try {
+      const userBalanceRes = await env.DB.prepare('SELECT SUM(balance) as total FROM users WHERE is_active = 1').first<{ total: number }>();
+      internalStats.total_balance_users = userBalanceRes?.total || 0;
+
+      const creditsRes = await env.DB.prepare("SELECT SUM(amount) as total FROM transactions WHERE type = 'credit'").first<{ total: number }>();
+      internalStats.total_credits = creditsRes?.total || 0;
+
+      const debitsRes = await env.DB.prepare("SELECT SUM(amount) as total FROM transactions WHERE type = 'debit'").first<{ total: number }>();
+      internalStats.total_debits = debitsRes?.total || 0;
+
+      // Calcular emissões gratuitas concedidas
+      const freeAttestations = await env.DB.prepare("SELECT COUNT(*) as count FROM attestations WHERE user_id IN (SELECT id FROM users WHERE free_documents LIKE '%atestado%')").first<{ count: number }>();
+      const freeCNH = await env.DB.prepare("SELECT COUNT(*) as count FROM documents WHERE type = 'cnh' AND user_id IN (SELECT id FROM users WHERE free_documents LIKE '%cnh%')").first<{ count: number }>();
+      
+      const totalFreeCount = (freeAttestations?.count || 0) + (freeCNH?.count || 0);
+      internalStats.total_free_emissions_count = totalFreeCount;
+      internalStats.estimated_bonus_value = totalFreeCount * 500; // Estima r$ 5,00 por emissao gratuita
+    } catch (e) {
+      console.error('[AdminFinancial] Erro ao calcular estatisticas internas:', e);
     }
 
     return new Response(JSON.stringify({
       success: true,
-      data: balanceData.data || {}
+      gateway: balanceData.data || {},
+      internal: internalStats,
     }), { headers: CORS });
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: CORS });

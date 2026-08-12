@@ -7,6 +7,7 @@ import RecarregaModal from "@/components/RecarregaModal";
 import ExtratoModal from "@/components/ExtratoModal";
 import ReferralModal from "@/components/ReferralModal";
 import ModelosEmissaoModal from "@/components/ModelosEmissaoModal";
+import NotificationsModal from "@/components/NotificationsModal";
 import PatentCard from "@/components/PatentCard";
 import RenewModal from "@/components/RenewModal";
 import DocumentViewerModal from "@/components/DocumentViewerModal";
@@ -15,7 +16,7 @@ import {
   Wallet, TrendingUp, BarChart3, ChevronRight, Plus,
   Clock, CheckCircle, Bell, Download, Trash2, Pill, Pencil, QrCode,
   Copy, X, Send, RefreshCw, Search, Save, Smartphone, AlertTriangle, Gift, Users, Loader2, Settings,
-  Eye, Trash, Receipt, Camera, Award, ShieldCheck, ChevronDown, CreditCard, Folder, FilePlus
+  Eye, Trash, Receipt, Camera, Award, ShieldCheck, ChevronDown, CreditCard, Folder, FilePlus, MessageCircle
 } from "lucide-react";
 import AttestationActionButtons from "@/components/AttestationActionButtons";
 import { downloadAttestationPdf, fetchLatestAttestationRecord, buildAttestationData } from "@/lib/attestationActions";
@@ -137,6 +138,8 @@ export default function Dashboard() {
   const [showExtratoModal, setShowExtratoModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showModelsModal, setShowModelsModal] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [supportWhatsapp, setSupportWhatsapp] = useState("");
   const [loyaltyData, setLoyaltyData] = useState<any>(null);
   const [consultasPlan, setConsultasPlan] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -229,6 +232,12 @@ export default function Dashboard() {
     loadNotifications();
     loadLoyalty();
     getPlanoStatus().then((d) => setConsultasPlan(d)).catch(() => setConsultasPlan(null));
+    fetch("/api/settings/public")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.support_whatsapp) setSupportWhatsapp(d.support_whatsapp);
+      })
+      .catch(() => {});
   }, [refresh]);
 
 

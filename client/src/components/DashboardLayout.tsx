@@ -150,6 +150,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showExtratoModal, setShowExtratoModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [bonusTotal, setBonusTotal] = useState<number>(0);
+  const [affiliatesTotal, setAffiliatesTotal] = useState<number>(0);
+
+  useEffect(() => {
+    fetch("/api/referral", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.stats) {
+          setAffiliatesTotal(Number(data.stats.totalEarnings || 0));
+          setBonusTotal(Number(data.stats.totalBonus || 0));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handler = () => {
@@ -274,11 +288,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="space-y-1 pt-1 border-t border-slate-800/60 text-[10px] font-bold">
                 <p className="text-emerald-400 flex items-center justify-between">
                   <span>Histórico de Bônus</span>
-                  <span>+ R$ 949,50</span>
+                  <span>+ R$ {(bonusTotal / 100).toFixed(2).replace('.', ',')}</span>
                 </p>
                 <p className="text-emerald-400 flex items-center justify-between">
                   <span>Histórico Afiliados</span>
-                  <span>+ R$ 400,00</span>
+                  <span>+ R$ {(affiliatesTotal / 100).toFixed(2).replace('.', ',')}</span>
                 </p>
               </div>
 

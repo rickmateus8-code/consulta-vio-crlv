@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Bell, Clock, CalendarPlus, ShieldAlert, Sparkles, RefreshCw, ChevronRight, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
+import { X, Bell, Clock, CalendarPlus, ShieldAlert, Sparkles, RefreshCw, CheckCircle, Search, Filter } from "lucide-react";
 
 interface DocRecord {
   id: string;
@@ -38,6 +37,8 @@ export default function NotificationsModal({
   const [activeTab, setActiveTab] = useState<"expirations" | "changelog">("expirations");
   const [notifications, setNotifications] = useState<SystemNotification[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -73,6 +74,23 @@ export default function NotificationsModal({
     } catch {
       return false;
     }
+  });
+
+  // Filtragem adicional por Categoria e Busca (PESQUISAR)
+  const filteredExpiringDocs = expiringDocs.filter((doc) => {
+    if (selectedCategory !== "all") {
+      if (selectedCategory === "saude" && !["atestado", "receita", "toxicologico"].includes(doc.type)) return false;
+      if (selectedCategory === "transito" && !["cnh", "crlv", "cha"].includes(doc.type)) return false;
+      if (selectedCategory === "academico" && !["historico-sp", "historico-uninter", "diploma-uninter", "peticao-stj", "fgv"].includes(doc.type)) return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const name = (doc.nome || doc.paciente || "").toLowerCase();
+      const cpf = (doc.cpf || "").toLowerCase();
+      const type = (doc.type || "").toLowerCase();
+      return name.includes(q) || cpf.includes(q) || type.includes(q);
+    }
+    return true;
   });
 
   const getDocName = (doc: DocRecord) => {
@@ -160,16 +178,87 @@ export default function NotificationsModal({
           </button>
         </div>
 
+        {/* Barra de Filtros & Busca (PESQUISAR) para Alertas de Expiração */}
+        {activeTab === "expirations" && (
+          <div className="p-4 border-b border-slate-800 bg-[#0f172a]/80 flex flex-col sm:flex-row items-center gap-3">
+            {/* Campo PESQUISAR */}
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="PESQUISAR (Nome, CPF ou Tipo)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-blue-500 transition-all uppercase"
+              />
+            </div>
+
+            {/* Filtros por Categorias */}
+            <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("all")}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+                  selectedCategory === "all"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+                }`}
+              >
+                Todos ({expiringDocs.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("saude")}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+                  selectedCategory === "saude"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+                }`}
+              >
+                Saúde
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("transito")}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+                  selectedCategory === "transito"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+                }`}
+              >
+                Trânsito/CNH
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("academico")}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+                  selectedCategory === "academico"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+                }`}
+              >
+                Acadêmico/Outros
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Conteúdo do Modal */}
-        <div className="p-6 overflow-y-auto custom-scrollbar max-h-[60vh] space-y-4">
+        <div className="p-6 overflow-y-auto custom-scrollbar max-h-[55vh] space-y-4">
           {activeTab === "expirations" ? (
             <div>
-              {expiringDocs.length === 0 ? (
+              {filteredExpiringDocs.length === 0 ? (
                 <div className="py-16 text-center bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 p-6">
                   <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3 opacity-80" />
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Nenhum documento expira nas próximas 72 horas</h3>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                    {expiringDocs.length === 0 
+                      ? "Nenhum documento expira nas próximas 72 horas"
+                      : "Nenhum resultado encontrado para a busca/categoria"}
+                  </h3>
                   <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                    Todos os seus documentos estão com a validade regular no painel. Notificaremos você assim que algum documento se aproximar do prazo de 72 horas para renovação.
+                    {expiringDocs.length === 0
+                      ? "Todos os seus documentos estão com a validade regular no painel. Notificaremos você assim que algum documento se aproximar do prazo de 72 horas para renovação."
+                      : "Tente redefinir a palavra de busca ou selecionar outra categoria acima."}
                   </p>
                 </div>
               ) : (
@@ -179,7 +268,7 @@ export default function NotificationsModal({
                     <span>Os documentos abaixo irão expirar em breve. Clique em <strong>Renovar</strong> para prolongar a validade no painel.</span>
                   </div>
 
-                  {expiringDocs.map((doc) => (
+                  {filteredExpiringDocs.map((doc) => (
                     <div
                       key={doc.id}
                       className="bg-[#0f172a] border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all"
@@ -259,13 +348,12 @@ export default function NotificationsModal({
           )}
         </div>
 
-        {/* Rodapé */}
-        <div className="p-4 border-t border-slate-800 bg-[#0f172a] shrink-0 flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">DocMaster Notification Engine v2.0</span>
+        {/* Rodapé Limpo sem DocMaster Notification Engine v2.0 */}
+        <div className="p-4 border-t border-slate-800 bg-[#0f172a] shrink-0 flex items-center justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+            className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
           >
             Fechar
           </button>

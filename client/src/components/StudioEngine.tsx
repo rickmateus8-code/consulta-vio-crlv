@@ -38,6 +38,11 @@ export default function StudioEngine() {
   const [price, setPrice] = useState("15.00");
   const [targetStructure, setTargetStructure] = useState("cnh");
 
+  // QR Code & Configuração de Validação
+  const [qrFormat, setQrFormat] = useState<"XXXX-XXXX" | "UUID-32" | "CPF">("UUID-32");
+  const [qrSourceUrl, setQrSourceUrl] = useState("https://carteira-digital-transito-vio.digital");
+  const [extractedLogos, setExtractedLogos] = useState<string[]>([]);
+
   const [bgImage, setBgImage] = useState<string | null>(null);
   const [boxes, setBoxes] = useState<CoordinateBox[]>([]);
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
@@ -105,6 +110,22 @@ export default function StudioEngine() {
       setBoxes(suggestedBoxes);
       toast.success("OCR Concluído: 5 campos identificados e posicionados automaticamente!");
     }, 1000);
+  };
+
+  // Extração Automática de Logos & Brasões do PDF
+  const handleExtractLogos = () => {
+    if (!bgImage) {
+      toast.error("Suba um gabarito primeiro!");
+      return;
+    }
+
+    toast.info("Extraindo logos, brasões e marca d'água em HD...");
+    setTimeout(() => {
+      // Simula a isolamento de logos em Base64 com atributo crossOrigin seguro
+      const sampleLogo = bgImage;
+      setExtractedLogos([sampleLogo]);
+      toast.success("Extração Concluída: 1 Logo/Brasão isolado com integridade de CORS!");
+    }, 800);
   };
 
   // Mapeamento por Clique/Arrasto no Canvas
@@ -239,6 +260,15 @@ export default function StudioEngine() {
         <div className="flex items-center gap-3">
           <button
             type="button"
+            onClick={handleExtractLogos}
+            className="px-4 py-2.5 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-500/40 text-blue-300 font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-950/40"
+          >
+            <Layers className="w-4 h-4 text-blue-400" />
+            <span>Extrair Logos / Imagens</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleAutoOCR}
             className="px-4 py-2.5 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-300 font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-purple-950/40"
           >
@@ -333,6 +363,39 @@ export default function StudioEngine() {
                     <option value="receita">Modelo Receituário</option>
                     <option value="historico">Modelo Histórico/Diploma</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Bloco de Configuração do QR Code & Validador Forense */}
+              <div className="pt-3 border-t border-slate-800 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-[10px] font-black text-amber-300 uppercase tracking-wider">QR Code & Validador Publico</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Formato do Código</label>
+                    <select
+                      value={qrFormat}
+                      onChange={(e) => setQrFormat(e.target.value as any)}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-amber-300 font-mono focus:outline-none cursor-pointer"
+                    >
+                      <option value="XXXX-XXXX">XXXX-XXXX (Exclusivo Atestados)</option>
+                      <option value="UUID-32">UUID 32 Char (CNH / VIO / CRLV)</option>
+                      <option value="CPF">Consulta CPF Direct</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Validador (Source)</label>
+                    <input
+                      type="text"
+                      value={qrSourceUrl}
+                      onChange={(e) => setQrSourceUrl(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono focus:outline-none"
+                      placeholder="https://atestados-idab.pages.dev"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

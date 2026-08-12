@@ -163,40 +163,44 @@ function SidebarItem({
 
   if (item.children) {
     return (
-      <div>
+      <div className="relative">
         <button
           onClick={handleToggle}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 group
             ${isActive
-              ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-100"
+              ? "bg-blue-50/90 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-l-4 border-blue-600 shadow-2xs"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-100"
             }`}
         >
-          <Icon className="w-4 h-4 flex-shrink-0" />
+          <Icon className={`w-4.5 h-4.5 flex-shrink-0 transition-colors ${isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300"}`} />
           {!collapsed && (
             <>
-              <span className="flex-1 text-left">{item.label}</span>
+              <span className="flex-1 text-left tracking-tight">{item.label}</span>
               {open
-                ? <ChevronDown className="w-3 h-3 opacity-60" />
-                : <ChevronRight className="w-3 h-3 opacity-60" />}
+                ? <ChevronDown className="w-3.5 h-3.5 opacity-70 group-hover:translate-y-0.5 transition-transform" />
+                : <ChevronRight className="w-3.5 h-3.5 opacity-70 group-hover:translate-x-0.5 transition-transform" />}
             </>
           )}
         </button>
         {!collapsed && open && (
-          <div className="ml-7 mt-1 space-y-0.5">
-            {item.children.map(child => (
-              <button
-                key={child.path}
-                onClick={() => navigate(child.path, child.isCreation)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all
-                  ${location === child.path
-                    ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium"
-                    : "text-gray-500 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/60 hover:text-gray-800 dark:hover:text-gray-200"
-                  }`}
-              >
-                {child.label}
-              </button>
-            ))}
+          <div className="ml-5 pl-3 mt-1.5 mb-1 space-y-1 border-l-2 border-blue-200/60 dark:border-blue-800/40">
+            {item.children.map(child => {
+              const isChildSelected = location === child.path;
+              return (
+                <button
+                  key={child.path}
+                  onClick={() => navigate(child.path, child.isCreation)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2
+                    ${isChildSelected
+                      ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-blue-50/80 dark:hover:bg-blue-950/30 hover:text-blue-600 dark:hover:text-blue-300"
+                    }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isChildSelected ? "bg-white" : "bg-gray-300 dark:bg-gray-600"}`} />
+                  <span className="truncate">{child.label}</span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -206,14 +210,14 @@ function SidebarItem({
   return (
     <button
       onClick={() => item.path && navigate(item.path)}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+      className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 group
         ${isActive
-          ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
-          : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-100"
+          ? "bg-blue-50/90 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-l-4 border-blue-600 shadow-2xs"
+          : "text-gray-600 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-100"
         }`}
     >
-      <Icon className="w-4 h-4 flex-shrink-0" />
-      {!collapsed && <span>{item.label}</span>}
+      <Icon className={`w-4.5 h-4.5 flex-shrink-0 transition-colors ${isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300"}`} />
+      {!collapsed && <span className="tracking-tight">{item.label}</span>}
     </button>
   );
 }

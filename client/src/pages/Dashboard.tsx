@@ -594,39 +594,7 @@ const intelligentStats = [
           </div>
         )}
 
-        {/* Resumo Financeiro Rápido - Limpo sem moldura azul */}
-        <div>
-          <div className="bg-[#0f172a] rounded-3xl p-6 md:p-8 text-white border border-slate-800 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-            <div className="relative z-10">
-              <p className="text-slate-400 text-xs font-black uppercase tracking-wider mb-1">Saldo Disponível</p>
-              <h2 className="text-3xl md:text-4xl font-black tracking-tight tabular-nums mb-1 font-mono text-emerald-400">
-                R$ {((user?.balance || 0) / 100).toFixed(2).replace('.', ',')}
-              </h2>
-              <div className="flex items-center gap-2 mt-3">
-                <div className="px-3 py-1 rounded-md bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[10px] font-black font-mono uppercase tracking-wider flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Conta Ativa
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto relative z-10">
-              <button 
-                onClick={() => {
-                  const event = new CustomEvent("docmaster:open-recarrega-modal");
-                  window.dispatchEvent(event);
-                }}
-                className="bg-blue-600 hover:bg-blue-500 text-white border border-blue-500 px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95"
-              >
-                <Plus className="w-4 h-4" /> Recarregar
-              </button>
-              <button 
-                onClick={() => setShowExtratoModal(true)}
-                className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95"
-              >
-                <Receipt className="w-4 h-4 text-blue-400" /> Ver Extrato
-              </button>
-            </div>
-          </div>
-        </div>
+
 
         {/* Documentos Ativos Card - Estilo EliteDoc */}
         <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 flex items-center gap-4 shadow-xl">

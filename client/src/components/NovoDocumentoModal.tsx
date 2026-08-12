@@ -215,97 +215,97 @@ export default function NovoDocumentoModal({ open, onClose, userBalance, usernam
 
   return (
     <div className="fixed inset-0 z-[9998] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
-      <div className="bg-[#0b1120] text-white rounded-3xl w-full max-w-2xl flex flex-col shadow-2xl border border-blue-500/40 overflow-hidden" onClick={e => e.stopPropagation()}>
-        {/* Header EliteDoc - Estilo Imagem 04 */}
-        <div className="p-6 md:p-8 border-b border-slate-800 flex items-center justify-between shrink-0 bg-[#0f172a]/90">
+      <div className="bg-[#080d1a] text-white rounded-3xl w-full max-w-2xl flex flex-col shadow-2xl border border-blue-500/30 overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Header EliteDoc - Estilo Imagem 02 */}
+        <div className="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-[#0c1324]">
           <div>
-            <h2 className="text-xl md:text-2xl font-black text-blue-500 tracking-tight m-0">Novo Documento</h2>
-            <p className="text-xs font-medium text-slate-400 mt-1">O que você deseja emitir hoje?</p>
+            <h2 className="text-lg md:text-xl font-black text-blue-500 tracking-tight m-0">Novo Documento</h2>
+            <p className="text-[11px] font-medium text-slate-400 mt-0.5">O que você deseja emitir hoje?</p>
           </div>
           <button 
             onClick={onClose} 
-            className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
         </div>
 
-        {/* Corpo do Modal - Nível 1: Grid de Categorias (Pareado 1:1 com Imagem 04) */}
+        {/* Corpo do Modal - Nível 1: Grid de Categorias (Pareado 1:1 com Imagem 02) */}
         {viewMode === "categories" ? (
-          <div className="p-6 md:p-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[320px]">
+          <div className="p-5 md:p-6 space-y-4">
+            <div className="grid grid-cols-3 gap-3 items-stretch">
               {/* Coluna 1 (Esquerda): Veículos & Certidões */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={() => handleSelectCategoryCard("veiculos")}
-                  className="flex-1 bg-[#0f172a] hover:bg-[#1e293b] border border-blue-900/40 hover:border-blue-500/80 rounded-2xl p-6 flex items-center gap-4 transition-all duration-200 group text-left shadow-lg hover:shadow-blue-500/10"
+                  className="flex-1 bg-[#0d1527] hover:bg-[#162035] border border-blue-900/30 hover:border-blue-500/80 rounded-xl p-3.5 flex items-center gap-3 transition-all duration-200 group text-left shadow-md cursor-pointer"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <Car size={26} />
+                  <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Car size={18} />
                   </div>
-                  <span className="text-base font-black text-white uppercase tracking-wider">VEÍCULOS</span>
+                  <span className="text-xs font-black text-white uppercase tracking-wider">VEÍCULOS</span>
                 </button>
 
                 <button
                   onClick={() => handleSelectCategoryCard("certidoes")}
-                  className="flex-1 bg-[#0f172a] hover:bg-[#1e293b] border border-blue-900/40 hover:border-blue-500/80 rounded-2xl p-6 flex items-center gap-4 transition-all duration-200 group text-left shadow-lg hover:shadow-blue-500/10"
+                  className="flex-1 bg-[#0d1527] hover:bg-[#162035] border border-blue-900/30 hover:border-blue-500/80 rounded-xl p-3.5 flex items-center gap-3 transition-all duration-200 group text-left shadow-md cursor-pointer"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <Folder size={26} />
+                  <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Folder size={18} />
                   </div>
-                  <span className="text-base font-black text-white uppercase tracking-wider">CERTIDÕES</span>
+                  <span className="text-xs font-black text-white uppercase tracking-wider">CERTIDÕES</span>
                 </button>
               </div>
 
               {/* Coluna 2 (Centro - Destaque Principal): PESSOAIS */}
               <button
                 onClick={() => handleSelectCategoryCard("pessoais")}
-                className="bg-[#0f172a] hover:bg-[#1e293b] border-2 border-blue-500/60 hover:border-blue-400 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 transition-all duration-300 group shadow-2xl shadow-blue-600/20 hover:scale-[1.02] text-center"
+                className="bg-[#0d1527] hover:bg-[#162035] border-2 border-blue-500/60 hover:border-blue-400 rounded-xl p-5 flex flex-col items-center justify-center gap-3 transition-all duration-300 group shadow-xl shadow-blue-600/10 hover:scale-[1.01] text-center cursor-pointer"
               >
-                <div className="w-20 h-20 rounded-2xl bg-blue-600/20 border border-blue-400 text-blue-400 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                  <FileText size={44} />
+                <div className="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-400 text-blue-400 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                  <FileText size={26} />
                 </div>
-                <span className="text-xl font-black text-white uppercase tracking-widest">PESSOAIS</span>
+                <span className="text-xs font-black text-white uppercase tracking-widest">PESSOAIS</span>
               </button>
 
               {/* Coluna 3 (Direita): Saúde, Estudante & Faturas */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={() => handleSelectCategoryCard("saude")}
-                  className="bg-[#0f172a] hover:bg-[#1e293b] border border-blue-900/40 hover:border-blue-500/80 rounded-2xl p-5 flex items-center gap-4 transition-all duration-200 group text-left shadow-lg hover:shadow-blue-500/10"
+                  className="bg-[#0d1527] hover:bg-[#162035] border border-blue-900/30 hover:border-blue-500/80 rounded-xl p-3 flex items-center gap-3 transition-all duration-200 group text-left shadow-md cursor-pointer"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <Plus size={22} />
+                  <div className="w-7 h-7 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Plus size={16} />
                   </div>
-                  <span className="text-sm font-black text-white uppercase tracking-wider">SAÚDE</span>
+                  <span className="text-xs font-black text-white uppercase tracking-wider">SAÚDE</span>
                 </button>
 
-                <div className="grid grid-cols-2 gap-4 flex-1">
+                <div className="grid grid-cols-2 gap-2 flex-1">
                   <button
                     onClick={() => handleSelectCategoryCard("estudante")}
-                    className="bg-[#0f172a] hover:bg-[#1e293b] border border-blue-900/40 hover:border-blue-500/80 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-200 group text-center shadow-lg hover:shadow-blue-500/10"
+                    className="bg-[#0d1527] hover:bg-[#162035] border border-blue-900/30 hover:border-blue-500/80 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all duration-200 group text-center shadow-md cursor-pointer"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                      <GraduationCap size={20} />
+                    <div className="w-6 h-6 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <GraduationCap size={14} />
                     </div>
-                    <span className="text-xs font-black text-white uppercase tracking-wider">ESTUDANTE</span>
+                    <span className="text-[10px] font-black text-white uppercase tracking-wider">ESTUDANTE</span>
                   </button>
 
                   <button
                     onClick={() => handleSelectCategoryCard("faturas")}
-                    className="bg-[#0f172a] hover:bg-[#1e293b] border border-blue-900/40 hover:border-blue-500/80 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-200 group text-center shadow-lg hover:shadow-blue-500/10"
+                    className="bg-[#0d1527] hover:bg-[#162035] border border-blue-900/30 hover:border-blue-500/80 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all duration-200 group text-center shadow-md cursor-pointer"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                      <CreditCard size={20} />
+                    <div className="w-6 h-6 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <CreditCard size={14} />
                     </div>
-                    <span className="text-xs font-black text-white uppercase tracking-wider">FATURAS</span>
+                    <span className="text-[10px] font-black text-white uppercase tracking-wider">FATURAS</span>
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Linha inferior de progresso azul brilhante - Estilo Imagem 04 */}
-            <div className="pt-2">
+            {/* Linha inferior de progresso azul brilhante - Estilo Imagem 02 */}
+            <div className="pt-1">
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800 flex gap-2 p-0.5">
                 <div className="h-full w-2/3 bg-blue-500 rounded-full shadow-[0_0_12px_rgba(59,130,246,0.8)] animate-pulse" />
                 <div className="h-full w-1/6 bg-blue-600/60 rounded-full" />

@@ -47,6 +47,16 @@ export default function StudioEngine() {
   const [canvasSize, setCanvasSize] = useState({ width: 794, height: 1123 }); // Proporção nativa A4 / PDF
   const [zoom, setZoom] = useState(1);
   const [boxes, setBoxes] = useState<CoordinateBox[]>([]);
+  const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
+
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [currentPos, setCurrentPos] = useState<{ x: number; y: number } | null>(null);
+
+  const [savedTemplates, setSavedTemplates] = useState<StudioTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [saving, setSaving] = useState(false);
+
   // Histórico de Reversão de Erros (Undo / Redo)
   const [history, setHistory] = useState<Array<{ boxes: CoordinateBox[]; bgImage: string | null }>>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);

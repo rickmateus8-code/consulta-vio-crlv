@@ -3,6 +3,7 @@
 Este arquivo contém mandatos inegociáveis para qualquer agente de IA ou desenvolvedor que atuar neste projeto.
 ## 1. Fluxo de Deploy e Sincronia
 *   **REGRA DE OURO:** O fluxo é sempre **Ambiente Local > GitHub > Cloudflare**.
+*   **MANDATO AUTOMÁTICO DE GIT PUSH:** Toda e qualquer tarefa finalizada deve obrigatoriamente encerrar com a execução de `git add .`, `git commit` e `git push origin main`.
 *   Nunca realize alterações apenas localmente ou direto no Cloudflare sem realizar o `git push origin main`.
 *   **PROTOCOLO BIPARTIDO (DocMaster + IDAB):** Alterações visuais em componentes compartilhados (ex: `AttestationDocument.tsx`) exigem build e deploy simultâneo para ambos os domínios:
     *   `npx wrangler pages deploy dist --project-name=docmaster`

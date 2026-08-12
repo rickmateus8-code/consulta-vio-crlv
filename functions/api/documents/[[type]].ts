@@ -329,14 +329,24 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
 
     if (isType) {
       let typesToMatch = [idOrType];
-      if (idOrType === 'toxicologico' || idOrType === 'toxicria' || idOrType === 'laudocria') {
+      if (idOrType === 'cnh' || idOrType === 'cnhcria' || idOrType === 'cnh-digital') {
+        typesToMatch = ['cnh', 'cnhcria', 'cnh-digital'];
+      } else if (idOrType === 'cha' || idOrType === 'chacria') {
+        typesToMatch = ['cha', 'chacria'];
+      } else if (idOrType === 'toxicologico' || idOrType === 'toxicria' || idOrType === 'laudocria') {
         typesToMatch = ['toxicologico', 'toxicria', 'laudocria'];
       } else if (idOrType === 'crlv' || idOrType === 'crlvcria') {
         typesToMatch = ['crlv', 'crlvcria'];
       } else if (idOrType === 'historico-uninter' || idOrType === 'historicocria') {
         typesToMatch = ['historico-uninter', 'historicocria'];
-      } else if (idOrType === 'peticao-stj' || idOrType === 'peticaocria') {
-        typesToMatch = ['peticao-stj', 'peticaocria'];
+      } else if (idOrType === 'peticao-stj' || idOrType === 'peticaocria' || idOrType === 'peticao') {
+        typesToMatch = ['peticao-stj', 'peticaocria', 'peticao'];
+      } else if (idOrType === 'receita' || idOrType === 'receitacria') {
+        typesToMatch = ['receita', 'receitacria'];
+      } else if (idOrType === 'fgv' || idOrType === 'certificado-fgv') {
+        typesToMatch = ['fgv', 'certificado-fgv'];
+      } else if (idOrType === 'diploma-uninter' || idOrType === 'diploma_uninter') {
+        typesToMatch = ['diploma-uninter', 'diploma_uninter'];
       }
 
       const placeholders = typesToMatch.map(() => '?').join(', ');

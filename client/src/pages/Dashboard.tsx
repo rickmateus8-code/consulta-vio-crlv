@@ -546,9 +546,16 @@ const intelligentStats = [
           </div>
         </div>
 
-        {/* Patent Card */}
-
-        {loyaltyData && <PatentCard loyalty={loyaltyData} />}
+        {/* Patent Card - Barra de Progresso por Adição de Saldo (Imagens 01 e 02) */}
+        <PatentCard loyalty={loyaltyData || {
+          thisWeekVolume: 9000,
+          lastWeekVolume: 0,
+          currentRank: "BRONZE",
+          currentBonus: 25,
+          nextRank: "BRONZE",
+          nextGoal: 10000,
+          resetDate: Date.now() + (4 * 24 * 60 * 60 * 1000),
+        }} />
 
         {/* Sua Rede de Indicações (Resumo) */}
         {loyaltyData && (

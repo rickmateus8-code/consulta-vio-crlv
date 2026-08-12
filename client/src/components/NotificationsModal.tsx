@@ -187,7 +187,7 @@ export default function NotificationsModal({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-blue-600/20 text-blue-400 border border-blue-500/30">
-                            {doc.type.toUpperCase()}
+                            {String(doc.type || "").toUpperCase()}
                           </span>
                           <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-rose-950/80 text-rose-300 border border-rose-500/40 font-mono animate-pulse">
                             ⚠️ {getTimeLeftLabel(doc)}
@@ -239,7 +239,7 @@ export default function NotificationsModal({
                     >
                       <div className="flex items-center justify-between">
                         <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                          {item.type?.toUpperCase() || "ATUALIZAÇÃO"}
+                          {String(item.type || "ATUALIZAÇÃO").toUpperCase()}
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono">
                           {new Date(item.created_at).toLocaleDateString("pt-BR")}

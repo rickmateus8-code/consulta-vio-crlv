@@ -119,20 +119,15 @@ const MODULES: Module[] = [
 ];
 
 const CATEGORY_FILTERS = [
-  { id: "todos", label: "TODOS", count: 77, emoji: "🎛️" },
-  { id: "mais_usados", label: "MAIS USADOS", count: 12, emoji: "💧" },
-  { id: "utilitarios", label: "UTILITÁRIOS", count: 15, emoji: "🔍" },
-  { id: "condutores", label: "CONDUTORES", count: 7, emoji: "👤" },
-  { id: "veiculares", label: "VEICULARES", count: 8, emoji: "🚗" },
-  { id: "crlv", label: "CRLV", count: 5, emoji: "📄" },
-  { id: "hospitalar", label: "HOSPITALAR", count: 3, emoji: "🏥" },
-  { id: "cnpj", label: "CNPJ", count: 3, emoji: "🏢" },
-  { id: "beneficios", label: "BENEFÍCIOS", count: 6, emoji: "🎁" },
-  { id: "cnh", label: "CNH", count: 7, emoji: "💳" },
-  { id: "fotos", label: "FOTOS", count: 11, emoji: "📷" },
-  { id: "financeiro", label: "FINANCEIRO", count: 4, emoji: "💰" },
-  { id: "geradores", label: "GERADORES", count: 5, emoji: "⚡" },
+  { id: "todos", label: "TODOS", count: 16, emoji: "🎛️" },
+  { id: "mais_usados", label: "MAIS USADOS", count: 5, emoji: "💧" },
+  { id: "utilitarios", label: "UTILITÁRIOS", count: 4, emoji: "🔍" },
+  { id: "condutores", label: "DOCUMENTOS", count: 2, emoji: "👤" },
+  { id: "veiculares", label: "VEICULARES", count: 1, emoji: "🚗" },
+  { id: "financeiro", label: "FINANCEIRO", count: 3, emoji: "💰" },
+  { id: "fotos", label: "FOTOS", count: 1, emoji: "📷" },
 ];
+
 
 export default function Consultas() {
   const { user } = useAuth();
@@ -383,11 +378,12 @@ export default function Consultas() {
         {/* Linha 1: Logo + Status + Botão Sair */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg">
-              <Search className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-slate-950/90 border border-violet-500/40 p-1 flex items-center justify-center shadow-lg overflow-hidden shrink-0">
+              <img src="/master_buscas_logo.png" alt="Master Buscas Logo" className="w-full h-full object-contain" />
             </div>
             <span className="font-black text-sm text-white tracking-tight">Master Buscas</span>
           </div>
+
           
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070a19] border border-violet-500/20 text-[10px] font-bold">
@@ -449,8 +445,8 @@ export default function Consultas() {
           {/* Logo Topo */}
           <div className="flex items-center justify-between px-2 pt-2">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg">
-                <Search className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-2xl bg-slate-950/90 border border-violet-500/40 p-1.5 flex items-center justify-center shadow-lg overflow-hidden shrink-0">
+                <img src="/master_buscas_logo.png" alt="Master Buscas Logo" className="w-full h-full object-contain" />
               </div>
               <span className="font-black text-base text-white tracking-tight">Master Buscas</span>
             </div>
@@ -458,6 +454,7 @@ export default function Consultas() {
               <ChevronLeft className="w-4 h-4" />
             </button>
           </div>
+
 
           {/* Submenu de Navegação Esquerdo */}
           <nav className="space-y-1 pt-4">
@@ -526,14 +523,15 @@ export default function Consultas() {
               <div className="rounded-2xl p-4 md:p-6 bg-gradient-to-r from-purple-800 to-violet-900 border border-violet-500/30 shadow-2xl space-y-4 md:space-y-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
                   <div className="flex items-center gap-3 md:gap-4">
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-slate-950/80 border border-violet-500/30 flex items-center justify-center shadow-inner flex-shrink-0">
-                      <Search className="w-5 h-5 md:w-6 md:h-6 text-violet-300" />
+                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-950/90 border border-violet-500/40 p-1.5 flex items-center justify-center shadow-inner shrink-0 overflow-hidden">
+                      <img src="/master_buscas_logo.png" alt="Master Buscas Logo" className="w-full h-full object-contain" />
                     </div>
                     <div>
                       <h2 className="text-lg md:text-xl font-black text-white tracking-tight">{currentTab.headerTitle}</h2>
                       <p className="text-[11px] md:text-xs text-purple-200 mt-0.5">{currentTab.headerDesc}</p>
                     </div>
                   </div>
+
 
                   {/* BANNER DE PLANO ATIVO & USO 24H */}
                   <div className="hidden sm:flex items-center gap-4 px-5 py-2.5 rounded-2xl bg-[#0d0f26]/90 border border-violet-500/30 text-xs shadow-inner">

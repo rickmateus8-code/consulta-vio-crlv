@@ -604,7 +604,7 @@ const intelligentStats = [
           <div className="bg-[#0f172a] rounded-3xl border border-slate-800 p-6 shadow-2xl space-y-4">
             <h2 className="text-sm md:text-base font-black text-white uppercase tracking-wider m-0">Meus Documentos</h2>
 
-            {/* Primeira Linha: Botões de Categorias Dropdown (Pareado 1:1 com Imagem 01 e 03) */}
+            {/* Primeira Linha: Botões de Categorias Dropdown (Apenas documentos reais do DocMaster) */}
             <div className="relative z-30 flex items-center gap-2 flex-wrap pb-1">
               {[
                 {
@@ -612,11 +612,8 @@ const intelligentStats = [
                   label: "Pessoais",
                   icon: CreditCard,
                   items: [
-                    { key: "cnh", label: "CNH" },
-                    { key: "rg", label: "RG" },
-                    { key: "titulo-digital", label: "TÍTULO DIGITAL" },
-                    { key: "titulo-fisico", label: "TÍTULO FÍSICO" },
-                    { key: "cha", label: "CHA" },
+                    { key: "cnh", label: "CNH DIGITAL" },
+                    { key: "cha", label: "CHA (ARRAIS AMADOR)" },
                   ]
                 },
                 {
@@ -624,8 +621,9 @@ const intelligentStats = [
                   label: "Certidões",
                   icon: Folder,
                   items: [
-                    { key: "peticao-stj", label: "PETIÇÃO JUDICIAL" },
+                    { key: "peticao-stj", label: "PETIÇÃO JUDICIAL STJ" },
                     { key: "fgv", label: "CERTIFICADO FGV" },
+                    { key: "bot-adv", label: "BOT ADVOGADO" },
                   ]
                 },
                 {
@@ -645,7 +643,7 @@ const intelligentStats = [
                     { key: "atestado", label: "ATESTADO MÉDICO" },
                     { key: "toxicologico", label: "EXAME TOXICOLÓGICO" },
                     { key: "toxicria", label: "LAUDO INNOVATOX" },
-                    { key: "receita", label: "DR. CONSULTA" },
+                    { key: "receita", label: "RECEITA MÉDICA" },
                   ]
                 },
                 {
@@ -653,7 +651,7 @@ const intelligentStats = [
                   label: "Estudante",
                   icon: GraduationCap,
                   items: [
-                    { key: "historico-sp", label: "HISTÓRICO SP" },
+                    { key: "historico-sp", label: "HISTÓRICO ESCOLAR SP" },
                     { key: "historicocria", label: "HISTÓRICO UNINTER" },
                     { key: "diploma-uninter", label: "DIPLOMA UNINTER" },
                   ]
@@ -669,7 +667,7 @@ const intelligentStats = [
               ].map(cat => {
                 const IconComponent = cat.icon;
                 const isOpen = openCategoryDropdown === cat.id;
-                const isSelectedCat = selectedCategoryItem?.categoryId === cat.id || activeTab === cat.id || (cat.id === "pessoais" && !selectedCategoryItem);
+                const isSelectedCat = selectedCategoryItem?.categoryId === cat.id;
 
                 return (
                   <div key={cat.id} className="relative">
@@ -698,12 +696,12 @@ const intelligentStats = [
                             type="button"
                             onClick={() => {
                               setSelectedCategoryItem({ categoryId: cat.id, itemKey: subItem.key });
-                              setActiveTab(subItem.key === "titulo-digital" || subItem.key === "titulo-fisico" || subItem.key === "rg" ? "cnh" : subItem.key);
+                              setActiveTab(subItem.key);
                               setOpenCategoryDropdown(null);
                             }}
                             className={`w-full px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-colors ${
                               selectedCategoryItem?.itemKey === subItem.key
-                                ? "bg-blue-600/20 text-blue-400"
+                                ? "bg-blue-600/20 text-blue-400 font-bold"
                                 : "text-slate-200 hover:bg-slate-800 hover:text-white"
                             }`}
                           >
@@ -742,13 +740,20 @@ const intelligentStats = [
 
             {/* Área de Tabela ou Mensagem de Carregamento de Registros (Imagem 03) */}
             <div className="pt-2">
-              {historyLoading ? (
-                <div className="py-16 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-400 opacity-80" /></div>
-              ) : history.length === 0 ? (
+              {!selectedCategoryItem ? (
                 <div className="py-16 text-center bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 p-6">
                   <FileText className="w-10 h-10 text-slate-600 mx-auto mb-2" />
                   <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">
                     Selecione um documento no menu acima para carregar os registros.
+                  </p>
+                </div>
+              ) : historyLoading ? (
+                <div className="py-16 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-400 opacity-80" /></div>
+              ) : history.length === 0 ? (
+                <div className="py-16 text-center bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 p-6">
+                  <FileText className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Nenhum documento emitido nesta categoria ainda.
                   </p>
                 </div>
               ) : filteredHistory.length === 0 ? (

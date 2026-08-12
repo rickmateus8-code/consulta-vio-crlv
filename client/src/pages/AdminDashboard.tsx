@@ -3772,6 +3772,7 @@ export default function AdminDashboard() {
                     { id: "3_meses", label: "🗓️ 3 Meses" },
                     { id: "6_meses", label: "🗓️ 6 Meses" },
                     { id: "1_ano", label: "🗓️ 1 Ano" },
+                    { id: "ilimitado_2099", label: "♾️ 31/12/2099 às 20:59" },
                     { id: "custom", label: "📅 Data Específica" },
                   ].map((dur) => (
                     <button

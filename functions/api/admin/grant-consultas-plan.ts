@@ -140,6 +140,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         expiresDate.setDate(expiresDate.getDate() + Math.max(1, customDays));
       }
       label = `Plano Concedido (Até ${expiresDate.toLocaleDateString('pt-BR')})`;
+    } else if (duration === 'ilimitado_2099') {
+      expiresDate = new Date('2099-12-31T20:59:00.000Z');
+      label = 'Válido até: 31/12/2099 às 20:59';
     } else if (duration === '1_dia') {
       expiresDate.setDate(expiresDate.getDate() + 1);
       label = 'Plano 1 Dia (Concedido pelo Admin)';

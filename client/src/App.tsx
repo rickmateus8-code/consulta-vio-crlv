@@ -112,6 +112,7 @@ import JudicialDetails from "./pages/JudicialDetails";
 import JudicialHistory from "./pages/JudicialHistory";
 import DiplomaUninterCria from "./pages/DiplomaUninterCria";
 import CNHLanding from "./pages/cnh-validation/CNHLanding";
+import UniversalStudioPage from "./pages/UniversalStudioPage";
 
 import CNHAutorizacao from "./pages/cnh-validation/CNHAutorizacao";
 import CNHPainel from "./pages/cnh-validation/CNHPainel";
@@ -231,6 +232,11 @@ function DocMasterRouter() {
       </Route>
       <Route path="/consultas">
         <ProtectedRoute component={Consultas} />
+      </Route>
+
+      {/* Emissor Dinâmico do DocMaster Studio Engine */}
+      <Route path="/emissor/:slug">
+        <ProtectedRoute component={UniversalStudioPage} />
       </Route>
 
       {/* Emissão de documentos - slugs principais */}

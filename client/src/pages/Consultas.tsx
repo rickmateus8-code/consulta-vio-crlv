@@ -6,6 +6,8 @@ import UnifiedProfileView, { isValidCPF } from "@/components/UnifiedProfileView"
 import { getPlanoStatus } from "@/lib/snoopApi";
 import * as SnoopAPI from "@/lib/snoopApi";
 import { toast } from "sonner";
+import masterBuscasLogo from "@/assets/master_buscas_logo.png";
+
 
 import {
   Search, X, Loader2, Star, StarOff, Radar,
@@ -354,7 +356,7 @@ export default function Consultas() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-slate-950/90 border border-violet-500/40 p-1 flex items-center justify-center shadow-lg overflow-hidden shrink-0">
-              <img src="/master_buscas_logo.png" alt="Master Buscas Logo" className="w-full h-full object-contain" />
+              <img src={masterBuscasLogo} alt="Master Buscas Logo" className="w-full h-full object-contain" />
             </div>
             <span className="font-black text-sm text-white tracking-tight">Master Buscas</span>
           </div>
@@ -421,7 +423,7 @@ export default function Consultas() {
           <div className="flex items-center justify-between px-2 pt-2">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-slate-950/90 border border-violet-500/40 p-1.5 flex items-center justify-center shadow-lg overflow-hidden shrink-0">
-                <img src="/master_buscas_logo.png" alt="Master Buscas Logo" className="w-full h-full object-contain" />
+                <img src={masterBuscasLogo} alt="Master Buscas Logo" className="w-full h-full object-contain" />
               </div>
               <span className="font-black text-base text-white tracking-tight">Master Buscas</span>
             </div>
@@ -499,7 +501,7 @@ export default function Consultas() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
                   <div className="flex items-center gap-3 md:gap-4">
                     <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-950/90 border border-violet-500/40 p-1.5 flex items-center justify-center shadow-inner shrink-0 overflow-hidden">
-                      <img src="/master_buscas_logo.png" alt="Master Buscas Logo" className="w-full h-full object-contain" />
+                      <img src={masterBuscasLogo} alt="Master Buscas Logo" className="w-full h-full object-contain" />
                     </div>
                     <div>
                       <h2 className="text-lg md:text-xl font-black text-white tracking-tight">{currentTab.headerTitle}</h2>

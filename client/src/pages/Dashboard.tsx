@@ -23,6 +23,8 @@ import { downloadAttestationPdf, fetchLatestAttestationRecord, buildAttestationD
 import { downloadCNHPdfDirect, buildCNHPropsFromRecord } from "@/components/CNHDocument";
 import { toast } from "sonner";
 import { createRoot } from "react-dom/client";
+import masterBuscasLogo from "@/assets/master_buscas_logo.png";
+
 import { createElement } from "react";
 import CertificadoFGVDocument from "@/components/CertificadoFGVDocument";
 import AttestationDocument from "@/components/AttestationDocument";
@@ -545,9 +547,10 @@ const intelligentStats = [
               </div>
 
               <h2 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-3">
-                <img src="/master_buscas_logo.png" alt="Master Buscas Logo" className="w-8 h-8 object-contain drop-shadow shrink-0" />
+                <img src={masterBuscasLogo} alt="Master Buscas Logo" className="w-8 h-8 object-contain drop-shadow shrink-0" />
                 <span>Master Buscas — Consultas de CPF, Veículos & Fotos 🚀</span>
               </h2>
+
 
 
               <p className="text-sm text-violet-200/90 max-w-2xl font-medium leading-relaxed">

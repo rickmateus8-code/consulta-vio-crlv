@@ -89,6 +89,119 @@ export default function StudioEngine() {
     }
   };
 
+  // Renderizador do Gabarito Base Oficial para os Documentos Nativos do DocMaster
+  const renderOfficialDocumentBaseCanvas = (presetKey: string): string => {
+    const isHorizontal = presetKey === "cnh" || presetKey === "crlv";
+    const width = 794;
+    const height = isHorizontal ? 530 : 1123;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+
+    // Fundo Base
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+
+    if (presetKey === "atestado") {
+      // Borda e Estrutura Oficial Atestado IDAB
+      ctx.strokeStyle = "#005CA9";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(20, 20, width - 40, height - 40);
+
+      // Linha do Cabeçalho
+      ctx.beginPath();
+      ctx.moveTo(40, 110);
+      ctx.lineTo(width - 40, 110);
+      ctx.strokeStyle = "#005CA9";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Marca d'água de Fundo Saúde IDAB
+      ctx.fillStyle = "rgba(0, 92, 169, 0.03)";
+      ctx.font = "bold 64px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("ATESTADO MÉDICO IDAB", width / 2, height / 2);
+
+      // Linha de Assinatura do Médico
+      ctx.beginPath();
+      ctx.moveTo(220, 890);
+      ctx.lineTo(574, 890);
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Moldura de Validação IDAB no Rodapé
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(40, 960, width - 80, 120);
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("VERIFICAÇÃO DE AUTENTICIDADE FORENSE IDAB - DIGITAL", 60, 985);
+    } else if (presetKey === "cnh") {
+      // CNH Digital VIO - Verde Oficial Trânsito
+      ctx.fillStyle = "#edf5f2";
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = "#1b4d3e";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(15, 15, width - 30, height - 30);
+
+      // Cabeçalho CNH
+      ctx.fillStyle = "#1b4d3e";
+      ctx.fillRect(15, 15, width - 30, 45);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("REPÚBLICA FEDERATIVA DO BRASIL - SENATRAN", width / 2, 35);
+      ctx.font = "bold 12px sans-serif";
+      ctx.fillText("CARTEIRA NACIONAL DE HABILITAÇÃO", width / 2, 50);
+
+      // Moldura da Foto do Condutor
+      ctx.strokeStyle = "#1b4d3e";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(35, 80, 140, 180);
+      ctx.fillStyle = "#d1e2dd";
+      ctx.fillRect(36, 81, 138, 178);
+
+      // Caixa Categoria CNH
+      ctx.fillStyle = "#1b4d3e";
+      ctx.fillRect(width - 120, 80, 85, 60);
+    } else if (presetKey === "crlv") {
+      // CRLV Senatran - Verde Veicular
+      ctx.fillStyle = "#f0f7f4";
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = "#144e36";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(15, 15, width - 30, height - 30);
+
+      ctx.fillStyle = "#144e36";
+      ctx.fillRect(15, 15, width - 30, 45);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("REPÚBLICA FEDERATIVA DO BRASIL - SENATRAN", width / 2, 35);
+      ctx.font = "bold 12px sans-serif";
+      ctx.fillText("CERTIFICADO DE REGISTRO E LICENCIAMENTO DE VEÍCULO - DIGITAL", width / 2, 50);
+    } else {
+      // Outros Documentos A4
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(20, 20, width - 40, height - 40);
+    }
+
+    return canvas.toDataURL("image/png");
+  };
+
   // Carregar Documento Existente do DocMaster para Edição Direta
   const handleLoadExistingDocPreset = (presetKey: string) => {
     const presetMap: Record<string, any> = {
@@ -101,15 +214,18 @@ export default function StudioEngine() {
         qrFormat: "XXXX-XXXX",
         qrSourceUrl: "https://validaratestado.digital",
         boxes: [
-          { id: "atest-1", fieldKey: "instituicao", label: "Instituição / UPA", x: 120, y: 140, width: 500, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-2", fieldKey: "paciente", label: "Nome do Paciente", x: 120, y: 220, width: 450, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-3", fieldKey: "cpf", label: "CPF do Paciente", x: 120, y: 260, width: 220, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-4", fieldKey: "cid", label: "Código CID-10", x: 420, y: 260, width: 160, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-5", fieldKey: "dias_repouso", label: "Dias de Repouso", x: 120, y: 310, width: 180, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-6", fieldKey: "data_emissao", label: "Data de Emissão", x: 420, y: 310, width: 180, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-7", fieldKey: "medico", label: "Nome do Médico", x: 120, y: 720, width: 350, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-8", fieldKey: "crm", label: "CRM / UF", x: 120, y: 750, width: 200, height: 24, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "atest-9", fieldKey: "codigoQR", label: "Código Validação IDAB", x: 480, y: 820, width: 180, height: 28, fontSize: 14, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "atest-1", fieldKey: "instituicao", label: "Prefeitura / UPA 24h", x: 180, y: 45, width: 440, height: 26, fontSize: 15, fontFamily: "Helvetica", color: "#005CA9", textAlign: "center", isUpperCase: true },
+          { id: "atest-2", fieldKey: "unidade", label: "Unidade Básica de Saúde", x: 180, y: 75, width: 440, height: 20, fontSize: 11, fontFamily: "Helvetica", color: "#475569", textAlign: "center", isUpperCase: true },
+          { id: "atest-3", fieldKey: "titulo", label: "ATESTADO MÉDICO", x: 56, y: 145, width: 682, height: 36, fontSize: 24, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "atest-4", fieldKey: "paciente", label: "Nome do Paciente", x: 56, y: 220, width: 682, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-5", fieldKey: "cpf", label: "CPF / Documento", x: 56, y: 255, width: 330, height: 24, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-6", fieldKey: "nascimento_sexo", label: "Data Nasc. / Sexo", x: 410, y: 255, width: 328, height: 24, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-7", fieldKey: "texto_atestado", label: "Corpo do Atestado Médico", x: 56, y: 320, width: 682, height: 260, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "justify", isUpperCase: false },
+          { id: "atest-8", fieldKey: "cid", label: "Código CID-10", x: 56, y: 610, width: 300, height: 24, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "atest-9", fieldKey: "data_emissao_extenso", label: "Data de Emissão Por Extenso", x: 56, y: 700, width: 682, height: 24, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "right", isUpperCase: true },
+          { id: "atest-10", fieldKey: "medico", label: "Nome do Médico Prescritor", x: 200, y: 895, width: 394, height: 24, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "atest-11", fieldKey: "crm", label: "CRM / Especialidade", x: 200, y: 920, width: 394, height: 20, fontSize: 11, fontFamily: "Helvetica", color: "#475569", textAlign: "center", isUpperCase: true },
+          { id: "atest-12", fieldKey: "codigoQR", label: "Código Validação IDAB", x: 56, y: 975, width: 110, height: 110, fontSize: 10, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
         ],
       },
       cnh: {
@@ -121,13 +237,13 @@ export default function StudioEngine() {
         qrFormat: "UUID-32",
         qrSourceUrl: "https://carteira-digital-transito-vio.digital",
         boxes: [
-          { id: "cnh-1", fieldKey: "nome", label: "Nome do Condutor", x: 140, y: 110, width: 420, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "cnh-2", fieldKey: "cpf", label: "CPF Condutor", x: 140, y: 155, width: 200, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "cnh-3", fieldKey: "rg_ssp", label: "Doc Identidade / Órgão Emissor", x: 140, y: 195, width: 260, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "cnh-4", fieldKey: "data_nascimento", label: "Data de Nascimento", x: 410, y: 195, width: 160, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "cnh-5", fieldKey: "renach", label: "RENACH", x: 360, y: 155, width: 200, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "cnh-6", fieldKey: "categoria", label: "Categoria CNH", x: 580, y: 110, width: 80, height: 40, fontSize: 20, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: true },
-          { id: "cnh-7", fieldKey: "validade", label: "Validade CNH", x: 140, y: 240, width: 160, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-1", fieldKey: "nome", label: "Nome do Condutor", x: 195, y: 80, width: 440, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-2", fieldKey: "cpf", label: "CPF Condutor", x: 195, y: 125, width: 200, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-3", fieldKey: "rg_ssp", label: "Doc Identidade / Órgão Emissor", x: 195, y: 165, width: 260, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-4", fieldKey: "data_nascimento", label: "Data de Nascimento", x: 465, y: 165, width: 170, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-5", fieldKey: "renach", label: "RENACH", x: 410, y: 125, width: 220, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "cnh-6", fieldKey: "categoria", label: "ACC / CAT CNH", x: width - 115, y: 88, width: 75, height: 44, fontSize: 24, fontFamily: "Helvetica", color: "#ffffff", textAlign: "center", isUpperCase: true },
+          { id: "cnh-7", fieldKey: "validade", label: "Validade CNH", x: 195, y: 210, width: 160, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
         ],
       },
       crlv: {
@@ -139,11 +255,11 @@ export default function StudioEngine() {
         qrFormat: "UUID-32",
         qrSourceUrl: "https://consulta-crlv-vio.digital",
         boxes: [
-          { id: "crlv-1", fieldKey: "placa", label: "Placa do Veículo", x: 100, y: 120, width: 180, height: 32, fontSize: 16, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
-          { id: "crlv-2", fieldKey: "renavam", label: "RENAVAM", x: 300, y: 120, width: 220, height: 32, fontSize: 16, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
-          { id: "crlv-3", fieldKey: "ano_fabricacao", label: "Ano Fabricação", x: 540, y: 120, width: 100, height: 32, fontSize: 14, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
-          { id: "crlv-4", fieldKey: "proprietario", label: "Nome do Proprietário", x: 100, y: 180, width: 500, height: 28, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-          { id: "crlv-5", fieldKey: "chassi", label: "Número do Chassi", x: 100, y: 230, width: 340, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "crlv-1", fieldKey: "placa", label: "Placa do Veículo", x: 40, y: 80, width: 200, height: 32, fontSize: 16, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "crlv-2", fieldKey: "renavam", label: "RENAVAM", x: 260, y: 80, width: 260, height: 32, fontSize: 16, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "crlv-3", fieldKey: "ano_fabricacao", label: "Ano Fab/Mod", x: 540, y: 80, width: 200, height: 32, fontSize: 14, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true },
+          { id: "crlv-4", fieldKey: "proprietario", label: "Nome do Proprietário", x: 40, y: 135, width: 700, height: 28, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
+          { id: "crlv-5", fieldKey: "chassi", label: "Número do Chassi", x: 40, y: 180, width: 440, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
         ],
       },
       receita: {
@@ -215,9 +331,13 @@ export default function StudioEngine() {
     setQrFormat(p.qrFormat);
     setQrSourceUrl(p.qrSourceUrl);
     setBoxes(p.boxes);
-    createBlankCanvas();
-    pushHistory(p.boxes, bgImage);
-    toast.success(`Documento Existente "${p.name}" carregado para EDIÇÃO VISUAL DIRETA!`);
+
+    // Gerar e Carregar o Gabarito Base Oficial do Documento no Canvas
+    const baseImgUrl = renderOfficialDocumentBaseCanvas(presetKey);
+    setBgImage(baseImgUrl);
+    updateCanvasSizeFromImage(baseImgUrl);
+    pushHistory(p.boxes, baseImgUrl);
+    toast.success(`Documento "${p.name}" carregado com GABARITO BASE OFICIAL e COORDENADAS EXATAS!`);
   };
 
   const updateCanvasSizeFromImage = (url: string) => {

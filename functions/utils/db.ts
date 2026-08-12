@@ -258,6 +258,18 @@ export async function getAttestationCount(env: Env): Promise<number> {
 }
 
 /**
+ * Normaliza qualquer data (JS Date ou ISO string) para o formato SQLite datetime ('YYYY-MM-DD HH:MM:SS')
+ * garantindo compatibilidade 100% perfeita com comparações datetime('now') no D1.
+ */
+export function formatSQLiteDatetime(dateInput: Date | string | number): string {
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(d.getTime())) {
+    return new Date().toISOString().replace('T', ' ').slice(0, 19);
+  }
+  return d.toISOString().replace('T', ' ').slice(0, 19);
+}
+
+/**
  * Garante a criação da tabela consultas_planos sem a CHECK constraint restritiva legada
  */
 export async function ensureConsultasPlanosTable(env: Env): Promise<void> {
@@ -272,6 +284,8 @@ export async function ensureConsultasPlanosTable(env: Env): Promise<void> {
         expires_at TEXT NOT NULL
       )
     `).run();
+    await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_consultas_planos_user_id ON consultas_planos(user_id)').run();
+    await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_consultas_planos_expires ON consultas_planos(expires_at)').run();
   } catch {}
 }
 
@@ -284,13 +298,14 @@ export async function insertConsultasPlano(
   userId: string | number,
   plano: string,
   valor: number,
-  expiresAt: string
+  expiresAt: string | Date
 ): Promise<any> {
   await ensureConsultasPlanosTable(env);
+  const formattedExpires = formatSQLiteDatetime(expiresAt);
   try {
     return await env.DB.prepare(
       'INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, ?, ?)'
-    ).bind(String(userId), plano, valor, expiresAt).run();
+    ).bind(String(userId), plano, valor, formattedExpires).run();
   } catch (err: any) {
     // Se falhar por causa da CHECK constraint legada do D1, executa a migração automática para remover a restrição
     const errMsg = String(err?.message || err || '');
@@ -319,7 +334,7 @@ export async function insertConsultasPlano(
 
         return await env.DB.prepare(
           'INSERT INTO consultas_planos (user_id, plano, valor, expires_at) VALUES (?, ?, ?, ?)'
-        ).bind(String(userId), plano, valor, expiresAt).run();
+        ).bind(String(userId), plano, valor, formattedExpires).run();
       } catch (migrationErr) {
         console.error('[insertConsultasPlano] Erro na migracao de remocao de CHECK constraint:', migrationErr);
         throw err;

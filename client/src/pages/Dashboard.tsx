@@ -27,6 +27,8 @@ import CertificadoFGVDocument from "@/components/CertificadoFGVDocument";
 import AttestationDocument from "@/components/AttestationDocument";
 import { usePDFExport, generatePDFFilename } from "@/lib/pdfExport";
 import { isToolLiberated } from "@/lib/permissions";
+import { getPlanoStatus } from "@/lib/snoopApi";
+
 
 const quickActionsRaw = [
   { key: "atestado", icon: FileText, label: "Novo Atestado", desc: "Emitir atestado médico", path: "/atestadocria", color: "yellow" },
@@ -136,7 +138,9 @@ export default function Dashboard() {
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showModelsModal, setShowModelsModal] = useState(false);
   const [loyaltyData, setLoyaltyData] = useState<any>(null);
+  const [consultasPlan, setConsultasPlan] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
 
   // Additional states for history management
   const [viewAtestado, setViewAtestado] = useState<DocRecord | null>(null);
@@ -222,7 +226,9 @@ export default function Dashboard() {
     loadStats();
     loadNotifications();
     loadLoyalty();
+    getPlanoStatus().then((d) => setConsultasPlan(d)).catch(() => setConsultasPlan(null));
   }, [refresh]);
+
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -467,7 +473,59 @@ const intelligentStats = [
           </div>
         </div>
 
+        {/* Banner Promocional / Status de Teste Grátis Master Buscas */}
+        {consultasPlan && (consultasPlan.plan || consultasPlan.is_free) && (
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-950 via-purple-900 to-indigo-950 border border-violet-500/30 p-6 md:p-8 shadow-2xl shadow-purple-950/40 group hover:border-violet-400/50 transition-all duration-300">
+            {/* Efeitos Glow e Fundo */}
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-violet-500/20 rounded-full blur-3xl group-hover:bg-violet-400/30 transition-all"></div>
+            <div className="absolute bottom-0 left-1/3 -mb-10 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl"></div>
+
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse">
+                    <Gift className="w-3.5 h-3.5 text-emerald-400" />
+                    {consultasPlan.plan?.valor === 0 ? "🎁 Teste Grátis Ativado" : "⚡ Plano Ativo"}
+                  </span>
+                  <span className="text-xs font-bold text-violet-300/80 bg-violet-900/50 px-2.5 py-0.5 rounded-md border border-violet-700/50">
+                    {consultasPlan.plan?.plano || "Master Buscas Ilimitado"}
+                  </span>
+                </div>
+
+                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                  Master Buscas — Pesquisa Cadastral Ilimitada 🚀
+                </h2>
+
+                <p className="text-sm text-violet-200/90 max-w-2xl font-medium leading-relaxed">
+                  {consultasPlan.plan?.valor === 0 ? (
+                    <>Sua conta possui <strong>1 Dia de Teste Grátis ativado</strong>! Acesse pesquisas ilimitadas a CPFs, Placas, Score, Veículos, Fotos e mais de 44 módulos sem consumir seu saldo.</>
+                  ) : (
+                    <>Você possui acesso ilimitado liberado para pesquisar CPFs, Veículos, Score, Fotos e +44 módulos em tempo real.</>
+                  )}
+                </p>
+
+                {consultasPlan.plan?.expires_at && !consultasPlan.is_free && (
+                  <div className="flex items-center gap-2 text-xs font-semibold text-violet-300/80 pt-1">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Válido até: {new Date(consultasPlan.plan.expires_at).toLocaleDateString('pt-BR')} às {new Date(consultasPlan.plan.expires_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setLocation("/consultas")}
+                className="w-full md:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-950/50 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 shrink-0 cursor-pointer"
+              >
+                <Search className="w-4 h-4" />
+                Acessar Master Buscas Agora
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Patent Card */}
+
         {loyaltyData && <PatentCard loyalty={loyaltyData} />}
 
         {/* Sua Rede de Indicações (Resumo) */}

@@ -2,6 +2,7 @@
  * /api/snoop/[...endpoint] — Proxy seguro para SnoopIntelligence API
  */
 import type { Env } from '../../types';
+import { insertConsultasPlano } from '../../utils/db';
 
 const SNOOP_BASE = 'https://snoopintelligence.cloud/api/v2';
 const CORS = {
@@ -45,9 +46,24 @@ async function checkActivePlan(user: any, env: Env): Promise<boolean> {
     const plan = await env.DB.prepare(
       'SELECT id FROM consultas_planos WHERE user_id = ? AND datetime(expires_at) > datetime(\'now\') LIMIT 1'
     ).bind(user.id).first<any>();
-    return !!plan;
-  } catch { return false; }
+    if (plan) return true;
+
+    // Se o usuário não tem plano ativo e NUNCA teve qualquer plano, conceder o Teste Grátis de 1 Dia automaticamente!
+    const anyPlanEver = await env.DB.prepare(
+      'SELECT id FROM consultas_planos WHERE user_id = ? LIMIT 1'
+    ).bind(user.id).first<any>();
+
+    if (!anyPlanEver) {
+      const trialExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await insertConsultasPlano(env, user.id, 'Teste Grátis 1 Dia', 0, trialExpiresAt);
+      return true;
+    }
+  } catch (e) {
+    console.error('[checkActivePlan] Erro:', e);
+  }
+  return false;
 }
+
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
   const user = await getUserFromSession(request, env);

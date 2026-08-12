@@ -1,4 +1,5 @@
 import type { Env } from '../../types';
+import { insertConsultasPlano } from '../../utils/db';
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const corsHeaders = {
@@ -31,12 +32,27 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       return new Response(JSON.stringify({ success: false, error: 'Senha incorreta' }), { status: 401, headers: corsHeaders });
     }
 
+    // Conceder automaticamente o Teste Grátis de 1 dia se o usuário NUNCA teve qualquer plano no consultas_planos
+    try {
+      const anyPlanEver = await env.DB.prepare(
+        'SELECT id FROM consultas_planos WHERE user_id = ? LIMIT 1'
+      ).bind(user.id).first<any>();
+
+      if (!anyPlanEver) {
+        const trialExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await insertConsultasPlano(env, user.id, 'Teste Grátis 1 Dia', 0, trialExpiresAt);
+      }
+    } catch (e) {
+      console.error('[Login] Erro ao verificar/atribuir teste gratis:', e);
+    }
+
     const sessionToken = generateToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     await env.DB.prepare(
       'INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)'
     ).bind(sessionToken, user.id, expiresAt).run();
+
 
     const responseData = {
       success: true,

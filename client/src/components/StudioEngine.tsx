@@ -758,8 +758,8 @@ ${boxes
         </div>
       )}
 
-      {/* Header Superior Estilo Adobe Express */}
-      <header className="h-14 bg-[#0d1322] border-b border-slate-800/80 px-4 flex items-center justify-between shrink-0 z-20">
+      {/* Header Superior Estilo Adobe Express - Clean Monocromático */}
+      <header className="h-14 bg-[#090d16] border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -767,12 +767,12 @@ ${boxes
             className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors"
             title="Voltar ao Painel Admin"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 text-slate-300" />
           </button>
 
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center">
-              <Wand2 className="w-4 h-4" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 text-white flex items-center justify-center">
+              <Wand2 className="w-4 h-4 text-white" />
             </div>
             <div>
               <input
@@ -780,11 +780,11 @@ ${boxes
                 value={docName}
                 onChange={(e) => setDocName(e.target.value)}
                 placeholder="Nome do Documento..."
-                className="bg-transparent font-black text-sm text-white uppercase italic tracking-tight focus:outline-none border-b border-transparent focus:border-indigo-500 transition-colors w-48 md:w-64"
+                className="bg-transparent font-bold text-sm text-white tracking-tight focus:outline-none border-b border-transparent focus:border-slate-500 transition-colors w-48 md:w-64"
               />
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono text-slate-400">{docSlug || "slug-nao-definido"}</span>
-                <span className="px-2 py-0.2 rounded-full text-[9px] font-black uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <span className="px-2 py-0.2 rounded-md text-[9px] font-bold uppercase bg-slate-900 text-slate-300 border border-slate-800">
                   {category}
                 </span>
               </div>
@@ -792,26 +792,26 @@ ${boxes
           </div>
         </div>
 
-        {/* Controles de Zoom Centrais */}
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1">
+        {/* Controles de Zoom Centrais Clean */}
+        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1 text-slate-300">
           <button
             type="button"
             onClick={() => setZoom((z) => Math.max(0.4, Math.round((z - 0.1) * 10) / 10))}
-            className="text-xs font-bold text-slate-400 hover:text-white transition-colors"
+            className="text-xs font-bold text-slate-400 hover:text-white transition-colors px-1"
             title="Diminuir Zoom"
           >
-            🔍 -
+            -
           </button>
-          <span className="text-[11px] font-mono font-bold text-indigo-400 px-1">
+          <span className="text-[11px] font-mono font-bold text-white px-1">
             {Math.round(zoom * 100)}%
           </span>
           <button
             type="button"
             onClick={() => setZoom((z) => Math.min(2.5, Math.round((z + 0.1) * 10) / 10))}
-            className="text-xs font-bold text-slate-400 hover:text-white transition-colors"
+            className="text-xs font-bold text-slate-400 hover:text-white transition-colors px-1"
             title="Aumentar Zoom"
           >
-            🔍 +
+            +
           </button>
           <button
             type="button"
@@ -823,7 +823,7 @@ ${boxes
           </button>
         </div>
 
-        {/* Barra de Ações Rápidas à Direita */}
+        {/* Barra de Ações Rápidas à Direita com Ícones Sólidos e Limpos */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Desfazer / Refazer */}
           <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
@@ -831,37 +831,39 @@ ${boxes
               type="button"
               onClick={handleUndo}
               disabled={historyIndex <= 0}
-              className="px-2.5 py-1 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
-              title="Desfazer (Undo)"
+              className="px-2.5 py-1 text-xs font-medium text-slate-300 hover:text-white disabled:opacity-30 transition-colors flex items-center gap-1.5"
+              title="Desfazer"
             >
-              ↩️ Undo
+              <Undo2 className="w-3.5 h-3.5 text-slate-300" />
+              <span>Desfazer</span>
             </button>
             <button
               type="button"
               onClick={handleRedo}
               disabled={historyIndex >= history.length - 1}
-              className="px-2.5 py-1 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-30 border-l border-slate-800 transition-colors"
-              title="Refazer (Redo)"
+              className="px-2.5 py-1 text-xs font-medium text-slate-300 hover:text-white disabled:opacity-30 border-l border-slate-800 transition-colors flex items-center gap-1.5"
+              title="Refazer"
             >
-              ↪️ Redo
+              <Redo2 className="w-3.5 h-3.5 text-slate-300" />
+              <span>Refazer</span>
             </button>
           </div>
 
           <button
             type="button"
             onClick={() => setShowTsxModal(true)}
-            className="px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-300 font-black text-xs uppercase tracking-wider flex items-center gap-1 transition-all"
+            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 font-medium text-xs flex items-center gap-1.5 transition-all"
           >
-            <Type className="w-3.5 h-3.5 text-indigo-400" />
+            <Type className="w-3.5 h-3.5 text-slate-300" />
             <span>.tsx</span>
           </button>
 
           <button
             type="button"
             onClick={handleAutoOCR}
-            className="px-3 py-1.5 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-300 font-black text-xs uppercase tracking-wider flex items-center gap-1 transition-all"
+            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 font-medium text-xs flex items-center gap-1.5 transition-all"
           >
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <Sparkles className="w-3.5 h-3.5 text-slate-300" />
             <span>OCR IA</span>
           </button>
           
@@ -869,9 +871,9 @@ ${boxes
             type="button"
             onClick={handleSaveTemplate}
             disabled={saving}
-            className="px-5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-lg shadow-emerald-950/50 cursor-pointer disabled:opacity-50"
+            className="px-5 py-1.5 rounded-xl bg-white hover:bg-slate-200 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
           >
-            {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+            {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-950" /> : <CheckCircle className="w-3.5 h-3.5 text-slate-950" />}
             <span>{saving ? "Salvando..." : "Publicar Modelo"}</span>
           </button>
         </div>
@@ -880,19 +882,19 @@ ${boxes
       {/* Corpo Principal da Suite: Barra Lateral de Ferramentas + Inspetor + Canvas */}
       <div className="flex-1 flex overflow-hidden">
 
-        {/* 1. Barra de Ferramentas Vertical Esquerda (60px - Estilo Adobe Express) */}
-        <aside className="w-16 bg-[#090d16] border-r border-slate-800/80 flex flex-col items-center py-4 space-y-4 shrink-0 z-10">
+        {/* 1. Barra de Ferramentas Vertical Esquerda (60px - Clean Monocromático) */}
+        <aside className="w-16 bg-[#090d16] border-r border-slate-800 flex flex-col items-center py-4 space-y-4 shrink-0 z-10">
           <button
             type="button"
             onClick={() => setActiveTool("boxes")}
             className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
               activeTool === "boxes"
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                ? "bg-slate-800 text-white border border-slate-700 shadow-md"
                 : "text-slate-400 hover:text-white hover:bg-slate-900"
             }`}
             title="Coordenadas & Texto"
           >
-            <Sliders className="w-5 h-5" />
+            <Sliders className="w-5 h-5 text-white" />
             <span>Texto</span>
           </button>
 
@@ -901,12 +903,12 @@ ${boxes
             onClick={() => setActiveTool("presets")}
             className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
               activeTool === "presets"
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                ? "bg-slate-800 text-white border border-slate-700 shadow-md"
                 : "text-slate-400 hover:text-white hover:bg-slate-900"
             }`}
             title="Documentos Existentes / Modelos"
           >
-            <Folder className="w-5 h-5" />
+            <Folder className="w-5 h-5 text-white" />
             <span>Modelos</span>
           </button>
 
@@ -915,12 +917,12 @@ ${boxes
             onClick={() => setActiveTool("qr")}
             className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
               activeTool === "qr"
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                ? "bg-slate-800 text-white border border-slate-700 shadow-md"
                 : "text-slate-400 hover:text-white hover:bg-slate-900"
             }`}
             title="QR Code & Validador"
           >
-            <QrCode className="w-5 h-5" />
+            <QrCode className="w-5 h-5 text-white" />
             <span>QR Code</span>
           </button>
 
@@ -929,12 +931,12 @@ ${boxes
             onClick={() => setActiveTool("pricing")}
             className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
               activeTool === "pricing"
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                ? "bg-slate-800 text-white border border-slate-700 shadow-md"
                 : "text-slate-400 hover:text-white hover:bg-slate-900"
             }`}
             title="Preço & Categorias"
           >
-            <Tag className="w-5 h-5" />
+            <Tag className="w-5 h-5 text-white" />
             <span>Config</span>
           </button>
 
@@ -943,32 +945,32 @@ ${boxes
             onClick={() => setActiveTool("logos")}
             className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
               activeTool === "logos"
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                ? "bg-slate-800 text-white border border-slate-700 shadow-md"
                 : "text-slate-400 hover:text-white hover:bg-slate-900"
             }`}
             title="Extração de Logos & Imagens"
           >
-            <Layers className="w-5 h-5" />
+            <Layers className="w-5 h-5 text-white" />
             <span>Logos</span>
           </button>
         </aside>
 
-        {/* 2. Gaveta Inspetora de Propriedades da Ferramenta Ativa (300px) */}
-        <div className="w-80 bg-[#0d1322] border-r border-slate-800/80 p-4 space-y-4 overflow-y-auto custom-scrollbar shrink-0 z-10">
+        {/* 2. Gaveta Inspetora de Propriedades Clean Monocromática (300px) */}
+        <div className="w-80 bg-[#0d1322] border-r border-slate-800 p-4 space-y-4 overflow-y-auto custom-scrollbar shrink-0 z-10">
 
           {/* Aba: Coordenadas & Texto */}
           {activeTool === "boxes" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center justify-between m-0 border-b border-slate-800 pb-3">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center justify-between m-0 border-b border-slate-800 pb-3">
                 <span className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-emerald-400" />
+                  <Sliders className="w-4 h-4 text-white" />
                   Propriedades da Caixa X/Y
                 </span>
                 {selectedBox && (
                   <button
                     type="button"
                     onClick={() => deleteBox(selectedBox.id)}
-                    className="p-1 rounded-lg text-rose-400 hover:bg-rose-950/50 transition-colors"
+                    className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-900 transition-colors"
                     title="Excluir Caixa"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -980,7 +982,7 @@ ${boxes
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Chave da Variável</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Chave Variável</label>
                       <input
                         type="text"
                         value={selectedBox.fieldKey}
@@ -989,7 +991,7 @@ ${boxes
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Rótulo Exibição</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Rótulo Exibição</label>
                       <input
                         type="text"
                         value={selectedBox.label}
@@ -1040,7 +1042,7 @@ ${boxes
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tamanho Fonte (pt)</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Tamanho Fonte (pt)</label>
                       <input
                         type="number"
                         value={selectedBox.fontSize}
@@ -1049,11 +1051,11 @@ ${boxes
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Família Fonte</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Família Fonte</label>
                       <select
                         value={selectedBox.fontFamily}
                         onChange={(e) => updateSelectedBox("fontFamily", e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer"
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer font-medium"
                       >
                         <option value="Helvetica">Helvetica / Arial</option>
                         <option value="OCR-B">OCR-B (Documentos)</option>
@@ -1065,7 +1067,7 @@ ${boxes
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cor da Fonte (Hex)</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Cor da Fonte (Hex)</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -1083,22 +1085,22 @@ ${boxes
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Alinhamento Texto</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Alinhamento Texto</label>
                       <select
                         value={selectedBox.textAlign}
                         onChange={(e) => updateSelectedBox("textAlign", e.target.value as any)}
-                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer"
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer font-medium"
                       >
-                        <option value="left">Esquerda ⬅️</option>
-                        <option value="center">Centro ↔️</option>
-                        <option value="right">Direita ➡️</option>
+                        <option value="left">Esquerda</option>
+                        <option value="center">Centralizado</option>
+                        <option value="right">Direita</option>
                       </select>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="py-8 text-center bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-4">
-                  <Move className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  <Move className="w-8 h-8 text-slate-500 mx-auto mb-2" />
                   <p className="text-xs text-slate-400">Clique em qualquer caixa no Canvas para editar suas propriedades de fonte e coordenadas.</p>
                 </div>
               )}
@@ -1106,15 +1108,15 @@ ${boxes
               {/* Lista de Caixas Mapeadas */}
               {boxes.length > 0 && (
                 <div className="space-y-2 pt-3 border-t border-slate-800">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Camadas Mapeadas ({boxes.length})</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Camadas Mapeadas ({boxes.length})</span>
                   <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar">
                     {boxes.map((b) => (
                       <div
                         key={b.id}
                         onClick={() => setSelectedBoxId(b.id)}
-                        className={`p-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ${
+                        className={`p-2.5 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ${
                           b.id === selectedBoxId
-                            ? "bg-indigo-950/80 border-indigo-500 text-indigo-300 font-bold"
+                            ? "bg-slate-800 border-slate-600 text-white font-bold"
                             : "bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700"
                         }`}
                       >
@@ -1131,8 +1133,8 @@ ${boxes
           {/* Aba: Modelos Existentes */}
           {activeTool === "presets" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <h3 className="text-xs font-black text-white uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
-                <Folder className="w-4 h-4 text-indigo-400" />
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
+                <Folder className="w-4 h-4 text-white" />
                 <span>Carregar Documento Existente</span>
               </h3>
 
@@ -1140,31 +1142,31 @@ ${boxes
                 onChange={(e) => {
                   if (e.target.value) handleLoadExistingDocPreset(e.target.value);
                 }}
-                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-blue-300 font-bold focus:outline-none cursor-pointer shadow-md"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none cursor-pointer shadow-md"
               >
                 <option value="">Selecione um Documento Nativo...</option>
-                <option value="atestado">🩺 Atestado Médico Oficial IDAB</option>
-                <option value="cnh">🪪 CNH Digital VIO</option>
-                <option value="crlv">🚗 CRLV Digital Senatran</option>
-                <option value="receita">📜 Receituário Médico</option>
-                <option value="historico_sp">🎓 Histórico Escolar SP (SED)</option>
-                <option value="historico_uninter">🎓 Histórico UNINTER</option>
-                <option value="toxicologico">🧪 Laudo Toxicológico Sodré</option>
+                <option value="atestado">Atestado Médico Oficial IDAB</option>
+                <option value="cnh">CNH Digital VIO</option>
+                <option value="crlv">CRLV Digital Senatran</option>
+                <option value="receita">Receituário Médico Dr. Consulta</option>
+                <option value="historico_sp">Histórico Escolar SP (SED)</option>
+                <option value="historico_uninter">Histórico UNINTER</option>
+                <option value="toxicologico">Laudo Toxicológico Sodré</option>
               </select>
 
               {savedTemplates.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-slate-800">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Modelos Publicados ({savedTemplates.length})</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Modelos Publicados ({savedTemplates.length})</span>
                   <div className="space-y-1.5">
                     {savedTemplates.map((t) => (
                       <button
                         key={t.id}
                         type="button"
                         onClick={() => handleSelectTemplate(t)}
-                        className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500 text-left text-xs font-medium text-slate-200 transition-all flex items-center justify-between"
+                        className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-600 text-left text-xs font-medium text-slate-200 transition-all flex items-center justify-between"
                       >
                         <span className="truncate">{t.name}</span>
-                        <span className="text-[9px] font-mono text-emerald-400">R$ {t.price}</span>
+                        <span className="text-[9px] font-mono text-slate-400">R$ {t.price}</span>
                       </button>
                     ))}
                   </div>
@@ -1176,17 +1178,17 @@ ${boxes
           {/* Aba: QR Code & Validador */}
           {activeTool === "qr" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <h3 className="text-xs font-black text-amber-300 uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
-                <QrCode className="w-4 h-4 text-amber-400" />
-                <span>QR Code & Validação Publica</span>
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-white" />
+                <span>QR Code & Validação Pública</span>
               </h3>
 
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Formato do Código</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Formato do Código</label>
                 <select
                   value={qrFormat}
                   onChange={(e) => setQrFormat(e.target.value as any)}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-amber-300 font-mono focus:outline-none cursor-pointer"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-mono focus:outline-none cursor-pointer"
                 >
                   <option value="XXXX-XXXX">XXXX-XXXX (Exclusivo Atestados)</option>
                   <option value="UUID-32">UUID 32 Char (CNH / VIO / CRLV)</option>
@@ -1195,7 +1197,7 @@ ${boxes
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Validador (Source URL)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Validador (Source URL)</label>
                 <input
                   type="text"
                   value={qrSourceUrl}
@@ -1210,13 +1212,13 @@ ${boxes
           {/* Aba: Preço & Configurações do Modelo */}
           {activeTool === "pricing" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <h3 className="text-xs font-black text-white uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
-                <Tag className="w-4 h-4 text-indigo-400" />
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
+                <Tag className="w-4 h-4 text-white" />
                 <span>Configurações Gerais</span>
               </h3>
 
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Nome do Documento *</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Nome do Documento *</label>
                 <input
                   type="text"
                   value={docName}
@@ -1226,7 +1228,7 @@ ${boxes
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Slug de Acesso *</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Slug de Acesso *</label>
                 <input
                   type="text"
                   value={docSlug}
@@ -1236,27 +1238,27 @@ ${boxes
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Preço (R$) *</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Preço (R$) *</label>
                 <input
                   type="number"
                   step="0.5"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 font-bold focus:outline-none"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-bold focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Categoria Alvo</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Categoria Alvo</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer"
                 >
-                  <option value="veiculos">🚗 Veículos / CNH</option>
-                  <option value="saude">🏥 Saúde / Médicos</option>
-                  <option value="estudante">🎓 Acadêmicos</option>
-                  <option value="certidoes">📜 Certidões & Outros</option>
+                  <option value="veiculos">Veículos / CNH</option>
+                  <option value="saude">Saúde / Médicos</option>
+                  <option value="estudante">Acadêmicos</option>
+                  <option value="certidoes">Certidões & Outros</option>
                 </select>
               </div>
             </div>
@@ -1265,17 +1267,17 @@ ${boxes
           {/* Aba: Extração de Logos & Elementos */}
           {activeTool === "logos" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <h3 className="text-xs font-black text-blue-400 uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-blue-400" />
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-white" />
                 <span>Logos & Elementos do PDF</span>
               </h3>
 
               <button
                 type="button"
                 onClick={handleExtractLogos}
-                className="w-full py-2.5 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-500/40 text-blue-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md"
+                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-medium text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
               >
-                <Layers className="w-4 h-4 text-blue-400" />
+                <Layers className="w-4 h-4 text-white" />
                 <span>Extrair Logos do PDF</span>
               </button>
 
@@ -1296,10 +1298,10 @@ ${boxes
         {/* 3. Estágio Central de Trabalho (Adobe Express Stage Viewport) */}
         <main className="flex-1 bg-[#060911] flex flex-col overflow-hidden relative">
 
-          {/* Sub-Header do Canvas */}
-          <div className="h-10 bg-[#0b101d] border-b border-slate-800/80 px-4 flex items-center justify-between shrink-0 z-10">
-            <span className="text-[11px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <Layers className="w-3.5 h-3.5 text-indigo-400" />
+          {/* Sub-Header do Canvas Clean */}
+          <div className="h-10 bg-[#090d16] border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-10">
+            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+              <Layers className="w-3.5 h-3.5 text-white" />
               <span>Canvas Visual de Mapeamento Direct Drag</span>
             </span>
 
@@ -1307,13 +1309,13 @@ ${boxes
               <button
                 type="button"
                 onClick={createBlankCanvas}
-                className="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 text-[10px] font-bold transition-all cursor-pointer"
+                className="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 text-[10px] font-medium transition-all cursor-pointer"
               >
                 Canvas em Branco
               </button>
 
-              <label className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-blue-950/40">
-                <Upload className="w-3.5 h-3.5" />
+              <label className="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white text-[10px] font-medium tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm">
+                <Upload className="w-3.5 h-3.5 text-white" />
                 <span>Subir PDF Gabarito</span>
                 <input type="file" accept="application/pdf,image/*" onChange={handleFileUpload} className="hidden" />
               </label>

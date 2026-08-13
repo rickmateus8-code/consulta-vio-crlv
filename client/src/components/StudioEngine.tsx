@@ -442,40 +442,14 @@ export default function StudioEngine() {
 
     // Gerar e Carregar o Gabarito Base Oficial em HD no Canvas
     if (presetKey === "cnh") {
-      const cvs = document.createElement("canvas");
-      drawCNHToCanvas(cvs, {
-        nome: "RICK MATEUS ARRUDA DE FIGUEIREDO",
-        cpf: "590.974.098-96",
-        rg: "26216797",
-        orgaoEmissor: "SSP",
-        ufRG: "SP",
-        sexo: "M",
-        nacionalidade: "BRASILEIRO(A)",
-        dataNascimento: "05/03/2003",
-        localNascimento: "BARUERI",
-        ufNascimento: "SP",
-        nomePai: "MARCOS PAULO ARCO IRIS DE FIGUEIREDO",
-        nomeMae: "DÉBORA DE ARRUDA CALDAS",
-        categoria: "AB",
-        registro: "37362896284",
-        validade: "15/09/2026",
-        primeiraHabilitacao: "20/05/2012",
-        dataEmissao: "14/09/2021",
-        localEmissao: "SÃO PAULO",
-        ufEmissao: "SP",
-        espelho: "5053403062",
-        observacoes: "EAR",
-        codigoQR: "31c64778-606e-436e-9f9d-287574f23abe"
-      }).then(() => {
-        const baseImgUrl = cvs.toDataURL("image/png");
-        setPdfPages([baseImgUrl]);
-        setCurrentPageIndex(0);
-        setBgImage(baseImgUrl);
-        updateCanvasSizeFromImage(baseImgUrl);
-        pushHistory(p.boxes, baseImgUrl);
-        setActiveTool("boxes");
-        toast.success(`Documento REAL "${p.name}" (300 DPI) carregado no Canvas com COORDENADAS 1:1!`);
-      });
+      const baseImgUrl = "/assets/cnh_base_template.png";
+      setPdfPages([baseImgUrl]);
+      setCurrentPageIndex(0);
+      setBgImage(baseImgUrl);
+      updateCanvasSizeFromImage(baseImgUrl);
+      pushHistory(p.boxes, baseImgUrl);
+      setActiveTool("boxes");
+      toast.success(`Documento "${p.name}" carregado com BACKGROUND LIMPO (cnh_base) e textos arrastáveis!`);
     } else {
       const baseImgUrl = renderOfficialDocumentBaseCanvas(presetKey);
       setPdfPages([baseImgUrl]);
@@ -1960,6 +1934,18 @@ ${boxes
                       />
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBoxes(prev => prev.filter(b => b.type !== "qrcode"));
+                      toast.info("Caixa de QR Code removida do documento!");
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer mt-3"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Remover QR Code do Documento</span>
+                  </button>
                 </div>
               )}
             </div>

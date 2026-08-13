@@ -118,13 +118,16 @@ export function loadDocumentData(doc: any): {
   bgImage?: string;
   pdfPages?: string[];
 } {
-  const rawBoxes = Array.isArray(doc.coordinates)
-    ? doc.coordinates
-    : Array.isArray(doc.boxes)
-    ? doc.boxes
-    : typeof doc.coordinates_json === "string"
-    ? JSON.parse(doc.coordinates_json)
-    : doc.coordinates_json || [];
+  if (!doc) return { boxes: [], docName: "", docSlug: "", category: "veiculos", price: "15.00", targetStructure: "cnh" };
+  const docCopy = JSON.parse(JSON.stringify(doc));
+
+  const rawBoxes = Array.isArray(docCopy.coordinates)
+    ? docCopy.coordinates
+    : Array.isArray(docCopy.boxes)
+    ? docCopy.boxes
+    : typeof docCopy.coordinates_json === "string"
+    ? JSON.parse(docCopy.coordinates_json)
+    : docCopy.coordinates_json || [];
 
   const normalizedBoxes = (Array.isArray(rawBoxes) ? rawBoxes : []).map(normalizeDocumentBox);
 

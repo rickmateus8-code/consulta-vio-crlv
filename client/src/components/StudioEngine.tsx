@@ -4,6 +4,7 @@ import {
   DollarSign, Layers, Eye, RefreshCw, Sparkles, Tag, Shield, Sliders, ArrowLeft, Folder, QrCode, Save, Undo2, Redo2, FileText, Crop, FileCode, Image as ImageIcon, File
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import QRCode from "qrcode";
 import { toast } from "sonner";
 import { saveActiveCNHLayout, CNH_DEFAULT_LAYOUT } from "@/config/cnhLayout";
 import { drawCNHToCanvas } from "@/components/CNHDocument";
@@ -51,6 +52,7 @@ export default function StudioEngine() {
   const [qrSourceUrl, setQrSourceUrl] = useState("https://atestados-idab.pages.dev");
   const [qrPattern, setQrPattern] = useState("{sourceUrl}/validar?code={code}");
   const [extractedLogos, setExtractedLogos] = useState<string[]>([]);
+  const [qrPngMap, setQrPngMap] = useState<Record<string, string>>({});
 
   // Multi-Páginas PDF & Crop de Logos
   const [pdfPages, setPdfPages] = useState<string[]>([]);
@@ -479,6 +481,29 @@ export default function StudioEngine() {
     loadTemplates();
     createBlankCanvas();
   }, []);
+
+  // Gerador Automático de Imagem PNG Sólida de QR Code em Alta Resolução (512x512px Quadrado)
+  useEffect(() => {
+    const generateQRPngs = async () => {
+      const qrBoxes = boxes.filter(b => b.type === "qrcode");
+      for (const box of qrBoxes) {
+        const sampleCode = box.qrFormat === "XXXX-XXXX" ? "A8F9-2041" : box.qrFormat === "CPF" ? "94598940468" : "9b3a7c9d-8e4f-4a12-98ab-34cd56ef7890";
+        const qrVal = (box.qrPattern || "{sourceUrl}/validar?code={code}")
+          .replace("{sourceUrl}", box.qrSourceUrl || "https://atestados-idab.pages.dev")
+          .replace("{code}", sampleCode);
+
+        try {
+          const pngUrl = await QRCode.toDataURL(qrVal, {
+            width: 512,
+            margin: 1,
+            color: { dark: "#000000", light: "#FFFFFF" }
+          });
+          setQrPngMap(prev => ({ ...prev, [box.id]: pngUrl }));
+        } catch {}
+      }
+    };
+    generateQRPngs();
+  }, [boxes, qrFormat, qrSourceUrl, qrPattern]);
 
   const createBlankCanvas = () => {
     const canvas = document.createElement("canvas");
@@ -2177,43 +2202,52 @@ ${boxes
                   .map((box) => {
                   const isSelected = box.id === selectedBoxId;
 
-                  if (box.type === "qrcode") {
-                    const sampleCode = box.qrFormat === "XXXX-XXXX" ? "A8F9-2041" : box.qrFormat === "CPF" ? "94598940468" : "9b3a7c9d-8e4f-4a12-98ab-34cd56ef7890";
-                    const qrVal = (box.qrPattern || "{sourceUrl}/validar?code={code}")
-                      .replace("{sourceUrl}", box.qrSourceUrl || "https://atestados-idab.pages.dev")
-                      .replace("{code}", sampleCode);
+                    if (box.type === "qrcode") {
+                      const sampleCode = box.qrFormat === "XXXX-XXXX" ? "A8F9-2041" : box.qrFormat === "CPF" ? "94598940468" : "9b3a7c9d-8e4f-4a12-98ab-34cd56ef7890";
+                      const qrVal = (box.qrPattern || "{sourceUrl}/validar?code={code}")
+                        .replace("{sourceUrl}", box.qrSourceUrl || "https://atestados-idab.pages.dev")
+                        .replace("{code}", sampleCode);
+                      const pngUrl = qrPngMap[box.id];
 
-                    return (
-                      <div
-                        key={box.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedBoxId(box.id);
-                          setActiveTool("qr");
-                        }}
-                        className={`absolute border-2 rounded-xl transition-all flex flex-col items-center justify-center p-1 bg-white/95 shadow-2xl cursor-pointer ${
-                          isSelected
-                            ? "border-emerald-400 shadow-emerald-500/50 z-30 ring-4 ring-emerald-400/40 animate-pulse"
-                            : "border-emerald-600 hover:border-emerald-400 z-20"
-                        }`}
-                        style={{
-                          left: box.x * zoom,
-                          top: box.y * zoom,
-                          width: box.width * zoom,
-                          height: box.height * zoom,
-                        }}
-                      >
-                        <QRCodeSVG
-                          value={qrVal}
-                          size={Math.max(16, Math.min(box.width * zoom - 10, box.height * zoom - 14))}
-                          level="M"
-                        />
-                        <span className="text-[7px] font-mono font-black text-emerald-900 uppercase tracking-widest mt-0.5 truncate max-w-full">
-                          QR CODE ({box.x},{box.y})
-                        </span>
-                      </div>
-                    );
-                  }
+                      return (
+                        <div
+                          key={box.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedBoxId(box.id);
+                            setActiveTool("qr");
+                          }}
+                          className={`absolute border-2 rounded-lg transition-all flex flex-col items-center justify-center p-0.5 bg-white shadow-2xl cursor-pointer aspect-square ${
+                            isSelected
+                              ? "border-emerald-400 shadow-emerald-500/50 z-30 ring-4 ring-emerald-400/40 animate-pulse"
+                              : "border-emerald-600 hover:border-emerald-400 z-20"
+                          }`}
+                          style={{
+                            left: box.x * zoom,
+                            top: box.y * zoom,
+                            width: box.width * zoom,
+                            height: box.height * zoom,
+                          }}
+                        >
+                          {pngUrl ? (
+                            <img
+                              src={pngUrl}
+                              alt="QR Code PNG Sólido"
+                              className="w-full h-full object-contain aspect-square select-none pointer-events-none rounded-none"
+                            />
+                          ) : (
+                            <QRCodeSVG
+                              value={qrVal}
+                              size={Math.max(16, Math.min(box.width * zoom - 6, box.height * zoom - 6))}
+                              level="M"
+                            />
+                          )}
+                          <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7px] font-mono font-black text-white bg-slate-900 px-1 py-0.2 rounded uppercase tracking-widest pointer-events-none whitespace-nowrap shadow">
+                            QR ({box.x},{box.y})
+                          </span>
+                        </div>
+                      );
+                    }
 
                   return (
                     <div

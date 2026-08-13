@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+import { saveActiveCNHLayout, CNH_DEFAULT_LAYOUT } from "@/config/cnhLayout";
 
 export interface CoordinateBox {
   id: string;
@@ -897,6 +898,47 @@ export default function StudioEngine() {
     }
   };
 
+  // Sincronizar Coordenadas Visuais com o Módulo da CNH (/cnhcria) em Tempo Real
+  const handleSyncCNHLayout = () => {
+    const fieldsMap: Record<string, any> = { ...CNH_DEFAULT_LAYOUT.fields };
+
+    boxes.forEach((box) => {
+      const k = box.fieldKey.toLowerCase();
+      if (k.includes("nome") && !k.includes("pai") && !k.includes("mae") && !k.includes("estado")) {
+        fieldsMap.nome = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("primeira") || k.includes("hab")) {
+        fieldsMap.primeiraHabilitacao = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("nasc")) {
+        fieldsMap.nascimento = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("cpf")) {
+        fieldsMap.cpf = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("rg") || k.includes("identidade")) {
+        fieldsMap.docIdentidade = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("reg") || k.includes("registro")) {
+        fieldsMap.registro = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("cat") || k.includes("categoria")) {
+        fieldsMap.categoria = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("valida")) {
+        fieldsMap.validade = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("emiss") && !k.includes("local")) {
+        fieldsMap.dataEmissao = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("local")) {
+        fieldsMap.localEmissao = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("pai")) {
+        fieldsMap.nomePai = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("mae")) {
+        fieldsMap.nomeMae = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (k.includes("obs") || k.includes("ear")) {
+        fieldsMap.observacoes = { x: box.x, y: box.y, fontSize: box.fontSize, color: box.color, maxWidth: box.width };
+      } else if (box.type === "qrcode" || k.includes("qr")) {
+        fieldsMap.qrCode = { x: box.x, y: box.y, size: box.width };
+      }
+    });
+
+    saveActiveCNHLayout({ fields: fieldsMap });
+    toast.success("✨ Coordenadas aplicadas na CNH (/cnhcria) em TEMPO REAL!");
+  };
+
   const selectedBox = boxes.find((b) => b.id === selectedBoxId);
 
   const updateSelectedBox = (key: keyof CoordinateBox, val: any) => {
@@ -1439,6 +1481,17 @@ ${boxes
                 <option value="historico_uninter">Histórico UNINTER</option>
                 <option value="toxicologico">Laudo Toxicológico Sodré</option>
               </select>
+
+              {(targetStructure === "cnh" || docSlug === "cnhcria") && (
+                <button
+                  type="button"
+                  onClick={handleSyncCNHLayout}
+                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition-all active:scale-95 cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4 text-white" />
+                  <span>Aplicar Coordenadas na CNH (/cnhcria)</span>
+                </button>
+              )}
 
               {savedTemplates.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-slate-800">

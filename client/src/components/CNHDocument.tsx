@@ -9,6 +9,7 @@
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import QRCode from "qrcode";
+import { getActiveCNHLayout } from "@/config/cnhLayout";
 
 export interface CNHDocumentProps {
   nome: string;

@@ -474,27 +474,10 @@ export default function StudioEngine() {
     if (ctx) {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, 794, 1123);
-
-      ctx.strokeStyle = "#cbd5e1";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(15, 15, 764, 1093);
-
-      ctx.fillStyle = "#64748b";
-      ctx.font = "bold 20px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("GABARITO PADRÃO DOCMASTER STUDIO (FOLHA NATIVA A4)", 397, 60);
-
-      ctx.strokeStyle = "#e2e8f0";
-      ctx.beginPath();
-      ctx.moveTo(30, 80);
-      ctx.lineTo(764, 80);
-      ctx.stroke();
-
-      ctx.fillStyle = "#94a3b8";
-      ctx.font = "15px sans-serif";
-      ctx.fillText("Clique e arraste o mouse em qualquer área para delimitar caixas de coordenadas X/Y", 397, 560);
     }
     const dataUrl = canvas.toDataURL("image/png");
+    setPdfPages([dataUrl]);
+    setCurrentPageIndex(0);
     setBgImage(dataUrl);
     updateCanvasSizeFromImage(dataUrl);
   };

@@ -3,6 +3,7 @@ import {
   Wand2, Upload, Move, Type, Trash2, Plus, CheckCircle, 
   DollarSign, Layers, Eye, RefreshCw, Sparkles, Tag, Shield, Sliders, ArrowLeft, Folder, QrCode, Save, Undo2, Redo2, FileText, Crop, FileCode, Image as ImageIcon, File
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
 export interface CoordinateBox {
@@ -18,6 +19,10 @@ export interface CoordinateBox {
   color: string;
   textAlign: "left" | "center" | "right";
   isUpperCase: boolean;
+  type?: "text" | "qrcode" | "logo";
+  qrFormat?: "XXXX-XXXX" | "UUID-32" | "CPF" | "NUMERICO-11";
+  qrSourceUrl?: string;
+  qrPattern?: string;
 }
 
 interface StudioTemplate {
@@ -39,8 +44,9 @@ export default function StudioEngine() {
   const [targetStructure, setTargetStructure] = useState("cnh");
 
   // QR Code & Configuração de Validação
-  const [qrFormat, setQrFormat] = useState<"XXXX-XXXX" | "UUID-32" | "CPF">("UUID-32");
-  const [qrSourceUrl, setQrSourceUrl] = useState("https://carteira-digital-transito-vio.digital");
+  const [qrFormat, setQrFormat] = useState<"XXXX-XXXX" | "UUID-32" | "CPF" | "NUMERICO-11">("UUID-32");
+  const [qrSourceUrl, setQrSourceUrl] = useState("https://atestados-idab.pages.dev");
+  const [qrPattern, setQrPattern] = useState("{sourceUrl}/validar?code={code}");
   const [extractedLogos, setExtractedLogos] = useState<string[]>([]);
 
   // Multi-Páginas PDF & Crop de Logos
@@ -569,6 +575,42 @@ export default function StudioEngine() {
 
     setIsCropMode(true);
     toast.info("Modo Cortar Logo Ativado: Arraste o mouse sobre qualquer logo/brasão na tela para isolá-lo!");
+  };
+
+  // Posicionamento e Configuração de Caixa de QR Code no Canvas
+  const handleAddOrUpdateQRCodeBox = () => {
+    const existingIndex = boxes.findIndex(b => b.type === "qrcode");
+    const sampleCode = qrFormat === "XXXX-XXXX" ? "A8F9-2041" : qrFormat === "CPF" ? "94598940468" : "9b3a7c9d-8e4f-4a12-98ab-34cd56ef7890";
+    const previewUrl = qrPattern.replace("{sourceUrl}", qrSourceUrl).replace("{code}", sampleCode);
+
+    const qrBox: CoordinateBox = {
+      id: existingIndex >= 0 ? boxes[existingIndex].id : `qr-${Date.now()}`,
+      fieldKey: "qrcode_validacao",
+      label: "[QR CODE] Validador Oficial",
+      type: "qrcode",
+      x: existingIndex >= 0 ? boxes[existingIndex].x : Math.round(canvasSize.width - 140),
+      y: existingIndex >= 0 ? boxes[existingIndex].y : 40,
+      width: existingIndex >= 0 ? boxes[existingIndex].width : 110,
+      height: existingIndex >= 0 ? boxes[existingIndex].height : 110,
+      fontSize: 10,
+      fontFamily: "Helvetica",
+      color: "#000000",
+      textAlign: "center",
+      isUpperCase: false,
+      qrFormat,
+      qrSourceUrl,
+      qrPattern,
+    };
+
+    if (existingIndex >= 0) {
+      setBoxes(prev => prev.map(b => b.type === "qrcode" ? qrBox : b));
+      toast.success("Configuração do QR Code atualizada na caixa de coordenadas!");
+    } else {
+      setBoxes(prev => [...prev, qrBox]);
+      toast.success("QR Code inserido no Canvas! Arraste-o para posicionar onde desejar.");
+    }
+    setSelectedBoxId(qrBox.id);
+    pushHistory(existingIndex >= 0 ? boxes.map(b => b.type === "qrcode" ? qrBox : b) : [...boxes, qrBox], bgImage);
   };
 
   // Cortar e Extrair Logo Selecionada pelo Usuário (Canvas Pixel Crop)
@@ -1337,6 +1379,15 @@ ${boxes
                 <span>QR Code & Validação Pública</span>
               </h3>
 
+              <button
+                type="button"
+                onClick={handleAddOrUpdateQRCodeBox}
+                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition-all active:scale-95 cursor-pointer"
+              >
+                <QrCode className="w-4 h-4 text-white" />
+                <span>{boxes.some(b => b.type === "qrcode") ? "Atualizar QR Code no Canvas" : "Posicionar QR Code no Canvas"}</span>
+              </button>
+
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Formato do Código</label>
                 <select
@@ -1344,14 +1395,15 @@ ${boxes
                   onChange={(e) => setQrFormat(e.target.value as any)}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-mono focus:outline-none cursor-pointer"
                 >
-                  <option value="XXXX-XXXX">XXXX-XXXX (Exclusivo Atestados)</option>
-                  <option value="UUID-32">UUID 32 Char (CNH / VIO / CRLV)</option>
-                  <option value="CPF">Consulta CPF Direct</option>
+                  <option value="XXXX-XXXX">XXXX-XXXX (Exclusivo Atestados Médicos)</option>
+                  <option value="UUID-32">UUID 32 Char (CNH / VIO / CRLV Senatran)</option>
+                  <option value="CPF">Consulta CPF Direct (painel?cpf=...)</option>
+                  <option value="NUMERICO-11">Chave Numérica 11 Dígitos</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Validador (Source URL)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Domínio Validador (Source URL)</label>
                 <input
                   type="text"
                   value={qrSourceUrl}
@@ -1360,6 +1412,75 @@ ${boxes
                   placeholder="https://atestados-idab.pages.dev"
                 />
               </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Padrão da Rota de Validação</label>
+                <input
+                  type="text"
+                  value={qrPattern}
+                  onChange={(e) => setQrPattern(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono focus:outline-none text-[11px]"
+                  placeholder="{sourceUrl}/validar?code={code}"
+                />
+                <p className="text-[9px] text-slate-400 mt-1">Variáveis: <code className="text-emerald-400">{"{sourceUrl}"}</code> e <code className="text-emerald-400">{"{code}"}</code></p>
+              </div>
+
+              {/* Ajuste de Coordenadas Numéricas do QR Code */}
+              {boxes.some(b => b.type === "qrcode") && (
+                <div className="pt-3 border-t border-slate-800 space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Coordenadas do QR Code (X, Y, W, H)</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[9px] text-slate-400 block mb-0.5">Posição X (px)</label>
+                      <input
+                        type="number"
+                        value={boxes.find(b => b.type === "qrcode")?.x || 0}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setBoxes(prev => prev.map(b => b.type === "qrcode" ? { ...b, x: val } : b));
+                        }}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-slate-900 border border-slate-800 text-white font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-slate-400 block mb-0.5">Posição Y (px)</label>
+                      <input
+                        type="number"
+                        value={boxes.find(b => b.type === "qrcode")?.y || 0}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setBoxes(prev => prev.map(b => b.type === "qrcode" ? { ...b, y: val } : b));
+                        }}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-slate-900 border border-slate-800 text-white font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-slate-400 block mb-0.5">Largura (px)</label>
+                      <input
+                        type="number"
+                        value={boxes.find(b => b.type === "qrcode")?.width || 100}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 50;
+                          setBoxes(prev => prev.map(b => b.type === "qrcode" ? { ...b, width: val, height: val } : b));
+                        }}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-slate-900 border border-slate-800 text-white font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-slate-400 block mb-0.5">Altura (px)</label>
+                      <input
+                        type="number"
+                        value={boxes.find(b => b.type === "qrcode")?.height || 100}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 50;
+                          setBoxes(prev => prev.map(b => b.type === "qrcode" ? { ...b, height: val, width: val } : b));
+                        }}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-slate-900 border border-slate-800 text-white font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1536,6 +1657,45 @@ ${boxes
                 {/* Renderização das Caixas Mapeadas com Coordenadas Unscaled Precisas */}
                 {boxes.map((box) => {
                   const isSelected = box.id === selectedBoxId;
+
+                  if (box.type === "qrcode") {
+                    const sampleCode = box.qrFormat === "XXXX-XXXX" ? "A8F9-2041" : box.qrFormat === "CPF" ? "94598940468" : "9b3a7c9d-8e4f-4a12-98ab-34cd56ef7890";
+                    const qrVal = (box.qrPattern || "{sourceUrl}/validar?code={code}")
+                      .replace("{sourceUrl}", box.qrSourceUrl || "https://atestados-idab.pages.dev")
+                      .replace("{code}", sampleCode);
+
+                    return (
+                      <div
+                        key={box.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedBoxId(box.id);
+                          setActiveTool("qr");
+                        }}
+                        className={`absolute border-2 rounded-xl transition-all flex flex-col items-center justify-center p-1 bg-white/95 shadow-2xl cursor-pointer ${
+                          isSelected
+                            ? "border-emerald-400 shadow-emerald-500/50 z-30 ring-4 ring-emerald-400/40 animate-pulse"
+                            : "border-emerald-600 hover:border-emerald-400 z-20"
+                        }`}
+                        style={{
+                          left: box.x * zoom,
+                          top: box.y * zoom,
+                          width: box.width * zoom,
+                          height: box.height * zoom,
+                        }}
+                      >
+                        <QRCodeSVG
+                          value={qrVal}
+                          size={Math.max(16, Math.min(box.width * zoom - 10, box.height * zoom - 14))}
+                          level="M"
+                        />
+                        <span className="text-[7px] font-mono font-black text-emerald-900 uppercase tracking-widest mt-0.5 truncate max-w-full">
+                          QR CODE ({box.x},{box.y})
+                        </span>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
                       key={box.id}

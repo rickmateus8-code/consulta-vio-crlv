@@ -621,66 +621,206 @@ export default function StudioEngine() {
     }
   };
 
-  // Reconhecimento de Texto OCR IA Real (Tesseract.js Engine)
-  const handleAutoOCR = async () => {
+  // Pré-processador de Imagem para OCR (Conversão para Escala de Cinza e Alto Contraste)
+  const preprocessImageForOCR = (srcUrl: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const cvs = document.createElement("canvas");
+        cvs.width = img.width;
+        cvs.height = img.height;
+        const ctx = cvs.getContext("2d");
+        if (!ctx) return resolve(srcUrl);
+
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height);
+        const d = imgData.data;
+
+        // Binarização Adaptativa para destacar caracteres escuros sobre fundos coloridos
+        for (let i = 0; i < d.length; i += 4) {
+          const lum = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+          const bw = lum < 150 ? 0 : 255;
+          d[i] = bw;
+          d[i + 1] = bw;
+          d[i + 2] = bw;
+        }
+        ctx.putImageData(imgData, 0, 0);
+        resolve(cvs.toDataURL("image/png"));
+      };
+      img.onerror = () => resolve(srcUrl);
+      img.src = srcUrl;
+    });
+  };
+
+  // Detector Estrutural de Linhas de Texto por Análise de Pixels (Blob Fallback OCR)
+  const detectTextBlobsFromCanvas = (srcUrl: string): Promise<CoordinateBox[]> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const cvs = document.createElement("canvas");
+        cvs.width = img.width;
+        cvs.height = img.height;
+        const ctx = cvs.getContext("2d");
+        if (!ctx) return resolve([]);
+
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height);
+        const { width, height, data } = imgData;
+
+        const rowDarkPixels = new Array(height).fill(0);
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const idx = (y * width + x) * 4;
+            const lum = data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
+            if (lum < 100) rowDarkPixels[y]++;
+          }
+        }
+
+        const scaleX = canvasSize.width / width;
+        const scaleY = canvasSize.height / height;
+        const boxesFound: CoordinateBox[] = [];
+        let inLine = false;
+        let startY = 0;
+
+        for (let y = 0; y < height; y++) {
+          if (rowDarkPixels[y] > width * 0.02) {
+            if (!inLine) {
+              inLine = true;
+              startY = y;
+            }
+          } else {
+            if (inLine) {
+              inLine = false;
+              const h = y - startY;
+              if (h >= 10 && h <= 60) {
+                let minX = width;
+                let maxX = 0;
+                for (let ly = startY; ly < y; ly++) {
+                  for (let lx = 0; lx < width; lx++) {
+                    const idx = (ly * width + lx) * 4;
+                    const lum = data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
+                    if (lum < 100) {
+                      if (lx < minX) minX = lx;
+                      if (lx > maxX) maxX = lx;
+                    }
+                  }
+                }
+                const w = maxX - minX;
+                if (w > 30) {
+                  boxesFound.push({
+                    id: `blob-${Date.now()}-${boxesFound.length}`,
+                    fieldKey: `linha_${boxesFound.length + 1}`,
+                    label: `Linha de Texto ${boxesFound.length + 1}`,
+                    x: Math.round(minX * scaleX),
+                    y: Math.round(startY * scaleY),
+                    width: Math.round(w * scaleX),
+                    height: Math.round(h * scaleY),
+                    fontSize: 12,
+                    fontFamily: "Helvetica",
+                    color: "#000000",
+                    textAlign: "left",
+                    isUpperCase: true,
+                  });
+                }
+              }
+            }
+          }
+        }
+        resolve(boxesFound.slice(0, 35));
+      };
+      img.onerror = () => resolve([]);
+      img.src = srcUrl;
+    });
+  };
+
+  // Reconhecimento de Texto OCR IA Avançado Híbrido (Tesseract + Preprocessing + Blob Fallback)
+  const runOCRScan = async () => {
     if (!bgImage) {
       toast.error("Suba um gabarito primeiro!");
       return;
     }
 
     setOcrLoading(true);
-    toast.info("Executando leitura OCR IA (Tesseract.js) nos pixels reais do documento...");
+    toast.info("Processando imagem e executando OCR IA avançado...");
+
     try {
-      const { createWorker } = await import("tesseract.js");
-      const worker = await createWorker("por");
-      const ret = await worker.recognize(bgImage);
-      await worker.terminate();
+      // 1. Pré-processar imagem (Alto contraste e binarização)
+      const processedImgUrl = await preprocessImageForOCR(bgImage);
 
-      if (ret.data && ret.data.lines && ret.data.lines.length > 0) {
-        const scaleX = canvasSize.width / (ret.data.width || canvasSize.width);
-        const scaleY = canvasSize.height / (ret.data.height || canvasSize.height);
+      // 2. Tentar Tesseract.js com fallback de idioma
+      let lines: any[] = [];
+      let imgW = canvasSize.width;
+      let imgH = canvasSize.height;
 
-        const suggestedBoxes: CoordinateBox[] = ret.data.lines
-          .filter(l => l.text.trim().length > 1 && l.confidence > 20)
-          .slice(0, 30)
-          .map((line, idx) => {
-            const { x0, y0, x1, y1 } = line.bbox;
-            const cleanText = line.text.trim();
-            const key = cleanText.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 15) || `campo_${idx + 1}`;
-            
-            return {
-              id: `ocr-${Date.now()}-${idx}`,
-              fieldKey: key,
-              label: cleanText,
-              x: Math.round(x0 * scaleX),
-              y: Math.round(y0 * scaleY),
-              width: Math.max(70, Math.round((x1 - x0) * scaleX)),
-              height: Math.max(22, Math.round((y1 - y0) * scaleY)),
-              fontSize: 12,
-              fontFamily: "Helvetica",
-              color: "#000000",
-              textAlign: "left",
-              isUpperCase: true,
-            };
-          });
-
-        if (suggestedBoxes.length > 0) {
-          setBoxes(prev => [...prev, ...suggestedBoxes]);
-          toast.success(`OCR IA: ${suggestedBoxes.length} caixas de texto reais detectadas e posicionadas no Canvas!`);
-        } else {
-          toast.info("Nenhum texto claro foi identificado pelo OCR no documento.");
+      try {
+        const { createWorker } = await import("tesseract.js");
+        let worker: any = null;
+        try {
+          worker = await createWorker("por");
+        } catch {
+          worker = await createWorker("eng");
         }
+        if (worker) {
+          const ret = await worker.recognize(processedImgUrl);
+          await worker.terminate();
+          if (ret.data) {
+            lines = ret.data.lines || [];
+            imgW = ret.data.width || canvasSize.width;
+            imgH = ret.data.height || canvasSize.height;
+          }
+        }
+      } catch (e) {
+        console.warn("Tesseract offline/network fallback:", e);
+      }
+
+      const scaleX = canvasSize.width / imgW;
+      const scaleY = canvasSize.height / imgH;
+
+      let detectedBoxes: CoordinateBox[] = lines
+        .filter(l => l.text.trim().length > 1 && (l.confidence === undefined || l.confidence > 10))
+        .slice(0, 35)
+        .map((line, idx) => {
+          const { x0, y0, x1, y1 } = line.bbox;
+          const cleanText = line.text.trim();
+          const key = cleanText.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 15) || `campo_${idx + 1}`;
+          
+          return {
+            id: `ocr-${Date.now()}-${idx}`,
+            fieldKey: key,
+            label: cleanText,
+            x: Math.round(x0 * scaleX),
+            y: Math.round(y0 * scaleY),
+            width: Math.max(70, Math.round((x1 - x0) * scaleX)),
+            height: Math.max(22, Math.round((y1 - y0) * scaleY)),
+            fontSize: 12,
+            fontFamily: "Helvetica",
+            color: "#000000",
+            textAlign: "left",
+            isUpperCase: true,
+          };
+        });
+
+      // 3. Se o Tesseract não retornou linhas suficientes, executar o Detector de Blobs de Pixels
+      if (detectedBoxes.length === 0) {
+        toast.info("Executando leitura estrutural de pixels de texto (Blob Scanner)...");
+        detectedBoxes = await detectTextBlobsFromCanvas(bgImage);
+      }
+
+      if (detectedBoxes.length > 0) {
+        setBoxes(prev => [...prev, ...detectedBoxes]);
+        toast.success(`OCR IA HÍBRIDO: ${detectedBoxes.length} caixas de texto detectadas no documento!`);
       } else {
-        toast.info("Nenhum bloco de texto identificado no documento.");
+        toast.error("Não foi possível detectar blocos de texto. Tente desenhar a caixa manualmente.");
       }
     } catch (err: any) {
-      console.error("Erro no OCR Tesseract:", err);
-      toast.error("Falha ao executar OCR IA. Tente uma imagem com maior nitidez.");
+      console.error("Erro no OCR Híbrido:", err);
+      toast.error("Falha ao executar OCR IA.");
     } finally {
       setOcrLoading(false);
     }
   };
-
   // Ativação do Modo Cortar Logo/Brasão
   const handleExtractLogos = () => {
     if (!bgImage) {

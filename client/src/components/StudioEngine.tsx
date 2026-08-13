@@ -25,6 +25,7 @@ export interface CoordinateBox {
   qrFormat?: "XXXX-XXXX" | "UUID-32" | "CPF" | "NUMERICO-11";
   qrSourceUrl?: string;
   qrPattern?: string;
+  pageIndex?: number;
 }
 
 interface StudioTemplate {
@@ -722,6 +723,7 @@ export default function StudioEngine() {
                     color: "#000000",
                     textAlign: "left",
                     isUpperCase: true,
+                    pageIndex: currentPageIndex,
                   });
                 }
               }
@@ -799,6 +801,7 @@ export default function StudioEngine() {
             color: "#000000",
             textAlign: "left",
             isUpperCase: true,
+            pageIndex: currentPageIndex,
           };
         });
 
@@ -855,6 +858,7 @@ export default function StudioEngine() {
       qrFormat,
       qrSourceUrl,
       qrPattern,
+      pageIndex: currentPageIndex,
     };
 
     if (existingIndex >= 0) {
@@ -987,6 +991,7 @@ export default function StudioEngine() {
         id: `box-${Date.now()}`,
         fieldKey: `campo_${boxes.length + 1}`,
         label: `Campo ${boxes.length + 1}`,
+        pageIndex: currentPageIndex,
         x: Math.round(x),
         y: Math.round(y),
         width: Math.round(width),
@@ -2049,72 +2054,121 @@ ${boxes
         {/* 3. Estágio Central de Trabalho (Adobe Express Stage Viewport) */}
         <main className="flex-1 bg-[#060911] flex flex-col overflow-hidden relative">
 
-          {/* Sub-Header do Canvas Clean com Suporte a Multi-Páginas */}
-          <div className="h-10 bg-[#090d16] border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-10">
+          {/* Sub-Header do Canvas Clean com Suporte a Multi-Páginas Isolado */}
+          <div className="h-11 bg-[#090d16] border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-10">
             <div className="flex items-center gap-3">
               <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                 <Layers className="w-3.5 h-3.5 text-white" />
-                <span>Canvas Visual Direct Drag</span>
+                <span>Página Ativa:</span>
               </span>
 
-              {/* Seletor de Páginas (Folha 1, Folha 2, etc.) */}
-              {pdfPages.length > 1 && (
-                <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2 py-0.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-1">Folhas:</span>
-                  {pdfPages.map((_, pIdx) => (
+              {/* Seletor de Páginas (Folha 1, Folha 2, etc.) com Badges de Caixas Salvas */}
+              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
+                {(pdfPages.length > 0 ? pdfPages : [bgImage]).map((_, pIdx) => {
+                  const countForPage = boxes.filter(b => (b.pageIndex ?? 0) === pIdx).length;
+                  return (
                     <button
                       key={pIdx}
                       type="button"
                       onClick={() => {
                         setCurrentPageIndex(pIdx);
-                        setBgImage(pdfPages[pIdx]);
-                        updateCanvasSizeFromImage(pdfPages[pIdx]);
+                        if (pdfPages[pIdx]) {
+                          setBgImage(pdfPages[pIdx]);
+                          updateCanvasSizeFromImage(pdfPages[pIdx]);
+                        }
+                        toast.info(`Alternou para Folha ${pIdx + 1} (${countForPage} caixas salvas nesta página).`);
                       }}
-                      className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all ${
+                      className={`px-2.5 py-0.5 text-[10px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                         currentPageIndex === pIdx
-                          ? "bg-white text-slate-950 shadow-sm"
-                          : "bg-slate-950 text-slate-400 hover:text-white"
+                          ? "bg-white text-slate-950 shadow-md ring-1 ring-slate-400"
+                          : "bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800"
                       }`}
                     >
-                      Folha {pIdx + 1}
+                      <span>Folha {pIdx + 1}</span>
+                      <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full font-black ${
+                        currentPageIndex === pIdx ? "bg-slate-900 text-white" : "bg-slate-800 text-slate-400"
+                      }`}>
+                        {countForPage}
+                      </span>
                     </button>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = 794;
+                    canvas.height = 1123;
+                    const ctx = canvas.getContext("2d");
+                    if (ctx) {
+                      ctx.fillStyle = "#ffffff";
+                      ctx.fillRect(0, 0, 794, 1123);
+                    }
+                    const newPageUrl = canvas.toDataURL("image/png");
+                    const newPages = [...(pdfPages.length > 0 ? pdfPages : [bgImage || newPageUrl]), newPageUrl];
+                    setPdfPages(newPages);
+                    const newIdx = newPages.length - 1;
+                    setCurrentPageIndex(newIdx);
+                    setBgImage(newPageUrl);
+                    updateCanvasSizeFromImage(newPageUrl);
+                    toast.success(`Nova Folha ${newIdx + 1} adicionada ao documento!`);
+                  }}
+                  className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                  title="Adicionar nova página ao documento"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Folha</span>
+                </button>
+              </div>
             </div>
 
+            {/* Barra de Ferramentas Rápidas de Captura (Crop, Desenhar, OCR, QR Code) */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                onClick={runOCRScan}
+                disabled={ocrLoading}
+                className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                title="Detectar e extrair todas as linhas de texto da folha ativa com OCR IA"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+                <span>{ocrLoading ? "Lendo Pixels..." : "OCR IA"}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleExtractLogos}
-                className={`px-3 py-1 rounded-lg border text-[10px] font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1 rounded-lg border text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   isCropMode
                     ? "bg-cyan-500 text-black border-cyan-400 shadow-md shadow-cyan-500/30 animate-pulse"
                     : "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800"
                 }`}
-                title="Arraste para isolar e extrair qualquer logo no documento"
+                title="Cortar e isolar qualquer logo do documento"
               >
                 <Crop className="w-3.5 h-3.5" />
-                <span>{isCropMode ? "Modo Cortar Logo..." : "Cortar Logo"}</span>
+                <span>{isCropMode ? "Modo Cortar..." : "Cortar Logo"}</span>
               </button>
 
               <button
                 type="button"
-                onClick={createBlankCanvas}
-                className="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 text-[10px] font-medium transition-all cursor-pointer"
+                onClick={handleAddOrUpdateQRCodeBox}
+                className="px-3 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                title="Posicionar QR Code oficial de validação na página ativa"
               >
-                Canvas em Branco
+                <QrCode className="w-3.5 h-3.5 text-white" />
+                <span>+ QR Code</span>
               </button>
 
               <label className="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white text-[10px] font-medium tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm">
                 <Upload className="w-3.5 h-3.5 text-white" />
-                <span>Subir PDF Gabarito</span>
+                <span>Subir PDF</span>
                 <input type="file" accept="application/pdf,image/*" onChange={handleFileUpload} className="hidden" />
               </label>
             </div>
           </div>
 
-          {/* Container do Canvas Stage HD (Sem Espaços em Branco Superiores/Inferiores) */}
+          {/* Container do Canvas Stage HD */}
           <div className="flex-1 overflow-auto custom-scrollbar bg-[#060911] flex items-center justify-center p-0 m-0 relative">
             {bgImage ? (
               <div
@@ -2130,8 +2184,10 @@ ${boxes
                 {/* Gabarito Base em Imagem/PDF */}
                 <img src={bgImage} alt="Gabarito PDF" className="w-full h-full object-contain pointer-events-none" />
 
-                {/* Renderização das Caixas Mapeadas com Coordenadas Unscaled Precisas */}
-                {boxes.map((box) => {
+                {/* Renderização das Caixas Mapeadas Filtadas por Folha Ativa */}
+                {boxes
+                  .filter((box) => (box.pageIndex ?? 0) === currentPageIndex)
+                  .map((box) => {
                   const isSelected = box.id === selectedBoxId;
 
                   if (box.type === "qrcode") {

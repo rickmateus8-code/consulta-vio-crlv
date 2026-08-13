@@ -2,6 +2,11 @@ import { useEffect, useRef } from "react";
 import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
 import { gerarMRZ } from "@/lib/cnh/mrz";
 import { getCNHValidationUrl } from "@/lib/cnh/validation";
+import {
+  WALLET_FRONT_LAYOUT, WALLET_FRONT_ELEMENTS,
+  WALLET_BACK_LAYOUT,  WALLET_BACK_ELEMENTS,
+  type TextElement, type CompositeTextElement, type ImageElement, type RectElement,
+} from "@/lib/cnh/walletGeometry";
 
 export interface CNH3PartDocumentProps {
   id?: string;
@@ -67,6 +72,12 @@ function formatCPF(v?: string): string {
 
 // ─── Geração MRZ (OCR-B) ─────────────────────────────────────────────────────
 // Implementação centralizada em @/lib/cnh/mrz — gerarMRZ importado acima.
+
+// ─── Helper de fonte para walletGeometry ─────────────────────────────────────
+// Converte FontSpec declarativo em string CSS de canvas. Permanece no renderer.
+function gFont(el: { font: { weight: string; size: number; family: string } }): string {
+  return `${el.font.weight} ${el.font.size}px ${el.font.family}`;
+}
 
 async function drawCleanSignature(
   ctx: CanvasRenderingContext2D,
@@ -192,17 +203,20 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
       if (!octx) return;
 
       if (slide === 1) {
-        // --- SLIDE 1: FRENTE (PARTE SUPERIOR) ---
+        // --- SLIDE 1: FRENTE (PARTE SUPERIOR) — geometria via WALLET_FRONT_LAYOUT ---
         const bgImg = new Image();
-        bgImg.src = "/img/cnh-templates/parte_superior.jpg";
+        bgImg.src = WALLET_FRONT_LAYOUT.background;
         await new Promise((res) => { bgImg.onload = res; bgImg.onerror = res; });
         if (!isMounted) return;
 
-        octx.drawImage(bgImg, 0, 0, 963, 680);
+        octx.drawImage(bgImg, 0, 0, WALLET_FRONT_LAYOUT.sourceWidth, WALLET_FRONT_LAYOUT.sourceHeight);
 
-        // 1. MOLDURA DA FOTO 3X4 COM ENQUADRAMENTO BRANCO PURO (177, 192, 250, 335)
-        octx.fillStyle = "#ffffff";
-        octx.fillRect(177, 192, 250, 335);
+        const FE = WALLET_FRONT_ELEMENTS;
+
+        // 1. MOLDURA DA FOTO 3X4 COM ENQUADRAMENTO BRANCO PURO
+        const fPhotoFrame = FE["front.photoFrame"] as RectElement;
+        octx.fillStyle = fPhotoFrame.color;
+        octx.fillRect(fPhotoFrame.x, fPhotoFrame.y, fPhotoFrame.width, fPhotoFrame.height);
 
         // Foto 3x4 do Condutor com recorte perfeito na moldura
         if (props.fotoUrl) {
@@ -212,116 +226,142 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
             foto.src = props.fotoUrl;
             await new Promise((res) => { foto.onload = res; foto.onerror = res; });
             if (isMounted) {
+              const fPhoto = FE["front.photo"] as ImageElement;
               octx.save();
               octx.beginPath();
-              octx.rect(177, 192, 250, 335);
+              octx.rect(fPhoto.clip!.x, fPhoto.clip!.y, fPhoto.clip!.width, fPhoto.clip!.height);
               octx.clip();
-              octx.drawImage(foto, 177, 192, 250, 335);
+              octx.drawImage(foto, fPhoto.x, fPhoto.y, fPhoto.width, fPhoto.height);
               octx.restore();
             }
           } catch {}
         }
 
-        // Assinatura do Condutor com tratamento de transparência forense (187, 580, 230, 54)
+        // Assinatura do Condutor com tratamento de transparência forense
         if (props.assinaturaUrl) {
-          await drawCleanSignature(octx, props.assinaturaUrl, 187, 580, 230, 54);
+          const fAss = FE["front.assinatura"] as ImageElement;
+          await drawCleanSignature(octx, props.assinaturaUrl, fAss.x, fAss.y, fAss.width, fAss.height);
         }
 
         // 2. NÚMERO DO ESPELHO / FORMULÁRIO (TOPO ESQUERDO)
-        octx.fillStyle = "#000000";
-        octx.font = "bold 24px Times New Roman, serif";
-        octx.fillText(props.espelho || props.registro || "5728237792", 80, 110);
+        const fEspelho = FE["front.espelho"] as TextElement;
+        octx.fillStyle = fEspelho.color;
+        octx.font = gFont(fEspelho);
+        octx.fillText(props.espelho || props.registro || "5728237792", fEspelho.x, fEspelho.y);
 
         // 3. MAPEAMENTO DE CAMPOS DE TEXTO DA FRENTE (PARIDADE 1:1 COM /CNHCRIA)
-        octx.fillStyle = "#000000";
-        octx.font = "bold 19px Rawline, Arial, sans-serif";
+        const fNome = FE["front.nome"] as TextElement;
+        octx.fillStyle = fNome.color;
+        octx.font = gFont(fNome);
 
         // Campo 1 e 2: Nome e Sobrenome
-        octx.fillText((props.nome || "").toUpperCase(), 400, 215);
+        octx.fillText((props.nome || "").toUpperCase(), fNome.x, fNome.y);
 
         // Campo 1ª Habilitação
-        octx.fillText(fmtDate(props.primeiraHabilitacao || props.dataEmissao), 820, 215);
+        const fPrimHab = FE["front.primeiraHabilitacao"] as TextElement;
+        octx.fillText(fmtDate(props.primeiraHabilitacao || props.dataEmissao), fPrimHab.x, fPrimHab.y);
 
         // Campo 3: Data, Local e UF de Nascimento
+        const fNasc = FE["front.nascimento"] as CompositeTextElement;
         const localNasc = [props.dataNascimento ? fmtDate(props.dataNascimento) : "", props.localNascimento || "BRASÍLIA", props.ufNascimento || "DF"].filter(Boolean).join(" - ");
-        octx.fillText(localNasc.toUpperCase(), 460, 280);
+        octx.fillText(localNasc.toUpperCase(), fNasc.x, fNasc.y);
 
         // Campo 4a: Data de Emissão
-        octx.fillText(fmtDate(props.dataEmissao), 460, 345);
+        const fEmissao = FE["front.dataEmissao"] as TextElement;
+        octx.fillText(fmtDate(props.dataEmissao), fEmissao.x, fEmissao.y);
 
-        // Campo 4b: Validade (Cor Vermelha de Segurança Oficial #c0392b)
-        octx.fillStyle = "#c0392b";
-        octx.fillText(fmtDate(props.validade), 630, 345);
-        octx.fillStyle = "#000000";
+        // Campo 4b: Validade (Cor Vermelha de Segurança Oficial)
+        const fValidade = FE["front.validade"] as TextElement;
+        octx.fillStyle = fValidade.color;
+        octx.fillText(fmtDate(props.validade), fValidade.x, fValidade.y);
+        octx.fillStyle = fNome.color; // reset → preto
 
         // Campo 4c: Doc Identidade / Órgão Emissor / UF
+        const fDocId = FE["front.docIdentidade"] as CompositeTextElement;
         const docId = [props.rg || "0000000", props.orgaoEmissor || "SSP", props.ufRG || props.ufEmissao || "DF"].filter(Boolean).join(" ");
-        octx.fillText(docId.toUpperCase(), 460, 410);
+        octx.fillText(docId.toUpperCase(), fDocId.x, fDocId.y);
 
         // Campo 4d: CPF
-        octx.fillText(formatCPF(props.cpf), 460, 475);
+        const fCpf = FE["front.cpf"] as TextElement;
+        octx.fillText(formatCPF(props.cpf), fCpf.x, fCpf.y);
 
-        // Campo 5: Nº Registro (Cor Vermelha de Segurança Oficial #c0392b)
-        octx.fillStyle = "#c0392b";
-        octx.fillText(props.registro || "00000000000", 660, 475);
+        // Campo 5: Nº Registro (Cor Vermelha de Segurança Oficial)
+        const fRegistro = FE["front.registro"] as TextElement;
+        octx.fillStyle = fRegistro.color;
+        octx.fillText(props.registro || "00000000000", fRegistro.x, fRegistro.y);
 
-        // Campo 9: Categoria (Cor Vermelha de Segurança Oficial #c0392b)
-        octx.fillText((props.categoria || "AB").toUpperCase(), 860, 475);
-        octx.fillStyle = "#000000";
+        // Campo 9: Categoria (Cor Vermelha de Segurança Oficial)
+        const fCat = FE["front.categoria"] as TextElement;
+        octx.fillText((props.categoria || "AB").toUpperCase(), fCat.x, fCat.y);
+        octx.fillStyle = fNome.color; // reset → preto
 
         // Nacionalidade
-        octx.fillText((props.nacionalidade || "BRASILEIRA").toUpperCase(), 460, 538);
+        const fNac = FE["front.nacionalidade"] as TextElement;
+        octx.fillText((props.nacionalidade || "BRASILEIRA").toUpperCase(), fNac.x, fNac.y);
 
         // Filiação (Nome da Mãe e do Pai)
-        octx.font = "bold 17px Rawline, Arial, sans-serif";
-        if (props.nomeMae) octx.fillText(props.nomeMae.toUpperCase(), 460, 595);
-        if (props.nomePai) octx.fillText(props.nomePai.toUpperCase(), 460, 625);
+        const fMae = FE["front.nomeMae"] as TextElement;
+        octx.font = gFont(fMae);
+        if (props.nomeMae) octx.fillText(props.nomeMae.toUpperCase(), fMae.x, fMae.y);
+        const fPai = FE["front.nomePai"] as TextElement;
+        if (props.nomePai) octx.fillText(props.nomePai.toUpperCase(), fPai.x, fPai.y);
 
       } else if (slide === 2) {
-        // --- SLIDE 2: VERSO (PARTE INFERIOR) ---
+        // --- SLIDE 2: VERSO (PARTE INFERIOR) — geometria via WALLET_BACK_LAYOUT ---
         const bgImg = new Image();
-        bgImg.src = "/img/cnh-templates/parte_inferior.jpg";
+        bgImg.src = WALLET_BACK_LAYOUT.background;
         await new Promise((res) => { bgImg.onload = res; bgImg.onerror = res; });
         if (!isMounted) return;
 
-        octx.drawImage(bgImg, 0, 0, 963, 680);
+        octx.drawImage(bgImg, 0, 0, WALLET_BACK_LAYOUT.sourceWidth, WALLET_BACK_LAYOUT.sourceHeight);
+
+        const BE = WALLET_BACK_ELEMENTS;
 
         // Número do Espelho (Topo)
-        octx.fillStyle = "#000000";
-        octx.font = "bold 24px Times New Roman, serif";
-        octx.fillText(props.espelho || props.registro || "5728237792", 80, 110);
+        const bEspelho = BE["back.espelho"] as TextElement;
+        octx.fillStyle = bEspelho.color;
+        octx.font = gFont(bEspelho);
+        octx.fillText(props.espelho || props.registro || "5728237792", bEspelho.x, bEspelho.y);
 
         // Nome do Estado por Extenso
         const ufSigla = (props.ufEmissao || "SP").toUpperCase();
         const estadoExtenso = ESTADOS_POR_EXTENSO[ufSigla] || "SÃO PAULO";
-        octx.font = "bold 32px Rawline, Arial, sans-serif";
-        octx.fillText(estadoExtenso, 80, 400);
+        const bEstado = BE["back.estadoExtenso"] as TextElement;
+        octx.font = gFont(bEstado);
+        octx.fillText(estadoExtenso, bEstado.x, bEstado.y);
 
-        // Datas da Tabela de Categorias (Vermelho #c0392b)
-        octx.font = "bold 15px Rawline, Arial, sans-serif";
-        octx.fillStyle = "#c0392b";
+        // Datas da Tabela de Categorias (Vermelho, condicional por categoria)
+        const bValidA = BE["back.validadeA"] as TextElement;
+        octx.font = gFont(bValidA);
+        octx.fillStyle = bValidA.color;
         const catStr = (props.categoria || "AB").toUpperCase();
         const validFmt = fmtDate(props.validade);
-        
-        if (catStr.includes("A")) octx.fillText(validFmt, 855, 232);
-        if (catStr.includes("B")) octx.fillText(validFmt, 855, 296);
-        if (catStr.includes("C")) octx.fillText(validFmt, 855, 360);
-        if (catStr.includes("D")) octx.fillText(validFmt, 855, 590);
-        octx.fillStyle = "#000000";
+
+        const bValidB = BE["back.validadeB"] as TextElement;
+        const bValidC = BE["back.validadeC"] as TextElement;
+        const bValidD = BE["back.validadeD"] as TextElement;
+        if (catStr.includes("A")) octx.fillText(validFmt, bValidA.x, bValidA.y);
+        if (catStr.includes("B")) octx.fillText(validFmt, bValidB.x, bValidB.y);
+        if (catStr.includes("C")) octx.fillText(validFmt, bValidC.x, bValidC.y);
+        if (catStr.includes("D")) octx.fillText(validFmt, bValidD.x, bValidD.y);
+        octx.fillStyle = bEspelho.color; // reset → preto
 
         // Campo 12: Observações (EAR)
-        octx.font = "bold 18px Rawline, Arial, sans-serif";
+        const bObs = BE["back.observacoes"] as TextElement;
+        octx.font = gFont(bObs);
         const obs = (props.observacoes || "EXERCE ATIVIDADE REMUNERADA").toUpperCase();
-        octx.fillText(obs, 180, 220);
+        octx.fillText(obs, bObs.x, bObs.y);
 
         // Local e UF de Emissão
+        const bLocal = BE["back.localEmissao"] as CompositeTextElement;
         const localUF = `${(props.localEmissao || "BRASÍLIA").toUpperCase()}, ${ufSigla}`;
-        octx.fillText(localUF, 180, 595);
+        octx.fillText(localUF, bLocal.x, bLocal.y);
 
         // Assinatura Digital do Detran
-        octx.font = "bold 12px Rawline, Arial, sans-serif";
+        const bAss = BE["back.assDigital"] as CompositeTextElement;
+        octx.font = gFont(bAss);
         const assDetran = `${props.assDigital1 || "7386321121"} ${props.assDigital2 || (ufSigla + "54171992")}`;
-        octx.fillText(assDetran, 330, 635);
+        octx.fillText(assDetran, bAss.x, bAss.y);
 
       } else if (slide === 3) {
         // --- SLIDE 3: CÓDIGO MRZ ---

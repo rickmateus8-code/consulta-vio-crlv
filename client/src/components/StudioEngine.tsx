@@ -6,6 +6,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { saveActiveCNHLayout, CNH_DEFAULT_LAYOUT } from "@/config/cnhLayout";
+import { drawCNHToCanvas } from "@/components/CNHDocument";
 
 export interface CoordinateBox {
   id: string;
@@ -439,14 +440,51 @@ export default function StudioEngine() {
     setBoxes(p.boxes);
 
     // Gerar e Carregar o Gabarito Base Oficial em HD no Canvas
-    const baseImgUrl = renderOfficialDocumentBaseCanvas(presetKey);
-    setPdfPages([baseImgUrl]);
-    setCurrentPageIndex(0);
-    setBgImage(baseImgUrl);
-    updateCanvasSizeFromImage(baseImgUrl);
-    pushHistory(p.boxes, baseImgUrl);
-    setActiveTool("boxes");
-    toast.success(`Documento "${p.name}" carregado no Canvas com GABARITO OFICIAL HD e COORDENADAS 1:1!`);
+    if (presetKey === "cnh") {
+      const cvs = document.createElement("canvas");
+      drawCNHToCanvas(cvs, {
+        nome: "RICK MATEUS ARRUDA DE FIGUEIREDO",
+        cpf: "590.974.098-96",
+        rg: "26216797",
+        orgaoEmissor: "SSP",
+        ufRG: "SP",
+        sexo: "M",
+        nacionalidade: "BRASILEIRO(A)",
+        dataNascimento: "05/03/2003",
+        localNascimento: "BARUERI",
+        ufNascimento: "SP",
+        nomePai: "MARCOS PAULO ARCO IRIS DE FIGUEIREDO",
+        nomeMae: "DÉBORA DE ARRUDA CALDAS",
+        categoria: "AB",
+        registro: "37362896284",
+        validade: "15/09/2026",
+        primeiraHabilitacao: "20/05/2012",
+        dataEmissao: "14/09/2021",
+        localEmissao: "SÃO PAULO",
+        ufEmissao: "SP",
+        espelho: "5053403062",
+        observacoes: "EAR",
+        codigoQR: "31c64778-606e-436e-9f9d-287574f23abe"
+      }).then(() => {
+        const baseImgUrl = cvs.toDataURL("image/png");
+        setPdfPages([baseImgUrl]);
+        setCurrentPageIndex(0);
+        setBgImage(baseImgUrl);
+        updateCanvasSizeFromImage(baseImgUrl);
+        pushHistory(p.boxes, baseImgUrl);
+        setActiveTool("boxes");
+        toast.success(`Documento REAL "${p.name}" (300 DPI) carregado no Canvas com COORDENADAS 1:1!`);
+      });
+    } else {
+      const baseImgUrl = renderOfficialDocumentBaseCanvas(presetKey);
+      setPdfPages([baseImgUrl]);
+      setCurrentPageIndex(0);
+      setBgImage(baseImgUrl);
+      updateCanvasSizeFromImage(baseImgUrl);
+      pushHistory(p.boxes, baseImgUrl);
+      setActiveTool("boxes");
+      toast.success(`Documento "${p.name}" carregado no Canvas com GABARITO OFICIAL HD e COORDENADAS 1:1!`);
+    }
   };
 
   const updateCanvasSizeFromImage = (url: string) => {

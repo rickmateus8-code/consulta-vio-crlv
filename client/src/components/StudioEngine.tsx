@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Wand2, Upload, Move, Type, Trash2, Plus, CheckCircle, 
-  DollarSign, Layers, Eye, RefreshCw, Sparkles, Tag, Shield, Sliders, ArrowLeft, Folder, QrCode, Save, Undo2, Redo2, FileText, Crop, FileCode, Image as ImageIcon, File
+  DollarSign, Layers, Eye, RefreshCw, Sparkles, Tag, Shield, Sliders, ArrowLeft, Folder, QrCode, Save, Undo2, Redo2, FileText, Crop, FileCode, Image as ImageIcon, File, Lock, Unlock
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import QRCode from "qrcode";

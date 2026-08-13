@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import QRCode from "qrcode";
+import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
 
 export interface CNH3PartDocumentProps {
   id?: string;
@@ -177,7 +177,13 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         }
 
         try {
-          const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 2, width: 520 });
+          const qrDataUrl = await generateQRCodeDataURL({
+            data: qrUrl,
+            intensity: 3,
+            size: 520,
+            margin: 2,
+            errorCorrectionLevel: "H"
+          });
           const qrImg = new Image();
           qrImg.src = qrDataUrl;
           await new Promise((res) => { qrImg.onload = res; qrImg.onerror = res; });

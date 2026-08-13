@@ -8,6 +8,7 @@ import QRCode from "qrcode";
 import { toast } from "sonner";
 import { saveActiveCNHLayout, CNH_DEFAULT_LAYOUT } from "@/config/cnhLayout";
 import { drawCNHToCanvas } from "@/components/CNHDocument";
+import { generateQRCodeDataURL, QRIntensity, calculateQRVersion } from "@/lib/qrCodeEngine";
 
 export interface CoordinateBox {
   id: string;
@@ -26,6 +27,7 @@ export interface CoordinateBox {
   qrFormat?: "XXXX-XXXX" | "UUID-32" | "CPF" | "NUMERICO-11";
   qrSourceUrl?: string;
   qrPattern?: string;
+  qrIntensity?: QRIntensity;
   pageIndex?: number;
 }
 
@@ -482,7 +484,7 @@ export default function StudioEngine() {
     createBlankCanvas();
   }, []);
 
-  // Gerador Automático de Imagem PNG Sólida de QR Code em Alta Resolução (512x512px Quadrado)
+  // Gerador Centralizado de QR Code com Controle de Intensidade/Densidade (qrCodeEngine)
   useEffect(() => {
     const generateQRPngs = async () => {
       const qrBoxes = boxes.filter(b => b.type === "qrcode");
@@ -493,10 +495,12 @@ export default function StudioEngine() {
           .replace("{code}", sampleCode);
 
         try {
-          const pngUrl = await QRCode.toDataURL(qrVal, {
-            width: 512,
+          const pngUrl = await generateQRCodeDataURL({
+            data: qrVal,
+            intensity: box.qrIntensity !== undefined ? box.qrIntensity : 3,
+            size: 512,
             margin: 1,
-            color: { dark: "#000000", light: "#FFFFFF" }
+            errorCorrectionLevel: "H"
           });
           setQrPngMap(prev => ({ ...prev, [box.id]: pngUrl }));
         } catch {}
@@ -1904,6 +1908,80 @@ ${boxes
                   placeholder="{sourceUrl}/validar?code={code}"
                 />
                 <p className="text-[9px] text-slate-400 mt-1">Variáveis: <code className="text-emerald-400">{"{sourceUrl}"}</code> e <code className="text-emerald-400">{"{code}"}</code></p>
+              </div>
+
+              {/* Controle de Intensidade/Densidade da Matriz QR */}
+              <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-200 uppercase tracking-widest block">Intensidade da Matriz QR</label>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
+                    Nível {boxes.find(b => b.type === "qrcode")?.qrIntensity !== undefined ? boxes.find(b => b.type === "qrcode")?.qrIntensity : 3}
+                  </span>
+                </div>
+                
+                {/* Presets Rápidos */}
+                <div className="grid grid-cols-4 gap-1 pt-1">
+                  {[
+                    { label: "Compacto", val: 1 },
+                    { label: "Balanceado", val: 2 },
+                    { label: "Padrão", val: 3 },
+                    { label: "Denso", val: 4 },
+                  ].map((p) => {
+                    const activeInt = boxes.find(b => b.type === "qrcode")?.qrIntensity !== undefined ? boxes.find(b => b.type === "qrcode")?.qrIntensity : 3;
+                    return (
+                      <button
+                        key={p.val}
+                        type="button"
+                        onClick={() => {
+                          const level = p.val as any;
+                          setBoxes(prev => prev.map(b => b.type === "qrcode" ? { ...b, qrIntensity: level } : b));
+                        }}
+                        className={`py-1 text-[9px] font-bold rounded-lg transition-all ${
+                          activeInt === p.val
+                            ? "bg-emerald-600 text-white shadow-sm"
+                            : "bg-slate-950 text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Slider Fino de Intensidade (0 a 5) */}
+                <div className="pt-1 space-y-1">
+                  <div className="flex justify-between text-[9px] font-mono text-slate-400">
+                    <span>0 (Mínimo)</span>
+                    <span>3 (Padrão)</span>
+                    <span>5 (Máximo)</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="1"
+                    value={boxes.find(b => b.type === "qrcode")?.qrIntensity !== undefined ? boxes.find(b => b.type === "qrcode")?.qrIntensity : 3}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) as any;
+                      setBoxes(prev => prev.map(b => b.type === "qrcode" ? { ...b, qrIntensity: val } : b));
+                    }}
+                    className="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  />
+                  {boxes.find(b => b.type === "qrcode") && (() => {
+                    const sampleCode = qrFormat === "XXXX-XXXX" ? "A8F9-2041" : qrFormat === "CPF" ? "94598940468" : "9b3a7c9d-8e4f-4a12-98ab-34cd56ef7890";
+                    const qrVal = (qrPattern || "{sourceUrl}/validar?code={code}")
+                      .replace("{sourceUrl}", qrSourceUrl || "https://atestados-idab.pages.dev")
+                      .replace("{code}", sampleCode);
+                    const qBox = boxes.find(b => b.type === "qrcode");
+                    const intVal = qBox?.qrIntensity !== undefined ? qBox.qrIntensity : 3;
+                    const calc = calculateQRVersion({ data: qrVal, intensity: intVal, size: qBox?.width || 260, margin: 4, errorCorrectionLevel: "H" });
+                    return (
+                      <p className="text-[9px] text-slate-400 font-mono pt-1">
+                        Matriz: <span className="text-white font-bold">Versão {calc.effectiveVersion} ({calc.moduleCount}x{calc.moduleCount} cel)</span> • Módulo: <span className="text-emerald-400 font-bold">{calc.moduleSize.toFixed(2)}px</span>
+                      </p>
+                    );
+                  })()}
+                </div>
               </div>
 
               {/* Ajuste de Coordenadas Numéricas do QR Code */}

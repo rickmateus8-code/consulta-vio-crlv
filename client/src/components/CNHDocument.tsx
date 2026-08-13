@@ -8,8 +8,8 @@
  * QR Code aponta para: https://validacao-online-vio.digital/?id={UUID_DO_DOCUMENTO}
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
-import QRCode from "qrcode";
 import { getActiveCNHLayout } from "@/config/cnhLayout";
+import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
 
 export interface CNHDocumentProps {
   nome: string;
@@ -585,12 +585,12 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
       ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(qrX, qrY, qrWidth, qrWidth);
 
-      const qrDataUrl = await QRCode.toDataURL(qrUrl, {
-        width: qrWidth,
-        version: 12,
+      const qrDataUrl = await generateQRCodeDataURL({
+        data: qrUrl,
+        intensity: 3,
+        size: qrWidth,
         margin: 4,
         errorCorrectionLevel: "H",
-        color: { dark: "#000000", light: "#FFFFFF" },
       });
       const qrImg = await loadImage(qrDataUrl);
       ctx.drawImage(qrImg, qrX, qrY, qrWidth, qrWidth);

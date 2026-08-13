@@ -4,8 +4,7 @@
  * Utiliza o modelo limpo vetorial 600DPI enviado pelo usuário como BACKGROUND PRINCIPAL ABSOLUTO
  * com o valor de capacidade (*.*) descendo 0,2% (Y = 332px).
  */
-import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
-import QRCode from "qrcode";
+import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
 
 export interface CRLVDocumentProps {
   renavam: string;
@@ -232,12 +231,12 @@ async function drawCRLVToCanvas(cvs: HTMLCanvasElement, props: CRLVDocumentProps
     : `${crlvBaseUrl}/?codigo=BDC8CA0686D839EE1CB1CB2E84D05F63`;
 
   try {
-    const qrDataUrl = await QRCode.toDataURL(qrVal, {
-      width: qrSize,
-      version: 12,
+    const qrDataUrl = await generateQRCodeDataURL({
+      data: qrVal,
+      intensity: 3,
+      size: qrSize,
       margin: 2,
       errorCorrectionLevel: "H",
-      color: { dark: "#000000", light: "#FFFFFF" },
     });
     const qrImg = await loadImage(qrDataUrl);
     ctx.save();

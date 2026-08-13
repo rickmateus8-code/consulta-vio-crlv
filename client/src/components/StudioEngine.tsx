@@ -47,6 +47,8 @@ export interface CoordinateBox {
   data?: string;
 
   // Multi-Páginas & Formulário
+  // Trava de Elemento & Multi-Páginas
+  locked?: boolean;
   pageIndex?: number;
   inputType?: "text" | "cpf" | "date" | "select" | "crm" | "textarea" | "number";
   options?: string;
@@ -78,7 +80,8 @@ export function normalizeDocumentBox(raw: any): CoordinateBox {
     isUpperCase: raw.isUpperCase !== undefined ? Boolean(raw.isUpperCase) : (raw.uppercase ?? true),
     type: isQR ? "qrcode" : (raw.type || "text"),
     
-    // Geometria & Transformações
+    // Geometria, Trava & Transformações
+    locked: raw.locked !== undefined ? Boolean(raw.locked) : false,
     rotation: typeof raw.rotation === "number" ? raw.rotation : (raw.angle ?? raw.rotate ?? 0),
     scaleX: typeof raw.scaleX === "number" ? raw.scaleX : (raw.scale_x ?? 1),
     scaleY: typeof raw.scaleY === "number" ? raw.scaleY : (raw.scale_y ?? 1),
@@ -181,6 +184,7 @@ export default function StudioEngine() {
   const [zoom, setZoom] = useState(1);
   const [boxes, setBoxes] = useState<CoordinateBox[]>([]);
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
+  const [selectedBoxIds, setSelectedBoxIds] = useState<string[]>([]);
   const [activeTool, setActiveTool] = useState<"presets" | "boxes" | "form" | "qr" | "pricing" | "logos">("boxes");
 
   const [isDrawing, setIsDrawing] = useState(false);
@@ -195,6 +199,182 @@ export default function StudioEngine() {
   // Histórico de Reversão de Erros (Undo / Redo)
   const [history, setHistory] = useState<Array<{ boxes: CoordinateBox[]; bgImage: string | null }>>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // Trava / Bloqueio de Elemento
+  const toggleLockBox = (boxId: string) => {
+    const nextBoxes = boxes.map(b => (b.id === boxId ? { ...b, locked: !b.locked } : b));
+    setBoxes(nextBoxes);
+    pushHistory(nextBoxes, bgImage);
+    const target = nextBoxes.find(b => b.id === boxId);
+    toast.info(target?.locked ? "Elemento bloqueado (🔒)" : "Elemento desbloqueado (🔓)");
+  };
+
+  // Alinhamento de Elementos (Respeitando Trava e Geometria Completa)
+  const alignSelectedBoxes = (direction: "left" | "center-h" | "right" | "top" | "center-v" | "bottom") => {
+    const activeIds = selectedBoxIds.length > 0 ? selectedBoxIds : selectedBoxId ? [selectedBoxId] : [];
+    const targets = boxes.filter(b => activeIds.includes(b.id));
+    if (targets.length === 0) {
+      toast.warning("Selecione um ou mais elementos para alinhar!");
+      return;
+    }
+
+    let lockedCount = 0;
+    const minX = Math.min(...targets.map(b => b.x));
+    const maxX = Math.max(...targets.map(b => b.x + b.width));
+    const avgCenterX = targets.reduce((acc, b) => acc + b.x + b.width / 2, 0) / targets.length;
+
+    const minY = Math.min(...targets.map(b => b.y));
+    const maxY = Math.max(...targets.map(b => b.y + b.height));
+    const avgCenterY = targets.reduce((acc, b) => acc + b.y + b.height / 2, 0) / targets.length;
+
+    const nextBoxes = boxes.map(b => {
+      if (!activeIds.includes(b.id)) return b;
+      if (b.locked) {
+        lockedCount++;
+        return b; // Mantém elemento bloqueado estritamente fixo
+      }
+
+      let newX = b.x;
+      let newY = b.y;
+
+      if (direction === "left") newX = minX;
+      else if (direction === "center-h") newX = Number((avgCenterX - b.width / 2).toFixed(6));
+      else if (direction === "right") newX = Number((maxX - b.width).toFixed(6));
+      else if (direction === "top") newY = minY;
+      else if (direction === "center-v") newY = Number((avgCenterY - b.height / 2).toFixed(6));
+      else if (direction === "bottom") newY = Number((maxY - b.height).toFixed(6));
+
+      return { ...b, x: newX, y: newY };
+    });
+
+    setBoxes(nextBoxes);
+    pushHistory(nextBoxes, bgImage);
+    if (lockedCount > 0) {
+      toast.info(`Alinhamento concluído. ${lockedCount} elemento(s) bloqueado(s) permaneceram fixos.`);
+    } else {
+      toast.success("Alinhamento de elementos concluído!");
+    }
+  };
+
+  // Distribuição de Elementos (Respeitando Trava)
+  const distributeSelectedBoxes = (axis: "horizontal" | "vertical") => {
+    const activeIds = selectedBoxIds.length > 0 ? selectedBoxIds : selectedBoxId ? [selectedBoxId] : [];
+    const targets = boxes.filter(b => activeIds.includes(b.id));
+    if (targets.length < 3) {
+      toast.warning("Selecione pelo menos 3 elementos para distribuir!");
+      return;
+    }
+
+    let lockedCount = 0;
+    const sorted = [...targets].sort((a, b) => (axis === "horizontal" ? a.x - b.x : a.y - b.y));
+    
+    if (axis === "horizontal") {
+      const minX = sorted[0].x;
+      const maxX = sorted[sorted.length - 1].x;
+      const totalSpan = maxX - minX;
+      const step = totalSpan / (sorted.length - 1);
+
+      const nextBoxes = boxes.map(b => {
+        const sIdx = sorted.findIndex(t => t.id === b.id);
+        if (sIdx < 0) return b;
+        if (b.locked) {
+          lockedCount++;
+          return b;
+        }
+        return { ...b, x: Number((minX + sIdx * step).toFixed(6)) };
+      });
+
+      setBoxes(nextBoxes);
+      pushHistory(nextBoxes, bgImage);
+    } else {
+      const minY = sorted[0].y;
+      const maxY = sorted[sorted.length - 1].y;
+      const totalSpan = maxY - minY;
+      const step = totalSpan / (sorted.length - 1);
+
+      const nextBoxes = boxes.map(b => {
+        const sIdx = sorted.findIndex(t => t.id === b.id);
+        if (sIdx < 0) return b;
+        if (b.locked) {
+          lockedCount++;
+          return b;
+        }
+        return { ...b, y: Number((minY + sIdx * step).toFixed(6)) };
+      });
+
+      setBoxes(nextBoxes);
+      pushHistory(nextBoxes, bgImage);
+    }
+
+    if (lockedCount > 0) {
+      toast.info(`Distribuição concluída. ${lockedCount} elemento(s) bloqueado(s) permaneceram fixos.`);
+    } else {
+      toast.success("Distribuição de elementos concluída!");
+    }
+  };
+
+  // Movimentação por Teclado (Setas ↑ ↓ ← →, Shift = 10px) com Reversão Undo/Redo e Sem Interferir em Inputs
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          activeEl.tagName === "SELECT" ||
+          (activeEl as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+
+      const activeIds = selectedBoxIds.length > 0 ? selectedBoxIds : selectedBoxId ? [selectedBoxId] : [];
+      if (activeIds.length === 0) return;
+
+      const delta = e.shiftKey ? 10 : 1;
+      let dx = 0;
+      let dy = 0;
+
+      if (e.key === "ArrowLeft") dx = -delta;
+      else if (e.key === "ArrowRight") dx = delta;
+      else if (e.key === "ArrowUp") dy = -delta;
+      else if (e.key === "ArrowDown") dy = delta;
+      else return;
+
+      e.preventDefault();
+
+      setBoxes(prev => {
+        let lockedFound = false;
+        let movedCount = 0;
+
+        const nextBoxes = prev.map(b => {
+          if (activeIds.includes(b.id)) {
+            if (b.locked) {
+              lockedFound = true;
+              return b;
+            }
+            movedCount++;
+            return {
+              ...b,
+              x: Number((b.x + dx).toFixed(6)),
+              y: Number((b.y + dy).toFixed(6)),
+            };
+          }
+          return b;
+        });
+
+        if (movedCount > 0) {
+          pushHistory(nextBoxes, bgImage);
+        } else if (lockedFound) {
+          toast.warning("Elemento bloqueado (🔒). Desbloqueie para mover.");
+        }
+
+        return nextBoxes;
+      });
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedBoxId, selectedBoxIds, bgImage]);
 
   const pushHistory = (newBoxes: CoordinateBox[], newBgImage: string | null) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -1662,6 +1842,111 @@ ${boxes
 
               {selectedBox ? (
                 <div className="space-y-3">
+                  {/* Controle de Trava / Bloqueio (🔒/🔓) */}
+                  <div className="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-2xl border border-slate-800">
+                    <div className="flex items-center gap-2">
+                      {selectedBox.locked ? (
+                        <Lock className="w-4 h-4 text-amber-400 animate-pulse" />
+                      ) : (
+                        <Unlock className="w-4 h-4 text-slate-400" />
+                      )}
+                      <div>
+                        <span className="text-xs font-bold text-white block">
+                          {selectedBox.locked ? "Elemento Bloqueado (🔒)" : "Elemento Livre (🔓)"}
+                        </span>
+                        <span className="text-[9px] text-slate-400 block">
+                          {selectedBox.locked ? "Protegido contra arrastes e alterações acidentais" : "Disponível para edição visual e teclado"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleLockBox(selectedBox.id)}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                        selectedBox.locked
+                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 hover:bg-amber-500/30"
+                          : "bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700"
+                      }`}
+                    >
+                      {selectedBox.locked ? "Desbloquear" : "Bloquear"}
+                    </button>
+                  </div>
+
+                  {/* Barra de Ferramentas de Alinhamento Automático 📐 */}
+                  <div className="bg-slate-900/60 p-2.5 rounded-2xl border border-slate-800 space-y-2">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Alinhamento & Distribuição</span>
+                    <div className="grid grid-cols-6 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => alignSelectedBoxes("left")}
+                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center cursor-pointer"
+                        title="Alinhar à Esquerda"
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => alignSelectedBoxes("center-h")}
+                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center cursor-pointer"
+                        title="Alinhar ao Centro Horizontal"
+                      >
+                        ↔
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => alignSelectedBoxes("right")}
+                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center cursor-pointer"
+                        title="Alinhar à Direita"
+                      >
+                        →
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => alignSelectedBoxes("top")}
+                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center cursor-pointer"
+                        title="Alinhar ao Topo"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => alignSelectedBoxes("center-v")}
+                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center cursor-pointer"
+                        title="Alinhar ao Centro Vertical"
+                      >
+                        ↕
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => alignSelectedBoxes("bottom")}
+                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center cursor-pointer"
+                        title="Alinhar à Base"
+                      >
+                        ↓
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => distributeSelectedBoxes("horizontal")}
+                        className="py-1 px-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[9px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                        title="Distribuir Horizontalmente"
+                      >
+                        <span>Distribuir ↔</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => distributeSelectedBoxes("vertical")}
+                        className="py-1 px-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[9px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                        title="Distribuir Verticalmente"
+                      >
+                        <span>Distribuir ↕</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Chave Variável</label>

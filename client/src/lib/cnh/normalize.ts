@@ -264,3 +264,93 @@ export function cNHDocumentPropsToRenderInput(
     },
   };
 }
+
+// ─── Adapter: CNH3PartDocumentProps → CNHRenderInput ──────────────────────────
+//
+// Converte as legacy props da interface CNH3PartDocumentProps para CNHRenderInput
+// canônico, reutilizando normalizeCNHRenderInput() para resolução de aliases.
+//
+// CONTRATO:
+//   - Recebe as legacy props como um Record (superset de CNH3PartDocumentProps)
+//   - emissionId: preferencialmente props.id (documents.id UUID), fallback ""
+//   - codigoQR: resolve a cadeia de aliases usada no caller atual
+//     (codigo_validacao || codigo_qr || codigoQR), SEM usar CPF como validationId
+//   - NÃO resolve assDigital1/assDigital2 via ALIAS_MAP pois eles chegam diretos
+//     como props canônicas; porém garante que o campo está presente
+//
+// Fase 2D — Phase 2 Unified Master Render
+
+/**
+ * Converte as legacy props de CNH3PartDocument para CNHRenderInput canônico.
+ *
+ * Reutiliza normalizeCNHRenderInput() para resolver aliases. O meta de identidade
+ * é construído a partir dos campos de identidade disponíveis nas props.
+ *
+ * CPF NUNCA é usado como validationId — este adapter respeita o contrato arquitetural
+ * estabelecido na Phase 2B.1: o CPF identifica o condutor, não a emissão.
+ */
+export function cNH3PartDocumentPropsToRenderInput(
+  props: {
+    id?: string;
+    nome: string;
+    cpf: string;
+    rg?: string;
+    orgaoEmissor?: string;
+    ufRG?: string;
+    sexo?: string;
+    nacionalidade?: string;
+    dataNascimento?: string;
+    localNascimento?: string;
+    ufNascimento?: string;
+    nomePai?: string;
+    nomeMae?: string;
+    categoria?: string;
+    registro?: string;
+    espelho?: string;
+    validade?: string;
+    dataEmissao?: string;
+    primeiraHabilitacao?: string;
+    localEmissao?: string;
+    ufEmissao?: string;
+    observacoes?: string;
+    fotoUrl?: string;
+    assinaturaUrl?: string;
+    codigoQR?: string;
+    codigo_validacao?: string;
+    codigo_qr?: string;
+    qrCodeUrl?: string;
+    assDigital1?: string;
+    assDigital2?: string;
+  }
+): CNHRenderInput {
+  // Resolve o validationId: usa o UUID da emissão (sem fallback para CPF)
+  const emissionId = props.id ?? "";
+  const validationId =
+    props.codigo_validacao ||
+    props.codigo_qr ||
+    props.codigoQR ||
+    emissionId;
+
+  // Delega resolução de aliases ao normalizeCNHRenderInput canônico.
+  // assDigital1/assDigital2 chegam diretos como props nomeadas canonicamente,
+  // mas normalizeCNHRenderInput os resolve via ALIAS_MAP (chaves "assDigital1",
+  // "assDigital2", "renach") — logo funcionam corretamente.
+  const base = normalizeCNHRenderInput(props as Record<string, any>, {
+    emissionId,
+    validationId,
+  });
+
+  // Preserva assDigital1/assDigital2 explicitamente caso normalizeCNHRenderInput
+  // não os encontre via ALIAS_MAP (props chegam já nomeadas canonicamente).
+  const assDigital1 = base.data.assDigital1 || props.assDigital1 || "";
+  const assDigital2 = base.data.assDigital2 || props.assDigital2 || "";
+
+  return {
+    ...base,
+    data: {
+      ...base.data,
+      assDigital1,
+      assDigital2,
+    },
+  };
+}

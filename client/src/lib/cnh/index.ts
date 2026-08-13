@@ -17,6 +17,7 @@ export { CNH_RENDER_PROFILES } from "./renderInput";
 export {
   normalizeCNHRenderInput,
   cNHDocumentPropsToRenderInput,
+  cNH3PartDocumentPropsToRenderInput,
 } from "./normalize";
 
 export type { CNHMRZInput } from "./mrz";

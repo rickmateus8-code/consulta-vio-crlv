@@ -5,6 +5,7 @@ import CNH3PartDocument from "@/components/CNH3PartDocument";
 import { ChevronLeft, ChevronRight, Contact, FileUp, Trash2, Copy } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { getCNHValidationUrl } from "@/lib/cnh/validation";
+import { normalizeCNHRenderInput } from "@/lib/cnh/normalize";
 
 export default function CNHHabilitacao() {
   const [, setLocation] = useLocation();
@@ -31,6 +32,23 @@ export default function CNHHabilitacao() {
   }
 
   const dataAtual = new Date().toLocaleDateString("pt-BR") + " - " + new Date().toLocaleTimeString("pt-BR");
+
+  // ─── Render Input canônico (Phase 2D) ─────────────────────────────────────────
+  // emissionId = documents.id (UUID primário). Conforme contrato Phase 2B.1:
+  //   - validationId = codigo_validacao || codigo_qr || codigoQR || id
+  //   - CPF NUNCA é usado como validationId neste fluxo canônico
+  //   - normalizeRecord() ainda é usado para UI (PDF filename, navbar links)
+  const emissionId = record.id ?? "";
+  const validationId =
+    record.codigo_validacao ||
+    record.codigo_qr ||
+    record.codigoQR ||
+    emissionId;
+  const cnhRenderInput = normalizeCNHRenderInput(
+    record as Record<string, any>,
+    { emissionId, validationId, createdAt: record.created_at }
+  );
+  // ───────────────────────────────────────────────────────────────────────
 
   const slideTitles: Record<number, string> = {
     1: "PARTE SUPERIOR (FRENTE)",
@@ -99,32 +117,8 @@ export default function CNHHabilitacao() {
             className="w-[396px] h-[680px] max-w-full aspect-[396/680] mx-auto bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex justify-center items-center p-1 cursor-grab active:cursor-grabbing touch-pan-y"
           >
             <CNH3PartDocument
-              id={record.id}
+              renderInput={cnhRenderInput}
               slide={activeSlide}
-              nome={record.nome || ""}
-              cpf={record.cpf || ""}
-              rg={record.rg || ""}
-              orgaoEmissor={record.orgaoEmissor || ""}
-              ufRG={record.ufRG || ""}
-              sexo={record.sexo || ""}
-              nacionalidade={record.nacionalidade || "BRASILEIRA"}
-              dataNascimento={record.dataNascimento || ""}
-              localNascimento={record.localNascimento || ""}
-              ufNascimento={record.ufNascimento || ""}
-              nomePai={record.nomePai || ""}
-              nomeMae={record.nomeMae || ""}
-              categoria={record.categoria || ""}
-              registro={record.registro || ""}
-              espelho={record.espelho || ""}
-              validade={record.validade || ""}
-              dataEmissao={record.dataEmissao || ""}
-              primeiraHabilitacao={record.primeiraHabilitacao || ""}
-              localEmissao={record.localEmissao || ""}
-              ufEmissao={record.ufEmissao || ""}
-              observacoes={record.observacoes || ""}
-              fotoUrl={record.fotoUrl || ""}
-              assinaturaUrl={record.assinaturaUrl || ""}
-              codigoQR={record.codigo_validacao || record.codigo_qr || record.codigoQR || ""}
               previewWidth={396}
             />
           </div>

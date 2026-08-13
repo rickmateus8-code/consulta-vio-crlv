@@ -7,10 +7,15 @@ import {
   WALLET_BACK_LAYOUT,  WALLET_BACK_ELEMENTS,
   type TextElement, type CompositeTextElement, type ImageElement, type RectElement,
 } from "@/lib/cnh/walletGeometry";
+import type { CNHRenderInput } from "@/lib/cnh/renderInput";
+import { cNH3PartDocumentPropsToRenderInput } from "@/lib/cnh/normalize";
 
 export interface CNH3PartDocumentProps {
   id?: string;
   slide: 1 | 2 | 3 | 4; // 1: Frente, 2: Verso, 3: MRZ, 4: QR Code VIO
+  // â”€â”€â”€ Legacy props (mantidas para retrocompatibilidade) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Quando renderInput NÃƒO Ã© fornecido, estas props sÃ£o convertidas via
+  // cNH3PartDocumentPropsToRenderInput(). NÃƒO remover nesta fase (Phase 2D).
   nome: string;
   cpf: string;
   rg?: string;
@@ -41,15 +46,19 @@ export interface CNH3PartDocumentProps {
   assDigital1?: string;
   assDigital2?: string;
   previewWidth?: number;
+  // â”€â”€â”€ Render Input canÃ´nico (Phase 2D) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Quando fornecido, TODOS os dados vÃªm exclusivamente daqui.
+  // NÃƒO misturar com legacy props campo a campo â€” regra anti-hÃ­brida.
+  renderInput?: CNHRenderInput;
 }
 
 const ESTADOS_POR_EXTENSO: Record<string, string> = {
-  AC: "ACRE", AL: "ALAGOAS", AP: "AMAPÁ", AM: "AMAZONAS", BA: "BAHIA",
-  CE: "CEARÁ", DF: "DISTRITO FEDERAL", ES: "ESPÍRITO SANTO", GO: "GOIÁS",
-  MA: "MARANHÃO", MT: "MATO GROSSO", MS: "MATO GROSSO DO SUL", MG: "MINAS GERAIS",
-  PA: "PARÁ", PB: "PARAIBA", PR: "PARANÁ", PE: "PERNAMBUCO", PI: "PIAUÍ",
+  AC: "ACRE", AL: "ALAGOAS", AP: "AMAPÃ", AM: "AMAZONAS", BA: "BAHIA",
+  CE: "CEARÃ", DF: "DISTRITO FEDERAL", ES: "ESPÃRITO SANTO", GO: "GOIÃS",
+  MA: "MARANHÃƒO", MT: "MATO GROSSO", MS: "MATO GROSSO DO SUL", MG: "MINAS GERAIS",
+  PA: "PARÃ", PB: "PARAIBA", PR: "PARANÃ", PE: "PERNAMBUCO", PI: "PIAUÃ",
   RJ: "RIO DE JANEIRO", RN: "RIO GRANDE DO NORTE", RS: "RIO GRANDE DO SUL",
-  RO: "RONDÔNIA", RR: "RORAIMA", SC: "SANTA CATARINA", SP: "SÃO PAULO",
+  RO: "RONDÃ”NIA", RR: "RORAIMA", SC: "SANTA CATARINA", SP: "SÃƒO PAULO",
   SE: "SERGIPE", TO: "TOCANTINS"
 };
 
@@ -70,10 +79,10 @@ function formatCPF(v?: string): string {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }
 
-// ─── Geração MRZ (OCR-B) ─────────────────────────────────────────────────────
-// Implementação centralizada em @/lib/cnh/mrz — gerarMRZ importado acima.
+// â”€â”€â”€ GeraÃ§Ã£o MRZ (OCR-B) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ImplementaÃ§Ã£o centralizada em @/lib/cnh/mrz â€” gerarMRZ importado acima.
 
-// ─── Helper de fonte para walletGeometry ─────────────────────────────────────
+// â”€â”€â”€ Helper de fonte para walletGeometry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Converte FontSpec declarativo em string CSS de canvas. Permanece no renderer.
 function gFont(el: { font: { weight: string; size: number; family: string } }): string {
   return `${el.font.weight} ${el.font.size}px ${el.font.family}`;
@@ -126,6 +135,26 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { slide } = props;
 
+  // â”€â”€â”€ REGRA ANTI-HÃBRIDA (Phase 2D) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Se renderInput for fornecido: TODOS os dados vÃªm dele.
+  // Se ausente: TODOS os dados vÃªm do adapter de legacy props.
+  // NUNCA misturar as duas fontes campo a campo.
+  const effectiveInput: CNHRenderInput = props.renderInput
+    ?? cNH3PartDocumentPropsToRenderInput(props);
+  const p = {
+    ...effectiveInput.data,
+    id: effectiveInput.identity.emissionId || props.id,
+    validationId: effectiveInput.identity.validationId,
+    codigoQR: (
+      props.renderInput
+        ? effectiveInput.identity.validationId   // fonte canÃ´nica
+        : (props.codigoQR || props.codigo_validacao || props.codigo_qr || effectiveInput.identity.validationId)
+    ),
+    previewWidth: props.previewWidth,
+    slide,
+  };
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -148,15 +177,15 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(40, 40, 600, 600);
 
-        let codigoQrFinal = props.codigo_validacao || props.codigo_qr || props.codigoQR || props.id || "";
+        // codigoQR já resolvido pela regra anti-híbrida em p.codigoQR
+        // (= validationId se renderInput, ou codigo_validacao||codigo_qr||codigoQR||id se legacy)
+        let codigoQrFinal = p.codigoQR || p.id || "";
         let qrUrl = "";
-        if (props.qrCodeUrl && props.qrCodeUrl.startsWith("http")) {
-          qrUrl = props.qrCodeUrl;
-        } else if (codigoQrFinal.startsWith("http")) {
+        if (codigoQrFinal.startsWith("http")) {
           qrUrl = codigoQrFinal;
         } else {
           if (!codigoQrFinal || codigoQrFinal.includes(".")) {
-            codigoQrFinal = props.id || "31c64778-606e-436e-9f9d-287574f23abe";
+            codigoQrFinal = p.id || "31c64778-606e-436e-9f9d-287574f23abe";
           }
           qrUrl = getCNHValidationUrl(codigoQrFinal);
         }
@@ -203,7 +232,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
       if (!octx) return;
 
       if (slide === 1) {
-        // --- SLIDE 1: FRENTE (PARTE SUPERIOR) — geometria via WALLET_FRONT_LAYOUT ---
+        // --- SLIDE 1: FRENTE (PARTE SUPERIOR) â€” geometria via WALLET_FRONT_LAYOUT ---
         const bgImg = new Image();
         bgImg.src = WALLET_FRONT_LAYOUT.background;
         await new Promise((res) => { bgImg.onload = res; bgImg.onerror = res; });
@@ -219,11 +248,11 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.fillRect(fPhotoFrame.x, fPhotoFrame.y, fPhotoFrame.width, fPhotoFrame.height);
 
         // Foto 3x4 do Condutor com recorte perfeito na moldura
-        if (props.fotoUrl) {
+        if (p.fotoUrl) {
           try {
             const foto = new Image();
             foto.crossOrigin = "anonymous";
-            foto.src = props.fotoUrl;
+            foto.src = p.fotoUrl;
             await new Promise((res) => { foto.onload = res; foto.onerror = res; });
             if (isMounted) {
               const fPhoto = FE["front.photo"] as ImageElement;
@@ -237,17 +266,17 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
           } catch {}
         }
 
-        // Assinatura do Condutor com tratamento de transparência forense
-        if (props.assinaturaUrl) {
+        // Assinatura do Condutor com tratamento de transparÃªncia forense
+        if (p.assinaturaUrl) {
           const fAss = FE["front.assinatura"] as ImageElement;
-          await drawCleanSignature(octx, props.assinaturaUrl, fAss.x, fAss.y, fAss.width, fAss.height);
+          await drawCleanSignature(octx, p.assinaturaUrl, fAss.x, fAss.y, fAss.width, fAss.height);
         }
 
-        // 2. NÚMERO DO ESPELHO / FORMULÁRIO (TOPO ESQUERDO)
+        // 2. NÃšMERO DO ESPELHO / FORMULÃRIO (TOPO ESQUERDO)
         const fEspelho = FE["front.espelho"] as TextElement;
         octx.fillStyle = fEspelho.color;
         octx.font = gFont(fEspelho);
-        octx.fillText(props.espelho || props.registro || "5728237792", fEspelho.x, fEspelho.y);
+        octx.fillText(p.espelho || p.registro || "5728237792", fEspelho.x, fEspelho.y);
 
         // 3. MAPEAMENTO DE CAMPOS DE TEXTO DA FRENTE (PARIDADE 1:1 COM /CNHCRIA)
         const fNome = FE["front.nome"] as TextElement;
@@ -255,59 +284,59 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.font = gFont(fNome);
 
         // Campo 1 e 2: Nome e Sobrenome
-        octx.fillText((props.nome || "").toUpperCase(), fNome.x, fNome.y);
+        octx.fillText((p.nome || "").toUpperCase(), fNome.x, fNome.y);
 
-        // Campo 1ª Habilitação
+        // Campo 1Âª HabilitaÃ§Ã£o
         const fPrimHab = FE["front.primeiraHabilitacao"] as TextElement;
-        octx.fillText(fmtDate(props.primeiraHabilitacao || props.dataEmissao), fPrimHab.x, fPrimHab.y);
+        octx.fillText(fmtDate(p.primeiraHabilitacao || p.dataEmissao), fPrimHab.x, fPrimHab.y);
 
         // Campo 3: Data, Local e UF de Nascimento
         const fNasc = FE["front.nascimento"] as CompositeTextElement;
-        const localNasc = [props.dataNascimento ? fmtDate(props.dataNascimento) : "", props.localNascimento || "BRASÍLIA", props.ufNascimento || "DF"].filter(Boolean).join(" - ");
+        const localNasc = [p.dataNascimento ? fmtDate(p.dataNascimento) : "", p.localNascimento || "BRASÃLIA", p.ufNascimento || "DF"].filter(Boolean).join(" - ");
         octx.fillText(localNasc.toUpperCase(), fNasc.x, fNasc.y);
 
-        // Campo 4a: Data de Emissão
+        // Campo 4a: Data de EmissÃ£o
         const fEmissao = FE["front.dataEmissao"] as TextElement;
-        octx.fillText(fmtDate(props.dataEmissao), fEmissao.x, fEmissao.y);
+        octx.fillText(fmtDate(p.dataEmissao), fEmissao.x, fEmissao.y);
 
-        // Campo 4b: Validade (Cor Vermelha de Segurança Oficial)
+        // Campo 4b: Validade (Cor Vermelha de SeguranÃ§a Oficial)
         const fValidade = FE["front.validade"] as TextElement;
         octx.fillStyle = fValidade.color;
-        octx.fillText(fmtDate(props.validade), fValidade.x, fValidade.y);
-        octx.fillStyle = fNome.color; // reset → preto
+        octx.fillText(fmtDate(p.validade), fValidade.x, fValidade.y);
+        octx.fillStyle = fNome.color; // reset â†’ preto
 
-        // Campo 4c: Doc Identidade / Órgão Emissor / UF
+        // Campo 4c: Doc Identidade / Ã“rgÃ£o Emissor / UF
         const fDocId = FE["front.docIdentidade"] as CompositeTextElement;
-        const docId = [props.rg || "0000000", props.orgaoEmissor || "SSP", props.ufRG || props.ufEmissao || "DF"].filter(Boolean).join(" ");
+        const docId = [p.rg || "0000000", p.orgaoEmissor || "SSP", p.ufRG || p.ufEmissao || "DF"].filter(Boolean).join(" ");
         octx.fillText(docId.toUpperCase(), fDocId.x, fDocId.y);
 
         // Campo 4d: CPF
         const fCpf = FE["front.cpf"] as TextElement;
-        octx.fillText(formatCPF(props.cpf), fCpf.x, fCpf.y);
+        octx.fillText(formatCPF(p.cpf), fCpf.x, fCpf.y);
 
-        // Campo 5: Nº Registro (Cor Vermelha de Segurança Oficial)
+        // Campo 5: NÂº Registro (Cor Vermelha de SeguranÃ§a Oficial)
         const fRegistro = FE["front.registro"] as TextElement;
         octx.fillStyle = fRegistro.color;
-        octx.fillText(props.registro || "00000000000", fRegistro.x, fRegistro.y);
+        octx.fillText(p.registro || "00000000000", fRegistro.x, fRegistro.y);
 
-        // Campo 9: Categoria (Cor Vermelha de Segurança Oficial)
+        // Campo 9: Categoria (Cor Vermelha de SeguranÃ§a Oficial)
         const fCat = FE["front.categoria"] as TextElement;
-        octx.fillText((props.categoria || "AB").toUpperCase(), fCat.x, fCat.y);
-        octx.fillStyle = fNome.color; // reset → preto
+        octx.fillText((p.categoria || "AB").toUpperCase(), fCat.x, fCat.y);
+        octx.fillStyle = fNome.color; // reset â†’ preto
 
         // Nacionalidade
         const fNac = FE["front.nacionalidade"] as TextElement;
-        octx.fillText((props.nacionalidade || "BRASILEIRA").toUpperCase(), fNac.x, fNac.y);
+        octx.fillText((p.nacionalidade || "BRASILEIRA").toUpperCase(), fNac.x, fNac.y);
 
-        // Filiação (Nome da Mãe e do Pai)
+        // FiliaÃ§Ã£o (Nome da MÃ£e e do Pai)
         const fMae = FE["front.nomeMae"] as TextElement;
         octx.font = gFont(fMae);
-        if (props.nomeMae) octx.fillText(props.nomeMae.toUpperCase(), fMae.x, fMae.y);
+        if (p.nomeMae) octx.fillText(p.nomeMae.toUpperCase(), fMae.x, fMae.y);
         const fPai = FE["front.nomePai"] as TextElement;
-        if (props.nomePai) octx.fillText(props.nomePai.toUpperCase(), fPai.x, fPai.y);
+        if (p.nomePai) octx.fillText(p.nomePai.toUpperCase(), fPai.x, fPai.y);
 
       } else if (slide === 2) {
-        // --- SLIDE 2: VERSO (PARTE INFERIOR) — geometria via WALLET_BACK_LAYOUT ---
+        // --- SLIDE 2: VERSO (PARTE INFERIOR) â€” geometria via WALLET_BACK_LAYOUT ---
         const bgImg = new Image();
         bgImg.src = WALLET_BACK_LAYOUT.background;
         await new Promise((res) => { bgImg.onload = res; bgImg.onerror = res; });
@@ -317,15 +346,15 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
         const BE = WALLET_BACK_ELEMENTS;
 
-        // Número do Espelho (Topo)
+        // NÃºmero do Espelho (Topo)
         const bEspelho = BE["back.espelho"] as TextElement;
         octx.fillStyle = bEspelho.color;
         octx.font = gFont(bEspelho);
-        octx.fillText(props.espelho || props.registro || "5728237792", bEspelho.x, bEspelho.y);
+        octx.fillText(p.espelho || p.registro || "5728237792", bEspelho.x, bEspelho.y);
 
         // Nome do Estado por Extenso
-        const ufSigla = (props.ufEmissao || "SP").toUpperCase();
-        const estadoExtenso = ESTADOS_POR_EXTENSO[ufSigla] || "SÃO PAULO";
+        const ufSigla = (p.ufEmissao || "SP").toUpperCase();
+        const estadoExtenso = ESTADOS_POR_EXTENSO[ufSigla] || "SÃƒO PAULO";
         const bEstado = BE["back.estadoExtenso"] as TextElement;
         octx.font = gFont(bEstado);
         octx.fillText(estadoExtenso, bEstado.x, bEstado.y);
@@ -334,8 +363,8 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         const bValidA = BE["back.validadeA"] as TextElement;
         octx.font = gFont(bValidA);
         octx.fillStyle = bValidA.color;
-        const catStr = (props.categoria || "AB").toUpperCase();
-        const validFmt = fmtDate(props.validade);
+        const catStr = (p.categoria || "AB").toUpperCase();
+        const validFmt = fmtDate(p.validade);
 
         const bValidB = BE["back.validadeB"] as TextElement;
         const bValidC = BE["back.validadeC"] as TextElement;
@@ -344,27 +373,27 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         if (catStr.includes("B")) octx.fillText(validFmt, bValidB.x, bValidB.y);
         if (catStr.includes("C")) octx.fillText(validFmt, bValidC.x, bValidC.y);
         if (catStr.includes("D")) octx.fillText(validFmt, bValidD.x, bValidD.y);
-        octx.fillStyle = bEspelho.color; // reset → preto
+        octx.fillStyle = bEspelho.color; // reset â†’ preto
 
-        // Campo 12: Observações (EAR)
+        // Campo 12: ObservaÃ§Ãµes (EAR)
         const bObs = BE["back.observacoes"] as TextElement;
         octx.font = gFont(bObs);
-        const obs = (props.observacoes || "EXERCE ATIVIDADE REMUNERADA").toUpperCase();
+        const obs = (p.observacoes || "EXERCE ATIVIDADE REMUNERADA").toUpperCase();
         octx.fillText(obs, bObs.x, bObs.y);
 
-        // Local e UF de Emissão
+        // Local e UF de EmissÃ£o
         const bLocal = BE["back.localEmissao"] as CompositeTextElement;
-        const localUF = `${(props.localEmissao || "BRASÍLIA").toUpperCase()}, ${ufSigla}`;
+        const localUF = `${(p.localEmissao || "BRASÃLIA").toUpperCase()}, ${ufSigla}`;
         octx.fillText(localUF, bLocal.x, bLocal.y);
 
         // Assinatura Digital do Detran
         const bAss = BE["back.assDigital"] as CompositeTextElement;
         octx.font = gFont(bAss);
-        const assDetran = `${props.assDigital1 || "7386321121"} ${props.assDigital2 || (ufSigla + "54171992")}`;
+        const assDetran = `${p.assDigital1 || "7386321121"} ${p.assDigital2 || (ufSigla + "54171992")}`;
         octx.fillText(assDetran, bAss.x, bAss.y);
 
       } else if (slide === 3) {
-        // --- SLIDE 3: CÓDIGO MRZ ---
+        // --- SLIDE 3: CÃ“DIGO MRZ ---
         const bgImg = new Image();
         bgImg.src = "/img/cnh-templates/codigo_mrz.jpg";
         await new Promise((res) => { bgImg.onload = res; bgImg.onerror = res; });
@@ -373,12 +402,12 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.drawImage(bgImg, 0, 0, 963, 680);
 
         const mrzLines = gerarMRZ({
-          registro:       props.registro,
-          espelho:        props.espelho,
-          nome:           props.nome,
-          dataNascimento: props.dataNascimento,
-          sexo:           props.sexo,
-          validade:       props.validade,
+          registro:       p.registro,
+          espelho:        p.espelho,
+          nome:           p.nome,
+          dataNascimento: p.dataNascimento,
+          sexo:           p.sexo,
+          validade:       p.validade,
         });
         octx.fillStyle = "#000000";
         octx.font = "bold 26px monospace";
@@ -390,7 +419,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
         octx.textAlign = "left";
       }
 
-      // ROTACAO DE RETRATO -90 GRAUS (-90° CCW / ANTI-HORARIO)
+      // ROTACAO DE RETRATO -90 GRAUS (-90Â° CCW / ANTI-HORARIO)
       ctx.save();
       ctx.translate(0, H);
       ctx.rotate(-Math.PI / 2);

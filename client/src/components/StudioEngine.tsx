@@ -20,15 +20,124 @@ export interface CoordinateBox {
   height: number;
   fontSize: number;
   fontFamily: string;
+  fontWeight?: string | number;
+  fontStyle?: string;
+  letterSpacing?: number;
   color: string;
   textAlign: "left" | "center" | "right";
   isUpperCase: boolean;
   type?: "text" | "qrcode" | "logo";
+  
+  // Geometria & Transformações
+  rotation?: number;
+  scaleX?: number;
+  scaleY?: number;
+  transform?: string;
+  perspective?: string;
+  zIndex?: number;
+
+  // Propriedades Específicas do QR Code
   qrFormat?: "XXXX-XXXX" | "UUID-32" | "CPF" | "NUMERICO-11";
   qrSourceUrl?: string;
   qrPattern?: string;
   qrIntensity?: QRIntensity;
+  errorCorrectionLevel?: "L" | "M" | "Q" | "H";
+  version?: number;
+  margin?: number;
+  data?: string;
+
+  // Multi-Páginas & Formulário
   pageIndex?: number;
+  inputType?: "text" | "cpf" | "date" | "select" | "crm" | "textarea" | "number";
+  options?: string;
+  section?: string;
+  gridWidth?: "full" | "half";
+}
+
+/**
+ * Normaliza e preserva 100% dos dados de um elemento/caixa de documento existente.
+ */
+export function normalizeDocumentBox(raw: any): CoordinateBox {
+  const isQR = raw.type === "qrcode" || raw.isQRCode || (raw.fieldKey && String(raw.fieldKey).toLowerCase().includes("qr"));
+  
+  return {
+    id: String(raw.id || `box-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`),
+    fieldKey: raw.fieldKey || raw.key || raw.name || "campo",
+    label: raw.label || raw.title || raw.fieldKey || "Campo",
+    x: typeof raw.x === "number" ? raw.x : (raw.left ?? raw.posX ?? 0),
+    y: typeof raw.y === "number" ? raw.y : (raw.top ?? raw.posY ?? 0),
+    width: typeof raw.width === "number" ? raw.width : (raw.w ?? raw.widthPx ?? 100),
+    height: typeof raw.height === "number" ? raw.height : (raw.h ?? raw.heightPx ?? 30),
+    fontSize: typeof raw.fontSize === "number" ? raw.fontSize : (raw.font_size ?? 12),
+    fontFamily: raw.fontFamily || raw.font_family || raw.font || "Helvetica",
+    fontWeight: raw.fontWeight || raw.font_weight || "bold",
+    fontStyle: raw.fontStyle || raw.font_style || "normal",
+    letterSpacing: typeof raw.letterSpacing === "number" ? raw.letterSpacing : (raw.letter_spacing ?? 0),
+    color: raw.color || raw.fontColor || "#000000",
+    textAlign: raw.textAlign || raw.text_align || "left",
+    isUpperCase: raw.isUpperCase !== undefined ? Boolean(raw.isUpperCase) : (raw.uppercase ?? true),
+    type: isQR ? "qrcode" : (raw.type || "text"),
+    
+    // Geometria & Transformações
+    rotation: typeof raw.rotation === "number" ? raw.rotation : (raw.angle ?? raw.rotate ?? 0),
+    scaleX: typeof raw.scaleX === "number" ? raw.scaleX : (raw.scale_x ?? 1),
+    scaleY: typeof raw.scaleY === "number" ? raw.scaleY : (raw.scale_y ?? 1),
+    transform: raw.transform || raw.matrix || "",
+    perspective: raw.perspective || "",
+    zIndex: typeof raw.zIndex === "number" ? raw.zIndex : (raw.z_index ?? raw.order ?? 1),
+
+    // Propriedades Específicas do QR Code
+    qrFormat: raw.qrFormat || raw.format || "UUID-32",
+    qrSourceUrl: raw.qrSourceUrl || raw.sourceUrl || "https://atestados-idab.pages.dev",
+    qrPattern: raw.qrPattern || raw.pattern || "{sourceUrl}/validar?code={code}",
+    qrIntensity: raw.qrIntensity !== undefined ? raw.qrIntensity : (raw.intensity !== undefined ? raw.intensity : 3),
+    errorCorrectionLevel: raw.errorCorrectionLevel || raw.ecl || "H",
+    version: raw.version || undefined,
+    margin: typeof raw.margin === "number" ? raw.margin : 4,
+    data: raw.data || raw.qrVal || raw.value || undefined,
+
+    // Multi-Páginas & Formulário
+    pageIndex: typeof raw.pageIndex === "number" ? raw.pageIndex : (raw.page_index ?? raw.page ?? 0),
+    inputType: raw.inputType || raw.input_type || "text",
+    options: raw.options || "",
+    section: raw.section || "",
+    gridWidth: raw.gridWidth || "full",
+  };
+}
+
+/**
+ * Carrega e recupera um documento existente preservando essência, geometria e metadados.
+ */
+export function loadDocumentData(doc: any): {
+  boxes: CoordinateBox[];
+  docName: string;
+  docSlug: string;
+  category: string;
+  price: string;
+  targetStructure: string;
+  bgImage?: string;
+  pdfPages?: string[];
+} {
+  const rawBoxes = Array.isArray(doc.coordinates)
+    ? doc.coordinates
+    : Array.isArray(doc.boxes)
+    ? doc.boxes
+    : typeof doc.coordinates_json === "string"
+    ? JSON.parse(doc.coordinates_json)
+    : doc.coordinates_json || [];
+
+  const normalizedBoxes = (Array.isArray(rawBoxes) ? rawBoxes : []).map(normalizeDocumentBox);
+
+  return {
+    boxes: normalizedBoxes,
+    docName: doc.name || doc.docName || "",
+    docSlug: doc.slug || doc.docSlug || "",
+    category: doc.category || "veiculos",
+    price: String(doc.price || "15.00"),
+    targetStructure: doc.target_structure || doc.targetStructure || "cnh",
+    bgImage: doc.pdf_bg_base64 || doc.bgImage || undefined,
+    pdfPages: doc.pdfPages || (doc.pdf_bg_base64 ? [doc.pdf_bg_base64] : undefined)
+  };
 }
 
 interface StudioTemplate {
@@ -1016,29 +1125,24 @@ export default function StudioEngine() {
     setCurrentPos(null);
   };
 
-  // Carregar Modelo Salvo no Canvas
+  // Carregar Modelo Salvo no Canvas Preservando Estrutura e Geometria 1:1
   const handleSelectTemplate = (tpl: StudioTemplate) => {
-    setDocName(tpl.name);
-    setDocSlug(tpl.slug);
-    setCategory(tpl.category || "veiculos");
-    setPrice(String(tpl.price || 15.00));
-    setTargetStructure(tpl.target_structure || "cnh");
-    if ((tpl as any).pdf_bg_base64) {
-      const url = (tpl as any).pdf_bg_base64;
+    const loaded = loadDocumentData(tpl);
+    setDocName(loaded.docName || tpl.name);
+    setDocSlug(loaded.docSlug || tpl.slug);
+    setCategory(loaded.category || tpl.category || "veiculos");
+    setPrice(loaded.price || String(tpl.price || 15.00));
+    setTargetStructure(loaded.targetStructure || tpl.target_structure || "cnh");
+    setBoxes(loaded.boxes);
+
+    if ((tpl as any).pdf_bg_base64 || loaded.bgImage) {
+      const url = (tpl as any).pdf_bg_base64 || loaded.bgImage;
       setBgImage(url);
       updateCanvasSizeFromImage(url);
     } else {
       createBlankCanvas();
     }
-    try {
-      const parsedBoxes = typeof tpl.coordinates_json === "string"
-        ? JSON.parse(tpl.coordinates_json)
-        : tpl.coordinates_json;
-      setBoxes(parsedBoxes || []);
-    } catch {
-      setBoxes([]);
-    }
-    toast.success(`Modelo "${tpl.name}" carregado no Canvas do Studio!`);
+    toast.success(`Modelo "${tpl.name}" recuperado preservando geometria, QR e fontes!`);
   };
 
   // Salvar Gabarito no Studio API
@@ -2278,7 +2382,14 @@ ${boxes
                 {boxes
                   .filter((box) => (box.pageIndex ?? 0) === currentPageIndex)
                   .map((box) => {
-                  const isSelected = box.id === selectedBoxId;
+                    const isSelected = box.id === selectedBoxId;
+                    const transformStr = [
+                      box.transform,
+                      box.rotation ? `rotate(${box.rotation}deg)` : "",
+                      (box.scaleX !== undefined && box.scaleX !== 1) || (box.scaleY !== undefined && box.scaleY !== 1)
+                        ? `scale(${box.scaleX ?? 1}, ${box.scaleY ?? 1})`
+                        : "",
+                    ].filter(Boolean).join(" ");
 
                     if (box.type === "qrcode") {
                       const sampleCode = box.qrFormat === "XXXX-XXXX" ? "A8F9-2041" : box.qrFormat === "CPF" ? "94598940468" : "9b3a7c9d-8e4f-4a12-98ab-34cd56ef7890";
@@ -2297,14 +2408,18 @@ ${boxes
                           }}
                           className={`absolute border-2 rounded-lg transition-all flex flex-col items-center justify-center p-0.5 bg-white shadow-2xl cursor-pointer aspect-square ${
                             isSelected
-                              ? "border-emerald-400 shadow-emerald-500/50 z-30 ring-4 ring-emerald-400/40 animate-pulse"
-                              : "border-emerald-600 hover:border-emerald-400 z-20"
+                              ? "border-emerald-400 shadow-emerald-500/50 ring-4 ring-emerald-400/40 animate-pulse"
+                              : "border-emerald-600 hover:border-emerald-400"
                           }`}
                           style={{
                             left: box.x * zoom,
                             top: box.y * zoom,
                             width: box.width * zoom,
                             height: box.height * zoom,
+                            transform: transformStr || undefined,
+                            transformOrigin: "center center",
+                            perspective: box.perspective || undefined,
+                            zIndex: box.zIndex || (isSelected ? 30 : 20),
                           }}
                         >
                           {pngUrl ? (
@@ -2337,8 +2452,8 @@ ${boxes
                       }}
                       className={`absolute border-2 rounded transition-all flex items-center justify-between px-2 font-mono text-[10px] font-bold ${
                         isSelected
-                          ? "border-emerald-400 bg-emerald-500/20 shadow-lg shadow-emerald-500/30 z-30 ring-2 ring-emerald-400/40"
-                          : "border-indigo-500/70 bg-indigo-500/10 hover:border-indigo-400 z-20"
+                          ? "border-emerald-400 bg-emerald-500/20 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/40"
+                          : "border-indigo-500/70 bg-indigo-500/10 hover:border-indigo-400"
                       }`}
                       style={{
                         left: box.x * zoom,
@@ -2346,6 +2461,16 @@ ${boxes
                         width: box.width * zoom,
                         height: box.height * zoom,
                         color: box.color || "#000",
+                        fontFamily: box.fontFamily || "Helvetica",
+                        fontSize: box.fontSize ? `${box.fontSize * zoom}px` : undefined,
+                        fontWeight: box.fontWeight || "bold",
+                        fontStyle: box.fontStyle || "normal",
+                        letterSpacing: box.letterSpacing ? `${box.letterSpacing}px` : undefined,
+                        textAlign: box.textAlign || "left",
+                        transform: transformStr || undefined,
+                        transformOrigin: "center center",
+                        perspective: box.perspective || undefined,
+                        zIndex: box.zIndex || (isSelected ? 30 : 20),
                       }}
                     >
                       <span className="truncate">{box.label || box.fieldKey}</span>

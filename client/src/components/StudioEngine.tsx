@@ -1331,8 +1331,9 @@ ${boxes
 
           <button
             type="button"
-            onClick={handleAutoOCR}
-            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 font-medium text-xs flex items-center gap-1.5 transition-all"
+            onClick={runOCRScan}
+            disabled={ocrLoading}
+            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5 text-slate-300" />
             <span>OCR IA</span>

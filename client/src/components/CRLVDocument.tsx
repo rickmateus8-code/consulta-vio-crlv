@@ -4,6 +4,7 @@
  * Utiliza o modelo limpo vetorial 600DPI enviado pelo usuário como BACKGROUND PRINCIPAL ABSOLUTO
  * com o valor de capacidade (*.*) descendo 0,2% (Y = 332px).
  */
+import { forwardRef, useRef, useImperativeHandle } from "react";
 import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
 
 export interface CRLVDocumentProps {

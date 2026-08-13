@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
+import { gerarMRZ } from "@/lib/cnh/mrz";
+import { getCNHValidationUrl } from "@/lib/cnh/validation";
 
 export interface CNH3PartDocumentProps {
   id?: string;
@@ -63,36 +65,8 @@ function formatCPF(v?: string): string {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }
 
-function gerarMRZ(p: CNH3PartDocumentProps): string[] {
-  const pad = (s: string, l: number) => (s || "UNKNOWN").toUpperCase().replace(/[^A-Z0-9]/g, "<").padEnd(l, "<");
-  const fmtData = (d?: string) => {
-    if (!d) return "000000";
-    const p2 = d.split("/");
-    if (p2.length === 3) return `${p2[2].slice(2)}${p2[1]}${p2[0]}`;
-    const p3 = d.split("-");
-    if (p3.length === 3) return `${p3[0].slice(2)}${p3[1]}${p3[2]}`;
-    return "000000";
-  };
-  const r = (p.registro || "00000000000").replace(/\D/g, "").padEnd(11, "<").slice(0, 11);
-  const e = (p.espelho || "0000000000").replace(/\D/g, "").padEnd(10, "<").slice(0, 10);
-  const partes = (p.nome || "").trim().split(/\s+/).filter(Boolean);
-  
-  let nomeFormatadoRaw = "";
-  if (partes.length > 1) {
-    const ultimoSobrenome = partes[partes.length - 1];
-    const nomesRestantes = partes.slice(0, partes.length - 1).join("<");
-    nomeFormatadoRaw = `${ultimoSobrenome}<<${nomesRestantes}`;
-  } else {
-    nomeFormatadoRaw = partes[0] || "DESCONHECIDO";
-  }
-  const nomeFormatado = pad(nomeFormatadoRaw, 30).substring(0, 30);
-
-  return [
-    `I<BRA${r}<${e}<<<`,
-    `${fmtData(p.dataNascimento)}0${p.sexo ? p.sexo.charAt(0).toUpperCase() : "M"}${fmtData(p.validade)}5BRA<<<<<<<<<<<<`,
-    nomeFormatado,
-  ];
-}
+// ─── Geração MRZ (OCR-B) ─────────────────────────────────────────────────────
+// Implementação centralizada em @/lib/cnh/mrz — gerarMRZ importado acima.
 
 async function drawCleanSignature(
   ctx: CanvasRenderingContext2D,
@@ -173,7 +147,7 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
           if (!codigoQrFinal || codigoQrFinal.includes(".")) {
             codigoQrFinal = props.id || "31c64778-606e-436e-9f9d-287574f23abe";
           }
-          qrUrl = `https://validacao-online-vio.digital/consulta/?id=${encodeURIComponent(codigoQrFinal)}`;
+          qrUrl = getCNHValidationUrl(codigoQrFinal);
         }
 
         try {
@@ -358,7 +332,14 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
 
         octx.drawImage(bgImg, 0, 0, 963, 680);
 
-        const mrzLines = gerarMRZ(props);
+        const mrzLines = gerarMRZ({
+          registro:       props.registro,
+          espelho:        props.espelho,
+          nome:           props.nome,
+          dataNascimento: props.dataNascimento,
+          sexo:           props.sexo,
+          validade:       props.validade,
+        });
         octx.fillStyle = "#000000";
         octx.font = "bold 26px monospace";
         octx.textAlign = "center";

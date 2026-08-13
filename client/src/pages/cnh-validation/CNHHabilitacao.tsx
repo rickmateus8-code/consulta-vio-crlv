@@ -4,6 +4,7 @@ import { ErrorState, LoadingState, queryCpf, useCnhRecord } from "./shared";
 import CNH3PartDocument from "@/components/CNH3PartDocument";
 import { ChevronLeft, ChevronRight, Contact, FileUp, Trash2, Copy } from "lucide-react";
 import { jsPDF } from "jspdf";
+import { getCNHValidationUrl } from "@/lib/cnh/validation";
 
 export default function CNHHabilitacao() {
   const [, setLocation] = useLocation();
@@ -209,7 +210,9 @@ export default function CNHHabilitacao() {
 
           <div
             onClick={() => {
-              const qrText = record.id ? `https://validacao-online-vio.digital/consulta/?id=${record.id}` : `https://validacao-online-vio.digital/consulta/?cpf=${cpf}`;
+              const qrText = record.id
+                ? getCNHValidationUrl(record.id)
+                : getCNHValidationUrl(cpf);
               if (navigator.clipboard) {
                 navigator.clipboard.writeText(qrText);
                 setModalMsg("Link do QR Code VIO copiado com sucesso!");

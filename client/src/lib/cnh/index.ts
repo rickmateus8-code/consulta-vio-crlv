@@ -18,3 +18,8 @@ export {
   normalizeCNHRenderInput,
   cNHDocumentPropsToRenderInput,
 } from "./normalize";
+
+export type { CNHMRZInput } from "./mrz";
+export { gerarMRZ } from "./mrz";
+
+export { getCNHValidationUrl, CNH_VALIDATION_DOMAIN } from "./validation";

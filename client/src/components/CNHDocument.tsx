@@ -5,11 +5,13 @@
  *  - Página 1: CNH frente (canvas @300DPI) | Painel QR-CODE + SERPRO/SENATRAN
  *  - Página 2: Legenda multilíngue (PT / EN / ES) dos campos
  *
- * QR Code aponta para: https://validacao-online-vio.digital/?id={UUID_DO_DOCUMENTO}
+ * QR Code aponta para: https://validacao-online-vio.digital/consulta/?id={UUID_DO_DOCUMENTO}
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { getActiveCNHLayout, getHardcodedLayout, type CNHLayout } from "@/config/cnhLayout";
 import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
+import { gerarMRZ } from "@/lib/cnh/mrz";
+import { getCNHValidationUrl } from "@/lib/cnh/validation";
 
 export interface CNHDocumentProps {
   nome: string;
@@ -124,36 +126,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 // ─── Geração MRZ (OCR-B) ─────────────────────────────────────────────────────
-function gerarMRZ(p: CNHDocumentProps): string[] {
-  const pad = (s: string, l: number) => (s || "UNKNOWN").toUpperCase().replace(/[^A-Z0-9]/g, "<").padEnd(l, "<");
-  const fmtData = (d: string) => {
-    if (!d) return "000000";
-    const p2 = d.split("/");
-    if (p2.length === 3) return `${p2[2].slice(2)}${p2[1]}${p2[0]}`;
-    const p3 = d.split("-");
-    if (p3.length === 3) return `${p3[0].slice(2)}${p3[1]}${p3[2]}`;
-    return "000000";
-  };
-  const r = (p.registro || "00000000000").replace(/\D/g, "").padEnd(11, "<").slice(0, 11);
-  const e = (p.espelho || "0000000000").replace(/\D/g, "").padEnd(10, "<").slice(0, 10);
-  const partes = (p.nome || "").trim().split(/\s+/).filter(Boolean);
-  
-  let nomeFormatadoRaw = "";
-  if (partes.length > 1) {
-    const ultimoSobrenome = partes[partes.length - 1];
-    const nomesRestantes = partes.slice(0, partes.length - 1).join("<");
-    nomeFormatadoRaw = `${ultimoSobrenome}<<${nomesRestantes}`;
-  } else {
-    nomeFormatadoRaw = partes[0] || "DESCONHECIDO";
-  }
-  const nomeFormatado = pad(nomeFormatadoRaw, 30).substring(0, 30);
-
-  return [
-    `I<BRA${r}<${e}<<<`,
-    `${fmtData(p.dataNascimento)}0${p.sexo ? p.sexo.charAt(0).toUpperCase() : "M"}${fmtData(p.validade)}5BRA<<<<<<<<<<<<`,
-    nomeFormatado,
-  ];
-}
+// Implementação centralizada em @/lib/cnh/mrz — gerarMRZ importado acima.
 
 import { MYRIAD_REGULAR_BASE64, OCRB_BASE64 } from "./cnhFontsBase64";
 
@@ -562,7 +535,14 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
     // ═══════════════════════════════════════════════════════════════════
     // MRZ (OCR-B 35.175px @300DPI - Mover 2% a esquerda -> X=285px)
     // ═══════════════════════════════════════════════════════════════════
-    const mrz = gerarMRZ(props);
+    const mrz = gerarMRZ({
+      registro:       props.registro,
+      espelho:        props.espelho,
+      nome:           props.nome,
+      dataNascimento: props.dataNascimento,
+      sexo:           props.sexo,
+      validade:       props.validade,
+    });
     ctx.save();
     let mrzFontSize = 35.175;
     const maxMrzWidth = 1800; // Limite estrito de segurança das margens
@@ -587,8 +567,7 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
       codigoQrFinal = "31c64778-606e-436e-9f9d-287574f23abe";
     }
     
-    const cnhValidationBase = "https://validacao-online-vio.digital";
-    const qrUrl = `${cnhValidationBase}/consulta/?id=${encodeURIComponent(codigoQrFinal)}`;
+    const qrUrl = getCNHValidationUrl(codigoQrFinal);
 
     try {
       const qrSize = L.qr.size;

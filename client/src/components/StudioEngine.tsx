@@ -158,10 +158,10 @@ export default function StudioEngine() {
   const [price, setPrice] = useState("15.00");
   const [targetStructure, setTargetStructure] = useState("cnh");
 
-  // QR Code & Configuração de Validação
+  // QR Code & Configuração de Validação (Vazios por padrão conforme diretriz)
   const [qrFormat, setQrFormat] = useState<"XXXX-XXXX" | "UUID-32" | "CPF" | "NUMERICO-11">("UUID-32");
-  const [qrSourceUrl, setQrSourceUrl] = useState("https://atestados-idab.pages.dev");
-  const [qrPattern, setQrPattern] = useState("{sourceUrl}/validar?code={code}");
+  const [qrSourceUrl, setQrSourceUrl] = useState("");
+  const [qrPattern, setQrPattern] = useState("");
   const [extractedLogos, setExtractedLogos] = useState<string[]>([]);
   const [qrPngMap, setQrPngMap] = useState<Record<string, string>>({});
 
@@ -732,6 +732,66 @@ export default function StudioEngine() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Upload de Imagens de Logos / Assinaturas / Carimbos (PNG/JPG/SVG/WebP)
+  const handleUploadCustomLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const dataUrl = evt.target?.result as string;
+      if (!dataUrl) return;
+
+      const newLogoBox: CoordinateBox = {
+        id: `logo-${Date.now()}`,
+        fieldKey: `logo_${extractedLogos.length + 1}`,
+        label: file.name.replace(/\.[^/.]+$/, ""),
+        x: Math.round(canvasSize.width / 2 - 60),
+        y: Math.round(canvasSize.height / 2 - 60),
+        width: 120,
+        height: 120,
+        fontSize: 10,
+        fontFamily: "Helvetica",
+        color: "#000000",
+        textAlign: "center",
+        isUpperCase: false,
+        type: "logo",
+        data: dataUrl,
+        pageIndex: currentPageIndex,
+      };
+
+      setExtractedLogos(prev => [...prev, dataUrl]);
+      setBoxes(prev => [...prev, newLogoBox]);
+      setSelectedBoxId(newLogoBox.id);
+      setActiveTool("logos");
+      toast.success(`Imagem/Logo "${file.name}" importada com sucesso no Canvas!`);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Fechar/Remover Folha do Documento
+  const handleRemovePage = (indexToRemove: number) => {
+    if (pdfPages.length <= 1) {
+      toast.error("O documento deve possuir no mínimo 1 folha ativa!");
+      return;
+    }
+
+    const newPages = pdfPages.filter((_, idx) => idx !== indexToRemove);
+    setBoxes(prev => prev.filter(b => (b.pageIndex ?? 0) !== indexToRemove).map(b => {
+      if ((b.pageIndex ?? 0) > indexToRemove) {
+        return { ...b, pageIndex: (b.pageIndex ?? 0) - 1 };
+      }
+      return b;
+    }));
+
+    setPdfPages(newPages);
+    const newIdx = Math.max(0, Math.min(indexToRemove, newPages.length - 1));
+    setCurrentPageIndex(newIdx);
+    setBgImage(newPages[newIdx]);
+    updateCanvasSizeFromImage(newPages[newIdx]);
+    toast.info(`Folha ${indexToRemove + 1} fechada/removida.`);
   };
 
   // Pré-processador de Imagem para OCR (Conversão para Escala de Cinza e Alto Contraste)
@@ -2256,35 +2316,55 @@ ${boxes
                 <span>Página Ativa:</span>
               </span>
 
-              {/* Seletor de Páginas (Folha 1, Folha 2, etc.) com Badges de Caixas Salvas */}
+              {/* Seletor de Páginas (Folha 1, Folha 2, etc.) com Badges e Botão Fechar (X) */}
               <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
                 {(pdfPages.length > 0 ? pdfPages : [bgImage]).map((_, pIdx) => {
                   const countForPage = boxes.filter(b => (b.pageIndex ?? 0) === pIdx).length;
                   return (
-                    <button
+                    <div
                       key={pIdx}
-                      type="button"
-                      onClick={() => {
-                        setCurrentPageIndex(pIdx);
-                        if (pdfPages[pIdx]) {
-                          setBgImage(pdfPages[pIdx]);
-                          updateCanvasSizeFromImage(pdfPages[pIdx]);
-                        }
-                        toast.info(`Alternou para Folha ${pIdx + 1} (${countForPage} caixas salvas nesta página).`);
-                      }}
-                      className={`px-2.5 py-0.5 text-[10px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg transition-all flex items-center gap-1.5 ${
                         currentPageIndex === pIdx
                           ? "bg-white text-slate-950 shadow-md ring-1 ring-slate-400"
                           : "bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800"
                       }`}
                     >
-                      <span>Folha {pIdx + 1}</span>
-                      <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full font-black ${
-                        currentPageIndex === pIdx ? "bg-slate-900 text-white" : "bg-slate-800 text-slate-400"
-                      }`}>
-                        {countForPage}
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrentPageIndex(pIdx);
+                          if (pdfPages[pIdx]) {
+                            setBgImage(pdfPages[pIdx]);
+                            updateCanvasSizeFromImage(pdfPages[pIdx]);
+                          }
+                          toast.info(`Alternou para Folha ${pIdx + 1} (${countForPage} caixas salvas nesta página).`);
+                        }}
+                        className="flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Folha {pIdx + 1}</span>
+                        <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full font-black ${
+                          currentPageIndex === pIdx ? "bg-slate-900 text-white" : "bg-slate-800 text-slate-400"
+                        }`}>
+                          {countForPage}
+                        </span>
+                      </button>
+
+                      {pdfPages.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemovePage(pIdx);
+                          }}
+                          className={`p-0.5 rounded hover:bg-red-500 hover:text-white transition-all cursor-pointer ${
+                            currentPageIndex === pIdx ? "text-slate-700" : "text-slate-500"
+                          }`}
+                          title={`Fechar/Remover Folha ${pIdx + 1}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
 
@@ -2317,8 +2397,17 @@ ${boxes
               </div>
             </div>
 
-            {/* Barra de Ferramentas Rápidas de Captura (Crop, Desenhar, OCR, QR Code) */}
+            {/* Barra de Ferramentas Rápidas de Captura & Upload de Logos/Assinaturas */}
             <div className="flex items-center gap-2">
+              <label
+                className="px-3 py-1 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                title="Subir imagem de Logo, Assinatura ou Carimbo (PNG/JPG/SVG/WebP)"
+              >
+                <ImageIcon className="w-3.5 h-3.5 text-white" />
+                <span>+ Logo/Assinatura</span>
+                <input type="file" accept="image/*" onChange={handleUploadCustomLogo} className="hidden" />
+              </label>
+
               <button
                 type="button"
                 onClick={runOCRScan}
@@ -2362,8 +2451,17 @@ ${boxes
             </div>
           </div>
 
-          {/* Container do Canvas Stage HD */}
-          <div className="flex-1 overflow-auto custom-scrollbar bg-[#060911] flex items-center justify-center p-0 m-0 relative">
+          {/* Container do Canvas Stage HD (Suporta Zoom por Scroll + CTRL) */}
+          <div
+            onWheel={(e) => {
+              if (e.ctrlKey) {
+                e.preventDefault();
+                const delta = e.deltaY < 0 ? 0.05 : -0.05;
+                setZoom(prev => Math.max(0.2, Math.min(3.0, Number((prev + delta).toFixed(2)))));
+              }
+            }}
+            className="flex-1 overflow-auto custom-scrollbar bg-[#060911] flex items-center justify-center p-0 m-0 relative"
+          >
             {bgImage ? (
               <div
                 ref={canvasRef}

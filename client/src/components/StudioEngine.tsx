@@ -157,6 +157,9 @@ interface StudioTemplate {
   created_at: string;
 }
 
+// Tipo dos 8 handles de resize — definido fora do componente para ser reutilizável no JSX
+type ResizeHandle = "nw" | "n" | "ne" | "w" | "e" | "sw" | "s" | "se";
+
 export default function StudioEngine() {
   const [docName, setDocName] = useState("");
   const [docSlug, setDocSlug] = useState("");
@@ -194,11 +197,31 @@ export default function StudioEngine() {
   const [savedTemplates, setSavedTemplates] = useState<StudioTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [saving, setSaving] = useState(false);
+  // CNH Studio V2: rastreia o formato REAL do coordinates_json do template em edição.
+  // "legacy" → array simples [...] carregado do banco (salvar como array).
+  // "v2"     → { canvasSize, boxes } carregado do banco (salvar como objeto).
+  // "new"    → novo template criado pelo preset (nunca esteve no banco; salvar como objeto).
+  // Não deve ser inferido por targetStructure, slug ou dimensões do canvas.
+  const [coordinatesFormat, setCoordinatesFormat] = useState<"legacy" | "v2" | "new">("new");
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Histórico de Reversão de Erros (Undo / Redo)
   const [history, setHistory] = useState<Array<{ boxes: CoordinateBox[]; bgImage: string | null }>>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // Drag: rastreia qual box está sendo arrastada e o offset do clique em relação ao canto da box
+  const draggingRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
+  // Resize: rastreia handle ativo, posição inicial do mouse e geometria inicial da box
+  const resizingRef = useRef<{
+    id: string;
+    handle: ResizeHandle;
+    startMouseX: number;
+    startMouseY: number;
+    startBox: { x: number; y: number; width: number; height: number };
+  } | null>(null);
+  // Ref para acessar boxes mais recente no mouseup (evita stale closure)
+  const currentBoxesRef = useRef<CoordinateBox[]>([]);
+  useEffect(() => { currentBoxesRef.current = boxes; }, [boxes]);
 
   // Trava / Bloqueio de Elemento
   const toggleLockBox = (boxId: string) => {
@@ -338,6 +361,29 @@ export default function StudioEngine() {
       else if (e.key === "ArrowRight") dx = delta;
       else if (e.key === "ArrowUp") dy = -delta;
       else if (e.key === "ArrowDown") dy = delta;
+      else if (e.key === "Delete" || e.key === "Backspace") {
+        // Excluir elemento(s) selecionado(s) via Delete/Backspace
+        e.preventDefault();
+        setBoxes(prev => {
+          const toDelete = activeIds.filter(id => {
+            const b = prev.find(b => b.id === id);
+            return b && !b.locked;
+          });
+          const lockedCount = activeIds.length - toDelete.length;
+          if (toDelete.length === 0) {
+            if (lockedCount > 0) toast.warning(`${lockedCount} elemento(s) bloqueado(s) não podem ser excluídos.`);
+            return prev;
+          }
+          const nextBoxes = prev.filter(b => !toDelete.includes(b.id));
+          setSelectedBoxId(null);
+          setSelectedBoxIds([]);
+          pushHistory(nextBoxes, bgImage);
+          toast.info(`${toDelete.length} elemento(s) removido(s).`);
+          if (lockedCount > 0) toast.warning(`${lockedCount} bloqueado(s) preservado(s).`);
+          return nextBoxes;
+        });
+        return;
+      }
       else return;
 
       e.preventDefault();
@@ -375,6 +421,22 @@ export default function StudioEngine() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedBoxId, selectedBoxIds, bgImage]);
+
+  // Garantia: liberar drag/resize mesmo se mouseup ocorrer fora do canvas
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (draggingRef.current || resizingRef.current) {
+        const wasDragging = !!draggingRef.current || !!resizingRef.current;
+        draggingRef.current = null;
+        resizingRef.current = null;
+        if (wasDragging) {
+          pushHistory(currentBoxesRef.current, bgImage);
+        }
+      }
+    };
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, [bgImage, historyIndex]);
 
   const pushHistory = (newBoxes: CoordinateBox[], newBgImage: string | null) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -627,28 +689,33 @@ export default function StudioEngine() {
         qrFormat: "UUID-32",
         qrSourceUrl: "https://carteira-digital-transito-vio.digital",
         qrPattern: "{sourceUrl}/validar?code={code}",
+        // CNH Studio V2 — 22 elementos mapeados 1:1 do layout nativo (2481×3508)
+        // scaleX = 794/2481, scaleY = 1123/3508
+        // Xstudio = (Xlayout + 22) × scaleX  |  Ystudio = Ylayout × scaleY
+        // width = nativeW × scaleX  |  height = nativeH × scaleY  |  fontSize = nativeFS × scaleX
         boxes: [
-          { id: "cnh-1", fieldKey: "nome", label: "Nome do Condutor", x: 208.7, y: 296.4, width: 384.2, height: 28, fontSize: 13.4, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "text", section: "Identificação", gridWidth: "full" },
-          { id: "cnh-2", fieldKey: "primeiraHabilitacao", label: "1ª Habilitação", x: 634.5, y: 296.4, width: 83.2, height: 28, fontSize: 13.4, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "date", section: "Habilitação", gridWidth: "half" },
-          { id: "cnh-3", fieldKey: "nascimento", label: "Data / Local Nasc", x: 397.6, y: 334.8, width: 214.5, height: 26, fontSize: 12.8, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "text", section: "Identificação", gridWidth: "half" },
-          { id: "cnh-4", fieldKey: "dataEmissao", label: "Data de Emissão", x: 397.6, y: 373.3, width: 115.2, height: 26, fontSize: 12.8, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "date", section: "Habilitação", gridWidth: "half" },
-          { id: "cnh-5", fieldKey: "validade", label: "Validade CNH", x: 517.4, y: 373.3, width: 102.4, height: 26, fontSize: 12.8, fontFamily: "Helvetica", color: "#c0392b", textAlign: "left", isUpperCase: true, inputType: "date", section: "Habilitação", gridWidth: "half" },
-          { id: "cnh-6", fieldKey: "acc", label: "ACC / Tipo CNH", x: 701.8, y: 366.2, width: 38.4, height: 50, fontSize: 29.7, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: true, inputType: "text", section: "Habilitação", gridWidth: "half" },
-          { id: "cnh-7", fieldKey: "docIdentidade", label: "Doc Identidade / Órgão", x: 397.6, y: 412.3, width: 214.5, height: 26, fontSize: 12.8, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "text", section: "Documentos", gridWidth: "half" },
-          { id: "cnh-8", fieldKey: "cpf", label: "CPF Condutor", x: 397.6, y: 450.7, width: 137.7, height: 26, fontSize: 12.8, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "cpf", section: "Identificação", gridWidth: "half" },
-          { id: "cnh-9", fieldKey: "registro", label: "RENACH / Nº Registro", x: 529.5, y: 450.7, width: 112.1, height: 26, fontSize: 12.8, fontFamily: "OCR-B", color: "#c0392b", textAlign: "left", isUpperCase: true, inputType: "text", section: "Habilitação", gridWidth: "half" },
-          { id: "cnh-10", fieldKey: "categoria", label: "Categoria CNH", x: 658.9, y: 450.7, width: 51.2, height: 30, fontSize: 13.8, fontFamily: "Helvetica", color: "#c0392b", textAlign: "center", isUpperCase: true, inputType: "select", options: "A, B, AB, C, D, E, ACC", section: "Habilitação", gridWidth: "half" },
-          { id: "cnh-11", fieldKey: "nacionalidade", label: "Nacionalidade", x: 397.6, y: 489.2, width: 259.3, height: 26, fontSize: 12.8, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "text", section: "Identificação", gridWidth: "half" },
-          { id: "cnh-12", fieldKey: "nomePai", label: "Nome do Pai", x: 397.6, y: 532.7, width: 265.7, height: 26, fontSize: 12.1, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "text", section: "Filiação", gridWidth: "full" },
-          { id: "cnh-13", fieldKey: "nomeMae", label: "Nome da Mãe", x: 397.6, y: 578.8, width: 265.7, height: 26, fontSize: 12.1, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "text", section: "Filiação", gridWidth: "full" },
-          { id: "cnh-14", fieldKey: "observacoes", label: "Observações / EAR", x: 205.5, y: 854.2, width: 473.8, height: 60, fontSize: 12.7, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "textarea", section: "Observações", gridWidth: "full" },
-          { id: "cnh-15", fieldKey: "localEmissao", label: "Local de Emissão", x: 203.0, y: 1011.0, width: 320.1, height: 26, fontSize: 12.8, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true, inputType: "text", section: "Emissão", gridWidth: "half" },
-          { id: "cnh-16", fieldKey: "nomeEstadoExtenso", label: "Estado por Extenso", x: 398.3, y: 1068.0, width: 400.0, height: 40, fontSize: 28.1, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: true, inputType: "text", section: "Emissão", gridWidth: "half" },
-          { id: "cnh-17", fieldKey: "assDigital1", label: "Assinatura Digital 1", x: 632.0, y: 998.2, width: 200.0, height: 24, fontSize: 11.6, fontFamily: "Helvetica", color: "#222222", textAlign: "center", isUpperCase: true, inputType: "text", section: "Certificação", gridWidth: "half" },
-          { id: "cnh-18", fieldKey: "assDigital2", label: "Assinatura Digital 2", x: 600.0, y: 1014.2, width: 200.0, height: 24, fontSize: 11.6, fontFamily: "Helvetica", color: "#222222", textAlign: "left", isUpperCase: true, inputType: "text", section: "Certificação", gridWidth: "half" },
-          { id: "cnh-19", fieldKey: "fotoUrl", label: "Foto 3x4 Condutor", x: 201.0, y: 357.3, width: 168.4, height: 206.1, fontSize: 0, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: false, type: "logo", section: "Mídias", gridWidth: "half" },
-          { id: "cnh-20", fieldKey: "assinaturaUrl", label: "Assinatura Condutor", x: 213.2, y: 571.8, width: 151.1, height: 43.5, fontSize: 0, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: false, type: "logo", section: "Mídias", gridWidth: "half" },
-          { id: "cnh-21", fieldKey: "qrcode_validacao", label: "[QR CODE] Validador VIO", x: 878.5, y: 236.9, width: 550.6, height: 550.6, fontSize: 10, fontFamily: "OCR-B", color: "#000000", textAlign: "center", isUpperCase: true, type: "qrcode", qrFormat: "UUID-32", qrSourceUrl: "https://carteira-digital-transito-vio.digital", qrPattern: "{sourceUrl}/validar?code={code}", section: "Validação", gridWidth: "half" },
+          { id: "cnh-1",  fieldKey: "nome",               label: "Nome do Condutor",         x: 104.33, y: 148.16, width: 192.02, height:  8.96, fontSize:  6.72, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Identificação",    gridWidth: "full",  letterSpacing: 1 },
+          { id: "cnh-2",  fieldKey: "primeiraHabilitacao", label: "1ª Habilitação",            x: 317.20, y: 148.16, width:  41.61, height:  8.96, fontSize:  6.72, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "date",     section: "Habilitação",     gridWidth: "half" },
+          { id: "cnh-3",  fieldKey: "nascimento",          label: "Data / Local Nasc",         x: 198.82, y: 149.28, width: 107.23, height:  8.32, fontSize:  6.40, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Identificação",    gridWidth: "half" },
+          { id: "cnh-4",  fieldKey: "dataEmissao",         label: "Data de Emissão",           x: 198.82, y: 166.46, width:  57.61, height:  8.32, fontSize:  6.40, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "date",     section: "Habilitação",     gridWidth: "half" },
+          { id: "cnh-5",  fieldKey: "validade",            label: "Validade CNH",              x: 258.62, y: 166.46, width:  51.21, height:  8.32, fontSize:  6.40, fontFamily: "Helvetica",  color: "#c0392b", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "date",     section: "Habilitação",     gridWidth: "half" },
+          { id: "cnh-6",  fieldKey: "acc",                 label: "ACC / Tipo CNH",            x: 350.84, y: 163.32, width:  19.20, height: 14.40, fontSize: 14.88, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Habilitação",     gridWidth: "half" },
+          { id: "cnh-7",  fieldKey: "docIdentidade",       label: "Doc Identidade / Órgão",    x: 198.82, y: 183.64, width: 107.23, height:  8.32, fontSize:  6.40, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Documentos",      gridWidth: "half" },
+          { id: "cnh-8",  fieldKey: "cpf",                 label: "CPF Condutor",              x: 198.82, y: 200.82, width:  68.81, height:  8.32, fontSize:  6.40, fontFamily: "OCR-B",      color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "cpf",      section: "Documentos",      gridWidth: "half" },
+          { id: "cnh-9",  fieldKey: "registro",            label: "RENACH / Nº Registro",      x: 264.66, y: 200.82, width:  56.01, height:  8.32, fontSize:  6.40, fontFamily: "OCR-B",      color: "#c0392b", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Documentos",      gridWidth: "half" },
+          { id: "cnh-10", fieldKey: "categoria",           label: "CAT CNH",                   x: 329.44, y: 200.82, width:  25.61, height:  9.60, fontSize:  6.88, fontFamily: "Helvetica",  color: "#c0392b", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "select",   section: "Habilitação",     gridWidth: "half",  options: "A, B, AB, C, D, E, ACC" },
+          { id: "cnh-11", fieldKey: "nacionalidade",       label: "Nacionalidade",             x: 198.82, y: 218.00, width: 129.63, height:  8.32, fontSize:  6.40, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Identificação",    gridWidth: "half" },
+          { id: "cnh-12", fieldKey: "nomePai",             label: "Nome do Pai",               x: 198.82, y: 237.38, width: 132.83, height:  8.32, fontSize:  6.08, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Filiação",        gridWidth: "full" },
+          { id: "cnh-13", fieldKey: "nomeMae",             label: "Nome da Mãe",               x: 198.82, y: 257.66, width: 132.83, height:  8.32, fontSize:  6.08, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Filiação",        gridWidth: "full" },
+          { id: "cnh-14", fieldKey: "observacoes",         label: "Observações / EAR",         x: 102.74, y: 380.48, width: 236.86, height: 19.20, fontSize:  6.37, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "textarea",  section: "Observações",     gridWidth: "full" },
+          { id: "cnh-15", fieldKey: "localEmissao",        label: "Local de Emissão",          x: 101.46, y: 450.58, width: 160.04, height:  8.32, fontSize:  6.40, fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Emissão",         gridWidth: "half" },
+          { id: "cnh-16", fieldKey: "nomeEstadoExtenso",   label: "Nome do Estado Extenso",    x: 199.14, y: 476.00, width: 128.03, height: 12.80, fontSize: 14.05, fontFamily: "Helvetica",  color: "#000000", textAlign: "center", isUpperCase: true,  type: "text",   inputType: "text",     section: "Emissão",         gridWidth: "half" },
+          { id: "cnh-17", fieldKey: "assDigital1",         label: "Assinatura Digital 1",      x: 315.93, y: 444.88, width:  64.02, height:  7.68, fontSize:  5.82, fontFamily: "OCR-B",      color: "#222222", textAlign: "center", isUpperCase: true,  type: "text",   inputType: "text",     section: "Segurança",       gridWidth: "half" },
+          { id: "cnh-18", fieldKey: "assDigital2",         label: "Assinatura Digital 2",      x: 299.93, y: 451.88, width:  64.02, height:  7.68, fontSize:  5.82, fontFamily: "OCR-B",      color: "#222222", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Segurança",       gridWidth: "half" },
+          { id: "cnh-19", fieldKey: "fotoUrl",             label: "Foto 3x4 do Condutor",     x: 100.54, y: 159.18, width:  84.22, height: 103.06, fontSize: 0,     fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: false, type: "logo",                        section: "Mídia & Assinatura", gridWidth: "half" },
+          { id: "cnh-20", fieldKey: "assinaturaUrl",       label: "Assinatura do Condutor",   x: 106.63, y: 254.82, width:  75.54, height:  21.77, fontSize: 0,     fontFamily: "Helvetica",  color: "#000000", textAlign: "left",   isUpperCase: false, type: "logo",                        section: "Mídia & Assinatura", gridWidth: "half" },
+          { id: "cnh-21", fieldKey: "espelho",             label: "Nº Espelho (Vertical)",    x:  73.62, y: 271.62, width: 128.03, height:  12.80, fontSize: 12.80, fontFamily: "OCR-B",      color: "#000000", textAlign: "left",   isUpperCase: true,  type: "text",   inputType: "text",     section: "Segurança",       gridWidth: "half" },
+          { id: "cnh-22", fieldKey: "qrcode_validacao",    label: "[QR CODE] Validador VIO",  x: 439.07, y: 105.55, width: 275.27, height: 275.27, fontSize: 10.0,  fontFamily: "OCR-B",      color: "#000000", textAlign: "center", isUpperCase: true,  type: "qrcode", qrFormat: "UUID-32", qrSourceUrl: "https://carteira-digital-transito-vio.digital", qrPattern: "{sourceUrl}/validar?code={code}", section: "QR Code", gridWidth: "full" },
         ],
       },
       crlv: {
@@ -755,7 +822,9 @@ export default function StudioEngine() {
       setPdfPages([baseImgUrl]);
       setCurrentPageIndex(0);
       setBgImage(baseImgUrl);
-      updateCanvasSizeFromImage(baseImgUrl);
+      // CNH Studio V2: forçar canvas A4 794×1123 e marcar como novo template V2
+      setCanvasSize({ width: 794, height: 1123 });
+      setCoordinatesFormat("new"); // novo template — nunca esteve no banco
       pushHistory(p.boxes, baseImgUrl);
       setActiveTool("boxes");
       toast.success(`Documento "${p.name}" carregado com BACKGROUND LIMPO (cnh_base) e textos arrastáveis!`);
@@ -1295,38 +1364,103 @@ export default function StudioEngine() {
     img.src = bgImage;
   };
 
-  // Mapeamento e Desenho de Coordenadas com Ajuste de Escala Zoom In/Out
+  // Mapeamento e Desenho de Coordenadas — Fase 1: Hit-test para drag vs. new draw
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current || !bgImage) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = Math.round((e.clientX - rect.left) / zoom);
-    const y = Math.round((e.clientY - rect.top) / zoom);
+    // Coordenadas em espaço do documento (sem Math.round para preservar decimais)
+    const docX = (e.clientX - rect.left) / zoom;
+    const docY = (e.clientY - rect.top) / zoom;
 
     if (isCropMode) {
-      setCropStartPos({ x, y });
-      setCropCurrentPos({ x, y });
+      setCropStartPos({ x: docX, y: docY });
+      setCropCurrentPos({ x: docX, y: docY });
       return;
     }
 
-    // Se clicar no fundo do Canvas, desmarcar seleção anterior e iniciar novo desenho
+    // Hit-test: percorre boxes da página ativa em ordem reversa (topo primeiro)
+    const visibleBoxes = boxes.filter(b => (b.pageIndex ?? 0) === currentPageIndex);
+    for (let i = visibleBoxes.length - 1; i >= 0; i--) {
+      const b = visibleBoxes[i];
+      if (docX >= b.x && docX <= b.x + b.width && docY >= b.y && docY <= b.y + b.height) {
+        // Clique sobre box existente → selecionar e iniciar drag (se não estiver locked)
+        setSelectedBoxId(b.id);
+        if (b.type === "qrcode") setActiveTool("qr");
+        else setActiveTool("boxes");
+        if (!b.locked) {
+          draggingRef.current = {
+            id: b.id,
+            offsetX: docX - b.x,
+            offsetY: docY - b.y,
+          };
+        }
+        return; // NÃO iniciar desenho de nova caixa
+      }
+    }
+
+    // Clicou no fundo vazio → iniciar desenho de nova caixa
     setIsDrawing(true);
-    setStartPos({ x, y });
-    setCurrentPos({ x, y });
+    setStartPos({ x: docX, y: docY });
+    setCurrentPos({ x: docX, y: docY });
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = Math.round((e.clientX - rect.left) / zoom);
-    const y = Math.round((e.clientY - rect.top) / zoom);
+    // Coordenadas em espaço do documento (÷ zoom para converter tela → documento)
+    const docX = (e.clientX - rect.left) / zoom;
+    const docY = (e.clientY - rect.top) / zoom;
 
     if (isCropMode && cropStartPos) {
-      setCropCurrentPos({ x, y });
+      setCropCurrentPos({ x: docX, y: docY });
       return;
     }
 
+    // Drag: mover box selecionada aplicando o offset inicial
+    if (draggingRef.current) {
+      const { id, offsetX, offsetY } = draggingRef.current;
+      const newX = parseFloat((docX - offsetX).toFixed(2));
+      const newY = parseFloat((docY - offsetY).toFixed(2));
+      setBoxes(prev => prev.map(b => b.id === id ? { ...b, x: newX, y: newY } : b));
+      return;
+    }
+
+    // Resize: calcular nova geometria baseada no handle ativo
+    if (resizingRef.current) {
+      const { id, handle, startMouseX, startMouseY, startBox } = resizingRef.current;
+      const dx = docX - startMouseX;
+      const dy = docY - startMouseY;
+      const MIN = 8; // Tamanho mínimo em px (espaço de documento)
+      let { x, y, width, height } = startBox;
+
+      if (handle.includes("e")) width  = Math.max(MIN, parseFloat((startBox.width  + dx).toFixed(2)));
+      if (handle.includes("s")) height = Math.max(MIN, parseFloat((startBox.height + dy).toFixed(2)));
+      if (handle.includes("w")) {
+        const newW = Math.max(MIN, parseFloat((startBox.width  - dx).toFixed(2)));
+        x = parseFloat((startBox.x + startBox.width  - newW).toFixed(2));
+        width = newW;
+      }
+      if (handle.includes("n")) {
+        const newH = Math.max(MIN, parseFloat((startBox.height - dy).toFixed(2)));
+        y = parseFloat((startBox.y + startBox.height - newH).toFixed(2));
+        height = newH;
+      }
+
+      // Para QR Code: preservar proporção quadrada
+      const box = boxes.find(b => b.id === id);
+      if (box?.type === "qrcode") {
+        const sq = Math.max(width, height);
+        width = sq;
+        height = sq;
+      }
+
+      setBoxes(prev => prev.map(b => b.id === id ? { ...b, x, y, width, height } : b));
+      return;
+    }
+
+    // Desenho de nova caixa
     if (isDrawing) {
-      setCurrentPos({ x, y });
+      setCurrentPos({ x: docX, y: docY });
     }
   };
 
@@ -1336,7 +1470,6 @@ export default function StudioEngine() {
       const y = Math.min(cropStartPos.y, cropCurrentPos.y);
       const width = Math.abs(cropCurrentPos.x - cropStartPos.x);
       const height = Math.abs(cropCurrentPos.y - cropStartPos.y);
-
       cropLogoFromCanvas(x, y, width, height);
       setIsCropMode(false);
       setCropStartPos(null);
@@ -1344,6 +1477,21 @@ export default function StudioEngine() {
       return;
     }
 
+    // Finalizar drag: registrar UMA operação no histórico
+    if (draggingRef.current) {
+      draggingRef.current = null;
+      pushHistory(currentBoxesRef.current, bgImage);
+      return;
+    }
+
+    // Finalizar resize: registrar UMA operação no histórico
+    if (resizingRef.current) {
+      resizingRef.current = null;
+      pushHistory(currentBoxesRef.current, bgImage);
+      return;
+    }
+
+    // Finalizar desenho de nova caixa
     if (!isDrawing || !startPos || !currentPos) {
       setIsDrawing(false);
       return;
@@ -1360,10 +1508,10 @@ export default function StudioEngine() {
         fieldKey: `campo_${boxes.length + 1}`,
         label: `Campo ${boxes.length + 1}`,
         pageIndex: currentPageIndex,
-        x: Math.round(x),
-        y: Math.round(y),
-        width: Math.round(width),
-        height: Math.round(height),
+        x: parseFloat(x.toFixed(2)),
+        y: parseFloat(y.toFixed(2)),
+        width: parseFloat(width.toFixed(2)),
+        height: parseFloat(height.toFixed(2)),
         fontSize: 13,
         fontFamily: "Helvetica",
         color: "#000000",
@@ -1384,6 +1532,16 @@ export default function StudioEngine() {
   // Carregar Modelo Salvo no Canvas Preservando Estrutura e Geometria 1:1
   const handleSelectTemplate = (tpl: StudioTemplate) => {
     const loaded = loadDocumentData(tpl);
+
+    // CNH Studio V2: inspecionar o formato REAL do coordinates_json original antes de qualquer parse.
+    // loadDocumentData já extraiu os boxes, mas o formato do envelope original precisa ser preservado.
+    const rawJson = typeof (tpl as any).coordinates_json === "string"
+      ? (() => { try { return JSON.parse((tpl as any).coordinates_json); } catch { return []; } })()
+      : ((tpl as any).coordinates_json || []);
+    const originalFormat: "legacy" | "v2" =
+      !Array.isArray(rawJson) && rawJson?.canvasSize ? "v2" : "legacy";
+    setCoordinatesFormat(originalFormat);
+
     setDocName(loaded.docName || tpl.name);
     setDocSlug(loaded.docSlug || tpl.slug);
     setCategory(loaded.category || tpl.category || "veiculos");
@@ -1415,6 +1573,17 @@ export default function StudioEngine() {
 
     setSaving(true);
     try {
+      // CNH Studio V2: o formato de serialização é determinado EXCLUSIVAMENTE
+      // pelo coordinatesFormat, que rastreia o formato REAL do JSON original:
+      //   "new"    → novo preset CNH V2 — salvar como { canvasSize, boxes }
+      //   "v2"     → template V2 existente reaberto — salvar como { canvasSize, boxes }
+      //   "legacy" → template legado (array) reaberto — salvar como array simples [...]
+      // Não usa targetStructure, slug ou canvasSize como critério de formato.
+      const shouldUseV2Format = coordinatesFormat === "new" || coordinatesFormat === "v2";
+      const coordinatesPayload = shouldUseV2Format
+        ? { canvasSize: { width: canvasSize.width, height: canvasSize.height }, boxes }
+        : boxes;
+
       const res = await fetch("/api/admin/studio-templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1426,7 +1595,7 @@ export default function StudioEngine() {
           price: parseFloat(price),
           target_structure: targetStructure,
           pdf_bg_base64: bgImage,
-          coordinates: boxes,
+          coordinates: coordinatesPayload,
         }),
       });
 
@@ -1986,8 +2155,9 @@ ${boxes
                       <span className="text-[9px] text-slate-500 block">X (px)</span>
                       <input
                         type="number"
+                        step="0.01"
                         value={selectedBox.x}
-                        onChange={(e) => updateSelectedBox("x", Number(e.target.value))}
+                        onChange={(e) => updateSelectedBox("x", parseFloat(e.target.value) || 0)}
                         className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
                       />
                     </div>
@@ -1995,8 +2165,9 @@ ${boxes
                       <span className="text-[9px] text-slate-500 block">Y (px)</span>
                       <input
                         type="number"
+                        step="0.01"
                         value={selectedBox.y}
-                        onChange={(e) => updateSelectedBox("y", Number(e.target.value))}
+                        onChange={(e) => updateSelectedBox("y", parseFloat(e.target.value) || 0)}
                         className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
                       />
                     </div>
@@ -2004,8 +2175,9 @@ ${boxes
                       <span className="text-[9px] text-slate-500 block">LARG.</span>
                       <input
                         type="number"
+                        step="0.01"
                         value={selectedBox.width}
-                        onChange={(e) => updateSelectedBox("width", Number(e.target.value))}
+                        onChange={(e) => updateSelectedBox("width", parseFloat(e.target.value) || 1)}
                         className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
                       />
                     </div>
@@ -2013,69 +2185,133 @@ ${boxes
                       <span className="text-[9px] text-slate-500 block">ALT.</span>
                       <input
                         type="number"
+                        step="0.01"
                         value={selectedBox.height}
-                        onChange={(e) => updateSelectedBox("height", Number(e.target.value))}
+                        onChange={(e) => updateSelectedBox("height", parseFloat(e.target.value) || 1)}
                         className="w-full text-center bg-transparent text-xs text-white focus:outline-none"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Tamanho Fonte (pt)</label>
-                      <input
-                        type="number"
-                        value={selectedBox.fontSize}
-                        onChange={(e) => updateSelectedBox("fontSize", Number(e.target.value))}
-                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Família Fonte</label>
-                      <select
-                        value={selectedBox.fontFamily}
-                        onChange={(e) => updateSelectedBox("fontFamily", e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer font-medium"
-                      >
-                        <option value="Helvetica">Helvetica / Arial</option>
-                        <option value="OCR-B">OCR-B (Documentos)</option>
-                        <option value="Courier">Courier New</option>
-                        <option value="Times">Times New Roman</option>
-                      </select>
-                    </div>
-                  </div>
+                  {/* Propriedades de Fonte — somente para type="text" (oculto para logo e qrcode) */}
+                  {(!selectedBox.type || selectedBox.type === "text") && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Tamanho Fonte (pt)</label>
+                          <input
+                            type="number"
+                            value={selectedBox.fontSize}
+                            onChange={(e) => updateSelectedBox("fontSize", Number(e.target.value))}
+                            className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Família Fonte</label>
+                          <select
+                            value={selectedBox.fontFamily}
+                            onChange={(e) => updateSelectedBox("fontFamily", e.target.value)}
+                            className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer font-medium"
+                          >
+                            <option value="Helvetica">Helvetica / Arial</option>
+                            <option value="OCR-B">OCR-B (Documentos)</option>
+                            <option value="Courier">Courier New</option>
+                            <option value="Times">Times New Roman</option>
+                          </select>
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Cor da Fonte (Hex)</label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={selectedBox.color || "#000000"}
-                          onChange={(e) => updateSelectedBox("color", e.target.value)}
-                          className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={selectedBox.color || "#000000"}
-                          onChange={(e) => updateSelectedBox("color", e.target.value)}
-                          className="w-full px-3 py-1.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-mono"
-                        />
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Peso</label>
+                          <select
+                            value={selectedBox.fontWeight || "bold"}
+                            onChange={(e) => updateSelectedBox("fontWeight", e.target.value)}
+                            className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer"
+                          >
+                            <option value="normal">Normal</option>
+                            <option value="bold">Negrito</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Estilo</label>
+                          <select
+                            value={selectedBox.fontStyle || "normal"}
+                            onChange={(e) => updateSelectedBox("fontStyle", e.target.value)}
+                            className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer"
+                          >
+                            <option value="normal">Normal</option>
+                            <option value="italic">Itálico</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Esp. Letras (px)</label>
+                          <input
+                            type="number"
+                            step="0.5"
+                            value={selectedBox.letterSpacing ?? 0}
+                            onChange={(e) => updateSelectedBox("letterSpacing", parseFloat(e.target.value) || 0)}
+                            className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Maiúsculas (AA)</label>
+                          <button
+                            type="button"
+                            onClick={() => updateSelectedBox("isUpperCase", !selectedBox.isUpperCase)}
+                            className={`w-full px-3 py-2 text-xs rounded-xl font-bold border transition-all cursor-pointer ${
+                              selectedBox.isUpperCase
+                                ? "bg-blue-600/20 border-blue-500/40 text-blue-400 hover:bg-blue-600/30"
+                                : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
+                            }`}
+                          >
+                            {selectedBox.isUpperCase ? "AA Ativo" : "aa Desativo"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Cor da Fonte (Hex)</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={selectedBox.color || "#000000"}
+                              onChange={(e) => updateSelectedBox("color", e.target.value)}
+                              className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={selectedBox.color || "#000000"}
+                              onChange={(e) => updateSelectedBox("color", e.target.value)}
+                              className="w-full px-3 py-1.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Alinhamento Texto</label>
+                          <select
+                            value={selectedBox.textAlign}
+                            onChange={(e) => updateSelectedBox("textAlign", e.target.value as any)}
+                            className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer font-medium"
+                          >
+                            <option value="left">Esquerda</option>
+                            <option value="center">Centralizado</option>
+                            <option value="right">Direita</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
+                  )}
 
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Alinhamento Texto</label>
-                      <select
-                        value={selectedBox.textAlign}
-                        onChange={(e) => updateSelectedBox("textAlign", e.target.value as any)}
-                        className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white focus:outline-none cursor-pointer font-medium"
-                      >
-                        <option value="left">Esquerda</option>
-                        <option value="center">Centralizado</option>
-                        <option value="right">Direita</option>
-                      </select>
-                    </div>
+                  {/* Dica de Atalhos de Teclado */}
+                  <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-[9px] font-mono text-slate-500 space-y-0.5 mt-1">
+                    <p><span className="text-slate-300">↑↓←→</span> Move 1px • <span className="text-slate-300">Shift+↑↓←→</span> Move 10px</p>
+                    <p><span className="text-slate-300">Delete / Backspace</span> Excluir elemento</p>
                   </div>
                 </div>
               ) : (
@@ -2085,23 +2321,32 @@ ${boxes
                 </div>
               )}
 
-              {/* Lista de Caixas Mapeadas */}
+              {/* Lista de Camadas Mapeadas com diferenciação por tipo */}
               {boxes.length > 0 && (
                 <div className="space-y-2 pt-3 border-t border-slate-800">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Camadas Mapeadas ({boxes.length})</span>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar">
+                  <div className="space-y-1 max-h-96 overflow-y-auto custom-scrollbar">
                     {boxes.map((b) => (
                       <div
                         key={b.id}
-                        onClick={() => setSelectedBoxId(b.id)}
-                        className={`p-2.5 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ${
+                        onClick={() => {
+                          setSelectedBoxId(b.id);
+                          if (b.type === "qrcode") setActiveTool("qr");
+                          else setActiveTool("boxes");
+                        }}
+                        className={`p-2 rounded-xl border text-xs flex items-center gap-2 cursor-pointer transition-all ${
                           b.id === selectedBoxId
                             ? "bg-slate-800 border-slate-600 text-white font-bold"
                             : "bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700"
                         }`}
                       >
-                        <span className="truncate">{b.label}</span>
-                        <span className="text-[9px] font-mono text-slate-500">({b.x},{b.y})</span>
+                        {/* Ícone por tipo */}
+                        {b.type === "logo" && <ImageIcon className="w-3 h-3 text-violet-400 shrink-0" />}
+                        {b.type === "qrcode" && <QrCode className="w-3 h-3 text-emerald-400 shrink-0" />}
+                        {(!b.type || b.type === "text") && <Sliders className="w-3 h-3 text-indigo-400 shrink-0" />}
+                        <span className="truncate flex-1">{b.label}</span>
+                        <span className="text-[8px] font-mono text-slate-500 shrink-0">({b.x.toFixed(0)},{b.y.toFixed(0)})</span>
+                        {b.locked && <Lock className="w-2.5 h-2.5 text-amber-400 shrink-0" />}
                       </div>
                     ))}
                   </div>
@@ -2841,6 +3086,38 @@ ${boxes
                       );
                     }
 
+                  // type="logo" → representação visual de imagem/foto/assinatura
+                  if (box.type === "logo") {
+                    return (
+                      <div
+                        key={box.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedBoxId(box.id);
+                          setActiveTool("boxes");
+                        }}
+                        className={`absolute border-2 border-dashed rounded flex flex-col items-center justify-center gap-0.5 cursor-pointer select-none transition-all ${
+                          isSelected
+                            ? "border-violet-400 bg-violet-500/20 shadow-lg ring-2 ring-violet-400/40"
+                            : "border-violet-500/60 bg-violet-500/10 hover:border-violet-400"
+                        }`}
+                        style={{
+                          left: box.x * zoom,
+                          top: box.y * zoom,
+                          width: box.width * zoom,
+                          height: box.height * zoom,
+                          zIndex: box.zIndex || (isSelected ? 30 : 20),
+                          transform: transformStr || undefined,
+                        }}
+                      >
+                        <ImageIcon className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                        <span className="text-[7px] font-bold text-violet-300 text-center px-1 leading-tight truncate max-w-full">{box.label}</span>
+                        {isSelected && <span className="text-[6px] font-mono text-violet-400/70">({box.x.toFixed(1)},{box.y.toFixed(1)})</span>}
+                      </div>
+                    );
+                  }
+
+                  // type="text" (padrão) → overlay de campo de texto
                   return (
                     <div
                       key={box.id}
@@ -2849,7 +3126,7 @@ ${boxes
                         setSelectedBoxId(box.id);
                         setActiveTool("boxes");
                       }}
-                      className={`absolute border-2 rounded transition-all flex items-center justify-between px-2 font-mono text-[10px] font-bold ${
+                      className={`absolute border-2 rounded transition-all flex items-center justify-between px-2 font-mono text-[10px] font-bold cursor-pointer select-none ${
                         isSelected
                           ? "border-emerald-400 bg-emerald-500/20 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/40"
                           : "border-indigo-500/70 bg-indigo-500/10 hover:border-indigo-400"
@@ -2873,10 +3150,49 @@ ${boxes
                       }}
                     >
                       <span className="truncate">{box.label || box.fieldKey}</span>
-                      <span className="text-[8px] opacity-70">({box.x},{box.y})</span>
+                      <span className="text-[8px] opacity-70">({box.x.toFixed(1)},{box.y.toFixed(1)})</span>
                     </div>
                   );
                 })}
+
+                {/* Handles de Resize — 8 pontos ao redor da box selecionada (genérico para todos os tipos) */}
+                {selectedBox && !selectedBox.locked && (() => {
+                  const isOnCurrentPage = boxes.some(b => b.id === selectedBox.id && (b.pageIndex ?? 0) === currentPageIndex);
+                  if (!isOnCurrentPage) return null;
+                  const b = selectedBox;
+                  const isQR = b.type === "qrcode";
+                  const allHandles: Array<{ id: ResizeHandle; cx: number; cy: number; cursor: string }> = [
+                    { id: "nw", cx: b.x * zoom,                   cy: b.y * zoom,                    cursor: "nw-resize" },
+                    { id: "n",  cx: (b.x + b.width / 2) * zoom,  cy: b.y * zoom,                    cursor: "n-resize"  },
+                    { id: "ne", cx: (b.x + b.width) * zoom,       cy: b.y * zoom,                    cursor: "ne-resize" },
+                    { id: "w",  cx: b.x * zoom,                   cy: (b.y + b.height / 2) * zoom,   cursor: "w-resize"  },
+                    { id: "e",  cx: (b.x + b.width) * zoom,       cy: (b.y + b.height / 2) * zoom,   cursor: "e-resize"  },
+                    { id: "sw", cx: b.x * zoom,                   cy: (b.y + b.height) * zoom,        cursor: "sw-resize" },
+                    { id: "s",  cx: (b.x + b.width / 2) * zoom,  cy: (b.y + b.height) * zoom,        cursor: "s-resize"  },
+                    { id: "se", cx: (b.x + b.width) * zoom,       cy: (b.y + b.height) * zoom,        cursor: "se-resize" },
+                  ];
+                  // Para QR: exibir apenas handle SE para preservar proporção quadrada
+                  const handles = isQR ? allHandles.filter(h => h.id === "se") : allHandles;
+                  return handles.map(h => (
+                    <div
+                      key={`handle-${h.id}`}
+                      className="absolute w-2.5 h-2.5 bg-white border-2 border-emerald-400 rounded-sm z-50 shadow-sm hover:bg-emerald-100 transition-colors"
+                      style={{ left: h.cx - 5, top: h.cy - 5, cursor: h.cursor }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        if (!canvasRef.current) return;
+                        const rect = canvasRef.current.getBoundingClientRect();
+                        resizingRef.current = {
+                          id: b.id,
+                          handle: h.id,
+                          startMouseX: (e.clientX - rect.left) / zoom,
+                          startMouseY: (e.clientY - rect.top) / zoom,
+                          startBox: { x: b.x, y: b.y, width: b.width, height: b.height },
+                        };
+                      }}
+                    />
+                  ));
+                })()}
 
                 {/* Retângulo dinâmico enquanto o usuário arrasta o mouse para desenhar caixas */}
                 {isDrawing && startPos && currentPos && (

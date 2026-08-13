@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { toast } from "sonner";
 import { Download, RefreshCw, FileText, CheckCircle, ShieldCheck } from "lucide-react";
 import { exportElementToPDF } from "@/lib/pdfExport";
+import { QRCodeSVG } from "qrcode.react";
 
 interface CoordinateBox {
   id: string;
@@ -18,6 +19,14 @@ interface CoordinateBox {
   color: string;
   textAlign: "left" | "center" | "right";
   isUpperCase: boolean;
+  // CNH Studio V2 — campos extras
+  type?: "text" | "logo" | "qrcode";
+  inputType?: string;
+  options?: string;
+  gridWidth?: string;
+  section?: string;
+  placeholder?: string;
+  letterSpacing?: number;
 }
 
 export default function UniversalStudioPage() {
@@ -40,9 +49,11 @@ export default function UniversalStudioPage() {
           if (match) {
             setTemplate(match);
             try {
-              const boxes: CoordinateBox[] = typeof match.coordinates_json === "string" 
-                ? JSON.parse(match.coordinates_json) 
+              // CNH Studio V2: suporta formato legado (array) e novo ({ canvasSize, boxes })
+              const raw = typeof match.coordinates_json === "string"
+                ? JSON.parse(match.coordinates_json)
                 : match.coordinates_json;
+              const boxes: CoordinateBox[] = Array.isArray(raw) ? raw : (raw?.boxes || []);
               const initialData: Record<string, string> = {};
               boxes.forEach((b) => { initialData[b.fieldKey] = ""; });
               setFormData(initialData);
@@ -79,9 +90,17 @@ export default function UniversalStudioPage() {
     );
   }
 
-  const boxes: CoordinateBox[] = typeof template.coordinates_json === "string" 
-    ? JSON.parse(template.coordinates_json) 
+  // CNH Studio V2: parser dual-format
+  // Formato legado: coordinates_json = [...] → canvas 680×480
+  // Formato novo:   coordinates_json = { canvasSize, boxes } → canvas dinâmico
+  const rawCoords = typeof template.coordinates_json === "string"
+    ? JSON.parse(template.coordinates_json)
     : template.coordinates_json || [];
+  const isNewFormat = !Array.isArray(rawCoords) && rawCoords?.canvasSize;
+  const boxes: CoordinateBox[] = isNewFormat ? (rawCoords.boxes || []) : rawCoords;
+  // Dimensão do preview: novo formato usa canvasSize; legado usa 680×480 imutável
+  const canvasWidth  = isNewFormat ? rawCoords.canvasSize.width  : 680;
+  const canvasHeight = isNewFormat ? rawCoords.canvasSize.height : 480;
 
   const handleExportPDF = async () => {
     setExporting(true);
@@ -226,42 +245,85 @@ export default function UniversalStudioPage() {
 
             <div
               id="studio-doc-preview"
-              className="relative select-none bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-700 max-w-full"
-              style={{ width: 794, height: 1123 }}
+              className="relative select-none bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-700"
+              style={{ width: canvasWidth, height: canvasHeight }}
             >
               {/* Gabarito PDF Base */}
               {template.pdf_bg_base64 && (
-                <img src={template.pdf_bg_base64} alt="Gabarito PDF" className="w-full h-full object-contain pointer-events-none" />
+                <img src={template.pdf_bg_base64} alt="Gabarito PDF" className="w-full h-full object-fill pointer-events-none" />
               )}
 
-              {/* Injeção Dinâmica dos Dados Digitados */}
-              {boxes.map((b: any) => (
-                <div
-                  key={b.id}
-                  className="absolute font-mono uppercase font-bold"
-                  style={{
-                    left: b.x,
-                    top: b.y,
-                    width: b.width,
-                    height: b.height,
-                    fontSize: b.fontSize,
-                    color: b.color || "#000",
-                    textAlign: b.textAlign || "left",
-                  }}
-                >
-                  {b.type === "logo" || b.type === "image" ? (
-                    formData[b.fieldKey] ? (
-                      <img src={formData[b.fieldKey]} alt={b.label} className="w-full h-full object-contain" />
-                    ) : (
-                      <div className="w-full h-full border border-dashed border-slate-400 bg-slate-100 flex items-center justify-center text-[9px] text-slate-500">
-                        [{b.label}]
-                      </div>
-                    )
-                  ) : (
-                    formData[b.fieldKey] || b.label
-                  )}
-                </div>
-              ))}
+              {/* Injeção Dinâmica dos Dados — renderização polimórfica por type */}
+              {boxes.map((b) => {
+                // type="logo" → imagem (foto 3x4 / assinatura)
+                if (b.type === "logo") {
+                  return (
+                    <div
+                      key={b.id}
+                      className="absolute overflow-hidden"
+                      style={{ left: b.x, top: b.y, width: b.width, height: b.height }}
+                    >
+                      {formData[b.fieldKey] ? (
+                        <img
+                          src={formData[b.fieldKey]}
+                          alt={b.label}
+                          className="pointer-events-none"
+                          style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-full flex items-center justify-center border border-dashed border-slate-400/50 bg-slate-100/40"
+                          style={{ fontSize: 8, color: "#94a3b8", fontFamily: "sans-serif", textAlign: "center", padding: 2 }}
+                        >
+                          {b.label}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // type="qrcode" → QRCodeSVG (qrcode.react já instalado no projeto)
+                if (b.type === "qrcode") {
+                  const qrValue = formData[b.fieldKey] || "https://carteira-digital-transito-vio.digital";
+                  return (
+                    <div
+                      key={b.id}
+                      className="absolute overflow-hidden"
+                      style={{ left: b.x, top: b.y, width: b.width, height: b.height }}
+                    >
+                      <QRCodeSVG
+                        value={qrValue}
+                        size={Math.min(b.width, b.height)}
+                        level="H"
+                        style={{ display: "block", width: "100%", height: "100%" }}
+                      />
+                    </div>
+                  );
+                }
+
+                // type="text" (padrão) → texto overlay
+                return (
+                  <div
+                    key={b.id}
+                    className="absolute font-mono uppercase font-bold"
+                    style={{
+                      left: b.x,
+                      top: b.y,
+                      width: b.width,
+                      height: b.height,
+                      fontSize: b.fontSize,
+                      color: b.color || "#000",
+                      textAlign: b.textAlign || "left",
+                      fontFamily: b.fontFamily || "monospace",
+                      letterSpacing: b.letterSpacing ?? undefined,
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formData[b.fieldKey] || ""}
+                  </div>
+                );
+              })}
             </div>
           </div>
 

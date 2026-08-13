@@ -12,6 +12,7 @@ import { useLocation, useParams } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import CNHDocument, { type CNHDocumentHandle, type CNHDocumentProps } from "../components/CNHDocument";
+import { getHardcodedLayout, type CNHLayout } from "@/config/cnhLayout";
 import { toast } from "sonner";
 import { validarCPF, formatarCPF as formatarCPFUtil, displayDateToHtml } from "@/lib/utils";
 import EmissionModal from "@/components/EmissionModal";
@@ -112,6 +113,12 @@ export default function CNHCria() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [documentPrice, setDocumentPrice] = useState(0);
 
+  // ── Geometry Bridge Fase 1 ────────────────────────────────────────────────────
+  // "loading" = buscando D1 | "d1" = layout D1 ativo | "fallback" = hardcoded ativo
+  type LayoutSource = "loading" | "d1" | "fallback";
+  const [layoutSource, setLayoutSource] = useState<LayoutSource>("loading");
+  const [cnhLayout, setCnhLayout] = useState<CNHLayout>(getHardcodedLayout());
+
   // Checkboxes de Categorias individuais
   const [catsSelected, setCatsSelected] = useState<Record<string, boolean>>({
     A: false, B: true, C: false, D: false, E: false
@@ -148,6 +155,126 @@ export default function CNHCria() {
   });
 
   const routeParams = useParams<{ id?: string }>();
+
+  // ── Geometry Bridge Fase 1: fetch do layout D1 ──────────────────────────────
+  useEffect(() => {
+    const PAGE_W = 2481;
+    const PAGE_H = 3508;
+
+    fetch("/api/renderer/cnh-layout?slug=cnhcria", { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (!data.success || !Array.isArray(data.boxes) || !data.canvasSize) {
+          throw new Error("Resposta inválida do endpoint de layout");
+        }
+
+        const { canvasSize, boxes } = data;
+        const SX = PAGE_W / canvasSize.width;
+        const SY = PAGE_H / canvasSize.height;
+
+        // Mapeia fieldKey → box para acesso direto
+        const byKey: Record<string, any> = {};
+        for (const b of boxes) byKey[b.fieldKey] = b;
+
+        /** Converte texto (textAlign=left): âncora em box.x */
+        const tf = (fk: string): import("@/config/cnhLayout").CNHFieldLayout => {
+          const b = byKey[fk];
+          const fallback = getHardcodedLayout()[fk as keyof CNHLayout] as import("@/config/cnhLayout").CNHFieldLayout;
+          if (!b) return fallback;
+          return {
+            x: b.x * SX,
+            y: b.y * SY,
+            w: b.width * SX,
+            h: b.height * SY,
+            fontSize: b.fontSize * SX,
+            textAlign: (b.textAlign || "left") as "left" | "center" | "right",
+          };
+        };
+
+        /** Converte texto com textAlign=center: âncora no centro horizontal do box */
+        const tc = (fk: string): import("@/config/cnhLayout").CNHFieldLayout => {
+          const b = byKey[fk];
+          const fallback = getHardcodedLayout()[fk as keyof CNHLayout] as import("@/config/cnhLayout").CNHFieldLayout;
+          if (!b) return fallback;
+          return {
+            x: (b.x + b.width / 2) * SX,
+            y: b.y * SY,
+            w: 0,
+            h: b.height * SY,
+            fontSize: b.fontSize * SX,
+            textAlign: "center",
+          };
+        };
+
+        /** Converte logo (foto/assinatura): clip rect */
+        const tl = (fk: string): import("@/config/cnhLayout").CNHLogoLayout => {
+          const b = byKey[fk];
+          const fallback = getHardcodedLayout()[fk === "fotoUrl" ? "foto" : "assinatura"] as import("@/config/cnhLayout").CNHLogoLayout;
+          if (!b) return fallback;
+          return { x: b.x * SX, y: b.y * SY, w: b.width * SX, h: b.height * SY };
+        };
+
+        /** Converte QR */
+        const tq = (fk: string): import("@/config/cnhLayout").CNHQRLayout => {
+          const b = byKey[fk];
+          const fallback = getHardcodedLayout().qr;
+          if (!b) return fallback;
+          return { x: b.x * SX, y: b.y * SY, size: b.width * SX };
+        };
+
+        // Detectar textAlign real de cada campo para escolher tf vs tc
+        const fieldLayout = (fk: string) => {
+          const b = byKey[fk];
+          if (b?.textAlign === "center") return tc(fk);
+          return tf(fk);
+        };
+
+        const layout: CNHLayout = {
+          nome:               fieldLayout("nome"),
+          primeiraHabilitacao:fieldLayout("primeiraHabilitacao"),
+          nascimento:         fieldLayout("nascimento"),
+          dataEmissao:        fieldLayout("dataEmissao"),
+          validade:           fieldLayout("validade"),
+          acc:                fieldLayout("acc"),
+          docIdentidade:      fieldLayout("docIdentidade"),
+          cpf:                fieldLayout("cpf"),
+          registro:           fieldLayout("registro"),
+          categoria:          fieldLayout("categoria"),
+          nacionalidade:      fieldLayout("nacionalidade"),
+          nomePai:            fieldLayout("nomePai"),
+          nomeMae:            fieldLayout("nomeMae"),
+          observacoes:        fieldLayout("observacoes"),
+          localEmissao:       fieldLayout("localEmissao"),
+          nomeEstadoExtenso:  fieldLayout("nomeEstadoExtenso"),
+          assDigital1:        fieldLayout("assDigital1"),
+          assDigital2:        fieldLayout("assDigital2"),
+          foto:               tl("fotoUrl"),
+          assinatura:         tl("assinaturaUrl"),
+          qr:                 tq("qrcode_validacao"),
+        };
+
+        setCnhLayout(layout);
+        setLayoutSource("d1");
+
+        // Log de diagnóstico: provar que nascimento e docIdentidade vieram do D1
+        const nasc = byKey["nascimento"];
+        const docId = byKey["docIdentidade"];
+        console.info(
+          `[CNHCria] Geometry Bridge Fase 1 ativo — layoutSource=d1\n` +
+          `  canvasSize: ${canvasSize.width}×${canvasSize.height}  SX=${SX.toFixed(5)} SY=${SY.toFixed(5)}\n` +
+          `  nascimento  D1(x=${nasc?.x} y=${nasc?.y}) → Canvas(x=${layout.nascimento.x.toFixed(1)} y=${layout.nascimento.y.toFixed(1)})\n` +
+          `  docIdentidade D1(x=${docId?.x} y=${docId?.y}) → Canvas(x=${layout.docIdentidade.x.toFixed(1)} y=${layout.docIdentidade.y.toFixed(1)})`
+        );
+      })
+      .catch((err) => {
+        console.warn("[CNHCria] Geometry Bridge: falha ao buscar layout D1. Entrando em fallback hardcoded.", err.message);
+        setCnhLayout(getHardcodedLayout());
+        setLayoutSource("fallback");
+      });
+  }, []);
 
   // Proteção de rota por auditoria de permissão
   useEffect(() => {
@@ -723,6 +850,19 @@ function gerarRegistroCNH(): string {
 
   const handleExportPdf = async () => {
     if (!docRef.current) return;
+
+    // Bloquear exportação enquanto layout está sendo resolvido
+    if (layoutSource === "loading") {
+      toast.warning("⏳ Aguardando carregamento do layout... Tente novamente em instantes.");
+      return;
+    }
+
+    // Aviso explícito ao operador quando usando fallback
+    if (layoutSource === "fallback") {
+      console.warn("[CNHCria] PDF gerado com layout FALLBACK (hardcoded). O D1 estava indisponível.");
+      toast.warning("⚠️ PDF gerado com layout de contingência (D1 indisponível).", { duration: 4000 });
+    }
+
     setIsDownloading(true);
     try {
       await docRef.current.exportAsPdf();
@@ -1470,7 +1610,8 @@ function gerarRegistroCNH(): string {
           )}
         </button>
 
-        {/* CANVAS OCULTO PARA EXPORTAÇÃO DE IMAGEM 1:1 */}
+        {/* CANVAS OCULTO PARA EXPORTAÇÃO — Geometry Bridge Fase 1 */}
+        {/* layoutSource: {layoutSource} — layout vem de {layoutSource === 'd1' ? 'D1 (coordinates_json)' : layoutSource === 'fallback' ? 'FALLBACK hardcoded' : 'aguardando...'} */}
         <div style={{ position: "absolute", left: "-9999px", top: "-9999px", opacity: 0, pointerEvents: "none" }}>
           <CNHDocument
             ref={docRef}
@@ -1483,6 +1624,7 @@ function gerarRegistroCNH(): string {
             assOffsetY={assOffsetY}
             codigoQR={saved ? codigoQR : "PREVIEW"}
             blurred={!saved}
+            layout={layoutSource !== "loading" ? cnhLayout : undefined}
           />
         </div>
 

@@ -8,7 +8,7 @@
  * QR Code aponta para: https://validacao-online-vio.digital/?id={UUID_DO_DOCUMENTO}
  */
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
-import { getActiveCNHLayout } from "@/config/cnhLayout";
+import { getActiveCNHLayout, getHardcodedLayout, type CNHLayout } from "@/config/cnhLayout";
 import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
 
 export interface CNHDocumentProps {
@@ -49,6 +49,8 @@ export interface CNHDocumentProps {
   codigoQR?: string;
   blurred?: boolean;
   previewWidth?: number;
+  /** Geometry Bridge Fase 1: layout D1 em coordenadas canvas 2481×3508. Opcional — fallback hardcoded se ausente. */
+  layout?: CNHLayout;
 }
 
 export interface CNHDocumentHandle {
@@ -340,11 +342,18 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
   cvs.width = PAGE_W;
   cvs.height = PAGE_H;
 
+  // ── Geometry Bridge Fase 1 ──────────────────────────────────────────────────
+  // Usa layout D1 (props.layout) quando fornecido pelo CNHCria.tsx.
+  // Se ausente, cai no fallback hardcoded (getHardcodedLayout) — comportamento idêntico ao anterior.
+  // ESPELHO, MRZ, catPositions e background permanecem HARDCODED nesta fase.
+  const L = props.layout ?? getHardcodedLayout();
+
   // 1. Fundo Branco
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-  // 2. Template CNH_BASE (com múltiplos fallbacks para nunca sumir)
+  // 2. Template CNH_BASE @300DPI (múltiplos fallbacks para nunca sumir)
+  // Background NÃO vinculado ao D1 nesta fase — preserva qualidade 2481×3508.
   try {
     let bg: HTMLImageElement | null = null;
     const sources = [
@@ -366,20 +375,20 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
   ctx.fillStyle = "#000000";
   ctx.textBaseline = "top";
 
-    const txt = (t: string, x: number, y: number, s: number, b?: boolean | number, c?: string, mw?: number) => {
+    const txt = (t: string, x: number, y: number, s: number, b?: boolean | number, c?: string, mw?: number, align?: "left" | "center" | "right") => {
       if (!t) return;
       ctx.save();
       if ('letterSpacing' in ctx) {
         (ctx as any).letterSpacing = "0px";
       }
-      ctx.textAlign = "left";
+      ctx.textAlign = align || "left";
       ctx.textBaseline = "top";
       const fontName = "'MyriadPro-Regular'";
       ctx.font = `${s}px ${fontName}`;
       ctx.fillStyle = c || "#000000";
       t = String(t).toUpperCase();
 
-      if (mw) {
+      if (mw && mw > 0) {
         let fontSize = s;
         ctx.font = `${fontSize}px ${fontName}`;
         while (ctx.measureText(t).width > mw && fontSize > 10) {
@@ -431,82 +440,87 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
     const obsRaw = getVal("observacoes", "observacoes_cnh");
     const locEmissRaw = getVal("localEmissao", "local_emissao");
     const ufEmissRaw = getVal("ufEmissao", "uf_emissao");
-    const SHIFT_X = 22; // Deslocamento ideal (-0,5% a esquerda para precisao 1:1 perfeita)
+    // SHIFT_X: mantido apenas para os elementos que PERMANECEM hardcoded (espelho, MRZ).
+    // Os campos da Geometry Bridge usam L.field.x que já incorpora o SHIFT_X via coordenada D1.
+    const SHIFT_X = 22;
 
-    // 1. CAIXA NOME COMPLETO (X=304px + SHIFT_X, Y=463px - Mover 0,1% a esquerda)
+    // ── Geometry Bridge Fase 1: campos de texto ─────────────────────────────────
+    // Coordenadas vêm de L (CNHLayout), que é L = props.layout ?? getHardcodedLayout().
+    // Não reaplicar SHIFT_X — já incorporado em L.field.x.
+
+    // 1. NOME COMPLETO
     ctx.save();
     ctx.letterSpacing = "1px";
-    txt(p(nomeRaw, "RICK MATEUS ARRUDA DE FIGUEIREDO"), 304 + SHIFT_X, 463, 21, 1, "#000000", 600);
+    txt(p(nomeRaw, "RICK MATEUS ARRUDA DE FIGUEIREDO"), L.nome.x, L.nome.y, L.nome.fontSize, 1, "#000000", L.nome.w, L.nome.textAlign);
     ctx.restore();
 
-    // 2. CAIXA 1ª HABILITAÇÃO (X=969px + SHIFT_X, Y=463px)
-    txt(p(d(primHabRaw), "20/05/2012"), 969 + SHIFT_X, 463, 21, 1, "#000000", 130);
+    // 2. 1ª HABILITAÇÃO
+    txt(p(d(primHabRaw), "20/05/2012"), L.primeiraHabilitacao.x, L.primeiraHabilitacao.y, L.primeiraHabilitacao.fontSize, 1, "#000000", L.primeiraHabilitacao.w);
 
-    // 3. CAIXA 3: DATA, LOCAL E UF DE NASCIMENTO (X=599px + SHIFT_X, Y=523px)
+    // 3. NASCIMENTO (data, local, UF)
     const dtNasc = p(d(dtNascRaw), "05/03/2003");
     const locNasc = p(locNascRaw, "BARUERI");
     const ufNasc = normalizeUFDoc(p(ufNascRaw, "SP"));
-    txt(`${dtNasc}, ${locNasc}, ${ufNasc}`, 599 + SHIFT_X, 523, 20, 1, "#000000", 335);
+    txt(`${dtNasc}, ${locNasc}, ${ufNasc}`, L.nascimento.x, L.nascimento.y, L.nascimento.fontSize, 1, "#000000", L.nascimento.w);
 
-    // 4. CAIXA 4a: DATA EMISSÃO (X=599px + SHIFT_X, Y=583px)
-    txt(p(d(dtEmissRaw), "14/09/2021"), 599 + SHIFT_X, 583, 20, 1, "#000000", 180);
+    // 4a. DATA EMISSÃO
+    txt(p(d(dtEmissRaw), "14/09/2021"), L.dataEmissao.x, L.dataEmissao.y, L.dataEmissao.fontSize, 1, "#000000", L.dataEmissao.w);
 
-    // 5. CAIXA 4b: VALIDADE (X=786px + SHIFT_X, Y=583px, Vermelho - Mover 0,1% a direita)
-    txt(p(d(validadeRaw), "15/09/2026"), 786 + SHIFT_X, 583, 20, 1, "#c0392b", 160);
+    // 4b. VALIDADE (vermelho)
+    txt(p(d(validadeRaw), "15/09/2026"), L.validade.x, L.validade.y, L.validade.fontSize, 1, "#c0392b", L.validade.w);
 
-    // 6. CAIXA ACC / TIPO CNH (X=1074px + SHIFT_X, Y=572px - Mover 0,5% a direita)
+    // 6. ACC / TIPO CNH
     const tipoLetra = tipoRaw === "Permissão" ? "P" : "D";
-    txt(p(accRaw, tipoLetra), 1074 + SHIFT_X, 572, 46.5, 1, "#000000", 60);
+    txt(p(accRaw, tipoLetra), L.acc.x, L.acc.y, L.acc.fontSize, 1, "#000000", L.acc.w);
 
-    // 7. CAIXA 4c: DOC IDENTIDADE / ÓRGÃO EMISSOR / UF (X=599px + SHIFT_X, Y=644px)
+    // 7. DOC IDENTIDADE / ÓRGÃO EMISSOR / UF
     const rgFmt = p(rgRaw, "26216797");
     const orgFmt = p(orgRaw, "SSP");
     const ufRgFmt = normalizeUFDoc(p(ufRgRaw, "SP"));
-    txt(`${rgFmt} ${orgFmt}/${ufRgFmt}`, 599 + SHIFT_X, 644, 20, 1, "#000000", 335);
+    txt(`${rgFmt} ${orgFmt}/${ufRgFmt}`, L.docIdentidade.x, L.docIdentidade.y, L.docIdentidade.fontSize, 1, "#000000", L.docIdentidade.w);
 
-    // 8. CAIXA 4d: CPF (X=599px + SHIFT_X, Y=704px)
+    // 8. CPF
     const cpfFmt = cpfRaw ? formatarCPF(cpfRaw) : "590.974.098-96";
-    txt(p(cpfFmt, "590.974.098-96"), 599 + SHIFT_X, 704, 20, 1, "#000000", 215);
+    txt(p(cpfFmt, "590.974.098-96"), L.cpf.x, L.cpf.y, L.cpf.fontSize, 1, "#000000", L.cpf.w);
 
-    // 9. CAIXA 5: Nº REGISTRO (X=805px + SHIFT_X, Y=704px, Vermelho)
-    txt(p(regRaw, "37362896284"), 805 + SHIFT_X, 704, 20, 1, "#c0392b", 175);
+    // 9. Nº REGISTRO (vermelho)
+    txt(p(regRaw, "37362896284"), L.registro.x, L.registro.y, L.registro.fontSize, 1, "#c0392b", L.registro.w);
 
-    // 10. CAIXA 9: CAT HAB (X=1007px + SHIFT_X, Y=704px, Vermelho - Mover 0,2% dir, tam=21.5px)
+    // 10. CAT HAB (vermelho)
     const catFmt = p(catRaw, "AB");
-    txt(catFmt, 1007 + SHIFT_X, 704, 21.5, 1, "#c0392b", 80);
+    txt(catFmt, L.categoria.x, L.categoria.y, L.categoria.fontSize, 1, "#c0392b", L.categoria.w);
 
-    // 11. CAIXA NACIONALIDADE (X=599px + SHIFT_X, Y=764px)
-    txt(p(nacRaw, "BRASILEIRO(A)"), 599 + SHIFT_X, 764, 20, 1, "#000000", 405);
+    // 11. NACIONALIDADE
+    txt(p(nacRaw, "BRASILEIRO(A)"), L.nacionalidade.x, L.nacionalidade.y, L.nacionalidade.fontSize, 1, "#000000", L.nacionalidade.w);
 
-    // 12. CAIXA FILIAÇÃO (X=599px + SHIFT_X, Y=832px e Y=904px)
-    txt(p(paiRaw, "MARCOS PAULO ARCO IRIS DE FIGUEIREDO"), 599 + SHIFT_X, 832, 19, 1, "#000000", 415);
-    txt(p(maeRaw, "DÉBORA DE ARRUDA CALDAS"), 599 + SHIFT_X, 904, 19, 1, "#000000", 415);
+    // 12. FILIAÇÃO
+    txt(p(paiRaw, "MARCOS PAULO ARCO IRIS DE FIGUEIREDO"), L.nomePai.x, L.nomePai.y, L.nomePai.fontSize, 1, "#000000", L.nomePai.w);
+    txt(p(maeRaw, "DÉBORA DE ARRUDA CALDAS"), L.nomeMae.x, L.nomeMae.y, L.nomeMae.fontSize, 1, "#000000", L.nomeMae.w);
 
-    // 13. CAIXA OBSERVAÇÕES / EAR (X=299px + SHIFT_X, Y=1334px - Mover 0,1% a esquerda)
+    // 13. OBSERVAÇÕES / EAR
     const obsTexto = p(obsRaw, "EAR");
     const linhasObs = obsTexto.split("\n");
-    const obsY = 1334; 
-    const obsX = 299 + SHIFT_X;
+    const obsLineH = 24;
     linhasObs.forEach((linha, index) => {
-      txt(linha, obsX, obsY + (index * 24), 19.9, false, "#000000", 740);
+      txt(linha, L.observacoes.x, L.observacoes.y + (index * obsLineH), L.observacoes.fontSize, false, "#000000", L.observacoes.w);
     });
 
-    // 14. CAIXA LOCAL EMISSÃO + UF (X=295px + SHIFT_X, Y=1579px - Mover 0,2% a esquerda)
+    // 14. LOCAL EMISSÃO + UF
     const locEmiss = p(locEmissRaw, "SÃO PAULO");
     const ufEmiss = p(ufEmissRaw, "SP");
-    txt(`${locEmiss}, ${ufEmiss}`, 295 + SHIFT_X, 1579, 20, 1, "#000000", 500);
+    txt(`${locEmiss}, ${ufEmiss}`, L.localEmissao.x, L.localEmissao.y, L.localEmissao.fontSize, 1, "#000000", L.localEmissao.w);
 
-    // 15. NOME DO ESTADO POR EXTENSO (Destaque Painel 2 - Desceu 2 linhas Y=1668px, +10% tamanho -> 35px)
+    // 15. NOME DO ESTADO POR EXTENSO (textAlign=center)
     ctx.save();
     ctx.textAlign = "center";
     const ufDigitada = (ufEmiss || "SP").trim().toUpperCase();
     const nomeEstadoCompleto = NOMES_ESTADOS[ufDigitada] || "SÃO PAULO";
-    ctx.font = "43.9px 'MyriadPro-Regular'";
+    ctx.font = `${L.nomeEstadoExtenso.fontSize}px 'MyriadPro-Regular'`;
     ctx.fillStyle = "#000000";
-    ctx.fillText(nomeEstadoCompleto, 600 + SHIFT_X, 1668);
+    ctx.fillText(nomeEstadoCompleto, L.nomeEstadoExtenso.x, L.nomeEstadoExtenso.y);
     ctx.restore();
 
-    // ── Assinaturas digitais: Ass. Digital 1 (X=965px + SHIFT_X, +0,2% dir) e Ass. Digital 2 (X=915px + SHIFT_X, +0,3% dir) ──
+    // ── Assinaturas digitais (Geometry Bridge Fase 1) ────────────────────────────
     const rawAss2 = props.assDigital2 || "";
     let displayAss2 = "SP54171992";
     if (rawAss2) {
@@ -520,12 +534,12 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
     }
 
     ctx.save();
-    ctx.font = "18.2px 'MyriadPro-Regular'";
+    ctx.font = `${L.assDigital1.fontSize}px 'MyriadPro-Regular'`;
     ctx.fillStyle = "#222222";
     ctx.textAlign = "center";
-    ctx.fillText(props.assDigital1 || "46418356416", 965 + SHIFT_X, 1559);
+    ctx.fillText(props.assDigital1 || "46418356416", L.assDigital1.x, L.assDigital1.y);
     ctx.textAlign = "left";
-    ctx.fillText(displayAss2, 915 + SHIFT_X, 1584);
+    ctx.fillText(displayAss2, L.assDigital2.x, L.assDigital2.y);
     ctx.restore();
 
     // ── Textos laterais verticais (Nº Espelho - Mover 0,2% esq -> X=208px, descer 0,1% -> Y=952px e Y=1692px) ───────────────────────────
@@ -566,7 +580,7 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
     ctx.restore();
 
     // ═══════════════════════════════════════════════════════════════════
-    // QR CODE DINÂMICO E REAL (Mover 0,1% a esquerda -> X=1350px)
+    // QR CODE DINÂMICO (Geometry Bridge Fase 1)
     // ═══════════════════════════════════════════════════════════════════
     let codigoQrFinal = props.codigoQR && props.codigoQR !== "PREVIEW" && !props.codigoQR.includes(".") ? props.codigoQR : "";
     if (!codigoQrFinal || codigoQrFinal.includes(".")) {
@@ -577,23 +591,23 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
     const qrUrl = `${cnhValidationBase}/consulta/?id=${encodeURIComponent(codigoQrFinal)}`;
 
     try {
-      const qrWidth = 860;
-      const qrX = 1350 + SHIFT_X;
-      const qrY = 370;
+      const qrSize = L.qr.size;
+      const qrX = L.qr.x;
+      const qrY = L.qr.y;
 
       // Fundo passepartout limpo
       ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(qrX, qrY, qrWidth, qrWidth);
+      ctx.fillRect(qrX, qrY, qrSize, qrSize);
 
       const qrDataUrl = await generateQRCodeDataURL({
         data: qrUrl,
         intensity: 3,
-        size: qrWidth,
+        size: qrSize,
         margin: 4,
         errorCorrectionLevel: "H",
       });
       const qrImg = await loadImage(qrDataUrl);
-      ctx.drawImage(qrImg, qrX, qrY, qrWidth, qrWidth);
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
     } catch (e) {
       console.warn("Erro ao gerar QR Code:", e);
     }
@@ -665,7 +679,7 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // FOTO DO CONDUTOR (Mover 0,4% dir -> X=292px, Subir 0,1% -> Y=558px)
+    // FOTO DO CONDUTOR (Geometry Bridge Fase 1)
     // ═══════════════════════════════════════════════════════════════════
     if (props.fotoUrl) {
       try {
@@ -673,15 +687,15 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
         const scale = (props.fotoScale ?? 1.0) * 0.999;
         const offsetX = props.fotoOffsetX ?? 0;
         const offsetY = props.fotoOffsetY ?? 0;
-        const baseBw = 263, baseBh = 322;
+        const baseBw = L.foto.w, baseBh = L.foto.h;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 292 + SHIFT_X + offsetX;
-        const by = 558 + offsetY;
+        const bx = L.foto.x + offsetX;
+        const by = L.foto.y + offsetY;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(292 + SHIFT_X, 558, baseBw, baseBh);
+        ctx.rect(L.foto.x, L.foto.y, baseBw, baseBh);
         ctx.clip();
 
         const imgRatio = fotoImg.width / fotoImg.height;
@@ -706,7 +720,7 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // ASSINATURA DO CONDUTOR (Renderização HD com Anti-Aliasing de Alta Qualidade)
+    // ASSINATURA DO CONDUTOR (Geometry Bridge Fase 1)
     // ═══════════════════════════════════════════════════════════════════
     if (props.assinaturaUrl) {
       try {
@@ -714,11 +728,11 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
         const scale = props.assScale ?? 1.0;
         const offsetX = props.assOffsetX ?? 0;
         const offsetY = props.assOffsetY ?? 0;
-        const baseBw = 236, baseBh = 68;
+        const baseBw = L.assinatura.w, baseBh = L.assinatura.h;
         const bw = Math.round(baseBw * scale);
         const bh = Math.round(baseBh * scale);
-        const bx = 311 + SHIFT_X + Math.round((baseBw - bw) / 2) + offsetX;
-        const by = 893 + Math.round((baseBh - bh) / 2) + offsetY;
+        const bx = L.assinatura.x + Math.round((baseBw - bw) / 2) + offsetX;
+        const by = L.assinatura.y + Math.round((baseBh - bh) / 2) + offsetY;
 
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = assImg.width;
@@ -750,7 +764,7 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(311 + SHIFT_X, 893, baseBw, baseBh);
+        ctx.rect(L.assinatura.x, L.assinatura.y, baseBw, baseBh);
         ctx.clip();
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";

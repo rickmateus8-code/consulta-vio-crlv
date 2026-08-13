@@ -134,26 +134,87 @@ export default function UniversalStudioPage() {
               Dados do Formulário
             </h3>
 
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
-              {boxes.map((b) => (
-                <div key={b.id}>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
-                    {b.label}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={`Digite ${b.label.toLowerCase()}...`}
-                    value={formData[b.fieldKey] || ""}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [b.fieldKey]: b.isUpperCase ? e.target.value.toUpperCase() : e.target.value,
-                      }))
-                    }
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500 transition-all"
-                  />
-                </div>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
+              {boxes.map((b, idx) => {
+                const isFull = b.gridWidth !== "half" || b.inputType === "textarea";
+                const showSectionHeader = b.section && (idx === 0 || boxes[idx - 1].section !== b.section);
+
+                return (
+                  <React.Fragment key={b.id}>
+                    {showSectionHeader && (
+                      <div className="col-span-full pt-2 pb-1 border-b border-slate-800">
+                        <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block">
+                          {b.section}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className={isFull ? "col-span-full" : "col-span-1"}>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
+                        {b.label}
+                      </label>
+
+                      {b.inputType === "select" ? (
+                        <select
+                          value={formData[b.fieldKey] || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              [b.fieldKey]: e.target.value,
+                            }))
+                          }
+                          className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500 transition-all cursor-pointer"
+                        >
+                          <option value="">Selecione...</option>
+                          {(b.options || "").split(",").map((opt, oIdx) => (
+                            <option key={oIdx} value={opt.trim()}>
+                              {opt.trim()}
+                            </option>
+                          ))}
+                        </select>
+                      ) : b.inputType === "textarea" ? (
+                        <textarea
+                          rows={3}
+                          placeholder={b.placeholder || `Digite ${b.label.toLowerCase()}...`}
+                          value={formData[b.fieldKey] || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              [b.fieldKey]: b.isUpperCase ? e.target.value.toUpperCase() : e.target.value,
+                            }))
+                          }
+                          className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500 transition-all custom-scrollbar"
+                        />
+                      ) : b.inputType === "date" ? (
+                        <input
+                          type="date"
+                          value={formData[b.fieldKey] || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              [b.fieldKey]: e.target.value,
+                            }))
+                          }
+                          className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500 transition-all"
+                        />
+                      ) : (
+                        <input
+                          type={b.inputType === "number" ? "number" : "text"}
+                          placeholder={b.placeholder || `Digite ${b.label.toLowerCase()}...`}
+                          value={formData[b.fieldKey] || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              [b.fieldKey]: b.isUpperCase ? e.target.value.toUpperCase() : e.target.value,
+                            }))
+                          }
+                          className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500 transition-all"
+                        />
+                      )}
+                    </div>
+                  </React.Fragment>
+                );
+              })}
             </div>
           </div>
 

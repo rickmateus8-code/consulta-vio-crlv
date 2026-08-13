@@ -62,7 +62,7 @@ export default function StudioEngine() {
   const [zoom, setZoom] = useState(1);
   const [boxes, setBoxes] = useState<CoordinateBox[]>([]);
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
-  const [activeTool, setActiveTool] = useState<"presets" | "boxes" | "qr" | "pricing" | "logos">("boxes");
+  const [activeTool, setActiveTool] = useState<"presets" | "boxes" | "form" | "qr" | "pricing" | "logos">("boxes");
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
@@ -1110,6 +1110,20 @@ ${boxes
 
           <button
             type="button"
+            onClick={() => setActiveTool("form")}
+            className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
+              activeTool === "form"
+                ? "bg-slate-800 text-white border border-slate-700 shadow-md"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+            title="Layout do Formulário do Usuário"
+          >
+            <FileText className="w-5 h-5 text-white" />
+            <span>Formulário</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTool("qr")}
             className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[9px] font-bold transition-all ${
               activeTool === "qr"
@@ -1366,6 +1380,161 @@ ${boxes
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Aba: Layout do Formulário de Criação */}
+          {activeTool === "form" && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center justify-between m-0">
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-white" />
+                  Formulário do Usuário
+                </span>
+                <span className="text-[9px] bg-blue-500/20 text-blue-400 font-mono px-2 py-0.5 rounded-full font-bold">
+                  {boxes.length} campos
+                </span>
+              </h3>
+
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                Ordene os campos, defina os tipos de input (Select, CPF, Data, Texto), placeholders e grupos do formulário final do emissor.
+              </p>
+
+              {boxes.length === 0 ? (
+                <div className="text-center py-8 text-slate-500 text-xs">
+                  Mapeie caixas no Canvas primeiro para ordenar o formulário.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {boxes.map((box, idx) => (
+                    <div
+                      key={box.id}
+                      className={`p-3 rounded-2xl border transition-all space-y-2.5 ${
+                        selectedBoxId === box.id
+                          ? "bg-slate-900 border-blue-500 shadow-lg shadow-blue-950/40 ring-1 ring-blue-500/30"
+                          : "bg-slate-900/60 border-slate-800 hover:border-slate-700"
+                      }`}
+                      onClick={() => setSelectedBoxId(box.id)}
+                    >
+                      {/* Header do Campo + Ordenação */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white truncate max-w-[170px]">
+                          {box.label || box.fieldKey}
+                        </span>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (idx > 0) {
+                                const newArr = [...boxes];
+                                const temp = newArr[idx];
+                                newArr[idx] = newArr[idx - 1];
+                                newArr[idx - 1] = temp;
+                                setBoxes(newArr);
+                              }
+                            }}
+                            className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-800 text-[10px] font-bold"
+                            title="Mover para cima"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === boxes.length - 1}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (idx < boxes.length - 1) {
+                                const newArr = [...boxes];
+                                const temp = newArr[idx];
+                                newArr[idx] = newArr[idx + 1];
+                                newArr[idx + 1] = temp;
+                                setBoxes(newArr);
+                              }
+                            }}
+                            className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-800 text-[10px] font-bold"
+                            title="Mover para baixo"
+                          >
+                            ▼
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Configuração de Tipo de Input */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Tipo de Campo</label>
+                          <select
+                            value={box.inputType || "text"}
+                            onChange={(e) => {
+                              const val = e.target.value as any;
+                              setBoxes(prev => prev.map(b => b.id === box.id ? { ...b, inputType: val } : b));
+                            }}
+                            className="w-full px-2 py-1.5 text-xs rounded-lg bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none cursor-pointer"
+                          >
+                            <option value="text">Texto Simples</option>
+                            <option value="cpf">CPF (Máscara 000.000...)</option>
+                            <option value="date">Data (Calendário)</option>
+                            <option value="select">Dropdown (Seleção)</option>
+                            <option value="crm">CRM / Registro</option>
+                            <option value="textarea">Área de Texto Longa</option>
+                            <option value="number">Número Inteiro</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Largura da Coluna</label>
+                          <select
+                            value={box.gridWidth || "full"}
+                            onChange={(e) => {
+                              const val = e.target.value as any;
+                              setBoxes(prev => prev.map(b => b.id === box.id ? { ...b, gridWidth: val } : b));
+                            }}
+                            className="w-full px-2 py-1.5 text-xs rounded-lg bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none cursor-pointer"
+                          >
+                            <option value="full">Tela Cheia (100%)</option>
+                            <option value="half">Metade (50%)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Opções caso seja Dropdown (select) */}
+                      {box.inputType === "select" && (
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Opções da Lista (Separadas por vírgula)</label>
+                          <input
+                            type="text"
+                            placeholder="Ex: Categoria A, Categoria B, Categoria AB"
+                            value={box.options || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBoxes(prev => prev.map(b => b.id === box.id ? { ...b, options: val } : b));
+                            }}
+                            className="w-full px-2 py-1.5 text-xs rounded-lg bg-slate-950 border border-slate-800 text-slate-200"
+                          />
+                        </div>
+                      )}
+
+                      {/* Grupo de Seção no Formulário */}
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Sessão / Grupo (Opcional)</label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Dados do Condutor, Identificação..."
+                          value={box.section || ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setBoxes(prev => prev.map(b => b.id === box.id ? { ...b, section: val } : b));
+                          }}
+                          className="w-full px-2 py-1.5 text-xs rounded-lg bg-slate-950 border border-slate-800 text-slate-200"
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

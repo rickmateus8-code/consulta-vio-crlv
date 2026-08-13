@@ -200,8 +200,22 @@ async function handleUserUpdate(env: Env, admin: any, body: any, corsHeaders: an
     changes.is_active = isActive;
   }
 
-  if (body.balance !== undefined) {
-    const fixedBalance = Number(body.balance || 0);
+  if (body.balance_adjustment !== undefined) {
+    const adjustment = Math.round(Number(body.balance_adjustment || 0));
+    if (Number.isFinite(adjustment) && adjustment !== 0) {
+      const currentBalance = Math.round(Number(user.balance || 0));
+      const nextBalance = Math.max(0, currentBalance + adjustment);
+      await env.DB.prepare('UPDATE users SET balance = ?, updated_at = datetime("now") WHERE id = ?').bind(nextBalance, userId).run();
+      const type = adjustment > 0 ? 'credit' : 'debit';
+      const description = adjustment > 0 ? 'Crédito manual pelo administrador' : 'Débito manual pelo administrador';
+      await insertTransaction(env, userId, type, Math.abs(adjustment), description);
+      changes.balance_adjustment = { old: currentBalance, amount: adjustment, new: nextBalance };
+      
+      await logAdminAction(env, admin.id, 'update_user', userId, { username: user.username, changes });
+      return new Response(JSON.stringify({ success: true, newBalance: nextBalance }), { headers: corsHeaders });
+    }
+  } else if (body.balance !== undefined) {
+    const fixedBalance = Math.round(Number(body.balance || 0));
     if (fixedBalance < 0) {
       return new Response(JSON.stringify({ success: false, error: 'Saldo inválido' }), { status: 400, headers: corsHeaders });
     }
@@ -223,23 +237,9 @@ async function handleUserUpdate(env: Env, admin: any, body: any, corsHeaders: an
     changes.permissions = body.permissions;
   }
 
-  const adjustment = Number(body.balance_adjustment || 0);
-  if (body.balance_adjustment !== undefined && Number.isFinite(adjustment) && adjustment !== 0) {
-    const currentBalance = Number(user.balance || 0);
-    const nextBalance = currentBalance + adjustment;
-    if (nextBalance < 0) {
-      return new Response(JSON.stringify({ success: false, error: 'Saldo insuficiente para débito manual' }), { status: 400, headers: corsHeaders });
-    }
-
-    await env.DB.prepare('UPDATE users SET balance = ?, updated_at = datetime("now") WHERE id = ?').bind(nextBalance, userId).run();
-    const type = adjustment > 0 ? 'credit' : 'debit';
-    const description = adjustment > 0 ? 'Crédito manual pelo administrador' : 'Débito manual pelo administrador';
-    await insertTransaction(env, userId, type, Math.abs(adjustment), description);
-    changes.balance_adjustment = { old: currentBalance, amount: adjustment, new: nextBalance };
-  }
-
+  const freshUser = await env.DB.prepare('SELECT balance FROM users WHERE id = ? LIMIT 1').bind(userId).first<any>();
   await logAdminAction(env, admin.id, 'update_user', userId, { username: user.username, changes });
-  return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+  return new Response(JSON.stringify({ success: true, newBalance: Number(freshUser?.balance || 0) }), { headers: corsHeaders });
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {

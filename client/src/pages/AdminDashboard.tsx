@@ -856,7 +856,17 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (data.success) {
         toast.success(`Saldo ${amount > 0 ? "adicionado" : "removido"} com sucesso`);
-        loadUsers(showPasswords);
+        
+        if (data.newBalance !== undefined) {
+          if (user && String(userId) === String(user.id)) {
+            updateBalance(data.newBalance);
+          }
+          if (selectedUser && String(selectedUser.id) === String(userId)) {
+            setSelectedUser((prev: any) => prev ? { ...prev, balance: data.newBalance } : null);
+          }
+        }
+
+        await loadUsers(showPasswords, true);
         await refresh();
         triggerPermissionsUpdate();
       } else {

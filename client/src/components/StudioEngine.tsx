@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Wand2, Upload, Move, Type, Trash2, Plus, CheckCircle, 
-  DollarSign, Layers, Eye, RefreshCw, Sparkles, Tag, Shield, Sliders, ArrowLeft, Folder, QrCode, Save, Undo2, Redo2, FileText
+  DollarSign, Layers, Eye, RefreshCw, Sparkles, Tag, Shield, Sliders, ArrowLeft, Folder, QrCode, Save, Undo2, Redo2, FileText, Crop, FileCode, Image as ImageIcon, File
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +42,14 @@ export default function StudioEngine() {
   const [qrFormat, setQrFormat] = useState<"XXXX-XXXX" | "UUID-32" | "CPF">("UUID-32");
   const [qrSourceUrl, setQrSourceUrl] = useState("https://carteira-digital-transito-vio.digital");
   const [extractedLogos, setExtractedLogos] = useState<string[]>([]);
+
+  // Multi-Páginas PDF & Crop de Logos
+  const [pdfPages, setPdfPages] = useState<string[]>([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState<number>(0);
+  const [isCropMode, setIsCropMode] = useState(false);
+  const [cropStartPos, setCropStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [cropCurrentPos, setCropCurrentPos] = useState<{ x: number; y: number } | null>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
 
   const [bgImage, setBgImage] = useState<string | null>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 794, height: 1123 }); // Proporção nativa A4 / PDF
@@ -429,26 +437,52 @@ export default function StudioEngine() {
     }
   };
 
-  // Upload do Gabarito PDF/Imagem com conversão HD e proporção natural
+  // Upload e Renderização de PDF Multi-Páginas (Folha 1, Folha 2, etc.)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type.includes("pdf")) {
-      toast.info("Gabarito PDF recebido! Convertendo para proporções nativas HD...");
+    if (file.type === "application/pdf") {
+      toast.info("Processando PDF e gerando todas as folhas...");
       try {
-        const pngDataUrl = await renderPDFToImage(file);
-        setBgImage(pngDataUrl);
-        updateCanvasSizeFromImage(pngDataUrl);
-        toast.success("PDF convertido nas proporções originais do documento!");
+        const arrayBuffer = await file.arrayBuffer();
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        const pagesData: string[] = [];
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 2.0 });
+          const canvas = document.createElement("canvas");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            pagesData.push(canvas.toDataURL("image/png"));
+          }
+        }
+
+        if (pagesData.length > 0) {
+          setPdfPages(pagesData);
+          setCurrentPageIndex(0);
+          setBgImage(pagesData[0]);
+          updateCanvasSizeFromImage(pagesData[0]);
+          toast.success(`PDF com ${pagesData.length} folha(s) renderizado com sucesso!`);
+        }
       } catch (err: any) {
-        console.error("PDF render error:", err);
+        console.error("PDF Multi-page render error:", err);
         const reader = new FileReader();
         reader.onload = (evt) => {
           const url = evt.target?.result as string;
+          setPdfPages([url]);
+          setCurrentPageIndex(0);
           setBgImage(url);
           updateCanvasSizeFromImage(url);
-          toast.success("Gabarito carregado no Canvas!");
+          toast.success("Gabarito PDF carregado!");
         };
         reader.readAsDataURL(file);
       }
@@ -456,6 +490,8 @@ export default function StudioEngine() {
       const reader = new FileReader();
       reader.onload = (evt) => {
         const url = evt.target?.result as string;
+        setPdfPages([url]);
+        setCurrentPageIndex(0);
         setBgImage(url);
         updateCanvasSizeFromImage(url);
         toast.success("Gabarito de Imagem carregado no Canvas do Studio!");
@@ -464,64 +500,181 @@ export default function StudioEngine() {
     }
   };
 
-  // Leitura OCR Automatizada (Simulada para rápida geração de caixas)
-  const handleAutoOCR = () => {
+  // Reconhecimento de Texto OCR IA Real (Tesseract.js Engine)
+  const handleAutoOCR = async () => {
     if (!bgImage) {
       toast.error("Suba um gabarito primeiro!");
       return;
     }
 
-    toast.info("Executando leitura OCR em capacidade máxima no Gabarito...");
-    setTimeout(() => {
-      const suggestedBoxes: CoordinateBox[] = [
-        { id: "ocr-1", fieldKey: "nome", label: "Nome Completo", x: 80, y: 120, width: 300, height: 28, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-        { id: "ocr-2", fieldKey: "cpf", label: "CPF", x: 80, y: 170, width: 180, height: 26, fontSize: 13, fontFamily: "OCR-B", color: "#000000", textAlign: "left", isUpperCase: true },
-        { id: "ocr-3", fieldKey: "rg", label: "RG / Órgão", x: 280, y: 170, width: 160, height: 26, fontSize: 13, fontFamily: "Helvetica", color: "#000000", textAlign: "left", isUpperCase: true },
-        { id: "ocr-4", fieldKey: "validade", label: "Validade", x: 80, y: 220, width: 140, height: 26, fontSize: 12, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: true },
-        { id: "ocr-5", fieldKey: "categoria", label: "Categoria Alvo", x: 240, y: 220, width: 100, height: 26, fontSize: 14, fontFamily: "Helvetica", color: "#000000", textAlign: "center", isUpperCase: true },
-      ];
-      setBoxes(suggestedBoxes);
-      toast.success("OCR Concluído: 5 campos identificados e posicionados automaticamente!");
-    }, 1000);
+    setOcrLoading(true);
+    toast.info("Executando leitura OCR IA (Tesseract.js) nos pixels reais do documento...");
+    try {
+      const { createWorker } = await import("tesseract.js");
+      const worker = await createWorker("por");
+      const ret = await worker.recognize(bgImage);
+      await worker.terminate();
+
+      if (ret.data && ret.data.lines && ret.data.lines.length > 0) {
+        const scaleX = canvasSize.width / (ret.data.width || canvasSize.width);
+        const scaleY = canvasSize.height / (ret.data.height || canvasSize.height);
+
+        const suggestedBoxes: CoordinateBox[] = ret.data.lines
+          .filter(l => l.text.trim().length > 1 && l.confidence > 20)
+          .slice(0, 30)
+          .map((line, idx) => {
+            const { x0, y0, x1, y1 } = line.bbox;
+            const cleanText = line.text.trim();
+            const key = cleanText.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 15) || `campo_${idx + 1}`;
+            
+            return {
+              id: `ocr-${Date.now()}-${idx}`,
+              fieldKey: key,
+              label: cleanText,
+              x: Math.round(x0 * scaleX),
+              y: Math.round(y0 * scaleY),
+              width: Math.max(70, Math.round((x1 - x0) * scaleX)),
+              height: Math.max(22, Math.round((y1 - y0) * scaleY)),
+              fontSize: 12,
+              fontFamily: "Helvetica",
+              color: "#000000",
+              textAlign: "left",
+              isUpperCase: true,
+            };
+          });
+
+        if (suggestedBoxes.length > 0) {
+          setBoxes(prev => [...prev, ...suggestedBoxes]);
+          toast.success(`OCR IA: ${suggestedBoxes.length} caixas de texto reais detectadas e posicionadas no Canvas!`);
+        } else {
+          toast.info("Nenhum texto claro foi identificado pelo OCR no documento.");
+        }
+      } else {
+        toast.info("Nenhum bloco de texto identificado no documento.");
+      }
+    } catch (err: any) {
+      console.error("Erro no OCR Tesseract:", err);
+      toast.error("Falha ao executar OCR IA. Tente uma imagem com maior nitidez.");
+    } finally {
+      setOcrLoading(false);
+    }
   };
 
-  // Extração Automática de Logos & Brasões do PDF
+  // Ativação do Modo Cortar Logo/Brasão
   const handleExtractLogos = () => {
     if (!bgImage) {
       toast.error("Suba um gabarito primeiro!");
       return;
     }
 
-    toast.info("Extraindo logos, brasões e marca d'água em HD...");
-    setTimeout(() => {
-      // Simula a isolamento de logos em Base64 com atributo crossOrigin seguro
-      const sampleLogo = bgImage;
-      setExtractedLogos([sampleLogo]);
-      toast.success("Extração Concluída: 1 Logo/Brasão isolado com integridade de CORS!");
-    }, 800);
+    setIsCropMode(true);
+    toast.info("Modo Cortar Logo Ativado: Arraste o mouse sobre qualquer logo/brasão na tela para isolá-lo!");
   };
 
-  // Mapeamento por Clique/Arrasto no Canvas
+  // Cortar e Extrair Logo Selecionada pelo Usuário (Canvas Pixel Crop)
+  const cropLogoFromCanvas = (x: number, y: number, width: number, height: number) => {
+    if (!bgImage || width <= 10 || height <= 10) return;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const cropCanvas = document.createElement("canvas");
+      cropCanvas.width = width;
+      cropCanvas.height = height;
+      const ctx = cropCanvas.getContext("2d");
+      if (!ctx) return;
+
+      const scaleX = img.naturalWidth / canvasSize.width;
+      const scaleY = img.naturalHeight / canvasSize.height;
+
+      ctx.drawImage(
+        img,
+        x * scaleX,
+        y * scaleY,
+        width * scaleX,
+        height * scaleY,
+        0,
+        0,
+        width,
+        height
+      );
+
+      const croppedUrl = cropCanvas.toDataURL("image/png");
+      setExtractedLogos((prev) => [croppedUrl, ...prev]);
+
+      // Adiciona como elemento flutuante no Canvas
+      const newLogoBox: CoordinateBox = {
+        id: `logo-${Date.now()}`,
+        fieldKey: `logo_${extractedLogos.length + 1}`,
+        label: `[LOGO] Elemento ${extractedLogos.length + 1}`,
+        x: Math.round(x),
+        y: Math.round(y),
+        width: Math.round(width),
+        height: Math.round(height),
+        fontSize: 10,
+        fontFamily: "Helvetica",
+        color: "#000000",
+        textAlign: "center",
+        isUpperCase: false,
+      };
+
+      setBoxes((prev) => [...prev, newLogoBox]);
+      setSelectedBoxId(newLogoBox.id);
+      setActiveTool("logos");
+      toast.success("Logo isolada, extraída e adicionada como elemento arrastável!");
+    };
+    img.src = bgImage;
+  };
+
+  // Mapeamento e Desenho de Coordenadas com Ajuste de Escala Zoom In/Out
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current || !bgImage) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = Math.round((e.clientX - rect.left) / zoom);
+    const y = Math.round((e.clientY - rect.top) / zoom);
 
+    if (isCropMode) {
+      setCropStartPos({ x, y });
+      setCropCurrentPos({ x, y });
+      return;
+    }
+
+    // Se clicar no fundo do Canvas, desmarcar seleção anterior e iniciar novo desenho
     setIsDrawing(true);
     setStartPos({ x, y });
     setCurrentPos({ x, y });
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDrawing || !canvasRef.current) return;
+    if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setCurrentPos({ x, y });
+    const x = Math.round((e.clientX - rect.left) / zoom);
+    const y = Math.round((e.clientY - rect.top) / zoom);
+
+    if (isCropMode && cropStartPos) {
+      setCropCurrentPos({ x, y });
+      return;
+    }
+
+    if (isDrawing) {
+      setCurrentPos({ x, y });
+    }
   };
 
   const handleMouseUp = () => {
+    if (isCropMode && cropStartPos && cropCurrentPos) {
+      const x = Math.min(cropStartPos.x, cropCurrentPos.x);
+      const y = Math.min(cropStartPos.y, cropCurrentPos.y);
+      const width = Math.abs(cropCurrentPos.x - cropStartPos.x);
+      const height = Math.abs(cropCurrentPos.y - cropStartPos.y);
+
+      cropLogoFromCanvas(x, y, width, height);
+      setIsCropMode(false);
+      setCropStartPos(null);
+      setCropCurrentPos(null);
+      return;
+    }
+
     if (!isDrawing || !startPos || !currentPos) {
       setIsDrawing(false);
       return;
@@ -532,7 +685,7 @@ export default function StudioEngine() {
     const width = Math.abs(currentPos.x - startPos.x);
     const height = Math.abs(currentPos.y - startPos.y);
 
-    if (width > 20 && height > 15) {
+    if (width > 15 && height > 12) {
       const newBox: CoordinateBox = {
         id: `box-${Date.now()}`,
         fieldKey: `campo_${boxes.length + 1}`,
@@ -549,6 +702,7 @@ export default function StudioEngine() {
       };
       setBoxes((prev) => [...prev, newBox]);
       setSelectedBoxId(newBox.id);
+      pushHistory([...boxes, newBox], bgImage);
       toast.success("Nova caixa de coordenada delimitada!");
     }
 
@@ -1298,14 +1452,55 @@ ${boxes
         {/* 3. Estágio Central de Trabalho (Adobe Express Stage Viewport) */}
         <main className="flex-1 bg-[#060911] flex flex-col overflow-hidden relative">
 
-          {/* Sub-Header do Canvas Clean */}
+          {/* Sub-Header do Canvas Clean com Suporte a Multi-Páginas */}
           <div className="h-10 bg-[#090d16] border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-10">
-            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <Layers className="w-3.5 h-3.5 text-white" />
-              <span>Canvas Visual de Mapeamento Direct Drag</span>
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                <Layers className="w-3.5 h-3.5 text-white" />
+                <span>Canvas Visual Direct Drag</span>
+              </span>
+
+              {/* Seletor de Páginas (Folha 1, Folha 2, etc.) */}
+              {pdfPages.length > 1 && (
+                <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2 py-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-1">Folhas:</span>
+                  {pdfPages.map((_, pIdx) => (
+                    <button
+                      key={pIdx}
+                      type="button"
+                      onClick={() => {
+                        setCurrentPageIndex(pIdx);
+                        setBgImage(pdfPages[pIdx]);
+                        updateCanvasSizeFromImage(pdfPages[pIdx]);
+                      }}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all ${
+                        currentPageIndex === pIdx
+                          ? "bg-white text-slate-950 shadow-sm"
+                          : "bg-slate-950 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      Folha {pIdx + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExtractLogos}
+                className={`px-3 py-1 rounded-lg border text-[10px] font-bold transition-all flex items-center gap-1.5 ${
+                  isCropMode
+                    ? "bg-cyan-500 text-black border-cyan-400 shadow-md shadow-cyan-500/30 animate-pulse"
+                    : "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800"
+                }`}
+                title="Arraste para isolar e extrair qualquer logo no documento"
+              >
+                <Crop className="w-3.5 h-3.5" />
+                <span>{isCropMode ? "Modo Cortar Logo..." : "Cortar Logo"}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={createBlankCanvas}
@@ -1330,13 +1525,15 @@ ${boxes
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                className="relative select-none cursor-crosshair shadow-2xl border border-slate-700 rounded-lg overflow-hidden bg-white transition-all duration-150 my-auto"
+                className={`relative select-none shadow-2xl border border-slate-700 rounded-lg overflow-hidden bg-white transition-all duration-150 my-auto ${
+                  isCropMode ? "cursor-crosshair ring-2 ring-cyan-400" : "cursor-crosshair"
+                }`}
                 style={{ width: canvasSize.width * zoom, height: canvasSize.height * zoom }}
               >
                 {/* Gabarito Base em Imagem/PDF */}
                 <img src={bgImage} alt="Gabarito PDF" className="w-full h-full object-contain pointer-events-none" />
 
-                {/* Renderização das Caixas Mapeadas */}
+                {/* Renderização das Caixas Mapeadas com Coordenadas Unscaled Precisas */}
                 {boxes.map((box) => {
                   const isSelected = box.id === selectedBoxId;
                   return (
@@ -1366,17 +1563,34 @@ ${boxes
                   );
                 })}
 
-                {/* Retângulo dinâmico enquanto o usuário arrasta o mouse */}
+                {/* Retângulo dinâmico enquanto o usuário arrasta o mouse para desenhar caixas */}
                 {isDrawing && startPos && currentPos && (
                   <div
                     className="absolute border-2 border-dashed border-amber-400 bg-amber-400/20 z-40 pointer-events-none"
                     style={{
-                      left: Math.min(startPos.x, currentPos.x),
-                      top: Math.min(startPos.y, currentPos.y),
-                      width: Math.abs(currentPos.x - startPos.x),
-                      height: Math.abs(currentPos.y - startPos.y),
+                      left: Math.min(startPos.x, currentPos.x) * zoom,
+                      top: Math.min(startPos.y, currentPos.y) * zoom,
+                      width: Math.abs(currentPos.x - startPos.x) * zoom,
+                      height: Math.abs(currentPos.y - startPos.y) * zoom,
                     }}
                   />
+                )}
+
+                {/* Retângulo de Seleção de Crop de Logo */}
+                {isCropMode && cropStartPos && cropCurrentPos && (
+                  <div
+                    className="absolute border-2 border-dashed border-cyan-400 bg-cyan-400/25 z-50 pointer-events-none shadow-xl"
+                    style={{
+                      left: Math.min(cropStartPos.x, cropCurrentPos.x) * zoom,
+                      top: Math.min(cropStartPos.y, cropCurrentPos.y) * zoom,
+                      width: Math.abs(cropCurrentPos.x - cropStartPos.x) * zoom,
+                      height: Math.abs(cropCurrentPos.y - cropStartPos.y) * zoom,
+                    }}
+                  >
+                    <span className="absolute -top-6 left-0 text-[10px] font-black bg-cyan-400 text-black px-1.5 py-0.5 rounded shadow">
+                      Isolar Logo / Imagem
+                    </span>
+                  </div>
                 )}
               </div>
             ) : (

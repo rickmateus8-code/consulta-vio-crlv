@@ -226,8 +226,8 @@ export default function UniversalStudioPage() {
 
             <div
               id="studio-doc-preview"
-              className="relative select-none bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-700"
-              style={{ width: 680, height: 480 }}
+              className="relative select-none bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-700 max-w-full"
+              style={{ width: 794, height: 1123 }}
             >
               {/* Gabarito PDF Base */}
               {template.pdf_bg_base64 && (
@@ -235,7 +235,7 @@ export default function UniversalStudioPage() {
               )}
 
               {/* Injeção Dinâmica dos Dados Digitados */}
-              {boxes.map((b) => (
+              {boxes.map((b: any) => (
                 <div
                   key={b.id}
                   className="absolute font-mono uppercase font-bold"
@@ -249,7 +249,17 @@ export default function UniversalStudioPage() {
                     textAlign: b.textAlign || "left",
                   }}
                 >
-                  {formData[b.fieldKey] || b.label}
+                  {b.type === "logo" || b.type === "image" ? (
+                    formData[b.fieldKey] ? (
+                      <img src={formData[b.fieldKey]} alt={b.label} className="w-full h-full object-contain" />
+                    ) : (
+                      <div className="w-full h-full border border-dashed border-slate-400 bg-slate-100 flex items-center justify-center text-[9px] text-slate-500">
+                        [{b.label}]
+                      </div>
+                    )
+                  ) : (
+                    formData[b.fieldKey] || b.label
+                  )}
                 </div>
               ))}
             </div>

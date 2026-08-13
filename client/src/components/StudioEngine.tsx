@@ -110,6 +110,10 @@ export function normalizeDocumentBox(raw: any): CoordinateBox {
 
 /**
  * Carrega e recupera um documento existente preservando essência, geometria e metadados.
+ * Suporta dois formatos de coordinates_json:
+ *   V1 (legado): CoordinateBox[]                         → boxes = parsed
+ *   V2 (atual):  { canvasSize: {width, height}, boxes }  → boxes = parsed.boxes, canvasSize restaurado
+ * Retrocompatível: nunca converte nem sobrescreve o formato original.
  */
 export function loadDocumentData(doc: any): {
   boxes: CoordinateBox[];
@@ -120,19 +124,58 @@ export function loadDocumentData(doc: any): {
   targetStructure: string;
   bgImage?: string;
   pdfPages?: string[];
+  canvasSize?: { width: number; height: number };
 } {
   if (!doc) return { boxes: [], docName: "", docSlug: "", category: "veiculos", price: "15.00", targetStructure: "cnh" };
   const docCopy = JSON.parse(JSON.stringify(doc));
 
-  const rawBoxes = Array.isArray(docCopy.coordinates)
-    ? docCopy.coordinates
-    : Array.isArray(docCopy.boxes)
-    ? docCopy.boxes
-    : typeof docCopy.coordinates_json === "string"
-    ? JSON.parse(docCopy.coordinates_json)
-    : docCopy.coordinates_json || [];
+  // 1. Obter o JSON bruto (objeto ou array) das coordenadas
+  let rawParsed: any;
+  try {
+    rawParsed = Array.isArray(docCopy.coordinates)
+      ? docCopy.coordinates
+      : Array.isArray(docCopy.boxes)
+      ? docCopy.boxes
+      : typeof docCopy.coordinates_json === "string"
+      ? JSON.parse(docCopy.coordinates_json)   // pode ser V1 (array) ou V2 (objeto)
+      : docCopy.coordinates_json || [];
+  } catch (e) {
+    console.error("[loadDocumentData] Falha ao parsear coordinates_json:", e);
+    // Retorna sem boxes para não sobrescrever o template com []
+    return {
+      boxes: [],
+      docName: doc.name || doc.docName || "",
+      docSlug: doc.slug || doc.docSlug || "",
+      category: doc.category || "veiculos",
+      price: String(doc.price || "15.00"),
+      targetStructure: doc.target_structure || doc.targetStructure || "cnh",
+      bgImage: doc.pdf_bg_base64 || doc.bgImage || undefined,
+      pdfPages: doc.pdfPages || (doc.pdf_bg_base64 ? [doc.pdf_bg_base64] : undefined),
+    };
+  }
 
-  const normalizedBoxes = (Array.isArray(rawBoxes) ? rawBoxes : []).map(normalizeDocumentBox);
+  // 2. Detectar formato V1 (array) vs V2 ({ canvasSize, boxes })
+  let rawBoxes: any[];
+  let detectedCanvasSize: { width: number; height: number } | undefined;
+
+  if (Array.isArray(rawParsed)) {
+    // Formato V1: array direto de boxes
+    rawBoxes = rawParsed;
+    detectedCanvasSize = undefined; // sem canvasSize em V1 — usar fallback do chamador
+  } else if (rawParsed && typeof rawParsed === "object" && Array.isArray(rawParsed.boxes)) {
+    // Formato V2: { canvasSize, boxes }
+    rawBoxes = rawParsed.boxes;
+    if (rawParsed.canvasSize?.width && rawParsed.canvasSize?.height) {
+      detectedCanvasSize = { width: rawParsed.canvasSize.width, height: rawParsed.canvasSize.height };
+    }
+  } else {
+    // Formato desconhecido: preservar sem boxes (não sobrescrever com [])
+    console.warn("[loadDocumentData] Formato de coordinates_json não reconhecido — boxes preservados como [].");
+    rawBoxes = [];
+    detectedCanvasSize = undefined;
+  }
+
+  const normalizedBoxes = rawBoxes.map(normalizeDocumentBox);
 
   return {
     boxes: normalizedBoxes,
@@ -142,9 +185,11 @@ export function loadDocumentData(doc: any): {
     price: String(doc.price || "15.00"),
     targetStructure: doc.target_structure || doc.targetStructure || "cnh",
     bgImage: doc.pdf_bg_base64 || doc.bgImage || undefined,
-    pdfPages: doc.pdfPages || (doc.pdf_bg_base64 ? [doc.pdf_bg_base64] : undefined)
+    pdfPages: doc.pdfPages || (doc.pdf_bg_base64 ? [doc.pdf_bg_base64] : undefined),
+    canvasSize: detectedCanvasSize,
   };
 }
+
 
 interface StudioTemplate {
   id: string;
@@ -203,7 +248,19 @@ export default function StudioEngine() {
   // "new"    → novo template criado pelo preset (nunca esteve no banco; salvar como objeto).
   // Não deve ser inferido por targetStructure, slug ou dimensões do canvas.
   const [coordinatesFormat, setCoordinatesFormat] = useState<"legacy" | "v2" | "new">("new");
+
+  // Guias de alinhamento/snap: linhas visíveis no canvas durante drag/resize
+  // null = guia inativa; number = posição em coordenadas do documento
+  const [snapGuides, setSnapGuides] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
+  // Threshold de snap em pixels de TELA (constante visual): divide por zoom para obter distância no doc.
+  // Resultado: a 100% = 6px doc; a 200% = 3px doc; a 400% = 1.5px doc.
+  // Isso mantém a "gravidade" do snap visualmente uniforme em qualquer nível de zoom.
+  const SNAP_SCREEN_PX = 6;
   const canvasRef = useRef<HTMLDivElement>(null);
+  // Ref ao container de scroll que envolve o canvas (usado para zoom sob o cursor)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // Scroll pendente a ser aplicado após react re-render do zoom
+  const pendingScrollRef = useRef<{ left: number; top: number } | null>(null);
 
   // Histórico de Reversão de Erros (Undo / Redo)
   const [history, setHistory] = useState<Array<{ boxes: CoordinateBox[]; bgImage: string | null }>>([]);
@@ -858,6 +915,17 @@ export default function StudioEngine() {
     createBlankCanvas();
   }, []);
 
+  // Compensar scroll após zoom-sob-cursor: após React re-renderizar com novo zoom,
+  // aplica o scrollLeft/Top calculado no onWheel para manter o ponto documental sob o cursor.
+  useEffect(() => {
+    if (pendingScrollRef.current && scrollContainerRef.current) {
+      const { left, top } = pendingScrollRef.current;
+      scrollContainerRef.current.scrollLeft = Math.max(0, left);
+      scrollContainerRef.current.scrollTop  = Math.max(0, top);
+      pendingScrollRef.current = null;
+    }
+  }, [zoom]);
+
   // Gerador Centralizado de QR Code com Controle de Intensidade/Densidade (qrCodeEngine)
   useEffect(() => {
     const generateQRPngs = async () => {
@@ -1419,8 +1487,71 @@ export default function StudioEngine() {
     // Drag: mover box selecionada aplicando o offset inicial
     if (draggingRef.current) {
       const { id, offsetX, offsetY } = draggingRef.current;
-      const newX = parseFloat((docX - offsetX).toFixed(2));
-      const newY = parseFloat((docY - offsetY).toFixed(2));
+      let newX = parseFloat((docX - offsetX).toFixed(2));
+      let newY = parseFloat((docY - offsetY).toFixed(2));
+
+      // --- SNAP GUIDES (pareamento semântico) ---
+      // Threshold adaptativo: constante em tela (~6px) dividida pelo zoom
+      // A 100%: 6px doc; a 400%: 1.5px doc — precisão maior em zoom alto
+      const snapThreshold = SNAP_SCREEN_PX / zoom;
+      const movingBox = currentBoxesRef.current.find(b => b.id === id);
+      // Elementos locked participam como referência geométrica mas não são arrastados
+      const others = currentBoxesRef.current.filter(b => b.id !== id);
+      let snapX: number | null = null;
+      let snapY: number | null = null;
+
+      if (movingBox) {
+        const mW = movingBox.width;
+        const mH = movingBox.height;
+        const cW = canvasSize.width;
+        const cH = canvasSize.height;
+
+        // Cada âncora da box em movimento só compara com âncoras equivalentes (left↔left, center↔center, right↔right)
+        // Fontes de referência: bordas/centro do canvas + bordas/centro equivalentes dos outros elementos
+        const xAnchorGroups = [
+          // left da box  ↔  left do canvas + left de outros
+          { boxAnchor: newX,          refs: [0,      ...others.map(b => b.x)] },
+          // centerX da box  ↔  centro H do canvas + centerX de outros
+          { boxAnchor: newX + mW / 2, refs: [cW / 2, ...others.map(b => b.x + b.width / 2)] },
+          // right da box  ↔  right do canvas + right de outros
+          { boxAnchor: newX + mW,     refs: [cW,     ...others.map(b => b.x + b.width)] },
+        ];
+        const yAnchorGroups = [
+          { boxAnchor: newY,          refs: [0,      ...others.map(b => b.y)] },
+          { boxAnchor: newY + mH / 2, refs: [cH / 2, ...others.map(b => b.y + b.height / 2)] },
+          { boxAnchor: newY + mH,     refs: [cH,     ...others.map(b => b.y + b.height)] },
+        ];
+
+        // Offsets para recalcular newX a partir da âncora que grudóu
+        const xDeltas = [0, mW / 2, mW]; // left, center, right
+        const yDeltas = [0, mH / 2, mH];
+
+        for (let gi = 0; gi < xAnchorGroups.length; gi++) {
+          const { boxAnchor, refs } = xAnchorGroups[gi];
+          for (const ref of refs) {
+            if (Math.abs(boxAnchor - ref) <= snapThreshold) {
+              newX = parseFloat((ref - xDeltas[gi]).toFixed(2));
+              snapX = ref;
+              break;
+            }
+          }
+          if (snapX !== null) break;
+        }
+
+        for (let gi = 0; gi < yAnchorGroups.length; gi++) {
+          const { boxAnchor, refs } = yAnchorGroups[gi];
+          for (const ref of refs) {
+            if (Math.abs(boxAnchor - ref) <= snapThreshold) {
+              newY = parseFloat((ref - yDeltas[gi]).toFixed(2));
+              snapY = ref;
+              break;
+            }
+          }
+          if (snapY !== null) break;
+        }
+      }
+
+      setSnapGuides({ x: snapX, y: snapY });
       setBoxes(prev => prev.map(b => b.id === id ? { ...b, x: newX, y: newY } : b));
       return;
     }
@@ -1446,10 +1577,24 @@ export default function StudioEngine() {
         height = newH;
       }
 
-      // Para QR Code: preservar proporção quadrada
-      const box = boxes.find(b => b.id === id);
+      // Para QR Code: resize proporcional 1:1 em todos os 4 cantos
+      const box = currentBoxesRef.current.find(b => b.id === id);
       if (box?.type === "qrcode") {
-        const sq = Math.max(width, height);
+        // O eixo dominante (maior |delta|) define o tamanho do lado quadrado
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        const sq = Math.max(MIN, absDx >= absDy ? width : height);
+
+        // Recalcular origem dependendo do handle:
+        // handles que movem a borda esquerda (w) devem ajustar x
+        // handles que movem a borda superior (n) devem ajustar y
+        if (handle.includes("w")) {
+          x = parseFloat((startBox.x + startBox.width - sq).toFixed(2));
+        }
+        if (handle.includes("n")) {
+          y = parseFloat((startBox.y + startBox.height - sq).toFixed(2));
+        }
+        // handles e/s: x e y já foram calculados corretamente acima (borda direita/inferior não muda)
         width = sq;
         height = sq;
       }
@@ -1480,6 +1625,7 @@ export default function StudioEngine() {
     // Finalizar drag: registrar UMA operação no histórico
     if (draggingRef.current) {
       draggingRef.current = null;
+      setSnapGuides({ x: null, y: null }); // limpar guias ao soltar
       pushHistory(currentBoxesRef.current, bgImage);
       return;
     }
@@ -1487,6 +1633,7 @@ export default function StudioEngine() {
     // Finalizar resize: registrar UMA operação no histórico
     if (resizingRef.current) {
       resizingRef.current = null;
+      setSnapGuides({ x: null, y: null }); // limpar guias ao soltar
       pushHistory(currentBoxesRef.current, bgImage);
       return;
     }
@@ -1549,6 +1696,11 @@ export default function StudioEngine() {
     setTargetStructure(loaded.targetStructure || tpl.target_structure || "cnh");
     setBoxes(loaded.boxes);
 
+    // Restaurar canvasSize do template V2 quando presente — não substituir por default silencioso
+    if (loaded.canvasSize?.width && loaded.canvasSize?.height) {
+      setCanvasSize({ width: loaded.canvasSize.width, height: loaded.canvasSize.height });
+    }
+
     if ((tpl as any).pdf_bg_base64 || loaded.bgImage) {
       const url = (tpl as any).pdf_bg_base64 || loaded.bgImage;
       setBgImage(url);
@@ -1583,6 +1735,17 @@ export default function StudioEngine() {
       const coordinatesPayload = shouldUseV2Format
         ? { canvasSize: { width: canvasSize.width, height: canvasSize.height }, boxes }
         : boxes;
+
+      // Guarda de integridade: impede salvar [] acidentalmente.
+      // Se o payload final de boxes estiver vazio mas o template anterior existia com coordenadas,
+      // é sinal de falha de parse (ex: formato não reconhecido). Abortar e preservar o D1.
+      const finalBoxes = shouldUseV2Format
+        ? (coordinatesPayload as any).boxes
+        : (coordinatesPayload as any[]);
+      if (!Array.isArray(finalBoxes) || finalBoxes.length === 0) {
+        toast.error("Erro: nenhuma coordenada detectada no payload. Salvar abortado para preservar o template existente.");
+        return;
+      }
 
       const res = await fetch("/api/admin/studio-templates", {
         method: "POST",
@@ -1659,7 +1822,14 @@ export default function StudioEngine() {
   const updateSelectedBox = (key: keyof CoordinateBox, val: any) => {
     if (!selectedBoxId) return;
     setBoxes((prev) =>
-      prev.map((b) => (b.id === selectedBoxId ? { ...b, [key]: val } : b))
+      prev.map((b) => {
+        if (b.id !== selectedBoxId) return b;
+        // Para QR Code: manter width === height ao editar via inspector
+        if (b.type === "qrcode" && (key === "width" || key === "height")) {
+          return { ...b, width: val, height: val };
+        }
+        return { ...b, [key]: val };
+      })
     );
   };
 
@@ -1836,7 +2006,7 @@ ${boxes
           </span>
           <button
             type="button"
-            onClick={() => setZoom((z) => Math.min(2.5, Math.round((z + 0.1) * 10) / 10))}
+            onClick={() => setZoom((z) => Math.min(4.0, Math.round((z + 0.1) * 10) / 10))}
             className="text-xs font-bold text-slate-400 hover:text-white transition-colors px-1"
             title="Aumentar Zoom"
           >
@@ -2997,13 +3167,49 @@ ${boxes
             </div>
           </div>
 
-          {/* Container do Canvas Stage HD (Suporta Zoom por Scroll + CTRL) */}
+          {/* Container do Canvas Stage HD (Suporta Zoom por Scroll + CTRL + zoom-sob-cursor) */}
           <div
+            ref={scrollContainerRef}
             onWheel={(e) => {
               if (e.ctrlKey) {
                 e.preventDefault();
                 const delta = e.deltaY < 0 ? 0.05 : -0.05;
-                setZoom(prev => Math.max(0.2, Math.min(3.0, Number((prev + delta).toFixed(2)))));
+                const currentZoom = zoom;
+                const newZoom = Math.max(0.2, Math.min(4.0, Number((currentZoom + delta).toFixed(2))));
+
+                // Zoom sob cursor: calcular ponto documental sob o cursor e compensar scroll
+                if (canvasRef.current && scrollContainerRef.current) {
+                  const canvasEl  = canvasRef.current;
+                  const container = scrollContainerRef.current;
+                  const canvasRect = canvasEl.getBoundingClientRect();
+                  const containerRect = container.getBoundingClientRect();
+
+                  // Posição do cursor dentro do canvas (CSS px = display px)
+                  const cursorInCanvasX = e.clientX - canvasRect.left;
+                  const cursorInCanvasY = e.clientY - canvasRect.top;
+
+                  // Coordenada documental sob o cursor (imutável)
+                  const docX = cursorInCanvasX / currentZoom;
+                  const docY = cursorInCanvasY / currentZoom;
+
+                  // Origem do canvas no espaço de scroll (antes do novo zoom)
+                  const canvasOriginInScrollX = container.scrollLeft + (canvasRect.left - containerRect.left);
+                  const canvasOriginInScrollY = container.scrollTop  + (canvasRect.top  - containerRect.top);
+
+                  // Posição absoluta do ponto documental no espaço de scroll (não muda com zoom)
+                  const pointInScrollX = canvasOriginInScrollX + cursorInCanvasX;
+                  const pointInScrollY = canvasOriginInScrollY + cursorInCanvasY;
+
+                  // Após o novo zoom, queremos que docX * newZoom esteja em pointInScrollX
+                  // → newScrollLeft = pointInScrollX - docX * newZoom
+                  const newScrollLeft = pointInScrollX - docX * newZoom;
+                  const newScrollTop  = pointInScrollY - docY * newZoom;
+
+                  // Armazenar para aplicar após React re-render do zoom
+                  pendingScrollRef.current = { left: newScrollLeft, top: newScrollTop };
+                }
+
+                setZoom(newZoom);
               }
             }}
             className="flex-1 overflow-auto custom-scrollbar bg-[#060911] flex items-center justify-center p-0 m-0 relative"
@@ -3161,18 +3367,21 @@ ${boxes
                   if (!isOnCurrentPage) return null;
                   const b = selectedBox;
                   const isQR = b.type === "qrcode";
+                  // Posições dos handles em CSS usam float (b.x * zoom) sem Math.round.
+                  // CSS interpola sub-pixel corretamente; Math.round causava drift de até 0.5px
+                  // entre a box e o handle, especialmente em zooms não-inteiros (125%, 150%, 250%, 400%).
                   const allHandles: Array<{ id: ResizeHandle; cx: number; cy: number; cursor: string }> = [
-                    { id: "nw", cx: b.x * zoom,                   cy: b.y * zoom,                    cursor: "nw-resize" },
-                    { id: "n",  cx: (b.x + b.width / 2) * zoom,  cy: b.y * zoom,                    cursor: "n-resize"  },
-                    { id: "ne", cx: (b.x + b.width) * zoom,       cy: b.y * zoom,                    cursor: "ne-resize" },
-                    { id: "w",  cx: b.x * zoom,                   cy: (b.y + b.height / 2) * zoom,   cursor: "w-resize"  },
-                    { id: "e",  cx: (b.x + b.width) * zoom,       cy: (b.y + b.height / 2) * zoom,   cursor: "e-resize"  },
-                    { id: "sw", cx: b.x * zoom,                   cy: (b.y + b.height) * zoom,        cursor: "sw-resize" },
-                    { id: "s",  cx: (b.x + b.width / 2) * zoom,  cy: (b.y + b.height) * zoom,        cursor: "s-resize"  },
-                    { id: "se", cx: (b.x + b.width) * zoom,       cy: (b.y + b.height) * zoom,        cursor: "se-resize" },
+                    { id: "nw", cx: b.x * zoom,                    cy: b.y * zoom,                    cursor: "nw-resize" },
+                    { id: "n",  cx: (b.x + b.width / 2) * zoom,   cy: b.y * zoom,                    cursor: "n-resize"  },
+                    { id: "ne", cx: (b.x + b.width) * zoom,        cy: b.y * zoom,                    cursor: "ne-resize" },
+                    { id: "w",  cx: b.x * zoom,                    cy: (b.y + b.height / 2) * zoom,   cursor: "w-resize"  },
+                    { id: "e",  cx: (b.x + b.width) * zoom,        cy: (b.y + b.height / 2) * zoom,   cursor: "e-resize"  },
+                    { id: "sw", cx: b.x * zoom,                    cy: (b.y + b.height) * zoom,        cursor: "sw-resize" },
+                    { id: "s",  cx: (b.x + b.width / 2) * zoom,   cy: (b.y + b.height) * zoom,        cursor: "s-resize"  },
+                    { id: "se", cx: (b.x + b.width) * zoom,        cy: (b.y + b.height) * zoom,        cursor: "se-resize" },
                   ];
-                  // Para QR: exibir apenas handle SE para preservar proporção quadrada
-                  const handles = isQR ? allHandles.filter(h => h.id === "se") : allHandles;
+                  // QR: 4 handles diagonais (NW, NE, SW, SE) — todos preservam proporção 1:1
+                  const handles = isQR ? allHandles.filter(h => ["nw","ne","sw","se"].includes(h.id)) : allHandles;
                   return handles.map(h => (
                     <div
                       key={`handle-${h.id}`}
@@ -3193,6 +3402,30 @@ ${boxes
                     />
                   ));
                 })()}
+
+                {/* Guias de Alinhamento/Snap — linhas visíveis durante drag e resize */}
+                {snapGuides.x !== null && (
+                  <div
+                    className="absolute top-0 bottom-0 pointer-events-none z-40"
+                    style={{
+                      left: Math.round(snapGuides.x * zoom),
+                      width: 1,
+                      background: "rgba(99,102,241,0.85)",
+                      boxShadow: "0 0 4px rgba(99,102,241,0.6)",
+                    }}
+                  />
+                )}
+                {snapGuides.y !== null && (
+                  <div
+                    className="absolute left-0 right-0 pointer-events-none z-40"
+                    style={{
+                      top: Math.round(snapGuides.y * zoom),
+                      height: 1,
+                      background: "rgba(99,102,241,0.85)",
+                      boxShadow: "0 0 4px rgba(99,102,241,0.6)",
+                    }}
+                  />
+                )}
 
                 {/* Retângulo dinâmico enquanto o usuário arrasta o mouse para desenhar caixas */}
                 {isDrawing && startPos && currentPos && (

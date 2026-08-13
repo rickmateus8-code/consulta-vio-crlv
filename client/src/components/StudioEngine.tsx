@@ -602,7 +602,7 @@ export default function StudioEngine() {
       const qrBoxes = boxes.filter(b => b.type === "qrcode");
       for (const box of qrBoxes) {
         const sampleCode = box.qrFormat === "XXXX-XXXX" ? "A8F9-2041" : box.qrFormat === "CPF" ? "94598940468" : "9b3a7c9d-8e4f-4a12-98ab-34cd56ef7890";
-        const qrVal = (box.qrPattern || "{sourceUrl}/validar?code={code}")
+        const qrVal = box.data || (box.qrPattern || "{sourceUrl}/validar?code={code}")
           .replace("{sourceUrl}", box.qrSourceUrl || "https://atestados-idab.pages.dev")
           .replace("{code}", sampleCode);
 
@@ -2494,7 +2494,7 @@ ${boxes
 
                     if (box.type === "qrcode") {
                       const sampleCode = box.qrFormat === "XXXX-XXXX" ? "A8F9-2041" : box.qrFormat === "CPF" ? "94598940468" : "9b3a7c9d-8e4f-4a12-98ab-34cd56ef7890";
-                      const qrVal = (box.qrPattern || "{sourceUrl}/validar?code={code}")
+                      const qrVal = box.data || (box.qrPattern || "{sourceUrl}/validar?code={code}")
                         .replace("{sourceUrl}", box.qrSourceUrl || "https://atestados-idab.pages.dev")
                         .replace("{code}", sampleCode);
                       const pngUrl = qrPngMap[box.id];

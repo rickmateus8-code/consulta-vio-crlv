@@ -67,7 +67,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     await ensureStudioTable(env);
 
     const result = await env.DB.prepare(`
-      SELECT id, name, slug, category, price, target_structure, coordinates_json, created_at
+      SELECT id, name, slug, category, price, target_structure, coordinates_json, pdf_bg_base64, created_at
       FROM studio_templates
       ORDER BY created_at DESC
     `).all<any>();

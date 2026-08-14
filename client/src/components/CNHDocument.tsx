@@ -12,12 +12,8 @@ import { getActiveCNHLayout, getHardcodedLayout, type CNHLayout } from "@/config
 import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
 import { gerarMRZ } from "@/lib/cnh/mrz";
 import { getCNHValidationUrl } from "@/lib/cnh/validation";
-import {
-  resolveQRForPrint,
-  PRINT_QR_PLACEHOLDER,
-  CNH_BASE_TEMPLATE_SOURCES,
-  loadFirstAvailableImage,
-} from "@/lib/cnh/printRuntime";
+import { resolveQRForPrint, PRINT_QR_PLACEHOLDER } from "@/lib/cnh/printRuntime";
+import { CNH_BASE_TEMPLATE_SOURCES, loadFirstAvailableImage } from "@/lib/cnh/printAssets";
 import type { CNHRenderInput, CNHPrintRuntimeIdentity } from "@/lib/cnh/renderInput";
 
 

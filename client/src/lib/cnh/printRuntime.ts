@@ -11,13 +11,48 @@
 
 import type { CNHPrintRuntimeIdentity } from "./renderInput";
 
-// ─── Constante Pública ────────────────────────────────────────────────────────
+// ─── Constantes Públicas ──────────────────────────────────────────────────────
 
 /**
  * UUID placeholder usado pelo PRINT_A4 quando não existe validationId real.
  * Mantido idêntico ao valor original hardcoded em drawCNHToCanvas (comportamento legado).
  */
 export const PRINT_QR_PLACEHOLDER = "31c64778-606e-436e-9f9d-287574f23abe";
+
+/**
+ * Lista canônica e ordenada de fontes para a BASE do PRINT_A4 (2481×3508).
+ * A fonte canônica oficial do projeto (/assets/cnh_base_template.png) é SEMPRE a primeira tentativa.
+ * Nomes legados/históricos permanecem como fallbacks subsequentes.
+ */
+export const CNH_BASE_TEMPLATE_SOURCES: readonly string[] = [
+  "/assets/cnh_base_template.png",
+  "/assets/cnh_base_template_300.png",
+  "assets/cnh_base_template.png",
+  "assets/cnh_base_template_300.png",
+] as const;
+
+/**
+ * Tenta carregar uma imagem a partir de uma lista ordenada de fontes (canonical primeiro).
+ * Falhas individuais em qualquer fonte NÃO abortam as tentativas nas fontes subsequentes.
+ *
+ * @param sources - Lista ordenada de caminhos/URLs de imagem.
+ * @param loader - Função assíncrona de carregamento (ex: loadImage).
+ * @returns Instância carregada ou null se todas as fontes falharem.
+ */
+export async function loadFirstAvailableImage<T>(
+  sources: readonly string[],
+  loader: (src: string) => Promise<T>
+): Promise<T | null> {
+  for (const src of sources) {
+    try {
+      const img = await loader(src);
+      if (img) return img;
+    } catch {
+      // Falha individual na fonte; prossegue com a próxima tentativa
+    }
+  }
+  return null;
+}
 
 // ─── Helper Principal ─────────────────────────────────────────────────────────
 

@@ -12,7 +12,12 @@ import { getActiveCNHLayout, getHardcodedLayout, type CNHLayout } from "@/config
 import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
 import { gerarMRZ } from "@/lib/cnh/mrz";
 import { getCNHValidationUrl } from "@/lib/cnh/validation";
-import { resolveQRForPrint, PRINT_QR_PLACEHOLDER } from "@/lib/cnh/printRuntime";
+import {
+  resolveQRForPrint,
+  PRINT_QR_PLACEHOLDER,
+  CNH_BASE_TEMPLATE_SOURCES,
+  loadFirstAvailableImage,
+} from "@/lib/cnh/printRuntime";
 import type { CNHRenderInput, CNHPrintRuntimeIdentity } from "@/lib/cnh/renderInput";
 
 
@@ -385,21 +390,14 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: ResolvedCNH
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-  // 2. Template CNH_BASE @300DPI (múltiplos fallbacks para nunca sumir)
+  // 2. Template CNH_BASE @300DPI (canonical primeiro com fallback resiliente por item)
   // Background NÃO vinculado ao D1 nesta fase — preserva qualidade 2481×3508.
   try {
-    let bg: HTMLImageElement | null = null;
-    const sources = [
-      "/assets/cnh_base_template_300.png",
-      "/assets/cnh_base_template.png",
-      "assets/cnh_base_template_300.png",
-    ];
-    for (const src of sources) {
-      bg = await loadImage(src);
-      if (bg) break;
-    }
+    const bg = await loadFirstAvailableImage(CNH_BASE_TEMPLATE_SOURCES, loadImage);
     if (bg) {
       ctx.drawImage(bg, 0, 0, PAGE_W, PAGE_H);
+    } else {
+      console.warn("FALHA AO CARREGAR TEMPLATE BASE CNH: Nenhuma das fontes de fallback pôde ser carregada.");
     }
   } catch (e) {
     console.warn("FALHA AO CARREGAR TEMPLATE BASE CNH:", e);

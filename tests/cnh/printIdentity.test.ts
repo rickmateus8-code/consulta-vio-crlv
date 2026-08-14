@@ -30,6 +30,8 @@ import {
   previewRuntime,
   previewRuntimeWithId,
   emittedRuntime,
+  CNH_BASE_TEMPLATE_SOURCES,
+  loadFirstAvailableImage,
 } from "../../client/src/lib/cnh/printRuntime";
 import type { CNHPrintRuntimeIdentity } from "../../client/src/lib/cnh/renderInput";
 
@@ -258,6 +260,54 @@ test("16d. emittedRuntime() com rawValidationValue", () => {
 test("17. PRINT_QR_PLACEHOLDER é o UUID exato do renderer legado", () => {
   // Garante que o placeholder não foi acidentalmente alterado
   assertEq(PRINT_QR_PLACEHOLDER, "31c64778-606e-436e-9f9d-287574f23abe", "placeholder UUID inalterado");
+});
+
+// ── SEÇÃO 6: BASE TEMPLATE SOURCES & RESILIENT LOADER (Phase 2E.2) ───────────
+
+test("18. CNH_BASE_TEMPLATE_SOURCES tem o asset canônico como primeira opção", () => {
+  assert(CNH_BASE_TEMPLATE_SOURCES.length >= 2, "deve ter pelo menos 2 fontes configuradas");
+  assertEq(CNH_BASE_TEMPLATE_SOURCES[0], "/assets/cnh_base_template.png", "primeira fonte DEVE ser a canônica");
+});
+
+test("19. CNH_BASE_TEMPLATE_SOURCES mantém fallback legado _300 secundário", () => {
+  assert(CNH_BASE_TEMPLATE_SOURCES.includes("/assets/cnh_base_template_300.png"), "fallback _300 mantido");
+  assert(CNH_BASE_TEMPLATE_SOURCES.indexOf("/assets/cnh_base_template_300.png") > 0, "_300 DEVE vir após canônica");
+});
+
+test("20. loadFirstAvailableImage retorna 1ª fonte com sucesso sem consultar as demais", async () => {
+  const called: string[] = [];
+  const fakeLoader = async (src: string) => {
+    called.push(src);
+    return { src, loaded: true };
+  };
+
+  const result = await loadFirstAvailableImage(CNH_BASE_TEMPLATE_SOURCES, fakeLoader);
+  assert(result !== null, "deve retornar resultado");
+  assertEq(result?.src, "/assets/cnh_base_template.png", "deve carregar a canônica");
+  assertEq(called.length, 1, "somente a 1ª fonte deve ser consultada quando ela sucede");
+});
+
+test("21. loadFirstAvailableImage prossegue para 2ª fonte se 1ª falhar", async () => {
+  const called: string[] = [];
+  const fakeLoader = async (src: string) => {
+    called.push(src);
+    if (src === "/assets/cnh_base_template.png") throw new Error("404 Not Found");
+    return { src, loaded: true };
+  };
+
+  const result = await loadFirstAvailableImage(CNH_BASE_TEMPLATE_SOURCES, fakeLoader);
+  assert(result !== null, "deve retornar resultado");
+  assertEq(result?.src, "/assets/cnh_base_template_300.png", "deve carregar o fallback");
+  assertEq(called.length, 2, "deve ter tentado a 1ª e a 2ª fonte");
+});
+
+test("22. loadFirstAvailableImage retorna null se todas as fontes falharem sem lançar erro", async () => {
+  const fakeLoader = async () => {
+    throw new Error("Network Error");
+  };
+
+  const result = await loadFirstAvailableImage(CNH_BASE_TEMPLATE_SOURCES, fakeLoader);
+  assertEq(result, null, "deve retornar null em caso de falha total");
 });
 
 // ── Relatório ─────────────────────────────────────────────────────────────────

@@ -143,6 +143,41 @@ export interface CNHRenderInput {
   data:     CNHCanonicalData;
 }
 
+// ─── Runtime Identity PRINT_A4 ────────────────────────────────────────────────
+
+/**
+ * Estado de identidade em runtime para o renderer PRINT_A4.
+ *
+ * Separa o estado de preview do modelo canônico CNHRenderInput:
+ *   - CNHRenderInput.identity representa uma EMISSÃO REAL (documents.id existente).
+ *   - CNHPrintRuntimeIdentity representa o estado atual do renderer,
+ *     que pode ser preview (pré-emissão) ou emitido.
+ *
+ * Uso:
+ *   mode="preview"  → QR placeholder; emissionId pode ser o docId (modo edit)
+ *                     mas dados ainda não confirmados / emissão não finalizada.
+ *   mode="emitted"  → emissionId = documents.id real; validationId = codigo_qr.
+ *
+ * INVARIANTE: CNHRenderInput.identity.emissionId NUNCA será "PREVIEW", "" ou URL.
+ */
+export type CNHPrintRuntimeIdentity =
+  | {
+      mode: "preview";
+      /** documents.id disponível (ex: modo edit carregando). Ausente em nova emissão. */
+      emissionId?: string;
+      /** Valor bruto do campo codigo_qr / codigoQR legado. Preservado para auditoria. */
+      rawValidationValue?: string;
+    }
+  | {
+      mode: "emitted";
+      /** documents.id — UUID gerado no INSERT. Chave primária. */
+      emissionId: string;
+      /** documents.codigo_qr ou documents.id para validação. */
+      validationId: string;
+      /** Valor bruto preservado para compatibilidade com a guarda legada de ".". */
+      rawValidationValue?: string;
+    };
+
 // ─── Render Profiles ──────────────────────────────────────────────────────────
 
 /**
@@ -183,7 +218,13 @@ export interface CNHRenderProfileMeta {
    * "hardcoded"   = coordenadas inline no renderer (profiles WALLET_*)
    * "generative"  = conteúdo gerado algoritmicamente (MRZ, QR)
    */
-  geometrySource: "CNHLayout" | "hardcoded" | "generative";
+  /**
+   * Fonte da geometria de posicionamento dos campos.
+   * "CNHLayout"      = Geometry Bridge (D1 ou fallback hardcoded) — PRINT_A4
+   * "walletGeometry" = walletGeometry.ts declarativo — WALLET_FRONT / WALLET_BACK
+   * "generative"     = conteúdo gerado algoritmicamente (MRZ, QR)
+   */
+  geometrySource: "CNHLayout" | "walletGeometry" | "generative";
 }
 
 /** Metadados de todos os profiles — somente leitura. */
@@ -198,13 +239,15 @@ export const CNH_RENDER_PROFILES: Readonly<Record<CNHRenderProfileId, CNHRenderP
     id:             "WALLET_FRONT",
     canvasSize:     { width: 963, height: 680 },
     background:     "/img/cnh-templates/parte_superior.jpg",
-    geometrySource: "hardcoded",
+    /** Geometry externalized to walletGeometry.ts (Phase 2C). */
+    geometrySource: "walletGeometry",
   },
   WALLET_BACK: {
     id:             "WALLET_BACK",
     canvasSize:     { width: 963, height: 680 },
     background:     "/img/cnh-templates/parte_inferior.jpg",
-    geometrySource: "hardcoded",
+    /** Geometry externalized to walletGeometry.ts (Phase 2C). */
+    geometrySource: "walletGeometry",
   },
   WALLET_MRZ: {
     id:             "WALLET_MRZ",

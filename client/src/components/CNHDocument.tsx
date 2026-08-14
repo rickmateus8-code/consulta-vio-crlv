@@ -12,8 +12,49 @@ import { getActiveCNHLayout, getHardcodedLayout, type CNHLayout } from "@/config
 import { generateQRCodeDataURL } from "@/lib/qrCodeEngine";
 import { gerarMRZ } from "@/lib/cnh/mrz";
 import { getCNHValidationUrl } from "@/lib/cnh/validation";
+import { resolveQRForPrint, PRINT_QR_PLACEHOLDER } from "@/lib/cnh/printRuntime";
+import type { CNHRenderInput, CNHPrintRuntimeIdentity } from "@/lib/cnh/renderInput";
 
-export interface CNHDocumentProps {
+
+// ─── Contratos de Tipo PRINT_A4: Canonical | Legacy ──────────────────────────
+
+/**
+ * Props comuns a ambos os caminhos PRINT_A4.
+ * Somente controles de apresentação/renderer — sem dados documentais.
+ */
+type CNHDocumentCommonProps = {
+  blurred?: boolean;
+  previewWidth?: number;
+  /** Geometry Bridge Fase 1: layout D1 em coordenadas canvas 2481×3508. */
+  layout?: CNHLayout;
+  /**
+   * Identidade runtime PRINT_A4 (Phase 2E.1).
+   * Quando presente: QR resolution via resolveQRForPrint().
+   * Quando ausente: QR legacy guard via codigoQR.
+   */
+  printRuntime?: CNHPrintRuntimeIdentity;
+};
+
+/**
+ * Caminho CANONICAL (futuro — Phase 2E.2+):
+ *   - renderInput obrigatório: TODOS os dados documentais vêm dele.
+ *   - Legacy documentary fields NÃO são necessários.
+ */
+type CNHDocumentCanonicalProps = CNHDocumentCommonProps & {
+  renderInput: CNHRenderInput;
+};
+
+/**
+ * Caminho LEGACY (atual — todos os 4 callers PRINT):
+ *   - renderInput ausente via `never` (discriminante negativo).
+ *   - Campos documentais obrigatórios (nome, cpf, etc.) mantidos.
+ *   - codigoQR opcional (substituído por printRuntime quando presente).
+ *   - acc?: string corrige gap TypeScript sem mudar runtime.
+ *
+ * `renderInput?: never` impede call-sites híbridos no nível do tipo.
+ */
+export type CNHDocumentLegacyProps = CNHDocumentCommonProps & {
+  renderInput?: never;
   nome: string;
   cpf: string;
   rg: string;
@@ -40,6 +81,8 @@ export interface CNHDocumentProps {
   assDigital2: string;
   senhaApp: string;
   observacoes: string;
+  /** Cicloambulante / atividade remunerada. Corrige gap TypeScript sem mudança runtime. */
+  acc?: string;
   fotoUrl: string;
   assinaturaUrl: string;
   fotoScale?: number;
@@ -49,11 +92,28 @@ export interface CNHDocumentProps {
   assOffsetX?: number;
   assOffsetY?: number;
   codigoQR?: string;
-  blurred?: boolean;
-  previewWidth?: number;
-  /** Geometry Bridge Fase 1: layout D1 em coordenadas canvas 2481×3508. Opcional — fallback hardcoded se ausente. */
-  layout?: CNHLayout;
-}
+};
+
+/**
+ * Props do CNHDocument (PRINT_A4): union discriminada por `renderInput`.
+ *
+ * ┌──────────────────────────────────────────┐
+ * │ renderInput presente → canonical path    │ dados de renderInput.data
+ * │ renderInput ausente  → legacy path       │ dados das props documentais
+ * └──────────────────────────────────────────┘
+ *
+ * REGRA: nunca passar renderInput E legacy documentary props simultaneamente.
+ * `renderInput?: never` no legacy branch impõe isso no sistema de tipos.
+ */
+export type CNHDocumentProps = CNHDocumentCanonicalProps | CNHDocumentLegacyProps;
+
+
+/**
+ * Tipo alias interno: dados documentais já resolvidos (canonical expandido OU legacy pass-through).
+ * Usado exclusivamente pelos renderers internos que sempre recebem dados concretos.
+ * O componente público CNHDocument aceita CNHDocumentProps (a union completa).
+ */
+type ResolvedCNHProps = CNHDocumentLegacyProps;
 
 export interface CNHDocumentHandle {
   exportAsBlob: () => Promise<Blob | null>;
@@ -253,7 +313,7 @@ function gerarPaginaLegenda(): HTMLCanvasElement {
 }
 
 // ─── Export para PDF (1 página A4 Retrato 210mm x 297mm: CNH + QR + MRZ) ──────
-async function exportToPdf(cnhCanvas: HTMLCanvasElement, props: CNHDocumentProps) {
+async function exportToPdf(cnhCanvas: HTMLCanvasElement, props: ResolvedCNHProps) {
   const { default: jsPDF } = await import("jspdf");
 
   // ── PÁGINA ÚNICA: CNH-e Completa (A4 Retrato 210mm x 297mm) ─────────────────
@@ -271,7 +331,7 @@ async function exportToPdf(cnhCanvas: HTMLCanvasElement, props: CNHDocumentProps
   pdf.save(`CNH_${nomeFormatado}.pdf`);
 }
 
-export const buildCNHPropsFromRecord = (doc: any): CNHDocumentProps => {
+export const buildCNHPropsFromRecord = (doc: any): ResolvedCNHProps => {
   const d = typeof doc.data === "string" ? JSON.parse(doc.data) : (doc.data || {});
   return {
     nome: d.nome || doc.nome || "",
@@ -306,7 +366,7 @@ export const buildCNHPropsFromRecord = (doc: any): CNHDocumentProps => {
   };
 };
 
-export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocumentProps) {
+export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: ResolvedCNHProps) {
   const ctx = cvs.getContext("2d");
   if (!ctx) return;
 
@@ -373,7 +433,7 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
       ctx.restore();
     };
 
-    const getVal = (primaryKey: keyof CNHDocumentProps, ...fallbackKeys: string[]) => {
+    const getVal = (primaryKey: keyof ResolvedCNHProps, ...fallbackKeys: string[]) => {
       const v = props[primaryKey];
       if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
       for (const fk of fallbackKeys) {
@@ -382,6 +442,7 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
       }
       return "";
     };
+
 
     const d = fmtDate;
 
@@ -560,12 +621,22 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
     ctx.restore();
 
     // ═══════════════════════════════════════════════════════════════════
-    // QR CODE DINÂMICO (Geometry Bridge Fase 1)
+    // QR CODE DINÂMICO (Phase 2E.1: via printRuntime | legado: via codigoQR)
     // ═══════════════════════════════════════════════════════════════════
-    let codigoQrFinal = props.codigoQR && props.codigoQR !== "PREVIEW" && !props.codigoQR.includes(".") ? props.codigoQR : "";
-    if (!codigoQrFinal || codigoQrFinal.includes(".")) {
-      codigoQrFinal = "31c64778-606e-436e-9f9d-287574f23abe";
+    let codigoQrFinal: string;
+    if (props.printRuntime) {
+      // Caminho canônico (Phase 2E.1): guarda legada centralizada em resolveQRForPrint
+      codigoQrFinal = resolveQRForPrint(props.printRuntime);
+    } else {
+      // Caminho legado (comportamento original preservado):
+      // props: ResolvedCNHProps = CNHDocumentLegacyProps → codigoQR acessível diretamente
+      const legacyQR = props.codigoQR;
+      codigoQrFinal = legacyQR && legacyQR !== "PREVIEW" && !legacyQR.includes(".") ? legacyQR : "";
+      if (!codigoQrFinal || codigoQrFinal.includes(".")) {
+        codigoQrFinal = PRINT_QR_PLACEHOLDER;
+      }
     }
+
     
     const qrUrl = getCNHValidationUrl(codigoQrFinal);
 
@@ -753,7 +824,7 @@ export async function drawCNHToCanvas(cvs: HTMLCanvasElement, props: CNHDocument
     }
 }
 
-export async function downloadCNHPdfDirect(props: CNHDocumentProps) {
+export async function downloadCNHPdfDirect(props: ResolvedCNHProps) {
   const fullCvs = document.createElement("canvas");
   fullCvs.width = PAGE_W;
   fullCvs.height = PAGE_H;
@@ -765,12 +836,75 @@ export async function downloadCNHPdfDirect(props: CNHDocumentProps) {
 const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // ── Regra Anti-Híbrida (Phase 2E.1) ──────────────────────────────────────────
+  // Se renderInput presente: TODOS os dados documentais vêm dele.
+  // Se ausente: dados vêm das legacy props (caminho inalterado).
+  // layout, blurred, previewWidth, printRuntime permanecem props independentes.
+  //
+  // Quando canonical: effectiveProps satisfaz CNHDocumentLegacyProps
+  //   com dados de renderInput.data. renderInput NÃO é incluído no objeto
+  //   resultante (a union proíbe mistura). codigoQR = undefined pois
+  //   printRuntime já conduz a resolução do QR neste caminho.
+  const effectiveProps: ResolvedCNHProps = props.renderInput
+    ? {
+        // Dados documentais: 100% do renderInput.data (anti-híbrido)
+        nome:                props.renderInput.data.nome,
+        cpf:                 props.renderInput.data.cpf,
+        rg:                  props.renderInput.data.rg,
+        orgaoEmissor:        props.renderInput.data.orgaoEmissor,
+        ufRG:                props.renderInput.data.ufRG,
+        sexo:                props.renderInput.data.sexo,
+        nacionalidade:       props.renderInput.data.nacionalidade,
+        dataNascimento:      props.renderInput.data.dataNascimento,
+        localNascimento:     props.renderInput.data.localNascimento,
+        ufNascimento:        props.renderInput.data.ufNascimento,
+        nomePai:             props.renderInput.data.nomePai,
+        nomeMae:             props.renderInput.data.nomeMae,
+        categoria:           props.renderInput.data.categoria,
+        tipo:                props.renderInput.data.tipo,
+        registro:            props.renderInput.data.registro,
+        espelho:             props.renderInput.data.espelho,
+        validade:            props.renderInput.data.validade,
+        dataEmissao:         props.renderInput.data.dataEmissao,
+        primeiraHabilitacao: props.renderInput.data.primeiraHabilitacao,
+        localEmissao:        props.renderInput.data.localEmissao,
+        ufEmissao:           props.renderInput.data.ufEmissao,
+        acc:                 props.renderInput.data.acc,
+        observacoes:         props.renderInput.data.observacoes,
+        assDigital1:         props.renderInput.data.assDigital1,
+        assDigital2:         props.renderInput.data.assDigital2,
+        fotoUrl:             props.renderInput.data.fotoUrl,
+        assinaturaUrl:       props.renderInput.data.assinaturaUrl,
+        fotoScale:           props.renderInput.data.fotoScale,
+        fotoOffsetX:         props.renderInput.data.fotoOffsetX,
+        fotoOffsetY:         props.renderInput.data.fotoOffsetY,
+        assScale:            props.renderInput.data.assScale,
+        assOffsetX:          props.renderInput.data.assOffsetX,
+        assOffsetY:          props.renderInput.data.assOffsetY,
+        // Não-documentais do renderer: sempre das props diretas
+        senhaApp:     "",      // não existe em CNHCanonicalData (operacional)
+        validadeCNH2: "",      // não existe em CNHCanonicalData (formulário)
+        // codigoQR: não disponível em canonical props; QR resolvido via printRuntime
+        codigoQR:     undefined,
+        blurred:      props.blurred,
+        previewWidth: props.previewWidth,
+        layout:       props.layout,
+        printRuntime: props.printRuntime,
+        // renderInput NÃO incluído: objeto satisfaz CNHDocumentLegacyProps
+        // (dados documentais já expandidos acima; `renderInput?: never` ativo)
+      } satisfies ResolvedCNHProps
+    // Legacy: props é CNHDocumentLegacyProps quando renderInput está ausente.
+    // Cast explícito pois TypeScript não infere `never` ausente como narrowing negativo.
+    : props as ResolvedCNHProps;
+
+
+
   useImperativeHandle(ref, () => ({
     exportAsBlob: async () => {
       const fullCvs = document.createElement("canvas");
       fullCvs.width = PAGE_W;
       fullCvs.height = PAGE_H;
-      await drawCNHToCanvas(fullCvs, props);
+      await drawCNHToCanvas(fullCvs, effectiveProps);
       const whiteCvs = document.createElement("canvas");
       whiteCvs.width = PAGE_W;
       whiteCvs.height = PAGE_H;
@@ -786,15 +920,15 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
       const fullCvs = document.createElement("canvas");
       fullCvs.width = PAGE_W;
       fullCvs.height = PAGE_H;
-      await drawCNHToCanvas(fullCvs, props);
-      await exportToPdf(fullCvs, props);
+      await drawCNHToCanvas(fullCvs, effectiveProps);
+      await exportToPdf(fullCvs, effectiveProps);
     },
     getCanvas: () => canvasRef.current,
     exportCropBlob: async (x, y, w, h) => {
       const fullCvs = document.createElement("canvas");
       fullCvs.width = PAGE_W;
       fullCvs.height = PAGE_H;
-      await drawCNHToCanvas(fullCvs, props);
+      await drawCNHToCanvas(fullCvs, effectiveProps);
       const crop = document.createElement("canvas");
       crop.width = w; crop.height = h;
       const cctx = crop.getContext("2d")!;
@@ -810,7 +944,7 @@ const CNHDocument = forwardRef<CNHDocumentHandle, CNHDocumentProps>((props, ref)
   const renderCanvas = async () => {
     const cvs = canvasRef.current;
     if (!cvs) return;
-    await drawCNHToCanvas(cvs, props);
+    await drawCNHToCanvas(cvs, effectiveProps);
   };
 
   useEffect(() => {

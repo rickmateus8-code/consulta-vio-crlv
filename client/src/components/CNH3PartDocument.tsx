@@ -10,12 +10,42 @@ import {
 import type { CNHRenderInput } from "@/lib/cnh/renderInput";
 import { cNH3PartDocumentPropsToRenderInput } from "@/lib/cnh/normalize";
 
-export interface CNH3PartDocumentProps {
+// ─── Contratos de Tipo: Canonical | Legacy ────────────────────────────────────
+
+/**
+ * Props comuns a ambos os caminhos (controles de apresentação, não documentais).
+ * NÃO contém dados documentais — pertence ao renderer, não ao documento.
+ */
+type CNH3PartCommonProps = {
+  /** Slide a exibir: 1=Frente, 2=Verso, 3=MRZ, 4=QR Code */
+  slide: 1 | 2 | 3 | 4;
+  previewWidth?: number;
+};
+
+/**
+ * Caminho CANONICAL (Phase 2D+):
+ *   - renderInput obrigatório: TODOS os dados documentais vêm dele.
+ *   - Campos legacy documentary NÃO são necessários.
+ *   - renderInput: never está ausente (discriminante positivo).
+ */
+type CNH3PartCanonicalProps = CNH3PartCommonProps & {
+  renderInput: CNHRenderInput;
   id?: string;
-  slide: 1 | 2 | 3 | 4; // 1: Frente, 2: Verso, 3: MRZ, 4: QR Code VIO
-  // â”€â”€â”€ Legacy props (mantidas para retrocompatibilidade) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Quando renderInput NÃƒO Ã© fornecido, estas props sÃ£o convertidas via
-  // cNH3PartDocumentPropsToRenderInput(). NÃƒO remover nesta fase (Phase 2D).
+};
+
+/**
+ * Caminho LEGACY (retrocompatibilidade):
+ *   - renderInput ausente (discriminante negativo via `never`).
+ *   - nome e cpf obrigatórios; demais campos documentais opcionais.
+ *   - Dados convertidos via cNH3PartDocumentPropsToRenderInput() no runtime.
+ *
+ * `renderInput?: never` garante que TypeScript rejeite call-sites que misturem
+ * renderInput + legacy props, espelhando a regra anti-híbrida do runtime.
+ */
+type CNH3PartLegacyProps = CNH3PartCommonProps & {
+  renderInput?: never;
+  id?: string;
+  // ── Campos legacy documentais ──────────────────────────────────────────────
   nome: string;
   cpf: string;
   rg?: string;
@@ -45,12 +75,20 @@ export interface CNH3PartDocumentProps {
   qrCodeUrl?: string;
   assDigital1?: string;
   assDigital2?: string;
-  previewWidth?: number;
-  // â”€â”€â”€ Render Input canÃ´nico (Phase 2D) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Quando fornecido, TODOS os dados vÃªm exclusivamente daqui.
-  // NÃƒO misturar com legacy props campo a campo â€” regra anti-hÃ­brida.
-  renderInput?: CNHRenderInput;
-}
+};
+
+/**
+ * Props do CNH3PartDocument: union discriminada por `renderInput`.
+ *
+ * ┌─────────────────────────────────────┐
+ * │ renderInput presente (canonical)    │ → dados de renderInput.data
+ * │ renderInput ausente  (legacy)       │ → dados de legacy props (nome, cpf, ...)
+ * └─────────────────────────────────────┘
+ *
+ * REGRA: nunca passar renderInput E legacy documentary props simultaneamente.
+ * O TypeScript impõe isso via `renderInput?: never` no caminho legacy.
+ */
+export type CNH3PartDocumentProps = CNH3PartCanonicalProps | CNH3PartLegacyProps;
 
 const ESTADOS_POR_EXTENSO: Record<string, string> = {
   AC: "ACRE", AL: "ALAGOAS", AP: "AMAPÃ", AM: "AMAZONAS", BA: "BAHIA",
@@ -135,25 +173,32 @@ export default function CNH3PartDocument(props: CNH3PartDocumentProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { slide } = props;
 
-  // â”€â”€â”€ REGRA ANTI-HÃBRIDA (Phase 2D) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Se renderInput for fornecido: TODOS os dados vÃªm dele.
-  // Se ausente: TODOS os dados vÃªm do adapter de legacy props.
+  // ─── REGRA ANTI-HÍBRIDA (Phase 2D) — com type narrowing (Phase 2E.1 hardening) ──
+  // Se renderInput for fornecido: TODOS os dados vêm dele (canonical).
+  // Se ausente: TODOS os dados vêm do adapter de legacy props.
   // NUNCA misturar as duas fontes campo a campo.
   const effectiveInput: CNHRenderInput = props.renderInput
-    ?? cNH3PartDocumentPropsToRenderInput(props);
+    // Canonical: props narrowed to CNH3PartCanonicalProps
+    ? props.renderInput
+    // Legacy: TypeScript narrowing garante acesso seguro a legacy fields
+    : cNH3PartDocumentPropsToRenderInput(props as CNH3PartLegacyProps);
+
+  // Narrowing para acesso seguro a campos legacy-only
+  const legacyProps = props.renderInput ? null : (props as CNH3PartLegacyProps);
+
   const p = {
     ...effectiveInput.data,
-    id: effectiveInput.identity.emissionId || props.id,
+    id: effectiveInput.identity.emissionId || legacyProps?.id,
     validationId: effectiveInput.identity.validationId,
-    codigoQR: (
-      props.renderInput
-        ? effectiveInput.identity.validationId   // fonte canÃ´nica
-        : (props.codigoQR || props.codigo_validacao || props.codigo_qr || effectiveInput.identity.validationId)
-    ),
+    codigoQR: props.renderInput
+      // Canonical: validationId é a fonte (QR real da emissão)
+      ? effectiveInput.identity.validationId
+      // Legacy: resolve a cadeia de fallbacks legacy
+      : (legacyProps?.codigoQR || legacyProps?.codigo_validacao || legacyProps?.codigo_qr || effectiveInput.identity.validationId),
     previewWidth: props.previewWidth,
     slide,
   };
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─────────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const canvas = canvasRef.current;

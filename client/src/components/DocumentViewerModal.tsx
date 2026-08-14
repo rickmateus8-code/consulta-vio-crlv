@@ -4,7 +4,10 @@ import {
   ZoomIn, ZoomOut, Maximize, Move, RotateCcw, Camera
 } from "lucide-react";
 import AttestationDocument from "@/components/AttestationDocument";
-import CNHDocument, { type CNHDocumentHandle } from "@/components/CNHDocument";
+import CNHDocument, { type CNHDocumentHandle, type CNHDocumentLegacyProps } from "@/components/CNHDocument";
+
+import { emittedRuntime } from "@/lib/cnh";
+
 import { buildAttestationData } from "@/lib/attestationActions";
 import CertificadoFGVDocument from "@/components/CertificadoFGVDocument";
 import { usePDFExport, generatePDFFilename } from "@/lib/pdfExport";
@@ -36,7 +39,13 @@ export default function DocumentViewerModal({
   const isCNH = doc.type === 'cnh';
   const isCHA = doc.type === 'cha';
   const isFGV = doc.type === 'fgv';
-  const parsedData = typeof doc.data === 'string' ? JSON.parse(doc.data) : (doc.data || {});
+  // Extrai dados do documento. renderInput é uma abstração TypeScript pura e
+  // nunca deve existir em documents.data — o destructuring aqui é uma fronteira
+  // defensiva de runtime que garante que mesmo um payload inesperado não consiga
+  // ativar acidentalmente o caminho canonical de CNHDocument.
+  const { renderInput: _discardedCanonicalKey, ...legacyDocData } =
+    typeof doc.data === 'string' ? JSON.parse(doc.data) : (doc.data || {});
+
 
   const { exportPDF, exporting: isExportingGenericPDF } = usePDFExport();
 
@@ -76,7 +85,7 @@ export default function DocumentViewerModal({
        if (!certRef.current) return;
        try {
          await exportPDF(certRef.current, {
-           filename: generatePDFFilename(parsedData.nome_aluno || "certificado", "fgv"),
+           filename: generatePDFFilename(legacyDocData.nome_aluno || "certificado", "fgv"),
            docType: "fgv",
            orientation: "l",
            scale: 2,
@@ -144,9 +153,20 @@ export default function DocumentViewerModal({
             }}
           >
             {isCNH ? (
-               <CNHDocument ref={docRef} {...parsedData} codigoQR={doc.codigo_qr || doc.id} />
+               <CNHDocument
+                 ref={docRef}
+                 {...(legacyDocData as CNHDocumentLegacyProps)}
+                 codigoQR={doc.codigo_qr || doc.id}
+                 printRuntime={emittedRuntime(
+                   doc.id,
+                   doc.codigo_qr || doc.id,
+                   doc.codigo_qr || doc.id,
+                 )}
+               />
+
+
             ) : isFGV ? (
-               <CertificadoFGVDocument ref={certRef} data={parsedData} />
+               <CertificadoFGVDocument ref={certRef} data={legacyDocData} />
             ) : (
                <AttestationDocument data={buildAttestationData(doc)} />
             )}

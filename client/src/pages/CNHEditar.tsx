@@ -9,7 +9,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useParams } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
-import CNHDocument, { type CNHDocumentHandle, type CNHDocumentProps } from "../components/CNHDocument";
+import CNHDocument, { type CNHDocumentHandle, type CNHDocumentProps, type CNHDocumentLegacyProps } from "../components/CNHDocument";
+
+import { previewRuntimeWithId, emittedRuntime } from "@/lib/cnh";
+
 import { toast } from "sonner";
 import { getQRCodeCNH } from "@/config.qrcode";
 import { validarCPF, formatarCPF as formatarCPFUtil, formatarRG, displayDateToHtml } from "@/lib/utils";
@@ -49,7 +52,7 @@ export default function CNHEditar() {
   const [assTexto, setAssTexto] = useState("");
   const [assEstilo, setAssEstilo] = useState(0);
 
-  const [data, setData] = useState<CNHDocumentProps>({
+  const [data, setData] = useState<CNHDocumentLegacyProps>({
     nome: "", cpf: "", rg: "", orgaoEmissor: "", ufRG: "",
     sexo: "", nacionalidade: "BRASILEIRA", dataNascimento: "",
     localNascimento: "", ufNascimento: "", nomePai: "", nomeMae: "",
@@ -59,6 +62,7 @@ export default function CNHEditar() {
     senhaApp: "", observacoes: "", fotoUrl: "", assinaturaUrl: "",
     codigoQR: "PREVIEW", blurred: false,
   });
+
 
   // Carregar documento pelo ID
   useEffect(() => {
@@ -89,10 +93,11 @@ export default function CNHEditar() {
       .finally(() => setLoadingDoc(false));
   }, [docId]);
 
-  const set = (k: keyof CNHDocumentProps) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const set = (k: keyof CNHDocumentLegacyProps) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const v = e.target.value;
     setData(d => ({ ...d, [k]: v }));
   };
+
 
   const gerarAssinaturaTexto = useCallback(() => {
     if (!assTexto.trim()) return;
@@ -482,7 +487,19 @@ export default function CNHEditar() {
               ref={docRef}
               {...data}
               blurred={false}
+              printRuntime={
+                loadingDoc
+                  ? previewRuntimeWithId(docId)
+                  : emittedRuntime(
+                      docId,
+                      data.codigoQR && !data.codigoQR.includes(".") && data.codigoQR !== "PREVIEW"
+                        ? data.codigoQR
+                        : docId,
+                      data.codigoQR,
+                    )
+              }
             />
+
           </div>
         </div>
       </div>

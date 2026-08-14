@@ -11,7 +11,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useParams } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
-import CNHDocument, { type CNHDocumentHandle, type CNHDocumentProps } from "../components/CNHDocument";
+import CNHDocument, { type CNHDocumentHandle, type CNHDocumentProps, type CNHDocumentLegacyProps } from "../components/CNHDocument";
+
+import { emittedRuntime, previewRuntime, previewRuntimeWithId } from "@/lib/cnh";
+
 import { getHardcodedLayout, type CNHLayout } from "@/config/cnhLayout";
 import { toast } from "sonner";
 import { validarCPF, formatarCPF as formatarCPFUtil, displayDateToHtml } from "@/lib/utils";
@@ -107,6 +110,9 @@ export default function CNHCria() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [codigoQR, setCodigoQR] = useState("");
+  /** documents.id UUID real — ausente pré-emissão, preenchido após POST success. */
+  const [emissionId, setEmissionId] = useState<string | null>(null);
+
   const [importText, setImportText] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -143,7 +149,7 @@ export default function CNHCria() {
   const [editId, setEditId] = useState<string | null>(null);
   const [origemTabela, setOrigemTabela] = useState<string | null>(null);
 
-  const [data, setData] = useState<CNHDocumentProps>({
+  const [data, setData] = useState<CNHDocumentLegacyProps>({
     nome: "", cpf: "", rg: "", orgaoEmissor: "", ufRG: "",
     sexo: "", nacionalidade: "BRASILEIRO(A)", dataNascimento: "",
     localNascimento: "", ufNascimento: "", nomePai: "", nomeMae: "",
@@ -153,6 +159,7 @@ export default function CNHCria() {
     senhaApp: "", observacoes: "", fotoUrl: "", assinaturaUrl: "",
     codigoQR: "PREVIEW", blurred: true,
   });
+
 
   const routeParams = useParams<{ id?: string }>();
 
@@ -313,7 +320,9 @@ export default function CNHCria() {
             };
             setData(mergedData);
             setCodigoQR(doc.codigo_qr || doc.codigo_validacao || doc.id);
+            setEmissionId(doc.id);
             setSaved(true);
+
 
             if (docData.fotoScale !== undefined) setFotoScale(docData.fotoScale);
             if (docData.fotoOffsetX !== undefined) setFotoOffsetX(docData.fotoOffsetX);
@@ -329,12 +338,13 @@ export default function CNHCria() {
     }
   }, [routeParams?.id]);
 
-  const update = useCallback((field: keyof CNHDocumentProps) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const update = useCallback((field: keyof CNHDocumentLegacyProps) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let val = e.target.value;
     if (field === "cpf") val = formatarCPFInput(val);
     if (field === "rg") val = val.replace(/\./g, "");
     setData(d => ({ ...d, [field]: val }));
   }, []);
+
 
   const limparFormulario = () => {
     setData({
@@ -835,7 +845,9 @@ function gerarRegistroCNH(): string {
       if (!res.ok || !result.success) throw new Error(result.error || "Erro ao salvar CNH.");
 
       if (result.codigo_qr) setCodigoQR(result.codigo_qr);
+      if (result.id) setEmissionId(result.id);
       setSaved(true);
+
       setShowConfirmModal(false);
       setShowSuccessModal(true);
       if (result.new_balance !== undefined) updateBalance(result.new_balance);
@@ -1625,8 +1637,16 @@ function gerarRegistroCNH(): string {
             codigoQR={saved ? codigoQR : "PREVIEW"}
             blurred={!saved}
             layout={layoutSource !== "loading" ? cnhLayout : undefined}
+            printRuntime={
+              saved && emissionId
+                ? emittedRuntime(emissionId, codigoQR || emissionId, codigoQR)
+                : editId
+                  ? previewRuntimeWithId(editId)
+                  : previewRuntime()
+            }
           />
         </div>
+
 
         {/* Modal de Confirmação + Sucesso */}
         <EmissionModal

@@ -10,9 +10,18 @@ export type {
   CNHRenderInput,
   CNHRenderProfileId,
   CNHRenderProfileMeta,
+  CNHPrintRuntimeIdentity,
 } from "./renderInput";
 
 export { CNH_RENDER_PROFILES } from "./renderInput";
+
+export {
+  PRINT_QR_PLACEHOLDER,
+  resolveQRForPrint,
+  previewRuntime,
+  previewRuntimeWithId,
+  emittedRuntime,
+} from "./printRuntime";
 
 export {
   normalizeCNHRenderInput,

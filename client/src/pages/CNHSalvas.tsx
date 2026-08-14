@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import CNHDocument, { CNHDocumentHandle, CNHDocumentProps } from "@/components/CNHDocument";
+import CNHDocument, { CNHDocumentHandle, CNHDocumentProps, type CNHDocumentLegacyProps } from "@/components/CNHDocument";
+
+import { emittedRuntime } from "@/lib/cnh";
+
 import {
   Eye, Smartphone, FileText, Trash2, AlertTriangle,
   Copy, X, Send, Download, RefreshCw, Search, Save
@@ -124,8 +127,9 @@ Um abraço da equipe DocMaster! 😊🚗💨`;
     } catch { return d; }
   };
 
-  // Build CNHDocumentProps from a record
-  const buildCNHProps = (cnh: CNHRecord): CNHDocumentProps => {
+  // Build CNHDocumentLegacyProps from a record
+  const buildCNHProps = (cnh: CNHRecord): CNHDocumentLegacyProps => {
+
     const d = cnh.data || {};
     return {
       nome: d.nome || cnh.nome || "",
@@ -538,7 +542,8 @@ Um abraço da equipe DocMaster! 😊🚗💨`;
                 </div>
               </div>
               <div className="flex justify-center bg-gray-100 dark:bg-gray-800 rounded-xl p-4">
-                <CNHDocument ref={cnhDocRef} {...buildCNHProps(previewModal)} />
+                <CNHDocument ref={cnhDocRef} {...buildCNHProps(previewModal)} printRuntime={emittedRuntime(previewModal.id, previewModal.id)} />
+
               </div>
             </div>
           </div>
@@ -548,7 +553,8 @@ Um abraço da equipe DocMaster! 😊🚗💨`;
         {/* Hidden CNH renderer for direct PDF download */}
         {directDownloadCnh && (
           <div className="fixed -left-[9999px] top-0" aria-hidden>
-            <CNHDocument ref={directDownloadRef} {...buildCNHProps(directDownloadCnh)} />
+            <CNHDocument ref={directDownloadRef} {...buildCNHProps(directDownloadCnh)} printRuntime={emittedRuntime(directDownloadCnh.id, directDownloadCnh.id)} />
+
           </div>
         )}
 

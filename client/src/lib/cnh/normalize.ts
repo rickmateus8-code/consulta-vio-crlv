@@ -220,6 +220,13 @@ export function normalizeCNHRenderInput(
  *
  * NÃO chama normalizeCNHRenderInput para evitar dupla normalização.
  * Props já foram validadas/normalizadas pelo caller.
+ *
+ * INVARIANTE DE IDENTIDADE:
+ *   `identity.emissionId` deve ser `documents.id` (UUID real do D1).
+ *   `identity.validationId` deve ser `documents.codigo_qr || documents.id`.
+ *   NUNCA passar codigoQR como emissionId — codigoQR pode ser "PREVIEW", URL ou vazio.
+ *   Para estado de preview, usar CNHPrintRuntimeIdentity com mode="preview" em vez
+ *   de inventar um emissionId falso.
  */
 export function cNHDocumentPropsToRenderInput(
   props: {
@@ -232,14 +239,18 @@ export function cNHDocumentPropsToRenderInput(
     assDigital1: string; assDigital2: string; fotoUrl: string; assinaturaUrl: string;
     fotoScale?: number; fotoOffsetX?: number; fotoOffsetY?: number;
     assScale?: number; assOffsetX?: number; assOffsetY?: number;
-    codigoQR?: string;
   },
-  emissionId: string
+  identity: {
+    /** documents.id UUID real. NUNCA "PREVIEW", "" ou URL. */
+    emissionId: string;
+    /** documents.codigo_qr || documents.id. */
+    validationId: string;
+  }
 ): CNHRenderInput {
   return {
     identity: {
-      emissionId,
-      validationId: emissionId,
+      emissionId:   identity.emissionId,
+      validationId: identity.validationId,
     },
     data: {
       nome: props.nome, cpf: props.cpf,

@@ -216,9 +216,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       let parsedData: Record<string, unknown> = {};
       try {
         parsedData = JSON.parse(document.data as string || "{}");
-      } catch {
-        // ignore
-      }
+      } catch {}
+
+      const innerData = (parsedData.data && typeof parsedData.data === 'object') ? (parsedData.data as Record<string, unknown>) : {};
 
       return new Response(
         JSON.stringify({
@@ -232,6 +232,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             emitidoPor: document.emitido_por,
             createdAt: document.created_at,
             ...parsedData,
+            ...innerData,
           },
         }),
         { status: 200, headers: CORS_HEADERS }

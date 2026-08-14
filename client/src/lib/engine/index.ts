@@ -2,7 +2,7 @@
  * lib/engine/index.ts
  *
  * Ponto de entrada público do DocMaster Engine V1 Core.
- * Exporta tipos primitivos, de domínio, layout, perfil e validadores puros.
+ * Exporta tipos primitivos, de domínio, layout, perfil, validadores puros e adapters.
  */
 
 export * from './types/primitives';
@@ -15,3 +15,4 @@ export * from './types/renderProfile';
 export * from './types/data';
 export * from './types/document';
 export * from './contracts/invariants';
+export * from './adapters';

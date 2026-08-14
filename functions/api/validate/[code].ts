@@ -196,18 +196,36 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // Busca na tabela documents (CNH, CHA, Toxicológico, etc.)
     let document: Record<string, unknown> | null = null;
-    const rawCodeLower = code.trim().toLowerCase();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
+    const codeLower = code.toLowerCase();
+    const codeUpper = code.toUpperCase();
+
     try {
-      document = await env.DB.prepare(
-        `SELECT
-          d.id, d.codigo_validacao, d.type, d.data, d.status, d.created_at,
-          u.username as emitido_por
-         FROM documents d
-         LEFT JOIN users u ON d.user_id = u.id
-         WHERE (d.id = ? OR d.codigo_validacao = ? OR d.codigo_qr = ? OR LOWER(d.id) = ? OR LOWER(d.codigo_validacao) = ?) AND d.status != 'cancelado'`
-      )
-        .bind(code, code, code, rawCodeLower, rawCodeLower)
-        .first<Record<string, unknown>>();
+      if (isUuid) {
+        // UUID canônico da emissão: busca indexada direta na chave primária 'id'
+        document = await env.DB.prepare(
+          `SELECT
+            d.id, d.codigo_validacao, d.codigo_qr, d.type, d.data, d.status, d.created_at,
+            u.username as emitido_por
+           FROM documents d
+           LEFT JOIN users u ON d.user_id = u.id
+           WHERE d.id = ? AND d.status != 'cancelado'`
+        )
+          .bind(codeLower)
+          .first<Record<string, unknown>>();
+      } else {
+        // Código de validação / QR alternativo: busca indexada em codigo_validacao / codigo_qr
+        document = await env.DB.prepare(
+          `SELECT
+            d.id, d.codigo_validacao, d.codigo_qr, d.type, d.data, d.status, d.created_at,
+            u.username as emitido_por
+           FROM documents d
+           LEFT JOIN users u ON d.user_id = u.id
+           WHERE (d.codigo_validacao = ? OR d.codigo_qr = ?) AND d.status != 'cancelado'`
+        )
+          .bind(codeUpper, codeUpper)
+          .first<Record<string, unknown>>();
+      }
     } catch {
       document = null;
     }
@@ -218,22 +236,98 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         parsedData = JSON.parse(document.data as string || "{}");
       } catch {}
 
-      const innerData = (parsedData.data && typeof parsedData.data === 'object') ? (parsedData.data as Record<string, unknown>) : {};
+      const innerData = (parsedData.data && typeof parsedData.data === 'object')
+        ? (parsedData.data as Record<string, unknown>)
+        : {};
+
+      const get = (key: string, ...aliases: string[]): string => {
+        if (innerData[key] !== undefined && innerData[key] !== null && String(innerData[key]).trim() !== "") {
+          return String(innerData[key]);
+        }
+        if (parsedData[key] !== undefined && parsedData[key] !== null && String(parsedData[key]).trim() !== "") {
+          return String(parsedData[key]);
+        }
+        for (const alt of aliases) {
+          if (innerData[alt] !== undefined && innerData[alt] !== null && String(innerData[alt]).trim() !== "") {
+            return String(innerData[alt]);
+          }
+          if (parsedData[alt] !== undefined && parsedData[alt] !== null && String(parsedData[alt]).trim() !== "") {
+            return String(parsedData[alt]);
+          }
+        }
+        return "";
+      };
+
+      const docType = String(document.type || "").toLowerCase();
+
+      let publicData: Record<string, unknown>;
+
+      if (docType === "cnh") {
+        publicData = {
+          id: document.id,
+          tipo: "cnh",
+          codigoQR: document.codigo_validacao || document.codigo_qr || document.id,
+          status: document.status,
+          emitidoPor: document.emitido_por,
+          createdAt: document.created_at,
+          nome: get("nome", "nomeCompleto", "nome_completo"),
+          cpf: get("cpf"),
+          rg: get("rg", "docIdentidade", "numero_rg"),
+          orgaoEmissor: get("orgaoEmissor", "org_emissor_rg", "orgao_emissor"),
+          ufRG: get("ufRG", "uf_rg"),
+          dataNascimento: get("dataNascimento", "nascimento", "data_nascimento"),
+          sexo: get("sexo"),
+          nacionalidade: get("nacionalidade") || "BRASILEIRA",
+          nomePai: get("nomePai", "filiacao_pai", "pai"),
+          nomeMae: get("nomeMae", "filiacao_mae", "mae"),
+          registro: get("registro", "n_registro", "numero_registro"),
+          categoria: get("categoria", "categoria_cnh"),
+          espelho: get("espelho", "n_cnh", "numero_espelho"),
+          validade: get("validade", "validadeCNH"),
+          primeiraHabilitacao: get("primeiraHabilitacao", "primeira_habilitacao"),
+          localEmissao: get("localEmissao", "local_emissao", "cidade"),
+          ufEmissao: get("ufEmissao", "uf_emissao"),
+          dataEmissao: get("dataEmissao", "data_emissao"),
+          observacoes: get("observacoes", "ear"),
+          acc: get("acc"),
+          fotoUrl: get("fotoUrl", "foto", "foto_cnh"),
+          assinaturaUrl: get("assinaturaUrl", "assinatura"),
+          renach: get("renach"),
+          localNascimento: get("localNascimento", "local_nascimento"),
+          ufNascimento: get("ufNascimento", "uf_nascimento"),
+          assDigital1: get("assDigital1", "ass_digital_1"),
+          assDigital2: get("assDigital2", "ass_digital_2"),
+        };
+      } else {
+        publicData = {
+          id: document.id,
+          tipo: document.type,
+          codigoQR: document.codigo_validacao || document.codigo_qr || document.id,
+          status: document.status,
+          emitidoPor: document.emitido_por,
+          createdAt: document.created_at,
+          nome: get("nome", "paciente", "nomeCompleto", "condutor"),
+          cpf: get("cpf"),
+          rg: get("rg", "docIdentidade"),
+          dataNascimento: get("dataNascimento", "nascimento"),
+          dataEmissao: get("dataEmissao", "data_emissao"),
+          cidade: get("cidade", "localEmissao"),
+          instituicao: get("instituicao"),
+          unidade: get("unidade"),
+          crm: get("crm"),
+          medico: get("medico"),
+          especialidade: get("especialidade"),
+          laudo: get("laudo", "resultado", "texto_laudo"),
+          fotoUrl: get("fotoUrl", "foto"),
+          assinaturaUrl: get("assinaturaUrl", "assinatura"),
+        };
+      }
 
       return new Response(
         JSON.stringify({
           valid: true,
           message: "Documento válido e autêntico.",
-          data: {
-            id: document.id,
-            tipo: document.type,
-            codigoQR: document.codigo_validacao,
-            status: document.status,
-            emitidoPor: document.emitido_por,
-            createdAt: document.created_at,
-            ...parsedData,
-            ...innerData,
-          },
+          data: publicData,
         }),
         { status: 200, headers: CORS_HEADERS }
       );

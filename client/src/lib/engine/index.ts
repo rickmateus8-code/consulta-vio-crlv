@@ -17,3 +17,4 @@ export * from './types/data';
 export * from './types/document';
 export * from './contracts/invariants';
 export * from './adapters';
+export * from './resolvers';

@@ -237,7 +237,7 @@ assert(validateLayoutDefinition(missingBaseAssetLayout, sampleForm, sampleAssetS
 const profilePrint: RenderProfile = {
   id: 'PROFILE_PRINT',
   name: 'Impressão A4',
-  layoutId: 'layout_cert_print_a4',
+  pages: [{ id: 'page_print', layoutId: 'layout_cert_print_a4' }],
   purpose: 'print',
   outputKind: 'pdf',
 };
@@ -245,7 +245,7 @@ const profilePrint: RenderProfile = {
 const profileWallet: RenderProfile = {
   id: 'PROFILE_WALLET',
   name: 'Carteira Digital',
-  layoutId: 'layout_cert_badge_card',
+  pages: [{ id: 'page_wallet', layoutId: 'layout_cert_badge_card' }],
   purpose: 'digital_wallet_card',
   outputKind: 'raster_image',
 };
@@ -368,7 +368,7 @@ const brokenDoc: DocumentDefinition = {
     {
       id: 'prof_broken',
       name: 'Profile com Layout Inexistente',
-      layoutId: 'layout_inexistente',
+      pages: [{ id: 'page_broken', layoutId: 'layout_inexistente' }],
       purpose: 'print',
       outputKind: 'pdf',
     },

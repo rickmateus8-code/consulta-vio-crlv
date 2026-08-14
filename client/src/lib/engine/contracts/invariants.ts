@@ -1,12 +1,12 @@
 /**
  * lib/engine/contracts/invariants.ts
  *
- * Validadores puros de invariantes estruturais da DocMaster Engine V1.
- * Sem dependências de DOM, React, banco de dados ou ambiente de execução.
+ * Validadores puros de invariantes estruturais da Engine V1.
+ * 100% puro: sem dependências externas, DOM, React ou banco.
  */
 
 import type { CanvasDefinition } from '../types/primitives';
-import type { ElementGeometry } from '../types/geometry';
+import type { ElementGeometry, CanvasTransform } from '../types/geometry';
 import type { FormDefinition } from '../types/form';
 import type { AssetSet } from '../types/assets';
 import type { LayoutDefinition } from '../types/layout';
@@ -25,7 +25,7 @@ export function validateCanvasDefinition(canvas: CanvasDefinition): string[] {
   if (!Number.isFinite(canvas.height) || canvas.height <= 0) {
     errors.push(`Canvas height must be a positive finite number, received ${canvas.height}`);
   }
-  if (!['px', 'pt', 'mm', 'in'].includes(canvas.unit)) {
+  if (!['px', 'mm', 'cm', 'in', 'pt'].includes(canvas.unit)) {
     errors.push(`Invalid canvas unit: ${canvas.unit}`);
   }
   if (!['portrait', 'landscape', 'square', 'custom'].includes(canvas.orientation)) {
@@ -34,6 +34,29 @@ export function validateCanvasDefinition(canvas: CanvasDefinition): string[] {
   if (canvas.dpi !== undefined && (!Number.isFinite(canvas.dpi) || canvas.dpi <= 0)) {
     errors.push(`Canvas dpi must be a positive finite number when defined, received ${canvas.dpi}`);
   }
+  return errors;
+}
+
+export function validateCanvasTransform(transform?: CanvasTransform): string[] {
+  const errors: string[] = [];
+  if (!transform) return errors;
+
+  if (transform.translateX !== undefined && !Number.isFinite(transform.translateX)) {
+    errors.push(`CanvasTransform translateX must be finite, received ${transform.translateX}`);
+  }
+  if (transform.translateY !== undefined && !Number.isFinite(transform.translateY)) {
+    errors.push(`CanvasTransform translateY must be finite, received ${transform.translateY}`);
+  }
+  if (transform.rotateDeg !== undefined && !Number.isFinite(transform.rotateDeg)) {
+    errors.push(`CanvasTransform rotateDeg must be finite, received ${transform.rotateDeg}`);
+  }
+  if (transform.scaleX !== undefined && (!Number.isFinite(transform.scaleX) || transform.scaleX <= 0)) {
+    errors.push(`CanvasTransform scaleX must be a positive finite number (> 0), received ${transform.scaleX}`);
+  }
+  if (transform.scaleY !== undefined && (!Number.isFinite(transform.scaleY) || transform.scaleY <= 0)) {
+    errors.push(`CanvasTransform scaleY must be a positive finite number (> 0), received ${transform.scaleY}`);
+  }
+
   return errors;
 }
 
@@ -53,6 +76,9 @@ export function validateElementGeometry(geo: ElementGeometry): string[] {
   }
   if (geo.rotation !== undefined && !Number.isFinite(geo.rotation)) {
     errors.push(`Geometry rotation must be finite when defined, received ${geo.rotation}`);
+  }
+  if (geo.rotationOrigin !== undefined && !['CENTER', 'TOP_LEFT'].includes(geo.rotationOrigin)) {
+    errors.push(`Invalid rotation origin: ${geo.rotationOrigin}. Must be 'CENTER' or 'TOP_LEFT' when defined.`);
   }
   if (geo.zIndex !== undefined && !Number.isFinite(geo.zIndex)) {
     errors.push(`Geometry zIndex must be finite when defined, received ${geo.zIndex}`);
@@ -187,12 +213,38 @@ export function validateRenderProfile(
   }
   if (!profile.id || profile.id.trim() === '') errors.push('RenderProfile id cannot be empty');
   if (!profile.name || profile.name.trim() === '') errors.push('RenderProfile name cannot be empty');
-  if (!profile.layoutId || profile.layoutId.trim() === '') errors.push('RenderProfile layoutId cannot be empty');
 
-  if (Array.isArray(layouts)) {
-    const layoutExists = layouts.some(l => l.id === profile.layoutId);
-    if (!layoutExists) {
-      errors.push(`RenderProfile '${profile.id}' references unknown layoutId '${profile.layoutId}'`);
+  if (!Array.isArray(profile.pages) || profile.pages.length === 0) {
+    errors.push(`RenderProfile '${profile.id}' must have at least one PageDefinition in pages[]`);
+    return errors;
+  }
+
+  const seenPageIds = new Set<string>();
+  for (let i = 0; i < profile.pages.length; i++) {
+    const page = profile.pages[i];
+    if (!page.id || page.id.trim() === '') {
+      errors.push(`Page [${i}] in RenderProfile '${profile.id}' has empty id`);
+    } else if (seenPageIds.has(page.id)) {
+      errors.push(`Duplicate page id in RenderProfile '${profile.id}': ${page.id}`);
+    } else {
+      seenPageIds.add(page.id);
+    }
+
+    if (!page.layoutId || page.layoutId.trim() === '') {
+      errors.push(`Page '${page.id}' in RenderProfile '${profile.id}' has empty layoutId`);
+    } else if (Array.isArray(layouts)) {
+      const layoutExists = layouts.some(l => l.id === page.layoutId);
+      if (!layoutExists) {
+        errors.push(`Page '${page.id}' in RenderProfile '${profile.id}' references unknown layoutId '${page.layoutId}'`);
+      }
+    }
+
+    if (page.transform) {
+      errors.push(...validateCanvasTransform(page.transform));
+    }
+
+    if (page.outputCanvas) {
+      errors.push(...validateCanvasDefinition(page.outputCanvas));
     }
   }
 
@@ -242,15 +294,19 @@ export function validateEngineGraph(params: {
 
       errors.push(...validateRenderProfile(p, layouts));
 
-      const layout = layouts.find(l => l.id === p.layoutId);
-      if (layout) {
-        errors.push(...validateLayoutDefinition(layout, form, assetSet));
+      if (Array.isArray(p.pages)) {
+        for (const page of p.pages) {
+          const layout = layouts.find(l => l.id === page.layoutId);
+          if (layout) {
+            errors.push(...validateLayoutDefinition(layout, form, assetSet));
+          }
+        }
       }
     }
   }
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }

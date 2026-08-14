@@ -6,15 +6,36 @@
  */
 
 export type TextAnchor = 'TOP_LEFT' | 'BASELINE_LEFT';
+export type RotationOrigin = 'CENTER' | 'TOP_LEFT';
 
 export interface ElementGeometry {
   readonly x: number;
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  /** Rotação individual do elemento em GRAUS decimais (degrees). */
   readonly rotation?: number;
+  /** Origem do ponto de rotação. Default: 'CENTER'. */
+  readonly rotationOrigin?: RotationOrigin;
   readonly zIndex?: number;
   readonly anchor?: TextAnchor;
+}
+
+/**
+ * Transformação global do Canvas aplicada ao perfil de renderização.
+ * Ordem canônica de aplicação estrita: TRANSLATE -> ROTATE -> SCALE (T x R x S).
+ */
+export interface CanvasTransform {
+  /** Translação horizontal em pixels do canvas. Default: 0. */
+  readonly translateX?: number;
+  /** Translação vertical em pixels do canvas. Default: 0. */
+  readonly translateY?: number;
+  /** Rotação global do canvas em GRAUS decimais (degrees). Default: 0. */
+  readonly rotateDeg?: number;
+  /** Fator de escala horizontal. Default: 1. */
+  readonly scaleX?: number;
+  /** Fator de escala vertical. Default: 1. */
+  readonly scaleY?: number;
 }
 
 /**

@@ -43,6 +43,15 @@ export interface ImageElementConfig {
   readonly opacity?: number;
 }
 
+export interface ShapeElementConfig {
+  readonly shapeType: 'RECTANGLE' | 'ELLIPSE';
+  readonly fillColor?: ColorValue;
+  readonly strokeColor?: ColorValue;
+  readonly strokeWidth?: number;
+  readonly cornerRadius?: number;
+  readonly opacity?: number;
+}
+
 export interface ElementDefinition {
   readonly id: string;
   readonly type: ElementType;
@@ -55,6 +64,7 @@ export interface ElementDefinition {
   readonly assetRefId?: string;
   readonly textConfig?: TextElementConfig;
   readonly imageConfig?: ImageElementConfig;
+  readonly shapeConfig?: ShapeElementConfig;
   readonly qrConfig?: QRCodeConfig;
   readonly mrzConfig?: MRZConfig;
   readonly locked?: boolean;

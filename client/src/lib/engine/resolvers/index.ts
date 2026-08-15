@@ -7,4 +7,5 @@
 export * from './types';
 export * from './textResolver';
 export * from './imageResolver';
+export * from './shapeResolver';
 export * from './documentResolver';

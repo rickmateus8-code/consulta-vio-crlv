@@ -112,6 +112,8 @@ export interface ResolvedShapeElement {
   readonly fillColor?: ColorValue;
   readonly strokeColor?: ColorValue;
   readonly strokeWidth?: number;
+  readonly cornerRadius?: number;
+  readonly opacity: number;
   readonly zIndex: number;
 }
 

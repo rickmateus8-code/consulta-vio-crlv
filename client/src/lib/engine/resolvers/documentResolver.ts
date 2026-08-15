@@ -29,6 +29,7 @@ import {
 } from './types';
 import { resolveTextElement } from './textResolver';
 import { resolveImageElement } from './imageResolver';
+import { resolveShapeElement } from './shapeResolver';
 
 export function resolveDocument(input: ResolveDocumentInput): ResolutionResult {
   const diagnostics: ResolutionDiagnostic[] = [];
@@ -194,12 +195,26 @@ export function resolveDocument(input: ResolveDocumentInput): ResolutionResult {
             originalIndex: elIdx,
           });
         }
+      } else if (el.type === 'SHAPE') {
+        const shapeRes = resolveShapeElement({
+          element: el,
+          pageId: pageDef.id,
+        });
+
+        diagnostics.push(...shapeRes.diagnostics);
+
+        if (shapeRes.element) {
+          indexedElements.push({
+            el: shapeRes.element,
+            originalIndex: elIdx,
+          });
+        }
       } else {
         diagnostics.push(
           createResolutionDiagnostic(
             'error',
             'UNSUPPORTED_ELEMENT_TYPE',
-            `Element '${el.id}' has unsupported type '${el.type}' in generic resolver (supported: TEXT, IMAGE)`,
+            `Element '${el.id}' has unsupported type '${el.type}' in generic resolver (supported: TEXT, IMAGE, SHAPE)`,
             { pageId: pageDef.id, elementId: el.id }
           )
         );

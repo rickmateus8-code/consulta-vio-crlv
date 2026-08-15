@@ -13,6 +13,10 @@ import { VaccinesSection } from "./consultas/sections/VaccinesSection";
 import { BenefitsSection } from "./consultas/sections/BenefitsSection";
 import { MosaicProfileSection } from "./consultas/sections/MosaicProfileSection";
 import { EmptyStateBanner } from "./consultas/sections/EmptyStateBanner";
+import { VehicleProfileView } from "./consultas/sections/VehicleProfileView";
+import { AddressesSection } from "./consultas/sections/AddressesSection";
+import { RelativesSection } from "./consultas/sections/RelativesSection";
+
 
 
 
@@ -917,169 +921,17 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   const isVehicle = data.placa || data.chassi || data.renavam || data.marca_modelo || data.body?.placa || data.data?.placa;
   if (isVehicle && !data.perfil?.cpf_dados) {
     const v = data.body || data.data || data;
-    const placa = v.placa || v.PLACA || "Não informado";
-    const placaMercosul = v.placa_mercosul || v.PLACA_MERCOSUL || placa;
-    const chassi = v.chassi || v.CHASSI || "Não informado";
-    const renavam = v.renavam || v.RENAVAM || "Não informado";
-    const motor = v.motor || v.NUMERO_MOTOR || "Não informado";
-    const restricoes = v.restricoes || v.RESTRIÇÃO || v.RESTRIÇÕES || "SEM RESTRIÇÕES";
-    const situacaoVeiculo = v.situacao_veiculo || v.SITUACAO_VEICULO || "EM CIRCULAÇÃO";
-    const situacaoChassi = v.situacao_chassi || v.SITUACAO_CHASSI || "REGULAR";
-    const marcaModelo = v.marca_modelo || v.MARCA_MODELO || v.modelo || "Não informado";
-    const anoFab = v.ano_fabricacao || v.ANO_FABRICACAO || "Não informado";
-    const anoMod = v.ano_modelo || v.ANO_MODELO || "Não informado";
-    const cor = v.cor || v.COR || "Não informado";
-    const combustivel = v.combustivel || v.COMBUSTIVEL || "Não informado";
-    const municipio = v.municipio || v.MUNICIPIO || "";
-    const uf = v.uf || v.UF || "";
-    const propNome = v.proprietario?.nome || v.PROPRIETARIO || v.NOME_PROPRIETARIO || "Não informado";
-    const propCpf = v.proprietario?.cpf_cnpj || v.CPF_PROPRIETARIO || "Não informado";
-
-    const copyVehicleData = () => {
-      const text = `
-=== CONSULTA VEÍCULO (PLACA) ===
-PLACA: ${placa}
-PLACA MERCOSUL: ${placaMercosul}
-CHASSI: ${chassi}
-RENAVAM: ${renavam}
-MOTOR: ${motor}
-RESTRIÇÕES: ${restricoes}
-SITUAÇÃO VEÍCULO: ${situacaoVeiculo}
-SITUAÇÃO CHASSI: ${situacaoChassi}
-MARCA/MODELO: ${marcaModelo}
-ANO FAB/MOD: ${anoFab}/${anoMod}
-COR: ${cor}
-COMBUSTÍVEL: ${combustivel}
-MUNICÍPIO/UF: ${municipio} - ${uf}
-PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
-`.trim();
-      navigator.clipboard.writeText(text);
-      setCopied(true);
-      toast.success("Dados do veículo copiados!");
-      setTimeout(() => setCopied(false), 2000);
-    };
-
     return (
-      <div ref={profileRef} className="w-full space-y-6 text-slate-800 font-sans select-text bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
-        {/* BOTÕES DE AÇÃO MODELO IMAGEM 3 */}
-        <div className="flex justify-end gap-3 pb-2 border-b border-slate-200 no-print">
-          <button
-            onClick={handleExportPDF}
-            disabled={isExportingPDF}
-            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-all disabled:opacity-60"
-          >
-            {isExportingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            {isExportingPDF ? "Gerando PDF..." : "Exportar PDF"}
-          </button>
-          <button
-            onClick={copyVehicleData}
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-all"
-          >
-            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? "Copiado!" : "Copiar Dados"}
-          </button>
-        </div>
-
-        {/* SEÇÃO 1: DATA */}
-        <div className="space-y-3">
-          <h3 className="text-xl font-black text-slate-900 border-b-2 border-blue-500 pb-1">Data</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Placa Nacional</span>
-              <span className="font-mono font-bold text-slate-900 text-sm block">{placa}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Placa Mercosul</span>
-              <span className="font-mono font-bold text-slate-900 text-sm block">{placaMercosul}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Chassi</span>
-              <span className="font-mono font-bold text-slate-900 text-sm block">{chassi}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Renavam</span>
-              <span className="font-mono font-bold text-slate-900 text-sm block">{renavam}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Motor</span>
-              <span className="font-mono font-bold text-slate-900 text-sm block">{motor}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Restrições</span>
-              <span className="font-bold text-slate-900 text-sm block">{restricoes}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* SEÇÃO 2: CIRCULAÇÃO */}
-        <div className="space-y-3">
-          <h3 className="text-xl font-black text-slate-900 border-b-2 border-blue-500 pb-1">Circulação</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Situação Veículo</span>
-              <span className="font-bold text-emerald-600 text-sm block">{situacaoVeiculo}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Situação Chassi</span>
-              <span className="font-bold text-slate-900 text-sm block">{situacaoChassi}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* SEÇÃO 3: CARACTERÍSTICAS */}
-        <div className="space-y-3">
-          <h3 className="text-xl font-black text-slate-900 border-b-2 border-blue-500 pb-1">Características</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Marca / Modelo</span>
-              <span className="font-bold text-slate-900 block">{marcaModelo}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Ano Fab / Modelo</span>
-              <span className="font-bold text-slate-900 block">{anoFab} / {anoMod}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Cor</span>
-              <span className="font-bold text-slate-900 block">{cor}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Combustível</span>
-              <span className="font-bold text-slate-900 block">{combustivel}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 md:col-span-2">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Município / UF Licenciamento</span>
-              <span className="font-bold text-slate-900 block">{municipio} {uf ? `- ${uf}` : ''}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* SEÇÃO 4: PROPRIETÁRIO */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between border-b-2 border-blue-500 pb-1">
-            <h3 className="text-xl font-black text-slate-900">Proprietário</h3>
-            {onSelectPerson && propCpf && propCpf !== "Não informado" && (
-              <button
-                onClick={() => onSelectPerson(propCpf.replace(/\D/g, ""))}
-                className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-lg transition-colors flex items-center gap-1 border border-blue-200"
-              >
-                <Search className="w-3 h-3" /> Consultar CPF do Proprietário
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Nome Proprietário</span>
-              <span className="font-bold text-slate-900 text-sm block">{propNome}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">CPF / CNPJ Proprietário</span>
-              <span className="font-mono font-bold text-slate-900 text-sm block">{propCpf}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <VehicleProfileView
+        vehicle={v}
+        profileRef={profileRef}
+        isExportingPDF={isExportingPDF}
+        handleExportPDF={handleExportPDF}
+        onSelectPerson={onSelectPerson}
+      />
     );
   }
+
 
   // Se a resposta for uma lista de resultados (ex: busca por nome ou cep)
   const isList = Array.isArray(data) || Array.isArray(data.body) || Array.isArray(data.data);
@@ -1762,77 +1614,12 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
       </div>
 
       {/* SEÇÃO: ENDEREÇOS REGISTRADOS */}
-      <div id="secao-enderecos" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
-        <div className="px-6 py-3 bg-slate-800/90 font-bold text-white text-sm flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-violet-400" />
-            <span>Endereços Registrados</span>
-          </div>
-          <span className="text-xs text-violet-300 font-medium">Total: {enderecosList.length || (enderecoPrincipal !== "Não informado" ? 1 : 0)}</span>
-        </div>
-        <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            {enderecosList.length > 0 ? (
-              enderecosList.map((end: any, i: number) => {
-                const rua = typeof end === "object" ? [end.type || end.tipologradouro, end.street || end.logradouro || end.LOGRADOURO, end.number || end.numero || end.NUMERO].filter(Boolean).join(" ") : String(end);
-                const comp = typeof end === "object" ? [end.complement || end.complemento, end.neighborhood || end.bairro || end.BAIRRO, end.city || end.cidade || end.CIDADE, end.state || end.uf || end.UF, end.zip_code || end.cep || end.CEP].filter(Boolean).join(" - ") : "";
-                return (
-                  <div key={i} className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 text-xs flex justify-between items-center gap-3">
-                    <div>
-                      <p className="font-bold text-white">{rua || "Endereço registrado"}</p>
-                      {comp && <p className="text-slate-400">{comp}</p>}
-                    </div>
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rua + " " + comp)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-violet-900/60 hover:bg-violet-800 text-violet-200 text-[11px] font-semibold flex items-center gap-1 transition-all shrink-0"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      Maps
-                    </a>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 text-xs flex justify-between items-center gap-3">
-                <div>
-                  <p className="font-bold text-white">{enderecoPrincipal}</p>
-                </div>
-                {enderecoPrincipal !== "Não informado" && (
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoPrincipal)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3 py-1.5 rounded-lg bg-violet-900/60 hover:bg-violet-800 text-violet-200 text-[11px] font-semibold flex items-center gap-1 transition-all shrink-0"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    Maps
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col justify-center">
-            {(() => {
-              let firstAddressStr = "";
-              if (enderecosList.length > 0) {
-                const end = enderecosList[0];
-                const rua = typeof end === "object" ? [end.type || end.tipologradouro, end.street || end.logradouro || end.LOGRADOURO, end.number || end.numero || end.NUMERO].filter(Boolean).join(" ") : String(end);
-                const comp = typeof end === "object" ? [end.complement || end.complemento, end.neighborhood || end.bairro || end.BAIRRO, end.city || end.cidade || end.CIDADE, end.state || end.uf || end.UF, end.zip_code || end.cep || end.CEP].filter(Boolean).join(" - ") : "";
-                firstAddressStr = `${rua}, ${comp}`;
-              } else if (enderecoPrincipal && enderecoPrincipal !== "Não informado") {
-                firstAddressStr = enderecoPrincipal;
-              }
-              return firstAddressStr ? (
-                <AddressMap address={firstAddressStr} isLoaded={leafletLoaded} />
-              ) : (
-                <div className="h-56 w-full bg-slate-950/20 rounded-2xl border border-violet-500/10 flex items-center justify-center text-xs text-slate-500 font-medium">Nenhum mapa disponível para endereços vazios.</div>
-              );
-            })()}
-          </div>
-        </div>
-      </div>
+      <AddressesSection
+        enderecosList={enderecosList}
+        enderecoPrincipal={enderecoPrincipal}
+        leafletLoaded={leafletLoaded}
+      />
+
 
       {/* SEÇÃO: TELEFONES REGISTRADOS */}
       <div id="secao-telefones" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
@@ -1873,68 +1660,11 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
       </div>
 
       {/* SEÇÃO: PARENTES VINCULADOS */}
-      {Array.isArray(parentesData) && parentesData.length > 0 && (
-        <div id="secao-parentes" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
-          <div className="px-6 py-3 bg-slate-800/90 font-bold text-white text-sm flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-violet-400" />
-              <span>Parentes Registrados</span>
-            </div>
-            <span className="text-xs text-violet-300 font-medium">Total: {parentesData.length}</span>
-          </div>
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            {parentesData.map((par: any, i: number) => {
-              const parNome = par.nome || par.NOME || "Parente";
-              const parCpf = par.cpf || par.CPF || "";
-              const cleanCpf = parCpf ? String(parCpf).replace(/\D/g, "") : "";
-              const formattedCpf = cleanCpf.length === 11 
-                ? cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
-                : (parCpf || "CPF Não Consta");
-              const vinculo = par.vinculo || par.VINCULO || "Parente";
+      <RelativesSection
+        parentesData={parentesData}
+        onSelectPerson={onSelectPerson}
+      />
 
-              return (
-                <div key={i} className="p-3.5 rounded-2xl bg-slate-950/80 border border-violet-500/30 hover:border-violet-400 transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-lg">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-xs">{parNome}</span>
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-violet-950 text-violet-300 border border-violet-500/30">
-                        {vinculo}
-                      </span>
-                    </div>
-                    <p className="text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5">
-                      <span>CPF: {formattedCpf}</span>
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                    {cleanCpf.length === 11 && onSelectPerson ? (
-                      <button
-                        type="button"
-                        onClick={() => onSelectPerson(cleanCpf)}
-                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md active:scale-95 transition-all no-print"
-                      >
-                        <Search className="w-3.5 h-3.5" />
-                        <span>Consultar CPF ➔</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(parNome);
-                          toast.success("Nome copiado!");
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] font-bold border border-violet-500/20"
-                      >
-                        📋 Copiar Nome
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* SEÇÃO: VÍNCULOS SOCIETÁRIOS (CNPJ / QSA) */}
       <div id="secao-societario" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">

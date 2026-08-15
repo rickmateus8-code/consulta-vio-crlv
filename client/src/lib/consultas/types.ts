@@ -140,6 +140,83 @@ export interface PoderAquisitivoInfo {
   rendaEstimada?: string;
 }
 
+export interface OperadoraInfo {
+  telefone: string;
+  operadora: string;
+  portado: string;
+  ddd: string;
+  estado: string;
+}
+
+export interface BancoInfo {
+  nome: string;
+  codigo: string;
+  ispb: string;
+  site?: string;
+}
+
+export interface TituloEleitoralInfo {
+  nome: string;
+  inscricao: string;
+  secao: string;
+  zona: string;
+  municipio: string;
+  uf: string;
+}
+
+export interface PisInfo {
+  nome: string;
+  pisNum: string;
+  cpf: string;
+  ctps: string;
+}
+
+export interface VehicleProfileData {
+  placa?: string;
+  placa_mercosul?: string;
+  chassi?: string;
+  renavam?: string;
+  motor?: string;
+  restricoes?: string;
+  situacao_veiculo?: string;
+  situacao_chassi?: string;
+  marca_modelo?: string;
+  modelo?: string;
+  ano_fabricacao?: string;
+  ano_modelo?: string;
+  cor?: string;
+  combustivel?: string;
+  municipio?: string;
+  uf?: string;
+  proprietario?: {
+    nome?: string;
+    cpf_cnpj?: string;
+  };
+}
+
+export interface PersonListItem {
+  nome: string;
+  documento: string;
+  documentoTipo: 'cpf' | 'cnpj' | 'outro';
+  mae?: string;
+  nascimento?: string;
+  uf?: string;
+  isSelectable: boolean;
+}
+
+export interface VizinhoItem {
+  nome: string;
+  cpf?: string;
+  vinculo?: string;
+}
+
+export interface ProfissionalItem {
+  empresa?: string;
+  cargo?: string;
+  dataAdmissao?: string;
+  renda?: string;
+}
+
 export interface ConsultaViewModel {
   cpf: string;
   nome: string;
@@ -174,6 +251,14 @@ export interface ConsultaViewModel {
   isCache: boolean;
   totalRecordsFound: number;
   isFullyEmpty: boolean;
+  operadoraData?: OperadoraInfo;
+  bancoData?: BancoInfo;
+  tituloEleitoralData?: TituloEleitoralInfo;
+  pisData?: PisInfo;
+  singleVehicle?: VehicleProfileData;
+  personList?: PersonListItem[];
+  vizinhos?: VizinhoItem[];
+  profissionais?: ProfissionalItem[];
 }
 
 export interface ModuleParamConfig {

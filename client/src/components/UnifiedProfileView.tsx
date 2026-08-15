@@ -8,6 +8,8 @@ import {
 
 import { toast } from "sonner";
 import { exportElementToPDF, generatePDFFilename } from "@/lib/pdfExport";
+import { normalizeConsultaResult } from "@/lib/consultas/normalizer";
+
 
 export function sanitizeField(val: any): string | null {
   if (val === undefined || val === null) return null;
@@ -1148,8 +1150,11 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
     return [];
   };
 
-  // Normalização Completa do Perfil Master
+  // Normalização Completa do Perfil Master (RAW -> ViewModel boundary)
+  const vm = normalizeConsultaResult(data);
+
   const root = data.perfil || data.body || data.data || data;
+
   const cpfData = root.cpf_dados || root.body || root.data || root;
   const fotoObj = data.foto || root.foto || root.fotos || null;
   const fotosDict = root.fotos || data.fotos || {};
@@ -1496,7 +1501,17 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
         )}
       </div>
 
+      {/* EMPTY STATE GERAL QUANDO ZERO REGISTROS ENCONTRADOS */}
+      {vm.isFullyEmpty && (
+        <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 text-center space-y-2 shadow-xl">
+          <AlertCircle className="w-8 h-8 text-slate-500 mx-auto" />
+          <h4 className="text-sm font-bold text-slate-300">Nenhum Registro Localizado</h4>
+          <p className="text-xs text-slate-400">Não foram encontrados dados cadastrais registrados para os parâmetros informados.</p>
+        </div>
+      )}
+
       {/* ALERTA DE COMPLIANCE / KYC */}
+
       {(isDeceased || isCpfIrregular) && (
         <div className={`p-5 rounded-2xl border flex flex-col md:flex-row items-center gap-4 animate-pulse shadow-2xl ${
           isDeceased 

@@ -12,6 +12,10 @@ import { ConsultasHeaderMobile } from "@/components/consultas/ConsultasHeaderMob
 import { ConsultasSidebar } from "@/components/consultas/ConsultasSidebar";
 import { ModulesGrid, CategoryFilterChips } from "@/components/consultas/ModulesGrid";
 import { ConsultasHistoryView } from "@/components/consultas/ConsultasHistoryView";
+import { ConsultasTabs } from "@/components/consultas/ConsultasTabs";
+import { ConsultaErrorPanel } from "@/components/consultas/ConsultaErrorPanel";
+import { RadarLoadingAnimation } from "@/components/consultas/RadarLoadingAnimation";
+
 
 
 
@@ -531,31 +535,17 @@ export default function Consultas() {
                 </div>
 
                 {/* CHIPS SELETORAS DE TIPO DE PESQUISA (IMAGEM 02: [CPF] [RG] [CEP] [Email] [Telefone] [Nome] ...) */}
-                <div className="flex gap-2 overflow-x-auto pb-1.5 no-scrollbar justify-start sm:justify-center touch-pan-x">
-                  {MAIN_TABS.map((tab) => {
-                    const isActive = tab.id === activeTabId;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => {
-                          activeRequestIdRef.current++;
-                          setActiveTabId(tab.id);
-                          setQuickInput("");
-                          setResult(null);
-                          setErrorDetails(null);
-                        }}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 border ${
-                          isActive
-                            ? "bg-violet-600 text-white border-violet-300 shadow-lg shadow-violet-600/40 scale-105"
-                            : "bg-[#090b1f] text-slate-400 hover:text-white hover:bg-slate-900 border-violet-500/20"
-                        }`}
-                      >
-                        <span>{tab.emoji}</span>
-                        <span>{tab.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <ConsultasTabs
+                  tabs={MAIN_TABS}
+                  activeTabId={activeTabId}
+                  onSelectTab={(tabId) => {
+                    activeRequestIdRef.current++;
+                    setActiveTabId(tabId);
+                    setQuickInput("");
+                    setResult(null);
+                    setErrorDetails(null);
+                  }}
+                />
 
                 {/* FORMULÁRIO DE ENTRADA (IMAGEM 02) */}
                 <div className="space-y-4 pt-2">
@@ -606,37 +596,8 @@ export default function Consultas() {
 
 
               {/* ANIMAÇÃO RADAR INTELLIGENCE DE CARREGAMENTO */}
-              {loading && (
-                <div className="rounded-2xl p-8 bg-[#0c0f2a]/95 border border-violet-500/40 text-center shadow-2xl space-y-6 relative overflow-hidden">
-                  <div className="flex flex-col items-center justify-center space-y-4">
-                    <div className="relative w-20 h-20 rounded-full border-2 border-violet-500/40 flex items-center justify-center bg-slate-950/80 shadow-inner">
-                      <div className="absolute inset-0 rounded-full border border-emerald-500/40 animate-ping opacity-75" />
-                      <div className="w-14 h-14 rounded-full border border-violet-400/50 flex items-center justify-center bg-violet-950/60">
-                        <Radar className="w-7 h-7 text-violet-400 animate-spin" />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-black text-white uppercase tracking-widest">Agregando Bases de Inteligência (Radar OSINT)</h3>
-                      <p className="text-[11px] text-violet-300 font-mono mt-1">Varrendo registros em tempo real nas Bases Nacionais Unificadas v3...</p>
-                    </div>
-                  </div>
+              {loading && <RadarLoadingAnimation />}
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-[11px] max-w-xl mx-auto pt-1">
-                    <div className="p-2 rounded-xl bg-slate-900/80 border border-emerald-500/30 flex items-center justify-center gap-1.5 text-emerald-300 font-bold animate-pulse">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Receita Federal
-                    </div>
-                    <div className="p-2 rounded-xl bg-slate-900/80 border border-emerald-500/30 flex items-center justify-center gap-1.5 text-emerald-300 font-bold animate-pulse">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Bases de Fotos
-                    </div>
-                    <div className="p-2 rounded-xl bg-slate-900/80 border border-emerald-500/30 flex items-center justify-center gap-1.5 text-emerald-300 font-bold animate-pulse">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Bureau Crédito
-                    </div>
-                    <div className="p-2 rounded-xl bg-slate-900/80 border border-emerald-500/30 flex items-center justify-center gap-1.5 text-emerald-300 font-bold animate-pulse">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Datasus & DETRAN
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* FILTRAR POR CATEGORIA (MODELO IMAGEM 1 CENTRADO) */}
               {!result && (
@@ -648,37 +609,8 @@ export default function Consultas() {
               )}
 
               {/* PAINEL DE ERRO SE HOUVER (INTEGRADO AO ERROR MODEL MAPPER) */}
-              {errorDetails && (
-                <div
-                  className={`p-4 rounded-xl border flex items-center gap-3 text-sm transition-all ${
-                    errorDetails.type === "NO_RESULTS"
-                      ? "bg-slate-900/90 border-slate-800 text-slate-300"
-                      : errorDetails.type === "LIMIT_ERROR"
-                      ? "bg-amber-950/60 border-amber-500/40 text-amber-300"
-                      : errorDetails.type === "AUTH_ERROR"
-                      ? "bg-violet-950/60 border-violet-500/40 text-violet-300"
-                      : "bg-red-950/60 border-red-500/40 text-red-300"
-                  }`}
-                >
-                  <AlertTriangle
-                    className={`w-5 h-5 flex-shrink-0 ${
-                      errorDetails.type === "NO_RESULTS"
-                        ? "text-slate-400"
-                        : errorDetails.type === "LIMIT_ERROR"
-                        ? "text-amber-400"
-                        : errorDetails.type === "AUTH_ERROR"
-                        ? "text-violet-400"
-                        : "text-red-400"
-                    }`}
-                  />
-                  <div>
-                    <strong className="block text-xs uppercase tracking-wider font-bold">
-                      {errorDetails.title}
-                    </strong>
-                    <span className="text-xs">{errorDetails.message}</span>
-                  </div>
-                </div>
-              )}
+              {errorDetails && <ConsultaErrorPanel errorDetails={errorDetails} />}
+
 
               {/* EXIBIÇÃO DE RESULTADO UNIFICADO COMPLETO */}
               {result && (

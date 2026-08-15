@@ -657,6 +657,10 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
 
   if (!data) return null;
 
+  const vm = normalizeConsultaResult(data);
+  const nome = vm.nome;
+  const cpf = vm.cpf;
+
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
@@ -688,14 +692,8 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   };
 
   // ─── CUSTOM RENDER: OPERADORA ───────────────────────────────────────────────
-  const rawOp = data.body || data.data || data;
-  const isOperadora = !!(rawOp.operadora || rawOp.carrier || rawOp.portabilidade || rawOp.status_operadora);
-  if (isOperadora && !data.perfil?.cpf_dados) {
-    const operadora = rawOp.operadora || rawOp.carrier || "Não informado";
-    const portado = rawOp.portado ?? rawOp.portabilidade ?? "Não informado";
-    const telefone = rawOp.telefone || rawOp.phone || "Não informado";
-    const ddd = rawOp.ddd || "";
-    const estado = rawOp.uf || rawOp.estado || "";
+  if (vm.operadoraData) {
+    const { operadora, portado, telefone, ddd, estado } = vm.operadoraData;
 
     const copyOpData = () => {
       const text = `=== CONSULTA OPERADORA ===\nTELEFONE: ${telefone}\nOPERADORA: ${operadora}\nPORTADO: ${portado}\nDDD: ${ddd}\nESTADO: ${estado}`;
@@ -733,7 +731,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
           </div>
           <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
             <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Portabilidade Recente?</span>
-            <span className={`font-bold text-sm block mt-1 ${portado === true || String(portado).toLowerCase() === "sim" ? "text-emerald-400" : "text-slate-300"}`}>
+            <span className={`font-bold text-sm block mt-1 ${portado === "SIM" || portado === true || String(portado).toLowerCase() === "sim" ? "text-emerald-400" : "text-slate-300"}`}>
               {String(portado).toUpperCase()}
             </span>
           </div>
@@ -747,13 +745,8 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   }
 
   // ─── CUSTOM RENDER: BANCOS ──────────────────────────────────────────────────
-  const rawBank = data.body || data.data || data;
-  const isBanco = !!(rawBank.ispb || rawBank.COMPE || rawBank.banco || rawBank.fullName);
-  if (isBanco && !data.perfil?.cpf_dados) {
-    const nomeBanco = rawBank.name || rawBank.fullName || rawBank.banco || rawBank.NOME || "Não informado";
-    const codigoBanco = rawBank.code || rawBank.COMPE || rawBank.codigo || "Não informado";
-    const ispb = rawBank.ispb || "Não informado";
-    const site = rawBank.site || "";
+  if (vm.bancoData) {
+    const { nome: nomeBanco, codigo: codigoBanco, ispb, site = "" } = vm.bancoData;
 
     const copyBankData = () => {
       const text = `=== CONSULTA BANCO ===\nBANCO: ${nomeBanco}\nCÓDIGO COMPE: ${codigoBanco}\nISPB: ${ispb}\nSITE: ${site}`;
@@ -807,15 +800,8 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   }
 
   // ─── CUSTOM RENDER: TÍTULO ELEITORAL ────────────────────────────────────────
-  const rawTse = data.body || data.data || data;
-  const isTitulo = !!(rawTse.inscricao || rawTse.secao || rawTse.zona || rawTse.titulo_eleitor || rawTse.TITULO_ELEITOR);
-  if (isTitulo && !data.perfil?.cpf_dados) {
-    const nomeEleitor = rawTse.nome || rawTse.NOME || "Não informado";
-    const inscricao = rawTse.inscricao || rawTse.titulo_eleitor || rawTse.TITULO_ELEITOR || "Não informado";
-    const secao = rawTse.secao || "Não informado";
-    const zona = rawTse.zona || "Não informado";
-    const municipio = rawTse.municipio || "Não informado";
-    const uf = rawTse.uf || rawTse.estado || "";
+  if (vm.tituloEleitoralData) {
+    const { nome: nomeEleitor, inscricao, secao, zona, municipio, uf } = vm.tituloEleitoralData;
 
     const copyTseData = () => {
       const text = `=== CONSULTA TÍTULO ELEITORAL ===\nNOME: ${nomeEleitor}\nINSCRIÇÃO: ${inscricao}\nSEÇÃO: ${secao}\nZONA: ${zona}\nMUNICÍPIO/UF: ${municipio} - ${uf}`;
@@ -865,16 +851,11 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   }
 
   // ─── CUSTOM RENDER: PIS / PASEP / NIT ────────────────────────────────────────
-  const rawPis = data.body || data.data || data;
-  const isPIS = !!(rawPis.pis || rawPis.nis || rawPis.nit || rawPis.pasep || rawPis.PIS || rawPis.NIS);
-  if (isPIS && !data.perfil?.cpf_dados) {
-    const nomeTrabalhador = rawPis.nome || rawPis.NOME || "Não informado";
-    const pisNum = rawPis.pis || rawPis.nis || rawPis.nit || rawPis.pasep || rawPis.PIS || rawPis.NIS || "Não informado";
-    const cpf = rawPis.cpf || rawPis.CPF || "Não informado";
-    const ctps = rawPis.ctps || rawPis.carteira_trabalho || "Não informado";
+  if (vm.pisData) {
+    const { nome: nomeTrabalhador, pisNum, cpf: pisCpf, ctps } = vm.pisData;
 
     const copyPisData = () => {
-      const text = `=== CONSULTA PIS/PASEP ===\nNOME: ${nomeTrabalhador}\nPIS/NIS: ${pisNum}\nCPF: ${cpf}\nCTPS: ${ctps}`;
+      const text = `=== CONSULTA PIS/PASEP ===\nNOME: ${nomeTrabalhador}\nPIS/NIS: ${pisNum}\nCPF: ${pisCpf}\nCTPS: ${ctps}`;
       navigator.clipboard.writeText(text);
       setCopied(true);
       toast.success("Dados do PIS/PASEP copiados!");
@@ -909,7 +890,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
           </div>
           <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10">
             <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Documento Vinculado (CPF)</span>
-            <span className="font-mono font-bold text-white text-sm block mt-1">{cpf}</span>
+            <span className="font-mono font-bold text-white text-sm block mt-1">{pisCpf}</span>
           </div>
           <div className="p-4 rounded-xl bg-slate-950/60 border border-violet-500/10 md:col-span-2">
             <span className="text-slate-400 text-[10px] block font-bold uppercase tracking-wider">Carteira de Trabalho (CTPS)</span>
@@ -921,12 +902,10 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
   }
 
   // Detectar se a resposta é de Consulta de Placa (Veículo)
-  const isVehicle = data.placa || data.chassi || data.renavam || data.marca_modelo || data.body?.placa || data.data?.placa;
-  if (isVehicle && !data.perfil?.cpf_dados) {
-    const v = data.body || data.data || data;
+  if (vm.singleVehicle) {
     return (
       <VehicleProfileView
-        vehicle={v}
+        vehicle={vm.singleVehicle}
         profileRef={profileRef}
         isExportingPDF={isExportingPDF}
         handleExportPDF={handleExportPDF}
@@ -935,12 +914,9 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     );
   }
 
-
   // Se a resposta for uma lista de resultados (ex: busca por nome ou cep)
-  const isList = Array.isArray(data) || Array.isArray(data.body) || Array.isArray(data.data);
-  const listItems = isList ? (Array.isArray(data) ? data : (data.body || data.data)) : null;
-
-  if (isList && listItems && listItems.length > 0 && typeof listItems[0] === "object") {
+  if (vm.personList && vm.personList.length > 0) {
+    const listItems = vm.personList;
     return (
       <div className="w-full space-y-4 text-slate-100 font-sans select-text">
         <div className="flex items-center justify-between py-2 border-b border-violet-500/20 no-print">
@@ -954,16 +930,16 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
           )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {listItems.map((item: any, idx: number) => {
-            const itemNome = item.name || item.nome || item.NOME || item.razao_social || "Não informado";
-            const itemCpf = item.cpf || item.CPF || item.cnpj || item.CNPJ || "Não informado";
-            const itemMae = item.mother_name || item.mae || item.NOME_MAE || "";
-            const itemNasc = item.birth_date || item.nascimento || "";
-            const itemUf = item.uf || item.UF || (item.endereco?.state || item.endereco?.uf || "");
+          {listItems.map((item, idx: number) => {
+            const itemNome = item.nome;
+            const itemCpf = item.documento;
+            const itemMae = item.mae || "";
+            const itemNasc = item.nascimento || "";
+            const itemUf = item.uf || "";
             return (
               <div
                 key={idx}
-                onClick={() => onSelectPerson && itemCpf !== "Não informado" && onSelectPerson(itemCpf)}
+                onClick={() => onSelectPerson && item.isSelectable && onSelectPerson(itemCpf)}
                 className="p-5 rounded-2xl bg-slate-900/90 border border-violet-500/30 hover:border-violet-400 hover:scale-[1.01] transition-all cursor-pointer space-y-2 shadow-lg"
               >
                 <div className="flex justify-between items-start">
@@ -979,7 +955,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
                 </div>
                 {itemMae && <p className="text-slate-400 text-xs"><span className="text-slate-500">Mãe:</span> {itemMae}</p>}
                 {itemNasc && <p className="text-slate-400 text-xs"><span className="text-slate-500">Nascimento:</span> {itemNasc}</p>}
-                {onSelectPerson && itemCpf !== "Não informado" && (
+                {onSelectPerson && item.isSelectable && (
                   <div className="pt-2 text-right">
                     <span className="text-xs font-bold text-violet-400 hover:underline flex items-center justify-end gap-1">
                       Ver Perfil Completo <CheckCircle2 className="w-3.5 h-3.5" />
@@ -994,41 +970,34 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     );
   }
 
-  // Helper para garantir array válido independente da resposta da API
-  const safeArray = (val: any): any[] => {
-    if (Array.isArray(val)) return val;
-    if (val && typeof val === 'object') {
-      if (Array.isArray(val.data)) return val.data;
-      if (Array.isArray(val.body)) return val.body;
-      if (Array.isArray(val.parentes)) return val.parentes;
-      if (Array.isArray(val.vizinhos)) return val.vizinhos;
-      if (Array.isArray(val.phones)) return val.phones;
-      if (Array.isArray(val.telefones)) return val.telefones;
-      if (Array.isArray(val.vehicles)) return val.vehicles;
-      if (Array.isArray(val.veiculos)) return val.veiculos;
-    }
-    return [];
+  const parentesData = vm.parentes;
+  const vizinhosData = vm.vizinhos ?? [];
+  const profissionaisData = vm.profissionais ?? [];
+  const veiculosData = vm.veiculos;
+  const telefonesList = vm.telefones;
+  const enderecosList = vm.enderecos;
+  const enderecoPrincipal = vm.enderecoPrincipal;
+  const vacinasList = vm.vacinas;
+  const emailsList = vm.emails;
+  const serasaMosaicObj = vm.serasaMosaic;
+  const poderAquisitivoObj = vm.poderAquisitivo;
+
+  const beneficiosObj: BeneficiosData = {
+    bolsaFamilia: vm.beneficios.some(b => b.programa === 'Bolsa Família') ? {
+      parcelasRecebidas: vm.beneficios.filter(b => b.programa === 'Bolsa Família').map(b => ({
+        valor: b.ultimoValor,
+        nisFavorecido: b.nisFavorecido,
+      }))
+    } : undefined,
+    auxilioBrasil: vm.beneficios.some(b => b.programa === 'Auxílio Brasil') ? {
+      parcelasRecebidas: vm.beneficios.filter(b => b.programa === 'Auxílio Brasil').map(b => ({
+        valor: b.ultimoValor,
+      }))
+    } : undefined,
   };
 
-  // Normalização Completa do Perfil Master (RAW -> ViewModel boundary)
-  const vm = normalizeConsultaResult(data);
-
-  const root = data.perfil || data.body || data.data || data;
-
-  const cpfData = root.cpf_dados || root.body || root.data || root;
-  const fotoObj = data.foto || root.foto || root.fotos || null;
-  const fotosDict = root.fotos || data.fotos || {};
-  const parentesData = safeArray(data.parentes || root.parentes || cpfData.parentes);
-  const vizinhosData = safeArray(data.vizinhos || root.vizinhos || cpfData.vizinhos);
-  const scoreObj = data.score || root.score || cpfData.score || {};
-  const profissionaisData = safeArray(data.profissionais || root.profissionais);
-  const veiculosData = safeArray(data.veiculos || root.veiculos || cpfData.vehicles);
-
-  // Extrair campos de identificação
-  const nome = sanitizeField(cpfData.name || cpfData.nome || cpfData.NOME) || "Não informado";
-  const cpf = sanitizeField(cpfData.cpf || cpfData.CPF || data.cpf) || "Não informado";
-  const nascimento = sanitizeField(cpfData.birth_date || cpfData.nascimento || cpfData.DATA_NASCIMENTO) || "Não informado";
-  const sexo = sanitizeField(cpfData.gender || cpfData.sexo || cpfData.SEXO) || "Não informado";
+  const nascimento = vm.nascimento || "Não informado";
+  const sexo = vm.sexo || "Não informado";
   const cleanParentName = (val: string | null) => {
     if (!val) return "SEM INFORMACAO";
     const clean = val
@@ -1041,163 +1010,27 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     return clean;
   };
 
-  const mae = cleanParentName(sanitizeField(cpfData.mother_name || cpfData.mae || cpfData.NOME_MAE));
-  const pai = cleanParentName(sanitizeField(cpfData.father_name || cpfData.pai || cpfData.NOME_PAI));
+  const mae = cleanParentName(vm.mae || null);
+  const pai = cleanParentName(vm.pai || null);
 
-  const idadeStr = calculateAge(nascimento);
-  const signoStr = getZodiacSign(nascimento);
+  const idadeStr = vm.idadeStr || (nascimento !== "Não informado" ? calculateAge(nascimento) : "");
+  const signoStr = nascimento !== "Não informado" ? getZodiacSign(nascimento) : "";
 
-  // Documentos
-  const rg = sanitizeField(
-    cpfData.rg || 
-    cpfData.RG || 
-    cpfData.rg_numero || 
-    cpfData.numero_rg || 
-    cpfData.registro_geral || 
-    cpfData.serasa_completo?.dados_cadastrais?.rg
-  );
-  const rgIssuer = sanitizeField(
-    cpfData.rg_issuer || 
-    cpfData.ORGAO_EMISSOR || 
-    cpfData.rg_orgao || 
-    cpfData.orgao_emissor || 
-    cpfData.serasa_completo?.dados_cadastrais?.rg_issuer
-  );
-  const rgUf = sanitizeField(
-    cpfData.rg_state || 
-    cpfData.UF_EMISSAO_RG || 
-    cpfData.rg_uf || 
-    cpfData.uf_rg || 
-    cpfData.uf_emissor || 
-    cpfData.serasa_completo?.dados_cadastrais?.rg_state
-  );
-  const cleanedIssuer = cleanRgIssuer(rgIssuer);
-  const rgFormatted = rg ? `${rg}${cleanedIssuer ? ' / ' + cleanedIssuer : ''}${rgUf ? '-' + rgUf : ''}` : null;
-  const titulo = sanitizeField(cpfData.voter_id || cpfData.titulo || cpfData.TITULO_ELEITOR);
-  const pis = sanitizeField(cpfData.pis || cpfData.PIS || cpfData.cns);
-  const cnh = sanitizeField(cpfData.cnh || cpfData.NUMERO_CNH || cpfData.CNH);
-  
-  const rawNaturalidade = sanitizeField(
-    cpfData.birth_city || 
-    cpfData.naturalidade || 
-    cpfData.NATURALIDADE || 
-    cpfData.cidade_nascimento || 
-    cpfData.municipio_nascimento || 
-    cpfData.naturalidade_cidade ||
-    cpfData.birth_place ||
-    cpfData.local_nascimento ||
-    cpfData.cidade_nasc ||
-    (cpfData.cidade_nascimento && cpfData.uf_nascimento ? `${cpfData.cidade_nascimento} / ${cpfData.uf_nascimento}` : (cpfData.uf_nascimento ? `UF: ${cpfData.uf_nascimento}` : null))
-  );
-  let naturalidade = rawNaturalidade || null;
-  if (naturalidade) {
-    naturalidade = naturalidade.replace(/\s*\(\d+ª?\s*Regiã[o|o]\s*Fiscal\)/gi, "").trim();
-  }
+  const rg = vm.rg || null;
+  const rgFormatted = rg;
+  const titulo = vm.tituloEleitor || null;
+  const pis = vm.pisNis || null;
+  const cnh = vm.cnh || null;
+  const naturalidade = vm.naturalidade || null;
+  const renda = vm.renda || null;
+  const scoreVal = vm.scoreVal ?? null;
+  const mosaic = vm.serasaMosaic?.codMosaic || null;
+  const profissao = vm.profissao || null;
 
+  const isDeceased = vm.isDeceased;
+  const isCpfIrregular = vm.isCpfIrregular;
 
-  // Socioeconômico & Tratar Score para NUNCA gerar [object Object]
-  const renda = cpfData.income || cpfData.renda || cpfData.renda_mensal || cpfData.RENDA || null;
-  let scoreVal: any = null;
-  if (typeof scoreObj === "number" || typeof scoreObj === "string") {
-    scoreVal = scoreObj;
-  } else if (scoreObj && typeof scoreObj === "object") {
-    scoreVal = scoreObj.value ?? scoreObj.score ?? scoreObj.SCORE ?? scoreObj.pontuacao ?? null;
-    if (typeof scoreVal === "object") {
-      scoreVal = scoreVal?.value ?? scoreVal?.score ?? null;
-    }
-  }
-  const mosaic = cpfData.mosaic || scoreObj.cd_mosaic || null;
-  const profissao = cpfData.occupation || cpfData.occupation_name || cpfData.profissao || null;
-
-  // Alerta de Compliance / Óbito
-  const isDeceased = cpfData.death_flag === "1" || String(cpfData.death_flag).toLowerCase() === "sim" || cpfData.death_flag === true || !!cpfData.death_date || (cpfData.federal_status && String(cpfData.federal_status).toUpperCase().includes("OBITO"));
-  const isCpfIrregular = cpfData.federal_status && cpfData.federal_status !== "REGULAR" && !String(cpfData.federal_status).toUpperCase().includes("OBITO");
-
-  // Coleção de Fotos Nacionais e Estaduais (com inspeção profunda de alias)
-  const photoGallery: { label: string; url: string }[] = [];
-  
-  const imgNacional = formatImageUrl(fotosDict.nacional || fotoObj || cpfData.foto || cpfData.fotos || cpfData.foto_nacional || root.foto);
-  if (imgNacional) photoGallery.push({ label: "Nacional / Base Única", url: imgNacional });
-
-  const imgSP = formatImageUrl(fotosDict.sp || cpfData.foto_sp || root.foto_sp);
-  if (imgSP) photoGallery.push({ label: "Estado de São Paulo (SP)", url: imgSP });
-
-  const imgMA = formatImageUrl(fotosDict.ma || cpfData.foto_ma || root.foto_ma);
-  if (imgMA) photoGallery.push({ label: "Estado do Maranhão (MA)", url: imgMA });
-
-  const imgRO = formatImageUrl(fotosDict.ro || cpfData.foto_ro || root.foto_ro);
-  if (imgRO) photoGallery.push({ label: "Estado de Rondônia (RO)", url: imgRO });
-
-  const imgCNH = formatImageUrl(cpfData.cnh_foto || cpfData.foto_cnh || root.foto_cnh);
-  if (imgCNH && !photoGallery.some(p => p.url === imgCNH)) photoGallery.push({ label: "Base CNH", url: imgCNH });
-
-  const imgRG = formatImageUrl(cpfData.rg_foto || cpfData.foto_rg || root.foto_rg);
-  if (imgRG && !photoGallery.some(p => p.url === imgRG)) photoGallery.push({ label: "Base RG", url: imgRG });
-
-  // Telefones
-  const telefonesList: any[] = [];
-  const rawPhones = [
-    ...(Array.isArray(cpfData.phones) ? cpfData.phones : []),
-    ...(Array.isArray(cpfData.telefones_assecc) ? cpfData.telefones_assecc : []),
-    ...(Array.isArray(cpfData.datasus_phones) ? cpfData.datasus_phones : []),
-    ...(Array.isArray(cpfData.historico_telefones) ? cpfData.historico_telefones : []),
-    ...(Array.isArray(data.telefones) ? data.telefones : []),
-    ...(Array.isArray(root.telefones) ? root.telefones : []),
-  ];
-  if (cpfData.telefone) rawPhones.push(cpfData.telefone);
-
-  const phoneSeen = new Set();
-  for (const item of rawPhones) {
-    const numStr = typeof item === "object" ? (item.numero || item.telefone || item.PHONE || "") : String(item);
-    const cleanNum = numStr.replace(/\D/g, "");
-    if (cleanNum && !phoneSeen.has(cleanNum)) {
-      phoneSeen.add(cleanNum);
-      telefonesList.push(typeof item === "object" ? item : { numero: numStr });
-    }
-  }
-
-  // Endereços
-  const enderecosList: any[] = [];
-  const rawAddresses = [
-    ...(Array.isArray(cpfData.all_addresses) ? cpfData.all_addresses : []),
-    ...(Array.isArray(cpfData.enderecos) ? cpfData.enderecos : []),
-  ];
-  if (cpfData.address) rawAddresses.unshift(cpfData.address);
-
-  const addressSeen = new Set();
-  for (const item of rawAddresses) {
-    let key = "";
-    if (typeof item === "object" && item) {
-      key = [item.street || item.logradouro, item.number || item.numero, item.city || item.cidade].filter(Boolean).join("|");
-    } else {
-      key = String(item);
-    }
-    if (key && !addressSeen.has(key)) {
-      addressSeen.add(key);
-      enderecosList.push(item);
-    }
-  }
-
-  let enderecoPrincipal = "Não informado";
-  if (enderecosList.length > 0) {
-    const a = enderecosList[0];
-    if (typeof a === "object") {
-      enderecoPrincipal = [a.type || a.tipologradouro, a.street || a.logradouro, a.number || a.numero, a.neighborhood || a.bairro, a.city || a.cidade, a.state || a.uf, a.zip_code || a.cep].filter(Boolean).join(", ");
-    } else {
-      enderecoPrincipal = String(a);
-    }
-  }
-
-  // Vacinas, Benefícios e Informações Avançadas (Mapeamento Completo com estilo clean)
-  const vacinasList = [...safeArray(cpfData.vacinas), ...safeArray(cpfData.vacinasGerais)];
-  const beneficiosObj = cpfData.beneficios || root.beneficios || {};
-  const emailsList = [...safeArray(cpfData.emails), ...(cpfData.email ? [{ email: cpfData.email }] : [])];
-  const serasaMosaicObj = cpfData.serasaMosaic || root.serasaMosaic || {};
-  const opiniaoPoliticaObj = cpfData.opiniaoPolitica || root.opiniaoPolitica || {};
-  const poderAquisitivoObj = cpfData.poderAquisitivo || root.poderAquisitivo || {};
-  const interessesObj = cpfData.interesses || root.interesses || {};
-
-
+  const photoGallery: { label: string; url: string }[] = vm.fotos || [];
 
   const copyAllData = () => {
     const lines = [
@@ -1210,7 +1043,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
       `MÃE: ${mae}`,
       `PAI: ${pai || 'N/A'}`,
       `NATURALIDADE: ${naturalidade || 'N/A'}`,
-      `STATUS RECEITA: ${cpfData.federal_status || "REGULAR"}`,
+      `STATUS RECEITA: ${vm.statusReceita || "REGULAR"}`,
       `ENDEREÇO PRINCIPAL: ${enderecoPrincipal}`,
       `RG: ${rgFormatted || rg || 'N/A'}`,
       `CNH: ${cnh || 'N/A'}`,
@@ -1224,8 +1057,8 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     if (telefonesList.length > 0) {
       lines.push("\n--- TELEFONES ---");
       telefonesList.forEach((t, i) => {
-        const num = typeof t === "object" ? (t.numero || t.telefone || t.PHONE || "") : String(t);
-        const type = typeof t === "object" && t.tipo ? ` (${t.tipo})` : "";
+        const num = t.numero;
+        const type = t.tipo ? ` (${t.tipo})` : "";
         lines.push(`${i + 1}. ${num}${type}`);
       });
     }
@@ -1233,31 +1066,26 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
     if (enderecosList.length > 0) {
       lines.push("\n--- ENDEREÇOS ---");
       enderecosList.forEach((a, i) => {
-        let addrStr = "";
-        if (typeof a === "object" && a) {
-          addrStr = [a.type || a.tipologradouro, a.street || a.logradouro, a.number || a.numero, a.neighborhood || a.bairro, a.city || a.cidade, a.state || a.uf, a.zip_code || a.cep].filter(Boolean).join(", ");
-        } else {
-          addrStr = String(a);
-        }
+        const addrStr = [a.tipo, a.logradouro, a.numero, a.bairro, a.cidade, a.uf, a.cep].filter(Boolean).join(", ");
         lines.push(`${i + 1}. ${addrStr}`);
       });
     }
 
     if (Array.isArray(parentesData) && parentesData.length > 0) {
       lines.push("\n--- PARENTES VINCULADOS ---");
-      parentesData.slice(0, 15).forEach((p: any, i: number) => {
-        const pNome = p.nome || p.name || p.NOME || "Não informado";
-        const pVinculo = p.vinculo || p.relationship || p.VINCULO || "Parente";
-        const pCpf = p.cpf || p.CPF || "";
+      parentesData.slice(0, 15).forEach((p, i: number) => {
+        const pNome = p.nome;
+        const pVinculo = p.vinculo || "Parente";
+        const pCpf = p.cpf || "";
         lines.push(`${i + 1}. ${pNome} [${pVinculo}]${pCpf ? ` - CPF: ${pCpf}` : ''}`);
       });
     }
 
     if (Array.isArray(veiculosData) && veiculosData.length > 0) {
       lines.push("\n--- VEÍCULOS ---");
-      veiculosData.forEach((v: any, i: number) => {
-        const vPlaca = v.placa || v.PLACA || "";
-        const vMod = v.marca_modelo || v.modelo || v.MARCA_MODELO || "";
+      veiculosData.forEach((v, i: number) => {
+        const vPlaca = v.placa || "";
+        const vMod = v.modelo || v.marca || "";
         lines.push(`${i + 1}. ${vPlaca}${vMod ? ` - ${vMod}` : ''}`);
       });
     }
@@ -1354,7 +1182,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
         <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${scoreVal ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-400"}`}>
           Score / Crédito
         </span>
-        {data?.from_cache && (
+        {vm.isCache && (
           <span className="ml-auto px-2 py-0.5 rounded-full bg-violet-950 border border-violet-500/50 text-violet-300 font-bold text-[10px] flex items-center gap-1">
             ⚡ Entrega Ultra-Rápida (Cache D1)
           </span>
@@ -1366,9 +1194,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
         <EmptyStateBanner onClose={onClose} />
       )}
 
-
       {/* ALERTA DE COMPLIANCE / KYC */}
-
       {(isDeceased || isCpfIrregular) && (
         <div className={`p-5 rounded-2xl border flex flex-col md:flex-row items-center gap-4 animate-pulse shadow-2xl ${
           isDeceased 
@@ -1386,8 +1212,8 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
             </h4>
             <p className="text-xs opacity-90 font-medium">
               {isDeceased 
-                ? `Atenção: Este CPF possui registro de óbito cadastrado em bases oficiais${cpfData.death_date ? ` em ${cpfData.death_date}` : ""}. Não prossiga com emissões ou validações.`
-                : `Atenção: A situação cadastral do CPF na Receita Federal consta como "${cpfData.federal_status}". Verifique a idoneidade cadastral antes de realizar operações.`}
+                ? "Atenção: Este CPF possui registro de óbito cadastrado em bases oficiais. Não prossiga com emissões ou validações."
+                : `Atenção: A situação cadastral do CPF na Receita Federal consta como "${vm.statusReceita}". Verifique a idoneidade cadastral antes de realizar operações.`}
             </p>
           </div>
         </div>
@@ -1459,7 +1285,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
           { label: "Endereços", count: enderecosList.length || (enderecoPrincipal !== "Não informado" ? 1 : 0), icon: MapPin, targetId: "secao-enderecos" },
           { label: "Telefones", count: telefonesList.length, icon: Phone, targetId: "secao-telefones" },
           { label: "Parentes", count: Array.isArray(parentesData) ? parentesData.length : 0, icon: Users, targetId: "secao-parentes" },
-          { label: "Empresas", count: cpfData.corporate_share_pct ? 1 : 0, icon: Building2, targetId: "secao-societario" },
+          { label: "Empresas", count: 0, icon: Building2, targetId: "secao-societario" },
           { label: "Veículos", count: Array.isArray(veiculosData) ? veiculosData.length : 0, icon: Car, targetId: "secao-pessoais" },
           { label: "CNH", count: cnh ? 1 : 0, icon: Car, targetId: "secao-pessoais" },
           { label: "RG", count: rg ? 1 : 0, icon: FileText, targetId: "secao-pessoais" },
@@ -1496,12 +1322,12 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
             <span>Informações Pessoais</span>
           </div>
           <span className="text-[10px] bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded text-emerald-300 font-mono font-bold">
-            {cpfData.federal_status || "REGULAR"}
+            {vm.statusReceita || "REGULAR"}
           </span>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           {(() => {
-            const health = calculateProfileHealth(cpfData, photoGallery);
+            const health = calculateProfileHealth({ mother_name: vm.mae, federal_status: vm.statusReceita, death_flag: vm.isDeceased ? '1' : undefined, address: vm.enderecoPrincipal !== 'Não informado' ? vm.enderecoPrincipal : undefined, birth_city: vm.naturalidade }, photoGallery);
             return (
               <div className="md:col-span-2 p-3 rounded-xl bg-slate-950/60 border border-violet-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 my-1">
                 <div className="flex items-center gap-3">
@@ -1571,7 +1397,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
       </div>
 
       {/* SEÇÃO: DIAGRAMA DE TEIA DE CONEXÕES (Filtrado para Perfil Completo com Vínculos) */}
-      {(parentesData.length > 0 || vizinhosData.length > 0 || telefonesList.length > 0 || enderecosList.length > 0 || cpfData.corporate_share_pct) && (
+      {(parentesData.length > 0 || vizinhosData.length > 0 || telefonesList.length > 0 || enderecosList.length > 0) && (
         <TeiaConexoesGraph
           nomeCentral={nome}
           cpfCentral={cpf}
@@ -1579,7 +1405,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
           vizinhos={vizinhosData}
           telefones={telefonesList}
           enderecos={enderecosList}
-          corporateShare={cpfData.corporate_share_pct}
+          corporateShare={undefined}
           onSelectPerson={onSelectPerson}
         />
       )}
@@ -1623,7 +1449,6 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
         leafletLoaded={leafletLoaded}
       />
 
-
       {/* SEÇÃO: TELEFONES REGISTRADOS */}
       <PhonesSection telefonesList={telefonesList} />
 
@@ -1635,10 +1460,9 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
 
       {/* SEÇÃO: VÍNCULOS SOCIETÁRIOS (CNPJ / QSA) */}
       <QsaSection
-        corporateSharePct={cpfData.corporate_share_pct}
+        corporateSharePct={undefined}
         nome={nome}
       />
-
 
       {/* SEÇÃO: HISTÓRICO DE VACINAÇÃO (SUS / DATASUS) */}
       <VaccinesSection vacinasList={vacinasList} />

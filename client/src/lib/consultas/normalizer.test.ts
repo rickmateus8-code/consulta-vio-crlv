@@ -2,6 +2,7 @@
  * DocMaster — Testes Unitários de Robustez e Fronteira do Normalizador de Consultas
  * Valida resiliência contra entradas null, undefined, vazias, malformed, parciais e grandes,
  * além do mapeamento estrito e seguro de erros técnicos (mapConsultaError).
+ * 100% livre de `any` em todo o escopo de testes e produção.
  */
 import { normalizeConsultaResult } from './normalizer';
 import { mapConsultaError } from './types';
@@ -27,16 +28,16 @@ export function runNormalizerTests(): { passed: number; failed: number; errors: 
     assert(resNull.isFullyEmpty === true, 'null input produces empty ViewModel');
     assert(resNull.nome === 'Não informado', 'null input fallback name');
     assert(resNull.totalRecordsFound === 0, 'null input zero records');
-  } catch (e: any) {
-    assert(false, 'null input throws exception', e.message);
+  } catch (e: unknown) {
+    assert(false, 'null input throws exception', (e as Error)?.message);
   }
 
   try {
     const resUndef = normalizeConsultaResult(undefined);
     assert(resUndef.isFullyEmpty === true, 'undefined input produces empty ViewModel');
     assert(resUndef.totalRecordsFound === 0, 'undefined input zero records');
-  } catch (e: any) {
-    assert(false, 'undefined input throws exception', e.message);
+  } catch (e: unknown) {
+    assert(false, 'undefined input throws exception', (e as Error)?.message);
   }
 
   // 2. Objeto Vazio e Primitivos Inesperados
@@ -44,29 +45,29 @@ export function runNormalizerTests(): { passed: number; failed: number; errors: 
     const resObj = normalizeConsultaResult({});
     assert(resObj.isFullyEmpty === true, 'empty object produces empty ViewModel');
     assert(resObj.totalRecordsFound === 0, 'empty object zero records');
-  } catch (e: any) {
-    assert(false, 'empty object throws exception', e.message);
+  } catch (e: unknown) {
+    assert(false, 'empty object throws exception', (e as Error)?.message);
   }
 
   try {
     const resStr = normalizeConsultaResult('string_invalida');
     assert(resStr.isFullyEmpty === true, 'string primitive produces empty ViewModel');
-  } catch (e: any) {
-    assert(false, 'string primitive throws exception', e.message);
+  } catch (e: unknown) {
+    assert(false, 'string primitive throws exception', (e as Error)?.message);
   }
 
   try {
     const resNum = normalizeConsultaResult(12345);
     assert(resNum.isFullyEmpty === true, 'number primitive produces empty ViewModel');
-  } catch (e: any) {
-    assert(false, 'number primitive throws exception', e.message);
+  } catch (e: unknown) {
+    assert(false, 'number primitive throws exception', (e as Error)?.message);
   }
 
   try {
     const resArr = normalizeConsultaResult([1, 2, 3]);
     assert(resArr.isFullyEmpty === true, 'array primitive produces empty ViewModel');
-  } catch (e: any) {
-    assert(false, 'array primitive throws exception', e.message);
+  } catch (e: unknown) {
+    assert(false, 'array primitive throws exception', (e as Error)?.message);
   }
 
   // 3. Resposta Parcial Malformada
@@ -90,8 +91,8 @@ export function runNormalizerTests(): { passed: number; failed: number; errors: 
     assert(Array.isArray(resMalformed.beneficios), 'undefined beneficios produces array');
     assert(resMalformed.enderecos.length === 1, 'malformed address list filters invalid elements safely');
     assert(resMalformed.enderecos[0].logradouro === 'RUA TESTE', 'valid address element parsed');
-  } catch (e: any) {
-    assert(false, 'malformed payload throws exception', e.message);
+  } catch (e: unknown) {
+    assert(false, 'malformed payload throws exception', (e as Error)?.message);
   }
 
   // 4. Teste de Não Mutações do Objeto RAW Entrada
@@ -108,8 +109,8 @@ export function runNormalizerTests(): { passed: number; failed: number; errors: 
     normalizeConsultaResult(rawInput);
     const stringifiedAfter = JSON.stringify(rawInput);
     assert(stringifiedBefore === stringifiedAfter, 'raw input is never mutated by normalizer');
-  } catch (e: any) {
-    assert(false, 'raw non-mutation test error', e.message);
+  } catch (e: unknown) {
+    assert(false, 'raw non-mutation test error', (e as Error)?.message);
   }
 
   // 5. Teste de Payload Sintético Completo
@@ -134,8 +135,8 @@ export function runNormalizerTests(): { passed: number; failed: number; errors: 
     assert(resFull.vacinas.length === 1, 'synthetic full profile parses vaccine');
     assert(resFull.beneficios.length === 1, 'synthetic full profile parses benefit');
     assert(resFull.isFullyEmpty === false, 'synthetic full profile is not empty');
-  } catch (e: any) {
-    assert(false, 'synthetic full payload error', e.message);
+  } catch (e: unknown) {
+    assert(false, 'synthetic full payload error', (e as Error)?.message);
   }
 
   // 6. Teste de Resposta Grande (Large Payload)
@@ -155,8 +156,8 @@ export function runNormalizerTests(): { passed: number; failed: number; errors: 
     assert(resLarge.telefones.length === 200, 'large response parses all 200 phones');
     assert(resLarge.enderecos.length === 150, 'large response parses all 150 addresses');
     assert(resLarge.totalRecordsFound >= 350, 'large response record counter is correct');
-  } catch (e: any) {
-    assert(false, 'large payload test error', e.message);
+  } catch (e: unknown) {
+    assert(false, 'large payload test error', (e as Error)?.message);
   }
 
   // 7. Testes Unitários de Error Mapping (mapConsultaError)
@@ -188,8 +189,8 @@ export function runNormalizerTests(): { passed: number; failed: number; errors: 
     const errGeneric = mapConsultaError(new Error('Internal database fault'));
     assert(errGeneric.type === 'SERVER_ERROR', 'Generic unhandled error produces SERVER_ERROR');
     assert(errGeneric.message.includes('Internal database fault'), 'Generic error preserves friendly message');
-  } catch (e: any) {
-    assert(false, 'mapConsultaError tests threw exception', e.message);
+  } catch (e: unknown) {
+    assert(false, 'mapConsultaError tests threw exception', (e as Error)?.message);
   }
 
   return { passed, failed, errors };

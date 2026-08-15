@@ -7,6 +7,8 @@ import { getPlanoStatus } from "@/lib/snoopApi";
 import * as SnoopAPI from "@/lib/snoopApi";
 import { toast } from "sonner";
 import masterBuscasLogo from "@/assets/master_buscas_logo.png";
+import { mapConsultaError, type ConsultaErrorDetails } from "@/lib/consultas/types";
+
 
 
 import {
@@ -152,7 +154,8 @@ export default function Consultas() {
   const [quickInput, setQuickInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<ConsultaErrorDetails | null>(null);
+
 
 
 
@@ -235,8 +238,10 @@ export default function Consultas() {
     setQuickInput(formatted);
   };
 
-  // Executar busca rápida
+  // Executar busca rápida com bloqueio de double-submit e tratamento tipado de erros
   const handleQuickSearch = async () => {
+    if (loading) return;
+
     if (!quickInput.trim()) {
       toast.error("Digite o valor para consultar.");
       return;
@@ -268,7 +273,7 @@ export default function Consultas() {
     }
 
     setLoading(true);
-    setError(null);
+    setErrorDetails(null);
     setResult(null);
 
     const val = quickInput.trim();
@@ -312,35 +317,41 @@ export default function Consultas() {
       const data = await executeSnoop();
       setResult(data);
       fetchStatus();
-    } catch (e: any) {
-      if (e.code === "PLANO_INATIVO") {
-        setError("Você precisa de um plano ativo para realizar consultas.");
+    } catch (e: unknown) {
+      const mapped = mapConsultaError(e);
+      setErrorDetails(mapped);
+      if (mapped.type === "LIMIT_ERROR") {
         setShowPlanModal(true);
-      } else {
-        setError(e.message || "Não foi possível retornar os dados para esta consulta.");
       }
     } finally {
       setLoading(false);
     }
-
   };
 
   // Selecionar pessoa da lista por nome
   const handleSelectPersonFromList = (cpf: string) => {
+    if (loading) return;
     setViewMode("dashboard");
     setQuickInput(formatCPF(cpf));
     setActiveTabId("cpf");
     setLoading(true);
-    setError(null);
+    setErrorDetails(null);
     setResult(null);
     SnoopAPI.snoopPerfilCPF(cpf)
       .then((data) => {
         setResult(data);
         fetchStatus();
       })
-      .catch((e) => setError(e.message || "Erro ao consultar CPF"))
+      .catch((e: unknown) => {
+        const mapped = mapConsultaError(e);
+        setErrorDetails(mapped);
+        if (mapped.type === "LIMIT_ERROR") {
+          setShowPlanModal(true);
+        }
+      })
       .finally(() => setLoading(false));
   };
+
 
   // Selecionar um módulo no grid (Ativa Visualização Dedicada do Módulo - Imagem 02)
   const handleSelectModule = (modId: string) => {
@@ -621,7 +632,7 @@ export default function Consultas() {
                           setActiveTabId(tab.id);
                           setQuickInput("");
                           setResult(null);
-                          setError(null);
+                          setErrorDetails(null);
                         }}
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 border ${
                           isActive
@@ -658,11 +669,12 @@ export default function Consultas() {
 
                   <div className="flex items-center justify-between pt-1">
                     <button
-                      onClick={() => { setQuickInput(""); setResult(null); setError(null); }}
+                      onClick={() => { setQuickInput(""); setResult(null); setErrorDetails(null); }}
                       className="px-5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-400 text-xs font-bold transition-all"
                     >
                       Limpar
                     </button>
+
 
                     <button
                       onClick={handleQuickSearch}
@@ -740,13 +752,39 @@ export default function Consultas() {
                 </div>
               )}
 
-              {/* PAINEL DE ERRO SE HOUVER */}
-              {error && (
-                <div className="p-4 rounded-xl bg-red-950/50 border border-red-500/40 flex items-center gap-3 text-red-300 text-sm">
-                  <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                  <span>{error}</span>
+              {/* PAINEL DE ERRO SE HOUVER (INTEGRADO AO ERROR MODEL MAPPER) */}
+              {errorDetails && (
+                <div
+                  className={`p-4 rounded-xl border flex items-center gap-3 text-sm transition-all ${
+                    errorDetails.type === "NO_RESULTS"
+                      ? "bg-slate-900/90 border-slate-800 text-slate-300"
+                      : errorDetails.type === "LIMIT_ERROR"
+                      ? "bg-amber-950/60 border-amber-500/40 text-amber-300"
+                      : errorDetails.type === "AUTH_ERROR"
+                      ? "bg-violet-950/60 border-violet-500/40 text-violet-300"
+                      : "bg-red-950/60 border-red-500/40 text-red-300"
+                  }`}
+                >
+                  <AlertTriangle
+                    className={`w-5 h-5 flex-shrink-0 ${
+                      errorDetails.type === "NO_RESULTS"
+                        ? "text-slate-400"
+                        : errorDetails.type === "LIMIT_ERROR"
+                        ? "text-amber-400"
+                        : errorDetails.type === "AUTH_ERROR"
+                        ? "text-violet-400"
+                        : "text-red-400"
+                    }`}
+                  />
+                  <div>
+                    <strong className="block text-xs uppercase tracking-wider font-bold">
+                      {errorDetails.title}
+                    </strong>
+                    <span className="text-xs">{errorDetails.message}</span>
+                  </div>
                 </div>
               )}
+
 
               {/* EXIBIÇÃO DE RESULTADO UNIFICADO COMPLETO */}
               {result && (

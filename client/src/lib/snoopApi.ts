@@ -12,10 +12,29 @@ async function get<T = any>(endpoint: string, params: Record<string, string | nu
     .join('&');
   const url = `${BASE}/${endpoint}${qs ? '?' + qs : ''}`;
   const res = await fetch(url, { credentials: 'include' });
-  const data = await res.json();
+  const text = await res.text();
+
+  if (!text || text.trim().startsWith('<')) {
+    throw Object.assign(
+      new Error('Nenhum registro localizado para esta consulta.'),
+      { status: res.ok ? 200 : 404, code: 'DADOS_NAO_ENCONTRADOS' }
+    );
+  }
+
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw Object.assign(
+      new Error('Resposta inválida do servidor de consultas.'),
+      { status: 500, code: 'PARSE_ERROR' }
+    );
+  }
+
   if (!res.ok) throw Object.assign(new Error(data.message || data.error || 'Erro na consulta'), { status: res.status, code: data.error });
   return data;
 }
+
 
 // ── Consultas Básicas ────────────────────────────────────────────────────────
 export const snoopCPF = (cpf: string) =>

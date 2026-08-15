@@ -272,7 +272,14 @@ export default function Consultas() {
       if (activeTabId === "rg") return await SnoopAPI.snoopRG(val);
       if (activeTabId === "cep") return await SnoopAPI.snoopCEP(cleanVal || val);
       if (activeTabId === "email") return await SnoopAPI.snoopEmail(val);
-      if (activeTabId === "telefone") return await SnoopAPI.snoopTelefoneFull(cleanVal || val);
+      if (activeTabId === "telefone") {
+        try {
+          return await SnoopAPI.snoopTelefoneFull(cleanVal || val);
+        } catch {
+          return await SnoopAPI.snoopTelefone(cleanVal || val);
+        }
+      }
+
       if (activeTabId === "operadora") return await SnoopAPI.snoopOperadora(cleanVal || val);
       if (activeTabId === "banco") return await SnoopAPI.snoopBanco(val);
       if (activeTabId === "titulo") return await SnoopAPI.snoopTitulo(val);

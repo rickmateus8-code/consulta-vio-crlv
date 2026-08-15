@@ -1,5 +1,6 @@
 /**
- * /api/snoop/[...endpoint] — Proxy seguro para SnoopIntelligence API
+ * /api/snoop/[[...endpoint]] — Proxy universal e resiliente para SnoopIntelligence API v2
+ * Suporta sub-rotas simples e compostas (ex: /telefone, /telefone/full, /generic/cpf, /foto/all)
  */
 import type { Env } from '../../types';
 import { insertConsultasPlano } from '../../utils/db';
@@ -64,19 +65,35 @@ async function checkActivePlan(user: any, env: Env): Promise<boolean> {
   return false;
 }
 
-
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
   const user = await getUserFromSession(request, env);
-  if (!user) return new Response(JSON.stringify({ success: false, error: 'Nao autenticado' }), { status: 401, headers: CORS });
+  if (!user) {
+    return new Response(JSON.stringify({ success: false, error: 'Nao autenticado' }), { status: 401, headers: CORS });
+  }
+
   const hasActivePlan = await checkActivePlan(user, env);
   if (!hasActivePlan && user.role !== 'admin') {
-    return new Response(JSON.stringify({ success: false, error: 'PLANO_INATIVO', message: 'Voce nao possui um plano de consultas ativo.' }), { status: 403, headers: CORS });
+    return new Response(
+      JSON.stringify({ success: false, error: 'PLANO_INATIVO', message: 'Voce nao possui um plano de consultas ativo.' }),
+      { status: 403, headers: CORS }
+    );
   }
+
   const apiKey = (env as any).SNOOP_API_KEY || "snp_dP3ynuQD-sTMH-CVmi-1kQh-yJNuqT7tMP3f";
-  const endpointParts = Array.isArray(params.endpoint) ? params.endpoint : [params.endpoint];
-  const endpointPath = endpointParts.join('/');
+  const rawEndpoint = params.endpoint;
+  const endpointParts = Array.isArray(rawEndpoint) ? rawEndpoint : [rawEndpoint];
+  const endpointPath = endpointParts.filter(Boolean).join('/');
+
+  if (!endpointPath) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'ENDPOINT_INVALIDO', message: 'Endpoint nao especificado.' }),
+      { status: 400, headers: CORS }
+    );
+  }
+
   const url = new URL(request.url);
   const targetUrl = SNOOP_BASE + '/' + endpointPath + '?' + url.searchParams.toString();
+
   try {
     const resp = await fetch(targetUrl, {
       headers: {
@@ -85,6 +102,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
         'Accept': 'application/json, text/plain, image/*, */*',
       },
     });
+
     const contentType = resp.headers.get('content-type') || '';
 
     // Tratar se for imagem binária
@@ -114,7 +132,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
         JSON.stringify({
           success: false,
           error: 'DADOS_NAO_ENCONTRADOS',
-          message: 'Foto ou dados não encontrados nesta consulta.',
+          message: 'Dados nao localizados para esta consulta.',
         }),
         { status: resp.ok ? 200 : 404, headers: CORS }
       );
@@ -126,7 +144,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
         data = JSON.parse(text);
       } catch {
         const trimmed = text.trim();
-        const cleanB64 = trimmed.replace(/\s+/g, "");
+        const cleanB64 = trimmed.replace(/\s+/g, '');
         if (cleanB64.length > 50 && /^[A-Za-z0-9+/=]+$/.test(cleanB64)) {
           let mime = 'jpeg';
           if (cleanB64.startsWith('iVBORw0KGgo')) mime = 'png';
@@ -142,12 +160,16 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
       return new Response(JSON.stringify(data), { status: resp.status, headers: CORS });
     } catch {
       return new Response(
-        JSON.stringify({ success: false, error: 'PARSE_ERROR', message: 'Resposta inválida do servidor de dados.' }),
+        JSON.stringify({ success: false, error: 'PARSE_ERROR', message: 'Resposta invalida do servidor de dados.' }),
         { status: 500, headers: CORS }
       );
     }
   } catch (err: any) {
-    return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: CORS });
+    return new Response(
+      JSON.stringify({ success: false, error: err.message || 'Erro na conexao com o servidor' }),
+      { status: 500, headers: CORS }
+    );
   }
 };
+
 export const onRequestOptions: PagesFunction<Env> = async () => new Response(null, { headers: CORS });

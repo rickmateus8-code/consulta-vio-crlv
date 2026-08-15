@@ -18,6 +18,70 @@ export interface ConsultaErrorDetails {
   message: string;
 }
 
+export function mapConsultaError(err: unknown): ConsultaErrorDetails {
+  if (!err) {
+    return {
+      type: 'SERVER_ERROR',
+      title: 'Serviço Indisponível',
+      message: 'O serviço de consultas está temporariamente indisponível.',
+    };
+  }
+
+  const errObj = (typeof err === 'object' && err !== null ? err : {}) as Record<string, unknown>;
+  const code = String(errObj.error || errObj.code || '').toUpperCase();
+  const msg = String(errObj.message || (typeof err === 'string' ? err : ''));
+
+  if (code === 'PLANO_INATIVO' || code === 'LIMIT_EXCEEDED') {
+    return {
+      type: 'LIMIT_ERROR',
+      title: 'Limite de Plano',
+      message: 'Você precisa de um plano ativo com saldo para realizar novas consultas.',
+    };
+  }
+  if (code === 'UNAUTHENTICATED' || code === 'NAO_AUTENTICADO' || msg.includes('autenticado')) {
+    return {
+      type: 'AUTH_ERROR',
+      title: 'Sessão Expirada',
+      message: 'Sua sessão de acesso expirou. Faça login para continuar.',
+    };
+  }
+  if (code === 'VALIDATION_ERROR' || code === 'INVALID_INPUT' || msg.toLowerCase().includes('invalido') || msg.toLowerCase().includes('inválido')) {
+    return {
+      type: 'VALIDATION_ERROR',
+      title: 'Dados Inválidos',
+      message: 'Verifique os dados informados e tente novamente.',
+    };
+  }
+  if (code === 'DADOS_NAO_ENCONTRADOS' || code === 'NO_DATA') {
+
+    return {
+      type: 'NO_RESULTS',
+      title: 'Nenhum Registro Localizado',
+      message: 'Nenhum registro localizado para os parâmetros informados.',
+    };
+  }
+  if (code === 'PARSE_ERROR' || msg.includes('Unexpected token')) {
+    return {
+      type: 'INVALID_RESPONSE',
+      title: 'Resposta Inválida',
+      message: 'A resposta recebida do servidor não pôde ser processada.',
+    };
+  }
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+    return {
+      type: 'NETWORK_ERROR',
+      title: 'Falha de Conexão',
+      message: 'Não foi possível conectar ao serviço de consulta. Verifique sua conexão.',
+    };
+  }
+
+  return {
+    type: 'SERVER_ERROR',
+    title: 'Erro no Serviço',
+    message: msg || 'Não foi possível retornar os dados para esta consulta.',
+  };
+}
+
 export interface TelefoneItem {
   numero: string;
   tipo?: string;

@@ -9,6 +9,11 @@ import {
 import { toast } from "sonner";
 import { exportElementToPDF, generatePDFFilename } from "@/lib/pdfExport";
 import { normalizeConsultaResult } from "@/lib/consultas/normalizer";
+import { VaccinesSection } from "./consultas/sections/VaccinesSection";
+import { BenefitsSection } from "./consultas/sections/BenefitsSection";
+import { MosaicProfileSection } from "./consultas/sections/MosaicProfileSection";
+import { EmptyStateBanner } from "./consultas/sections/EmptyStateBanner";
+
 
 
 export function sanitizeField(val: any): string | null {
@@ -1503,12 +1508,9 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
 
       {/* EMPTY STATE GERAL QUANDO ZERO REGISTROS ENCONTRADOS */}
       {vm.isFullyEmpty && (
-        <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 text-center space-y-2 shadow-xl">
-          <AlertCircle className="w-8 h-8 text-slate-500 mx-auto" />
-          <h4 className="text-sm font-bold text-slate-300">Nenhum Registro Localizado</h4>
-          <p className="text-xs text-slate-400">Não foram encontrados dados cadastrais registrados para os parâmetros informados.</p>
-        </div>
+        <EmptyStateBanner onClose={onClose} />
       )}
+
 
       {/* ALERTA DE COMPLIANCE / KYC */}
 
@@ -1999,123 +2001,13 @@ PROPRIETÁRIO: ${propNome} (CPF: ${propCpf})
       </div>
 
       {/* SEÇÃO: HISTÓRICO DE VACINAÇÃO (SUS / DATASUS) */}
-      {vacinasList.length > 0 && (
-        <div id="secao-vacinas" className="rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl">
-          <div className="px-6 py-3 bg-slate-800/90 font-bold text-slate-200 text-sm flex items-center justify-between border-b border-slate-700/60">
-            <div className="flex items-center gap-2">
-              <Syringe className="w-4 h-4 text-slate-400" />
-              <span>Histórico de Imunizações e Vacinas (DATASUS / SUS)</span>
-            </div>
-            <span className="text-xs text-slate-400 font-mono">Total: {vacinasList.length} registro(s)</span>
-          </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            {vacinasList.map((vac: any, idx: number) => {
-              const vObj = vac.vacina || vac;
-              const aObj = vac.aplicacao || vac;
-              const nomeVac = vObj.nomeVacina || vObj.vacinaNome || vObj.nome || "Vacina";
-              const fabricante = vObj.fabricante || aObj.fabricante || "Oficial SUS";
-              const lote = vObj.lote || aObj.lote || "Não Informado";
-              const dataApp = aObj.dataAplicacao || vac.dataAplicacao || "Data N/I";
-              const dose = vac.descricaoDose || aObj.descricaoDose || "Dose Única / Imunização";
-              const local = aObj.estabelecimento || aObj.estabAplicacao || "Posto de Saúde Central";
-
-              return (
-                <div key={idx} className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-200 uppercase tracking-wide">{nomeVac}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">{dose}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
-                    <div><span className="text-slate-500 block">Fabricante / Lote:</span> <strong className="text-slate-300">{fabricante} ({lote})</strong></div>
-                    <div><span className="text-slate-500 block">Data de Aplicação:</span> <strong className="text-slate-300">{dataApp.split('T')[0]}</strong></div>
-                  </div>
-                  <div className="text-[10px] text-slate-500 truncate pt-1 border-t border-slate-900">
-                    Local: {local}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <VaccinesSection vacinasList={vacinasList} />
 
       {/* SEÇÃO: BENEFÍCIOS SOCIAIS E ASSISTENCIAIS */}
-      {(beneficiosObj.bolsaFamilia || beneficiosObj.auxilioBrasil || beneficiosObj.auxilioEmergencial || beneficiosObj.histInss) && (
-        <div id="secao-beneficios" className="rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl">
-          <div className="px-6 py-3 bg-slate-800/90 font-bold text-slate-200 text-sm flex items-center justify-between border-b border-slate-700/60">
-            <div className="flex items-center gap-2">
-              <Gift className="w-4 h-4 text-slate-400" />
-              <span>Programas Sociais e Benefícios Governo Federal</span>
-            </div>
-            <span className="text-xs text-slate-400 font-mono">Bolsa Família / Auxílio Brasil / INSS</span>
-          </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-            {beneficiosObj.bolsaFamilia?.parcelasRecebidas?.length > 0 && (
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-                <span className="font-bold text-slate-200 block border-b border-slate-800 pb-1">Bolsa Família</span>
-                <div className="space-y-1 text-slate-400">
-                  <div>Parcelas Registradas: <strong className="text-slate-200">{beneficiosObj.bolsaFamilia.parcelasRecebidas.length} meses</strong></div>
-                  <div>Último Valor Mensal: <strong className="text-slate-200">R$ {beneficiosObj.bolsaFamilia.parcelasRecebidas[beneficiosObj.bolsaFamilia.parcelasRecebidas.length - 1]?.valor || "0,00"}</strong></div>
-                  <div>NIS Favorecido: <strong className="text-slate-300 font-mono">{beneficiosObj.bolsaFamilia.parcelasRecebidas[0]?.nisFavorecido || "Cadastrado"}</strong></div>
-                </div>
-              </div>
-            )}
-
-            {beneficiosObj.auxilioBrasil?.parcelasRecebidas?.length > 0 && (
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-                <span className="font-bold text-slate-200 block border-b border-slate-800 pb-1">Auxílio Brasil</span>
-                <div className="space-y-1 text-slate-400">
-                  <div>Parcelas Registradas: <strong className="text-slate-200">{beneficiosObj.auxilioBrasil.parcelasRecebidas.length} meses</strong></div>
-                  <div>Último Valor Mensal: <strong className="text-slate-200">R$ {beneficiosObj.auxilioBrasil.parcelasRecebidas[beneficiosObj.auxilioBrasil.parcelasRecebidas.length - 1]?.valor || "0,00"}</strong></div>
-                </div>
-              </div>
-            )}
-
-            {beneficiosObj.auxilioEmergencial?.parcelasRecebidas?.length > 0 && (
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-                <span className="font-bold text-slate-200 block border-b border-slate-800 pb-1">Auxílio Emergencial COVID</span>
-                <div className="space-y-1 text-slate-400">
-                  <div>Parcelas Recebidas: <strong className="text-slate-200">{beneficiosObj.auxilioEmergencial.parcelasRecebidas.length} parcela(s)</strong></div>
-                  <div>Valor por Parcela: <strong className="text-slate-200">R$ {beneficiosObj.auxilioEmergencial.parcelasRecebidas[0]?.valor || "150,00"}</strong></div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <BenefitsSection beneficiosObj={beneficiosObj} />
 
       {/* SEÇÃO: SERASA MOSAIC & PODER AQUISITIVO (ESTILO CLEAN SEM CORES CHAMATIVAS) */}
-      {(serasaMosaicObj.descricaoMosaic || poderAquisitivoObj.poderAquisitivo) && (
-        <div id="secao-socioeconomico-avancado" className="rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl">
-          <div className="px-6 py-3 bg-slate-800/90 font-bold text-slate-200 text-sm flex items-center justify-between border-b border-slate-700/60">
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-slate-400" />
-              <span>Perfil Serasa Mosaic & Análise de Poder Aquisitivo</span>
-            </div>
-            <span className="text-xs text-slate-400 font-mono">Bureaus de Crédito</span>
-          </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            {serasaMosaicObj.descricaoMosaic && (
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Classificação Serasa Mosaic</span>
-                <span className="text-slate-200 font-black text-sm block">{serasaMosaicObj.descricaoMosaic} ({serasaMosaicObj.codMosaic || "N/A"})</span>
-                {serasaMosaicObj.descMosaicSecundario && (
-                  <p className="text-slate-400 text-xs pt-1">Perfil Secundário: {serasaMosaicObj.descMosaicSecundario}</p>
-                )}
-              </div>
-            )}
-
-            {poderAquisitivoObj.poderAquisitivo && (
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Estimativa de Poder Aquisitivo</span>
-                <span className="text-slate-200 font-black text-sm block">{poderAquisitivoObj.poderAquisitivo} ({poderAquisitivoObj.faixaRenda || "Estimado"})</span>
-                <p className="text-slate-400 text-xs pt-1">Renda Estimada: R$ {poderAquisitivoObj.renda || "600"},00</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <MosaicProfileSection serasaMosaicObj={serasaMosaicObj} poderAquisitivoObj={poderAquisitivoObj} />
     </div>
   );
 }
-

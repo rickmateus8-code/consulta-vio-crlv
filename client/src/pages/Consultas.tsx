@@ -146,12 +146,14 @@ export default function Consultas() {
   const [historyList, setHistoryList] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // Estado da busca
+  // Estado da busca e formulário de módulo selecionado (Estilo Imagem 02)
   const [activeTabId, setActiveTabId] = useState("cpf");
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [quickInput, setQuickInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
 
 
   // Carregar status do plano e uso real em 24h
@@ -340,15 +342,17 @@ export default function Consultas() {
       .finally(() => setLoading(false));
   };
 
-  // Selecionar um módulo no grid
+  // Selecionar um módulo no grid (Ativa Visualização Dedicada do Módulo - Imagem 02)
   const handleSelectModule = (modId: string) => {
     setViewMode("dashboard");
+    setSelectedModuleId(modId);
     setActiveTabId(modId);
     setQuickInput("");
     setResult(null);
     setError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
 
   const currentTab = MAIN_TABS.find(t => t.id === activeTabId) || MAIN_TABS[0];
   const planIsActive = (planStatus?.plan?.expires_at && new Date(planStatus.plan.expires_at) > new Date()) || user?.role === "admin";
@@ -509,104 +513,131 @@ export default function Consultas() {
       <main className="flex-1 h-full overflow-y-auto p-3.5 md:p-6 space-y-4 md:space-y-6 bg-[#070a19]">
         <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
 
-          {/* VISÃO 1: DASHBOARD DE BUSCA UNIFICADA */}
+          {/* VISÃO 1: DASHBOARD DE BUSCA UNIFICADA OU MÓDULO INDIVIDUAL */}
           {(viewMode === "dashboard" || result) && (
             <>
-              {/* CARD DE CABEÇALHO ROXO (MODELO IMAGEM 1 & 2) */}
-              <div className="rounded-2xl p-4 md:p-6 bg-gradient-to-r from-purple-800 to-violet-900 border border-violet-500/30 shadow-2xl space-y-4 md:space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
-                  <div className="flex items-center gap-3 md:gap-4">
-                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-950/90 border border-violet-500/40 p-1.5 flex items-center justify-center shadow-inner shrink-0 overflow-hidden">
-                      <img src={masterBuscasLogo} alt="Master Buscas Logo" className="w-full h-full object-contain" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg md:text-xl font-black text-white tracking-tight">{currentTab.headerTitle}</h2>
-                      <p className="text-[11px] md:text-xs text-purple-200 mt-0.5">{currentTab.headerDesc}</p>
-                    </div>
-                  </div>
+              {/* CARD SEJA BEM-VINDO DA IMAGEM 01 (QUANDO NENHUM MÓDULO ESTIVER SELECIONADO DIRETO E NENHUM RESULTADO) */}
+              {!selectedModuleId && !result && (
+                <div className="rounded-3xl p-6 md:p-8 bg-gradient-to-r from-[#170e3b] via-[#1c1348] to-[#120a2e] border border-violet-500/30 shadow-2xl space-y-4 relative overflow-hidden">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-950/90 border border-violet-500/40 p-1.5 flex items-center justify-center shadow-inner overflow-hidden">
+                          <img src={masterBuscasLogo} alt="Master Buscas Logo" className="w-full h-full object-contain" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
+                            Seja bem-vindo, <span className="text-violet-400">{user?.username || "Usuário"}</span>
+                          </h2>
+                          <p className="text-xs text-violet-300 font-medium">DocMaster OSINT Intelligence System v3.0</p>
+                        </div>
+                      </div>
 
-
-                  {/* BANNER DE PLANO ATIVO & USO 24H */}
-                  <div className="hidden sm:flex items-center gap-4 px-5 py-2.5 rounded-2xl bg-[#0d0f26]/90 border border-violet-500/30 text-xs shadow-inner">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-emerald-400 animate-pulse" />
-                      <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
-                          {planStatus?.plan?.valor === 0 ? "🎁 TESTE GRÁTIS ATIVADO" : planStatus?.plan?.expires_at && !planStatus?.is_free ? `PLANO (${planStatus.plan.plano})` : "MODO DE ACESSO"}
-                        </span>
-                        <span className={`font-bold text-xs ${planStatus?.is_free || user?.role === "admin" || planStatus?.plan ? "text-emerald-400" : "text-red-400"}`}>
-                          {planStatus?.is_free || user?.role === "admin"
-                            ? "🟢 Gratuito / Liberado"
-                            : planStatus?.plan?.expires_at
-                            ? `Ativo até ${new Date(planStatus.plan.expires_at).toLocaleDateString('pt-BR')} às ${new Date(planStatus.plan.expires_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
-                            : "🔴 Degustação Expirada (Requer Plano)"}
-                        </span>
+                      <div className="space-y-1.5 text-xs text-slate-300 font-medium pt-1">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-violet-400" />
+                          <span>Responsável pelo seu acesso é: <strong className="text-white">Suporte DocMaster</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-emerald-400" />
+                          <span>
+                            Data de vencimento:{" "}
+                            <strong className="text-white">
+                              {planStatus?.plan?.expires_at
+                                ? new Date(planStatus.plan.expires_at).toLocaleString("pt-BR")
+                                : "25/10/2026 14:37"}
+                            </strong>
+                          </span>
+                          <span className="ml-2 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase">
+                            Seu acesso expira em {planStatus?.plan?.expires_at ? Math.max(1, Math.ceil((new Date(planStatus.plan.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 71} DIAS
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {(!planStatus?.plan && !(planStatus?.is_free || user?.role === "admin")) && (
+                    {/* LADO DIREITO COM ESTATÍSTICAS DE CONSULTA HOJE */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#0a0d24]/90 p-4 rounded-2xl border border-violet-500/30">
+                      <div className="text-center sm:text-left">
+                        <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">CONSULTAS HOJE</span>
+                        <span className="text-white font-black text-lg">{usage24h} / 1000</span>
+                      </div>
+                      <div className="hidden sm:block h-8 w-px bg-violet-500/20" />
+                      <div className="text-center sm:text-left">
+                        <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">RESTANTES</span>
+                        <span className="text-emerald-400 font-black text-lg">{usageRestantes} restantes</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CARD DE CONSULTA COM FORMULÁRIO DEDICADO - ESTILO IMAGEM 02 (OU PESQUISA SELECIONADA) */}
+              <div className="rounded-3xl p-5 md:p-7 bg-[#0f112e]/95 border border-violet-500/30 shadow-2xl space-y-6">
+                <div className="rounded-2xl p-5 bg-gradient-to-r from-[#211652] to-[#170e3c] border border-violet-500/40 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-950/90 border border-violet-500/40 flex items-center justify-center text-2xl shadow-inner shrink-0">
+                      {currentTab.emoji}
+                    </div>
+                    <div>
+                      <h2 className="text-lg md:text-xl font-black text-white tracking-tight">{currentTab.headerTitle}</h2>
+                      <p className="text-xs text-violet-200/90 mt-0.5">{currentTab.headerDesc}</p>
+                    </div>
+                  </div>
+
+                  {selectedModuleId && (
+                    <button
+                      onClick={() => { setSelectedModuleId(null); setResult(null); setError(null); }}
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-violet-500/30 flex items-center gap-1.5 transition-all"
+                    >
+                      <ChevronLeft className="w-4 h-4" /> Voltar aos Módulos
+                    </button>
+                  )}
+                </div>
+
+                {/* PAINEL DE CONSULTAS HOJE & RESTANTES (EXATAMENTE COMO IMAGEM 02) */}
+                <div className="flex items-center justify-center">
+                  <div className="flex items-center gap-6 px-8 py-3 rounded-2xl bg-[#090b1e]/90 border border-violet-500/30 text-xs shadow-inner">
+                    <Clock className="w-5 h-5 text-violet-400" />
+                    <div className="text-center">
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">CONSULTAS HOJE</span>
+                      <span className="text-white font-black text-base">{usage24h} / 1000</span>
+                    </div>
+                    <div className="h-6 w-px bg-violet-500/20" />
+                    <div className="text-center">
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">RESTANTES</span>
+                      <span className="text-emerald-400 font-black text-base">{usageRestantes} restantes</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CHIPS SELETORAS DE TIPO DE PESQUISA (IMAGEM 02: [CPF] [RG] [CEP] [Email] [Telefone] [Nome] ...) */}
+                <div className="flex gap-2 overflow-x-auto pb-1.5 no-scrollbar justify-start sm:justify-center touch-pan-x">
+                  {MAIN_TABS.map((tab) => {
+                    const isActive = tab.id === activeTabId;
+                    return (
                       <button
-                        onClick={() => setShowPlanModal(true)}
-                        className="px-3 py-1.5 rounded-xl font-black text-[11px] bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg flex items-center gap-1.5 active:scale-95 transition-all"
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTabId(tab.id);
+                          setQuickInput("");
+                          setResult(null);
+                          setError(null);
+                        }}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 border ${
+                          isActive
+                            ? "bg-violet-600 text-white border-violet-300 shadow-lg shadow-violet-600/40 scale-105"
+                            : "bg-[#090b1f] text-slate-400 hover:text-white hover:bg-slate-900 border-violet-500/20"
+                        }`}
                       >
-                        ⚡ Ativar Plano
+                        <span>{tab.emoji}</span>
+                        <span>{tab.label}</span>
                       </button>
-                    )}
-
-
-                    <div className="h-7 w-px bg-violet-500/20" />
-
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">CONSULTAS HOJE</span>
-                      <span className="text-white font-black text-sm md:text-base">{usage24h} / 1000</span>
-                    </div>
-
-                    <div className="h-7 w-px bg-violet-500/20" />
-
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">RESTANTES</span>
-                      <span className="text-emerald-400 font-black text-sm md:text-base">{usageRestantes}</span>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
 
-                {/* Sub-Abas de Pesquisa Direta ([CPF] [RG] [CEP] [Email] [Telefone] [Nome] [Placa] [Parentes] [Score] [Fotos]) */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-purple-200/80 uppercase tracking-widest block">
-                      SELECIONE A PESQUISA DIRETA
-                    </span>
-                    <span className="text-[10px] text-purple-300 font-medium sm:hidden">Deslize ➔</span>
-                  </div>
-
-                  <div className="flex gap-2 overflow-x-auto pb-1.5 no-scrollbar touch-pan-x snap-x">
-                    {MAIN_TABS.map((tab) => {
-                      const isActive = tab.id === activeTabId;
-                      return (
-                        <button
-                          key={tab.id}
-                          onClick={() => {
-                            setActiveTabId(tab.id);
-                            setQuickInput("");
-                            setResult(null);
-                            setError(null);
-                          }}
-                          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 snap-start ${
-                            isActive
-                              ? "bg-violet-600 text-white border border-violet-300 shadow-lg shadow-violet-600/40 scale-105"
-                              : "bg-slate-900/60 text-slate-300 hover:text-white hover:bg-slate-900 border border-violet-500/20"
-                          }`}
-                        >
-                          <span>{tab.emoji}</span>
-                          <span>{tab.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Input de Busca com Válido/Inválido + Botões */}
-                <div className="space-y-3">
+                {/* FORMULÁRIO DE ENTRADA (IMAGEM 02) */}
+                <div className="space-y-4 pt-2">
                   <div className="relative">
                     <input
                       type="text"
@@ -614,10 +645,10 @@ export default function Consultas() {
                       value={quickInput}
                       onChange={(e) => handleInputChange(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") handleQuickSearch(); }}
-                      className="w-full px-4 md:px-5 py-3.5 md:py-4 rounded-xl bg-slate-950/90 border border-violet-500/40 text-white text-xs md:text-sm outline-none focus:border-violet-400 transition-all font-mono select-text shadow-inner pr-20 md:pr-24"
+                      className="w-full px-5 py-4 rounded-2xl bg-[#090b1f] border border-violet-500/40 text-white text-xs md:text-sm outline-none focus:border-violet-400 transition-all font-mono select-text shadow-inner pr-24"
                     />
                     {validation.status && (
-                      <span className={`absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded ${
+                      <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2.5 py-1 rounded-lg ${
                         validation.status === "valid" ? "bg-emerald-950 text-emerald-400 border border-emerald-500/30" : "bg-red-950 text-red-400 border border-red-500/30"
                       }`}>
                         {validation.label}
@@ -625,28 +656,26 @@ export default function Consultas() {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      onClick={() => { setQuickInput(""); setResult(null); setError(null); }}
+                      className="px-5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-400 text-xs font-bold transition-all"
+                    >
+                      Limpar
+                    </button>
 
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => { setQuickInput(""); setResult(null); setError(null); }}
-                        className="px-4 md:px-5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-400 text-xs font-bold transition-all"
-                      >
-                        Limpar
-                      </button>
-                      <button
-                        onClick={handleQuickSearch}
-                        disabled={loading}
-                        className="px-6 md:px-8 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 flex-1 sm:flex-initial"
-                      >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                        Consultar
-                      </button>
-                    </div>
+                    <button
+                      onClick={handleQuickSearch}
+                      disabled={loading}
+                      className="px-8 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                      Consultar
+                    </button>
                   </div>
                 </div>
               </div>
+
 
               {/* ANIMAÇÃO RADAR INTELLIGENCE DE CARREGAMENTO */}
               {loading && (

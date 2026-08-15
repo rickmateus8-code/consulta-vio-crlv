@@ -28,6 +28,7 @@ import {
   createResolutionFailure,
 } from './types';
 import { resolveTextElement } from './textResolver';
+import { resolveImageElement } from './imageResolver';
 
 export function resolveDocument(input: ResolveDocumentInput): ResolutionResult {
   const diagnostics: ResolutionDiagnostic[] = [];
@@ -178,12 +179,27 @@ export function resolveDocument(input: ResolveDocumentInput): ResolutionResult {
             originalIndex: elIdx,
           });
         }
+      } else if (el.type === 'IMAGE') {
+        const imageRes = resolveImageElement({
+          element: el,
+          assetSet,
+          pageId: pageDef.id,
+        });
+
+        diagnostics.push(...imageRes.diagnostics);
+
+        if (imageRes.element) {
+          indexedElements.push({
+            el: imageRes.element,
+            originalIndex: elIdx,
+          });
+        }
       } else {
         diagnostics.push(
           createResolutionDiagnostic(
             'error',
             'UNSUPPORTED_ELEMENT_TYPE',
-            `Element '${el.id}' has unsupported type '${el.type}' in generic resolver (supported: TEXT)`,
+            `Element '${el.id}' has unsupported type '${el.type}' in generic resolver (supported: TEXT, IMAGE)`,
             { pageId: pageDef.id, elementId: el.id }
           )
         );

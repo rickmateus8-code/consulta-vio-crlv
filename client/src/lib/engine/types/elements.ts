@@ -38,6 +38,11 @@ export interface MRZConfig {
   readonly format?: string;
 }
 
+export interface ImageElementConfig {
+  readonly fit: 'contain' | 'cover' | 'fill' | 'none';
+  readonly opacity?: number;
+}
+
 export interface ElementDefinition {
   readonly id: string;
   readonly type: ElementType;
@@ -49,6 +54,7 @@ export interface ElementDefinition {
   /** Referência a um Asset de Design em AssetSet (ex: logo, brasão). */
   readonly assetRefId?: string;
   readonly textConfig?: TextElementConfig;
+  readonly imageConfig?: ImageElementConfig;
   readonly qrConfig?: QRCodeConfig;
   readonly mrzConfig?: MRZConfig;
   readonly locked?: boolean;

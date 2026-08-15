@@ -14,7 +14,7 @@
 
 import type { CanvasDefinition, ColorValue, FontSpec } from './primitives';
 import type { CanvasTransform, ElementGeometry } from './geometry';
-import type { Asset } from './assets';
+import type { Asset, AssetType } from './assets';
 
 export interface ResolvedTextElement {
   readonly id: string;
@@ -32,12 +32,26 @@ export interface ResolvedTextElement {
   readonly zIndex: number;
 }
 
+export interface ResolvedAssetReference {
+  readonly id: string;
+  readonly type: AssetType;
+  readonly storageRef: string;
+  readonly mimeType: string;
+  readonly dimensions?: {
+    readonly width: number;
+    readonly height: number;
+  };
+}
+
 export interface ResolvedImageElement {
   readonly id: string;
   readonly type: 'IMAGE';
   readonly geometry: ElementGeometry;
-  readonly assetRefId: string;
-  readonly storageRef?: string;
+  readonly asset: ResolvedAssetReference;
+  readonly presentation: {
+    readonly fit: 'contain' | 'cover' | 'fill' | 'none';
+    readonly opacity: number;
+  };
   readonly zIndex: number;
 }
 

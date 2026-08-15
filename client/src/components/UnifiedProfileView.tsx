@@ -16,6 +16,9 @@ import { EmptyStateBanner } from "./consultas/sections/EmptyStateBanner";
 import { VehicleProfileView } from "./consultas/sections/VehicleProfileView";
 import { AddressesSection } from "./consultas/sections/AddressesSection";
 import { RelativesSection } from "./consultas/sections/RelativesSection";
+import { PhonesSection } from "./consultas/sections/PhonesSection";
+import { QsaSection } from "./consultas/sections/QsaSection";
+
 
 
 
@@ -1622,42 +1625,7 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
 
 
       {/* SEÇÃO: TELEFONES REGISTRADOS */}
-      <div id="secao-telefones" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
-        <div className="px-6 py-3 bg-slate-800/90 font-bold text-white text-sm flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4 text-emerald-400" />
-            <span>Telefones de Contato</span>
-          </div>
-          <span className="text-xs text-emerald-300 font-medium">Total: {telefonesList.length}</span>
-        </div>
-        <div className="p-6 space-y-2">
-          {telefonesList.length > 0 ? (
-            telefonesList.map((tel: any, i: number) => {
-              const num = typeof tel === "object" ? (tel.numero || tel.telefone || tel.PHONE || "") : String(tel);
-              const cleanNum = String(num).replace(/\D/g, "");
-              const fonte = typeof tel === "object" ? tel.fonte : "";
-              return (
-                <div key={i} className="p-3 rounded-xl bg-slate-800/50 border border-violet-500/20 text-xs flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-white">{num}</span>
-                    {fonte && <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">{fonte}</span>}
-                  </div>
-                  <a
-                    href={`https://wa.me/55${cleanNum}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 transition-all"
-                  >
-                    WhatsApp
-                  </a>
-                </div>
-              );
-            })
-          ) : (
-            <p className="text-slate-400 text-xs py-2">Nenhum telefone específico retornado.</p>
-          )}
-        </div>
-      </div>
+      <PhonesSection telefonesList={telefonesList} />
 
       {/* SEÇÃO: PARENTES VINCULADOS */}
       <RelativesSection
@@ -1665,70 +1633,12 @@ export default function UnifiedProfileView({ data, onClose, onSelectPerson }: Un
         onSelectPerson={onSelectPerson}
       />
 
-
       {/* SEÇÃO: VÍNCULOS SOCIETÁRIOS (CNPJ / QSA) */}
-      <div id="secao-societario" className="rounded-2xl overflow-hidden border border-violet-500/40 bg-slate-900 shadow-2xl">
-        <div className="px-6 py-3 bg-slate-800/90 font-bold text-white text-sm flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-violet-400" />
-            <span>Mapeamento de Vínculos Societários (QSA)</span>
-          </div>
-          <span className="text-xs text-violet-300 font-medium">Total de Empresas: {cpfData.corporate_share_pct ? 1 : 0}</span>
-        </div>
-        <div className="p-6 text-xs">
-          {cpfData.corporate_share_pct ? (
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-slate-800/50 border border-violet-500/20 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2 space-y-2">
-                  <div>
-                    <span className="text-slate-400 block font-medium">Razão Social</span>
-                    <span className="text-white font-bold text-sm block">
-                      {nome} {parseFloat(cpfData.corporate_share_pct) === 100 ? "SERVICOS E COMMERCIO MEI" : "PARTICIPACOES LTDA"}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-slate-400 block font-medium">CNPJ</span>
-                      <span className="text-violet-300 font-bold font-mono block">
-                        {(() => {
-                          let hash = 0;
-                          for (let i = 0; i < nome.length; i++) {
-                            hash = nome.charCodeAt(i) + ((hash << 5) - hash);
-                          }
-                          const cleanHash = Math.abs(hash).toString().padEnd(8, "0").substring(0, 8);
-                          return `${cleanHash.substring(0, 2)}.${cleanHash.substring(2, 5)}.${cleanHash.substring(5, 8)}/0001-${(Math.abs(hash) % 90 + 10)}`;
-                        })()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block font-medium">Situação Cadastral</span>
-                      <span className="text-emerald-400 font-bold block flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> ATIVA
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2 border-t md:border-t-0 md:border-l border-slate-700/60 md:pl-4">
-                  <div>
-                    <span className="text-slate-400 block font-medium">Participação Societária</span>
-                    <span className="text-white font-black text-lg block">{cpfData.corporate_share_pct}%</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block font-medium">Cargo / Qualificação</span>
-                    <span className="text-violet-300 font-semibold block">
-                      {parseFloat(cpfData.corporate_share_pct) === 100 ? "Sócio-Administrador" : "Sócio Quota"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="p-4 rounded-xl bg-slate-800/30 border border-slate-800 text-center text-slate-500 font-medium py-8">
-              Nenhum vínculo societário ou participação em empresas (CNPJ) detectado para este CPF.
-            </div>
-          )}
-        </div>
-      </div>
+      <QsaSection
+        corporateSharePct={cpfData.corporate_share_pct}
+        nome={nome}
+      />
+
 
       {/* SEÇÃO: HISTÓRICO DE VACINAÇÃO (SUS / DATASUS) */}
       <VaccinesSection vacinasList={vacinasList} />

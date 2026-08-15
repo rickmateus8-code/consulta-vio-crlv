@@ -183,11 +183,20 @@ export default function Consultas() {
   const fetchHistory = useCallback(() => {
     setHistoryLoading(true);
     fetch("/api/consultas-historico", { credentials: "include" })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const text = await r.text();
+        if (!text || text.trim().startsWith("<")) return { history: [] };
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { history: [] };
+        }
+      })
       .then((d) => setHistoryList(d.history || []))
       .catch(() => setHistoryList([]))
       .finally(() => setHistoryLoading(false));
   }, []);
+
 
   useEffect(() => {
     fetchStatus();

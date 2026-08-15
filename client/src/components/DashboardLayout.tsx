@@ -169,7 +169,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     fetch("/api/referral", { credentials: "include" })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const text = await r.text();
+        if (!text || text.trim().startsWith("<")) return null;
+        try {
+          return JSON.parse(text);
+        } catch {
+          return null;
+        }
+      })
       .then((data) => {
         if (data?.stats) {
           setAffiliatesTotal(Number(data.stats.totalEarnings || 0));
@@ -178,6 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       })
       .catch(() => {});
   }, []);
+
 
   useEffect(() => {
     const handler = () => {

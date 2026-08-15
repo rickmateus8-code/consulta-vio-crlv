@@ -169,13 +169,30 @@ export const snoopPerfilCPF = (cpf: string) =>
   get('perfil-cpf', { cpf });
 
 // ── Planos ───────────────────────────────────────────────────────────────────
-export const getPlanoStatus = () =>
-  fetch('/api/consultas-plano', { credentials: 'include' }).then(r => r.json());
+export const getPlanoStatus = async () => {
+  try {
+    const r = await fetch('/api/consultas-plano', { credentials: 'include' });
+    const text = await r.text();
+    if (!text || text.trim().startsWith('<')) return { success: false, plan: null };
+    return JSON.parse(text);
+  } catch {
+    return { success: false, plan: null };
+  }
+};
 
-export const comprarPlano = (plano: 'diario' | 'semanal' | 'mensal') =>
-  fetch('/api/consultas-plano', {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ plano }),
-  }).then(r => r.json());
+export const comprarPlano = async (plano: 'diario' | 'semanal' | 'mensal') => {
+  try {
+    const r = await fetch('/api/consultas-plano', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plano }),
+    });
+    const text = await r.text();
+    if (!text || text.trim().startsWith('<')) return { success: false, error: 'Resposta inválida do servidor' };
+    return JSON.parse(text);
+  } catch {
+    return { success: false, error: 'Erro na requisição' };
+  }
+};
+

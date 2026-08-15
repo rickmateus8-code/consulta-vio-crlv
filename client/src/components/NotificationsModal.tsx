@@ -44,7 +44,15 @@ export default function NotificationsModal({
     if (!isOpen) return;
     setLoadingLogs(true);
     fetch("/api/notifications")
-      .then((res) => res.json())
+      .then(async (res) => {
+        const text = await res.text();
+        if (!text || text.trim().startsWith("<")) return null;
+        try {
+          return JSON.parse(text);
+        } catch {
+          return null;
+        }
+      })
       .then((data) => {
         if (data?.notifications) {
           setNotifications(data.notifications);
@@ -52,6 +60,7 @@ export default function NotificationsModal({
       })
       .catch(() => {})
       .finally(() => setLoadingLogs(false));
+
   }, [isOpen]);
 
   if (!isOpen) return null;

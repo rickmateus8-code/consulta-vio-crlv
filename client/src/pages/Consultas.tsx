@@ -8,6 +8,9 @@ import * as SnoopAPI from "@/lib/snoopApi";
 import { toast } from "sonner";
 import masterBuscasLogo from "@/assets/master_buscas_logo.png";
 import { mapConsultaError, type ConsultaErrorDetails } from "@/lib/consultas/types";
+import { ConsultasHeaderMobile } from "@/components/consultas/ConsultasHeaderMobile";
+import { ConsultasSidebar } from "@/components/consultas/ConsultasSidebar";
+
 
 
 
@@ -406,143 +409,20 @@ export default function Consultas() {
   return (
     <div className="fixed inset-0 z-50 w-full h-screen bg-[#070a19] text-white flex flex-col md:flex-row overflow-hidden font-sans select-text">
       {/* ─── MOBILE HEADER & SUBMENU (APENAS DISPOSITIVOS MÓVEIS < md) ─────────────────── */}
-      <header className="md:hidden bg-[#0c0f2a] border-b border-violet-500/20 p-3.5 space-y-3 flex-shrink-0 z-10">
-        {/* Linha 1: Logo + Status + Botão Sair */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-slate-950/90 border border-violet-500/40 p-1 flex items-center justify-center shadow-lg overflow-hidden shrink-0">
-              <img src={masterBuscasLogo} alt="Master Buscas Logo" className="w-full h-full object-contain" />
-            </div>
-            <span className="font-black text-sm text-white tracking-tight">Master Buscas</span>
-          </div>
-
-          
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070a19] border border-violet-500/20 text-[10px] font-bold">
-              <Clock className="w-3 h-3 text-violet-400" />
-              <span className="text-emerald-400">{usageRestantes} rest.</span>
-            </div>
-            <button
-              onClick={() => setLocation("/dashboard")}
-              className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-violet-600/90 hover:bg-violet-500 text-white flex items-center gap-1 active:scale-95 transition-all shadow-md"
-            >
-              <LogOut className="w-3 h-3" /> Sair
-            </button>
-          </div>
-        </div>
-
-        {/* Linha 2: Submenu de Navegação Mobile Separado (Pesquisas | Módulos | Histórico) */}
-        <div className="grid grid-cols-3 gap-1.5 bg-[#070a19]/90 p-1 rounded-xl border border-violet-500/20">
-          <button
-            onClick={() => setViewMode("dashboard")}
-            className={`py-2 rounded-lg text-[11px] font-black transition-all flex items-center justify-center gap-1.5 ${
-              viewMode === "dashboard"
-                ? "bg-violet-600 text-white shadow-md shadow-violet-600/30 border border-violet-400/40"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span>Pesquisas</span>
-          </button>
-
-          <button
-            onClick={() => setViewMode("modulos")}
-            className={`py-2 rounded-lg text-[11px] font-black transition-all flex items-center justify-center gap-1.5 ${
-              viewMode === "modulos"
-                ? "bg-violet-600 text-white shadow-md shadow-violet-600/30 border border-violet-400/40"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Módulos</span>
-          </button>
-
-          <button
-            onClick={() => setViewMode("historico")}
-            className={`py-2 rounded-lg text-[11px] font-black transition-all flex items-center justify-center gap-1.5 ${
-              viewMode === "historico"
-                ? "bg-violet-600 text-white shadow-md shadow-violet-600/30 border border-violet-400/40"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            <span>Histórico</span>
-          </button>
-        </div>
-      </header>
+      <ConsultasHeaderMobile
+        viewMode={viewMode}
+        usageRestantes={usageRestantes}
+        onSelectViewMode={setViewMode}
+        onLogout={() => setLocation("/dashboard")}
+      />
 
       {/* ─── SIDEBAR ESQUERDA DESKTOP (OCULTA NO MOBILE VIA hidden md:flex) ─────────────────── */}
-      <aside className="hidden md:flex w-64 bg-[#0c0f2a] border-r border-violet-500/20 flex-col justify-between p-4 flex-shrink-0">
-        <div className="space-y-6">
-          {/* Logo Topo */}
-          <div className="flex items-center justify-between px-2 pt-2">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-slate-950/90 border border-violet-500/40 p-1.5 flex items-center justify-center shadow-lg overflow-hidden shrink-0">
-                <img src={masterBuscasLogo} alt="Master Buscas Logo" className="w-full h-full object-contain" />
-              </div>
-              <span className="font-black text-base text-white tracking-tight">Master Buscas</span>
-            </div>
-            <button className="text-slate-500 hover:text-white text-xs">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          </div>
+      <ConsultasSidebar
+        viewMode={viewMode}
+        onSelectViewMode={setViewMode}
+        onLogout={() => setLocation("/dashboard")}
+      />
 
-
-          {/* Submenu de Navegação Esquerdo */}
-          <nav className="space-y-1 pt-4">
-            <button
-              onClick={() => setViewMode("dashboard")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-                viewMode === "dashboard"
-                  ? "bg-violet-600/90 text-white shadow-lg shadow-violet-600/30 border border-violet-400/40"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              <span>Dashboard</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode("modulos")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-                viewMode === "modulos"
-                  ? "bg-violet-600/90 text-white shadow-lg shadow-violet-600/30 border border-violet-400/40"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-              }`}
-            >
-              <Search className="w-4 h-4" />
-              <span>Módulos</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode("historico")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-                viewMode === "historico"
-                  ? "bg-violet-600/90 text-white shadow-lg shadow-violet-600/30 border border-violet-400/40"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-              }`}
-            >
-              <History className="w-4 h-4" />
-              <span>Histórico</span>
-            </button>
-          </nav>
-        </div>
-
-        {/* Rodapé da Sidebar: Modo e Sair */}
-        <div className="space-y-3 pt-4 border-t border-violet-500/10">
-          <div className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400 rounded-xl bg-slate-900/50">
-            <Moon className="w-4 h-4 text-violet-400" />
-            <span>Modo Escuro</span>
-          </div>
-
-          <button
-            onClick={() => setLocation("/dashboard")}
-            className="w-full py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white transition-all shadow-lg flex items-center justify-center gap-2"
-          >
-            <LogOut className="w-3.5 h-3.5" /> Sair ↳
-          </button>
-        </div>
-      </aside>
 
       {/* ─── ÁREA DE CONTEÚDO PRINCIPAL (DIREITA) ──────────────────────────────── */}
       <main className="flex-1 h-full overflow-y-auto p-3.5 md:p-6 space-y-4 md:space-y-6 bg-[#070a19]">

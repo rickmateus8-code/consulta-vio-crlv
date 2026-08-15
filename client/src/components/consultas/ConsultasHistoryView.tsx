@@ -1,11 +1,8 @@
 import React from "react";
 import { History, RefreshCw, Loader2 } from "lucide-react";
+import type { ConsultationHistoryItem } from "@/lib/consultas/types";
 
-export interface ConsultationHistoryItem {
-  id: number | string;
-  modulo: string;
-  created_at: string;
-}
+export type { ConsultationHistoryItem };
 
 interface ConsultasHistoryViewProps {
   historyList: ConsultationHistoryItem[];

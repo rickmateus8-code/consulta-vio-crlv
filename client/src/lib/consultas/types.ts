@@ -194,3 +194,36 @@ export interface ModuleConfig {
   params: ModuleParamConfig[];
   creditsCost: number;
 }
+
+export interface ConsultasPlanItem {
+  id?: string | number;
+  user_id?: number;
+  plano?: string;
+  valor?: number;
+  is_free?: boolean;
+  expires_at?: string;
+}
+
+export interface ConsultasPlanStatus {
+  success?: boolean;
+  is_free?: boolean;
+  plan?: ConsultasPlanItem | null;
+  expired_plan?: ConsultasPlanItem | null;
+  is_expired?: boolean;
+  balance?: number;
+  usage_24h?: number;
+  usage_by_modulo?: Record<string, number>;
+  error?: string;
+}
+
+export interface ConsultationHistoryItem {
+  id: number;
+  modulo: string;
+  created_at: string;
+}
+
+export interface ConsultationHistoryResponse {
+  success?: boolean;
+  history?: ConsultationHistoryItem[];
+  error?: string;
+}

@@ -3,6 +3,8 @@
  * Todos os endpoints passam por /api/snoop/[endpoint] (server-side)
  */
 
+import type { ConsultasPlanStatus } from './consultas/types';
+
 const BASE = '/api/snoop';
 
 async function get<T = any>(endpoint: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
@@ -169,7 +171,7 @@ export const snoopPerfilCPF = (cpf: string) =>
   get('perfil-cpf', { cpf });
 
 // ── Planos ───────────────────────────────────────────────────────────────────
-export const getPlanoStatus = async () => {
+export const getPlanoStatus = async (): Promise<ConsultasPlanStatus> => {
   try {
     const r = await fetch('/api/consultas-plano', { credentials: 'include' });
     const text = await r.text();

@@ -7,7 +7,13 @@ import { getPlanoStatus } from "@/lib/snoopApi";
 import * as SnoopAPI from "@/lib/snoopApi";
 import { toast } from "sonner";
 import masterBuscasLogo from "@/assets/master_buscas_logo.png";
-import { mapConsultaError, type ConsultaErrorDetails } from "@/lib/consultas/types";
+import {
+  mapConsultaError,
+  type ConsultaErrorDetails,
+  type ConsultasPlanStatus,
+  type ConsultationHistoryItem,
+  type ConsultationHistoryResponse,
+} from "@/lib/consultas/types";
 import { ConsultasHeaderMobile } from "@/components/consultas/ConsultasHeaderMobile";
 import { ConsultasSidebar } from "@/components/consultas/ConsultasSidebar";
 import { ModulesGrid, CategoryFilterChips } from "@/components/consultas/ModulesGrid";
@@ -149,7 +155,7 @@ export default function Consultas() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const [planStatus, setPlanStatus] = useState<any>(null);
+  const [planStatus, setPlanStatus] = useState<ConsultasPlanStatus | null>(null);
   const [planLoading, setPlanLoading] = useState(true);
 
   // Submenu Lateral Esquerdo ("dashboard" | "modulos" | "historico")
@@ -157,7 +163,7 @@ export default function Consultas() {
   const [activeCategoryFilter, setActiveCategoryFilter] = useState("todos");
 
   // Histórico de Consultas
-  const [historyList, setHistoryList] = useState<any[]>([]);
+  const [historyList, setHistoryList] = useState<ConsultationHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   // Estado da busca e formulário de módulo selecionado (Estilo Imagem 02)
@@ -204,11 +210,13 @@ export default function Consultas() {
     fetch("/api/consultas-historico", { credentials: "include" })
       .then(async (r) => {
         const text = await r.text();
-        if (!text || text.trim().startsWith("<")) return { history: [] };
+        const emptyFallback: ConsultationHistoryResponse = { history: [] };
+        if (!text || text.trim().startsWith("<")) return emptyFallback;
         try {
-          return JSON.parse(text);
+          const parsed: ConsultationHistoryResponse = JSON.parse(text);
+          return parsed;
         } catch {
-          return { history: [] };
+          return emptyFallback;
         }
       })
       .then((d) => setHistoryList(d.history || []))

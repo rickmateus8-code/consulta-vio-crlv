@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import ConsultasPlanModal from "@/components/ConsultasPlanModal";
@@ -155,6 +155,8 @@ export default function Consultas() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [errorDetails, setErrorDetails] = useState<ConsultaErrorDetails | null>(null);
+  const activeRequestIdRef = useRef<number>(0);
+
 
 
 
@@ -211,6 +213,14 @@ export default function Consultas() {
     if (viewMode === "historico") fetchHistory();
   }, [viewMode, fetchHistory]);
 
+  // Invalidação de requisições pendentes na desmontagem do componente
+  useEffect(() => {
+    return () => {
+      activeRequestIdRef.current++;
+    };
+  }, []);
+
+
   const handlePlanActivated = useCallback(async () => {
     fetchStatus();
   }, [fetchStatus]);
@@ -238,7 +248,7 @@ export default function Consultas() {
     setQuickInput(formatted);
   };
 
-  // Executar busca rápida com bloqueio de double-submit e tratamento tipado de erros
+  // Executar busca rápida com bloqueio de double-submit, tratamento tipado de erros e descarte de respostas obsoletas (race protection)
   const handleQuickSearch = async () => {
     if (loading) return;
 
@@ -272,6 +282,7 @@ export default function Consultas() {
       return;
     }
 
+    const requestId = ++activeRequestIdRef.current;
     setLoading(true);
     setErrorDetails(null);
     setResult(null);
@@ -315,22 +326,27 @@ export default function Consultas() {
 
     try {
       const data = await executeSnoop();
+      if (requestId !== activeRequestIdRef.current) return;
       setResult(data);
       fetchStatus();
     } catch (e: unknown) {
+      if (requestId !== activeRequestIdRef.current) return;
       const mapped = mapConsultaError(e);
       setErrorDetails(mapped);
       if (mapped.type === "LIMIT_ERROR") {
         setShowPlanModal(true);
       }
     } finally {
-      setLoading(false);
+      if (requestId === activeRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
-  // Selecionar pessoa da lista por nome
+  // Selecionar pessoa da lista por nome com descarte de requisição obsoleta
   const handleSelectPersonFromList = (cpf: string) => {
     if (loading) return;
+    const requestId = ++activeRequestIdRef.current;
     setViewMode("dashboard");
     setQuickInput(formatCPF(cpf));
     setActiveTabId("cpf");
@@ -339,30 +355,38 @@ export default function Consultas() {
     setResult(null);
     SnoopAPI.snoopPerfilCPF(cpf)
       .then((data) => {
+        if (requestId !== activeRequestIdRef.current) return;
         setResult(data);
         fetchStatus();
       })
       .catch((e: unknown) => {
+        if (requestId !== activeRequestIdRef.current) return;
         const mapped = mapConsultaError(e);
         setErrorDetails(mapped);
         if (mapped.type === "LIMIT_ERROR") {
           setShowPlanModal(true);
         }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (requestId === activeRequestIdRef.current) {
+          setLoading(false);
+        }
+      });
   };
 
 
   // Selecionar um módulo no grid (Ativa Visualização Dedicada do Módulo - Imagem 02)
   const handleSelectModule = (modId: string) => {
+    activeRequestIdRef.current++;
     setViewMode("dashboard");
     setSelectedModuleId(modId);
     setActiveTabId(modId);
     setQuickInput("");
     setResult(null);
-    setError(null);
+    setErrorDetails(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
 
 
   const currentTab = MAIN_TABS.find(t => t.id === activeTabId) || MAIN_TABS[0];
@@ -629,6 +653,7 @@ export default function Consultas() {
                       <button
                         key={tab.id}
                         onClick={() => {
+                          activeRequestIdRef.current++;
                           setActiveTabId(tab.id);
                           setQuickInput("");
                           setResult(null);
@@ -669,11 +694,17 @@ export default function Consultas() {
 
                   <div className="flex items-center justify-between pt-1">
                     <button
-                      onClick={() => { setQuickInput(""); setResult(null); setErrorDetails(null); }}
+                      onClick={() => {
+                        activeRequestIdRef.current++;
+                        setQuickInput("");
+                        setResult(null);
+                        setErrorDetails(null);
+                      }}
                       className="px-5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-400 text-xs font-bold transition-all"
                     >
                       Limpar
                     </button>
+
 
 
                     <button

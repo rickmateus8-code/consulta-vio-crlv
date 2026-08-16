@@ -171,7 +171,7 @@ export default function Consultas() {
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [quickInput, setQuickInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<unknown>(null);
   const [errorDetails, setErrorDetails] = useState<ConsultaErrorDetails | null>(null);
   const activeRequestIdRef = useRef<number>(0);
 
@@ -446,7 +446,7 @@ export default function Consultas() {
         <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
 
           {/* VISÃO 1: DASHBOARD DE BUSCA UNIFICADA OU MÓDULO INDIVIDUAL */}
-          {(viewMode === "dashboard" || result) && (
+          {(viewMode === "dashboard" || Boolean(result)) && (
             <>
               {/* CARD SEJA BEM-VINDO DA IMAGEM 01 (QUANDO NENHUM MÓDULO ESTIVER SELECIONADO DIRETO E NENHUM RESULTADO) */}
               {!selectedModuleId && !result && (
@@ -621,7 +621,7 @@ export default function Consultas() {
 
 
               {/* EXIBIÇÃO DE RESULTADO UNIFICADO COMPLETO */}
-              {result && (
+              {Boolean(result) && (
                 <div className="rounded-2xl p-6 bg-slate-900/90 border border-violet-500/30 shadow-2xl space-y-6">
                   <UnifiedProfileView
                     data={result}

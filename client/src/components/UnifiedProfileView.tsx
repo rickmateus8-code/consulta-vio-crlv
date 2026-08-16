@@ -622,7 +622,7 @@ export function formatImageUrl(val: any): string | null {
 }
 
 interface UnifiedProfileViewProps {
-  data: any;
+  data: unknown;
   onClose?: () => void;
   onSelectPerson?: (cpf: string) => void;
 }

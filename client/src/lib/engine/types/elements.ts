@@ -52,6 +52,12 @@ export interface ShapeElementConfig {
   readonly opacity?: number;
 }
 
+export interface LineElementConfig {
+  readonly strokeColor: ColorValue;
+  readonly strokeWidth: number;
+  readonly opacity?: number;
+}
+
 export interface ElementDefinition {
   readonly id: string;
   readonly type: ElementType;
@@ -65,6 +71,7 @@ export interface ElementDefinition {
   readonly textConfig?: TextElementConfig;
   readonly imageConfig?: ImageElementConfig;
   readonly shapeConfig?: ShapeElementConfig;
+  readonly lineConfig?: LineElementConfig;
   readonly qrConfig?: QRCodeConfig;
   readonly mrzConfig?: MRZConfig;
   readonly locked?: boolean;

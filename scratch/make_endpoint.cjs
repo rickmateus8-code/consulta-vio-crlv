@@ -1,5 +1,19 @@
-/**
- * /api/snoop/[[...endpoint]] — Proxy universal e resiliente para SnoopIntelligence API v2
+const fs = require('fs');
+const path = require('path');
+
+const targetPath = path.join(__dirname, '..', 'functions', 'api', 'snoop', '[[endpoint]].ts');
+
+// Clean any bad files in functions/api/snoop
+const snoopDir = path.join(__dirname, '..', 'functions', 'api', 'snoop');
+fs.readdirSync(snoopDir).forEach(f => {
+  if (f.startsWith('[')) {
+    fs.rmSync(path.join(snoopDir, f), { recursive: true, force: true });
+  }
+});
+
+const content = `/**
+ * /api/snoop/[[endpoint]] — Proxy universal e resiliente para SnoopIntelligence API v2
+ * Cloudflare Pages Functions Multipath Routing Syntax: [[endpoint]].ts
  * Suporta sub-rotas simples e compostas (ex: /telefone, /telefone/full, /generic/cpf, /foto/all)
  */
 import type { Env } from '../../types';
@@ -18,7 +32,7 @@ async function getUserFromSession(request: Request, env: Env): Promise<any | nul
   const match = cookie.match(/docmaster_session=([^;]+)/);
   if (!match) return null;
   const session = await env.DB.prepare(
-    'SELECT s.user_id, u.id, u.username, u.role, u.free_documents, u.permissions FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime(\'now\')'
+    'SELECT s.user_id, u.id, u.username, u.role, u.free_documents, u.permissions FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime(\\'now\\')'
   ).bind(match[1]).first<any>();
   return session || null;
 }
@@ -45,11 +59,10 @@ async function checkActivePlan(user: any, env: Env): Promise<boolean> {
 
   try {
     const plan = await env.DB.prepare(
-      'SELECT id FROM consultas_planos WHERE user_id = ? AND datetime(expires_at) > datetime(\'now\') LIMIT 1'
+      'SELECT id FROM consultas_planos WHERE user_id = ? AND datetime(expires_at) > datetime(\\'now\\') LIMIT 1'
     ).bind(user.id).first<any>();
     if (plan) return true;
 
-    // Se o usuário não tem plano ativo e NUNCA teve qualquer plano, conceder o Teste Grátis de 1 Dia automaticamente!
     const anyPlanEver = await env.DB.prepare(
       'SELECT id FROM consultas_planos WHERE user_id = ? LIMIT 1'
     ).bind(user.id).first<any>();
@@ -81,8 +94,19 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
 
   const apiKey = (env as any).SNOOP_API_KEY || "snp_dP3ynuQD-sTMH-CVmi-1kQh-yJNuqT7tMP3f";
   const rawEndpoint = params.endpoint;
-  const endpointParts = Array.isArray(rawEndpoint) ? rawEndpoint : [rawEndpoint];
-  const endpointPath = endpointParts.filter(Boolean).join('/');
+
+  let endpointParts: string[] = [];
+  if (Array.isArray(rawEndpoint)) {
+    endpointParts = rawEndpoint;
+  } else if (typeof rawEndpoint === 'string') {
+    endpointParts = rawEndpoint.split('/');
+  }
+
+  const cleanParts = endpointParts
+    .map(p => String(p).trim().replace(/[^a-zA-Z0-9_\\-]/g, ''))
+    .filter(Boolean);
+
+  const endpointPath = cleanParts.join('/');
 
   if (!endpointPath) {
     return new Response(
@@ -105,7 +129,6 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
 
     const contentType = resp.headers.get('content-type') || '';
 
-    // Tratar se for imagem binária
     if (contentType.includes('image/') || (!contentType.includes('application/json') && resp.headers.has('content-length') && !contentType.includes('text/html'))) {
       const arrayBuffer = await resp.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
@@ -120,7 +143,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
         await env.DB.prepare('INSERT INTO consultas_logs (user_id, modulo) VALUES (?, ?)').bind(user.id, endpointPath).run();
       } catch {}
       return new Response(
-        JSON.stringify({ success: true, foto: `data:${mime};base64,${base64}` }),
+        JSON.stringify({ success: true, foto: \`data:\${mime};base64,\${base64}\` }),
         { status: 200, headers: CORS }
       );
     }
@@ -144,12 +167,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
         data = JSON.parse(text);
       } catch {
         const trimmed = text.trim();
-        const cleanB64 = trimmed.replace(/\s+/g, '');
+        const cleanB64 = trimmed.replace(/\\s+/g, '');
         if (cleanB64.length > 50 && /^[A-Za-z0-9+/=]+$/.test(cleanB64)) {
           let mime = 'jpeg';
           if (cleanB64.startsWith('iVBORw0KGgo')) mime = 'png';
           else if (cleanB64.startsWith('R0lGOD')) mime = 'gif';
-          data = { success: true, foto: `data:image/${mime};base64,${cleanB64}` };
+          data = { success: true, foto: \`data:image/\${mime};base64,\${cleanB64}\` };
         } else {
           throw new Error('Not JSON or base64');
         }
@@ -173,3 +196,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
 };
 
 export const onRequestOptions: PagesFunction<Env> = async () => new Response(null, { headers: CORS });
+`;
+
+fs.writeFileSync(targetPath, content, 'utf8');
+console.log('Successfully created:', targetPath);
+console.log('Snoop dir files:', fs.readdirSync(snoopDir));

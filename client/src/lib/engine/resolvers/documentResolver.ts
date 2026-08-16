@@ -30,6 +30,7 @@ import {
 import { resolveTextElement } from './textResolver';
 import { resolveImageElement } from './imageResolver';
 import { resolveShapeElement } from './shapeResolver';
+import { resolveLineElement } from './lineResolver';
 
 export function resolveDocument(input: ResolveDocumentInput): ResolutionResult {
   const diagnostics: ResolutionDiagnostic[] = [];
@@ -209,12 +210,26 @@ export function resolveDocument(input: ResolveDocumentInput): ResolutionResult {
             originalIndex: elIdx,
           });
         }
+      } else if (el.type === 'LINE') {
+        const lineRes = resolveLineElement({
+          element: el,
+          pageId: pageDef.id,
+        });
+
+        diagnostics.push(...lineRes.diagnostics);
+
+        if (lineRes.element) {
+          indexedElements.push({
+            el: lineRes.element,
+            originalIndex: elIdx,
+          });
+        }
       } else {
         diagnostics.push(
           createResolutionDiagnostic(
             'error',
             'UNSUPPORTED_ELEMENT_TYPE',
-            `Element '${el.id}' has unsupported type '${el.type}' in generic resolver (supported: TEXT, IMAGE, SHAPE)`,
+            `Element '${el.id}' has unsupported type '${el.type}' in generic resolver (supported: TEXT, IMAGE, SHAPE, LINE)`,
             { pageId: pageDef.id, elementId: el.id }
           )
         );

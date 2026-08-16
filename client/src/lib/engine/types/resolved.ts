@@ -123,6 +123,7 @@ export interface ResolvedLineElement {
   readonly geometry: ElementGeometry;
   readonly strokeColor: ColorValue;
   readonly strokeWidth: number;
+  readonly opacity: number;
   readonly zIndex: number;
 }
 

@@ -21,6 +21,7 @@ import {
 import AttestationActionButtons from "@/components/AttestationActionButtons";
 import { downloadAttestationPdf, fetchLatestAttestationRecord, buildAttestationData } from "@/lib/attestationActions";
 import { downloadCNHPdfDirect, buildCNHPropsFromRecord } from "@/components/CNHDocument";
+import { downloadCRLVPdfDirect, buildCRLVPropsFromRecord } from "@/components/CRLVDocument";
 import { toast } from "sonner";
 import { createRoot } from "react-dom/client";
 import masterBuscasLogo from "@/assets/master_buscas_logo.png";
@@ -388,6 +389,9 @@ export default function Dashboard() {
       if (doc.type === "cnh") {
         const cnhProps = buildCNHPropsFromRecord(latestDoc);
         await downloadCNHPdfDirect(cnhProps);
+      } else if (doc.type === "crlv" || doc.type === "crlvcria") {
+        const crlvProps = buildCRLVPropsFromRecord(latestDoc);
+        await downloadCRLVPdfDirect(crlvProps);
       } else if (doc.type === "fgv") {
         const container = document.createElement("div");
         container.style.cssText = "position:fixed;left:-9999px;top:0;width:1123px;background:white;";
@@ -894,7 +898,7 @@ const intelligentStats = [
           doc={viewAtestado}
           isDownloading={downloadingAtestadoId === viewAtestado.id}
           onClose={() => setViewAtestado(null)}
-          onDownload={() => handleDirectDownloadAtestado(viewAtestado)}
+          onDownload={() => viewAtestado.type === "atestado" ? handleDirectDownloadAtestado(viewAtestado) : handleDirectDownloadGeneric(viewAtestado)}
           onEdit={() => {
             const path = getEditPath(viewAtestado);
             setViewAtestado(null);

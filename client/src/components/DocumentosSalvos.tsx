@@ -8,7 +8,9 @@ import {
 } from "lucide-react";
 import AttestationActionButtons from "@/components/AttestationActionButtons";
 import AttestationViewerModal from "@/components/AttestationViewerModal";
+import DocumentViewerModal from "@/components/DocumentViewerModal";
 import { downloadAttestationPdf, fetchLatestAttestationRecord } from "@/lib/attestationActions";
+import { downloadCRLVPdfDirect, buildCRLVPropsFromRecord } from "@/components/CRLVDocument";
 
 interface DocRecord {
   id: string;
@@ -124,6 +126,21 @@ export default function DocumentosSalvos({
 
   // ── Download direto do PDF sem navegar ────────────────────────────────────────
   const handleDirectDownload = async (doc: DocRecord) => {
+    if (docType === "crlv") {
+      setDownloadingId(doc.id);
+      try {
+        const crlvProps = buildCRLVPropsFromRecord(doc);
+        await downloadCRLVPdfDirect(crlvProps);
+        toast.success("PDF baixado com sucesso!");
+      } catch (err) {
+        console.error("Erro no download direto CRLV:", err);
+        toast.error("Erro ao gerar PDF.");
+      } finally {
+        setDownloadingId(null);
+      }
+      return;
+    }
+
     if (docType !== "attestation") {
       if (downloadRoute) setLocation(`${downloadRoute}/${doc.id}?download=1`);
       return;
@@ -313,7 +330,7 @@ export default function DocumentosSalvos({
                         <AttestationActionButtons
                           onView={() => openView(doc)}
                           onEdit={editRoute ? () => setLocation(`${editRoute}/${doc.id}`) : () => openEdit(doc)}
-                          onDownload={docType === "attestation" || downloadRoute ? () => handleDirectDownload(doc) : undefined}
+                          onDownload={docType === "attestation" || docType === "crlv" || downloadRoute ? () => handleDirectDownload(doc) : undefined}
                           isDownloading={downloadingId === doc.id}
                           onDelete={() => setDeleteConfirmId(doc.id)}
                         />
@@ -327,7 +344,7 @@ export default function DocumentosSalvos({
         )}
 
         {/* ── MODAL VISUALIZADOR ── */}
-        {viewDoc && docType === "attestation" && (
+        {viewDoc && (docType === "attestation" ? (
           <AttestationViewerModal
             doc={viewDoc}
             isDownloading={downloadingId === viewDoc.id}
@@ -338,7 +355,18 @@ export default function DocumentosSalvos({
               setViewDoc(null);
             }}
           />
-        )}
+        ) : (
+          <DocumentViewerModal
+            doc={{ ...viewDoc, type: docType }}
+            isDownloading={downloadingId === viewDoc.id}
+            onClose={() => setViewDoc(null)}
+            onDownload={() => handleDirectDownload(viewDoc)}
+            onEdit={() => {
+              if (editRoute) setLocation(`${editRoute}/${viewDoc.id}`);
+              setViewDoc(null);
+            }}
+          />
+        ))}
 
         {/* ── DELETE CONFIRM MODAL ── */}
         {deleteConfirmId && (

@@ -261,12 +261,18 @@ export async function onRequest(context: { request: Request; env: Env; params: {
       }
 
       const nome = editData.nome || editData.nomeCompleto || editData.paciente || editData.nome_aluno || doc.nome;
-      const cpf = (doc.type === "cnh") ? doc.cpf : (editData.cpf || doc.cpf);
+      const cpf = (doc.type === "cnh") ? doc.cpf : (editData.cpf || editData.cpfCnpj || doc.cpf);
 
       await env.DB.prepare('UPDATE documents SET data = ?, nome = COALESCE(?, nome), cpf = COALESCE(?, cpf) WHERE id = ?')
         .bind(JSON.stringify(merged), nome || null, cpf || null, idOrType).run();
 
-      return jsonResponse({ success: true, message: "Atualizado com sucesso." });
+      return jsonResponse({
+        success: true,
+        message: "Atualizado com sucesso.",
+        id: doc.id,
+        codigo_qr: doc.codigo_qr || doc.codigo_validacao || doc.id,
+        codigo_validacao: doc.codigo_validacao || doc.codigo_qr || doc.id,
+      });
     }
 
     // ─── DELETE: Excluir ─────────────────────────────────────────────────────

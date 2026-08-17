@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import AttestationDocument from "@/components/AttestationDocument";
 import CNHDocument, { type CNHDocumentHandle, type CNHDocumentLegacyProps } from "@/components/CNHDocument";
+import CRLVDocument, { type CRLVDocumentHandle, buildCRLVPropsFromRecord, downloadCRLVPdfDirect } from "@/components/CRLVDocument";
 
 import { emittedRuntime } from "@/lib/cnh";
 
@@ -33,11 +34,13 @@ export default function DocumentViewerModal({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   
   const docRef = useRef<CNHDocumentHandle>(null);
+  const crlvRef = useRef<CRLVDocumentHandle>(null);
   const certRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const isCNH = doc.type === 'cnh';
   const isCHA = doc.type === 'cha';
+  const isCRLV = doc.type === 'crlv' || doc.type === 'crlvcria';
   const isFGV = doc.type === 'fgv';
   // Extrai dados do documento. renderInput é uma abstração TypeScript pura e
   // nunca deve existir em documents.data — o destructuring aqui é uma fronteira
@@ -81,6 +84,13 @@ export default function DocumentViewerModal({
   const handleExportPdf = async () => {
     if (isCNH && docRef.current) {
        await docRef.current.exportAsPdf();
+    } else if (isCRLV) {
+       if (crlvRef.current) {
+         await crlvRef.current.exportAsPdf();
+       } else {
+         const crlvProps = buildCRLVPropsFromRecord(doc);
+         await downloadCRLVPdfDirect(crlvProps);
+       }
     } else if (isFGV) {
        if (!certRef.current) return;
        try {
@@ -163,8 +173,8 @@ export default function DocumentViewerModal({
                    doc.codigo_qr || doc.id,
                  )}
                />
-
-
+            ) : isCRLV ? (
+               <CRLVDocument ref={crlvRef} {...buildCRLVPropsFromRecord(doc)} previewWidth={660} blurred={false} />
             ) : isFGV ? (
                <CertificadoFGVDocument ref={certRef} data={legacyDocData} />
             ) : (

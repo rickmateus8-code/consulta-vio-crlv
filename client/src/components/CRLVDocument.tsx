@@ -410,6 +410,77 @@ async function exportToPdf(cvs: HTMLCanvasElement, props: CRLVDocumentProps) {
   pdf.save(`CRLV_${props.placa || nomeClean}.pdf`);
 }
 
+export const buildCRLVPropsFromRecord = (doc: any): CRLVDocumentProps => {
+  let d: any = {};
+  try {
+    d = typeof doc.data === "string" ? JSON.parse(doc.data) : (doc.data || {});
+  } catch {
+    d = {};
+  }
+
+  const qrCode = doc.codigo_qr || doc.codigo_validacao || doc.id || d.codigoQR || "CRLV-2026";
+
+  return {
+    renavam: d.renavam || doc.renavam || "",
+    placa: d.placa || doc.placa || "",
+    exercicio: d.exercicio || "2026",
+    anoFabricacao: d.anoFabricacao || d.ano_fabricacao || "",
+    anoModelo: d.anoModelo || d.ano_modelo || "",
+    numeroCRV: d.numeroCRV || d.numero_crv || "***",
+    codigoSegurancaCLA: d.codigoSegurancaCLA || d.codigo_seguranca_cla || "",
+    cat: d.cat || "***",
+    marcaModeloVersao: d.marcaModeloVersao || d.marca_modelo_versao || "",
+    especieTipo: d.especieTipo || d.especie_tipo || "",
+    placaAnteriorUF: d.placaAnteriorUF || d.placa_anterior_uf || "*******/**",
+    chassi: d.chassi || doc.chassi || "",
+    corPredominante: d.corPredominante || d.cor_predominante || "",
+    combustivel: d.combustivel || "",
+
+    detranUF: d.detranUF || d.detran_uf || "PR",
+    emissaoDetranUF: d.emissaoDetranUF || d.emissao_detran_uf || d.detranUF || "PR",
+    emissaoDetranHash: d.emissaoDetranHash || d.emissao_detran_hash || "D72C8C94ED88BF41",
+    emissaoDataHora: d.emissaoDataHora || d.emissao_data_hora || doc.created_at || "",
+
+    categoria: d.categoria || "PARTICULAR",
+    capacidade: d.capacidade || "*.*",
+    potenciaCilindrada: d.potenciaCilindrada || d.potencia_cilindrada || "",
+    pesoBrutoTotal: d.pesoBrutoTotal || d.peso_bruto_total || "",
+    motor: d.motor || "",
+    cmt: d.cmt || "",
+    eixos: d.eixos || "2",
+    lotacao: d.lotacao || "05",
+    carroceria: d.carroceria || "NÃO APLICAVEL",
+    nome: (d.nome || doc.nome || "").toUpperCase(),
+    cpfCnpj: d.cpfCnpj || d.cpf || doc.cpf || "",
+    local: d.local || "",
+    dataEmissaoDoc: d.dataEmissaoDoc || d.data_emissao_doc || doc.created_at?.slice(0, 10) || "",
+
+    dpvatCatTarif: d.dpvatCatTarif || "",
+    dpvatDataQuitacao: d.dpvatDataQuitacao || "",
+    dpvatPagamento: d.dpvatPagamento || "",
+    dpvatRepasseFns: d.dpvatRepasseFns || "",
+    dpvatCustoBilhete: d.dpvatCustoBilhete || "",
+    dpvatCustoEfetivo: d.dpvatCustoEfetivo || "",
+    dpvatRepasseDenatran: d.dpvatRepasseDenatran || "",
+    dpvatValorIof: d.dpvatValorIof || "",
+    dpvatValorTotal: d.dpvatValorTotal || "",
+
+    observacoesVeiculo: d.observacoesVeiculo || d.observacoes_veiculo || "SEM OBSERVAÇÕES",
+    informacoesDpvat: d.informacoesDpvat || d.informacoes_dpvat || "",
+
+    codigoQR: qrCode,
+    blurred: false,
+  };
+};
+
+export async function downloadCRLVPdfDirect(props: CRLVDocumentProps) {
+  const fullCvs = document.createElement("canvas");
+  fullCvs.width = PAGE_W;
+  fullCvs.height = PAGE_H;
+  await drawCRLVToCanvas(fullCvs, { ...props, blurred: false });
+  await exportToPdf(fullCvs, props);
+}
+
 // ─── Componente React ─────────────────────────────────────────────────────────
 const CRLVDocument = forwardRef<CRLVDocumentHandle, CRLVDocumentProps>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);

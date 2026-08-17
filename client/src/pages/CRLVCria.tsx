@@ -13,7 +13,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useParams } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
-import CRLVDocument, { type CRLVDocumentHandle, type CRLVDocumentProps } from "../components/CRLVDocument";
+import CRLVDocument, { type CRLVDocumentHandle, type CRLVDocumentProps, downloadCRLVPdfDirect } from "../components/CRLVDocument";
 import { toast } from "sonner";
 import EmissionModal from "@/components/EmissionModal";
 import { snoopPerfilCPF } from "@/lib/snoopApi";
@@ -146,7 +146,7 @@ const DEFAULT_CRLV_DATA: CRLVDocumentProps = {
   blurred: true,
 };
 
-export default function CRLVCria() {
+export default function CRLVCria(props?: { params?: { id?: string } }) {
   const [, setLocation] = useLocation();
   const { user, updateBalance } = useAuth();
   const docRef = useRef<CRLVDocumentHandle>(null);
@@ -188,6 +188,11 @@ export default function CRLVCria() {
     }
     return DEFAULT_CRLV_DATA;
   });
+
+  const latestDataRef = useRef<CRLVDocumentProps>(data);
+  useEffect(() => {
+    latestDataRef.current = data;
+  }, [data]);
 
   // Proteção de rota por auditoria de permissão
   useEffect(() => {
@@ -241,7 +246,7 @@ export default function CRLVCria() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const queryId = urlParams.get("edit_id");
-    const routeId = routeParams?.id;
+    const routeId = routeParams?.id || props?.params?.id;
     const id = routeId || queryId;
 
     if (id) {
@@ -262,6 +267,7 @@ export default function CRLVCria() {
               blurred: false,
             };
             setData(merged);
+            latestDataRef.current = merged;
             setCodigoQR(doc.codigo_qr || doc.codigo_validacao || doc.id);
             setSaved(true);
           }
@@ -611,10 +617,11 @@ export default function CRLVCria() {
 
       const payload = {
         ...data,
-        emissaoDataHora: agoraDataHora,
+        emissaoDataHora: data.emissaoDataHora || agoraDataHora,
         dataEmissaoDoc: data.dataEmissaoDoc || agoraData,
         nome: data.nome.trim().toUpperCase(),
         cpf: data.cpfCnpj,
+        cpfCnpj: data.cpfCnpj,
         type: "crlv",
         blurred: false,
       };
@@ -636,9 +643,15 @@ export default function CRLVCria() {
       if (result.newBalance !== undefined) updateBalance(result.newBalance);
       else if (result.balance !== undefined) updateBalance(result.balance);
 
-      const savedCode = result.codigo_qr || result.codigo_validacao || result.id || editId || "CRLV-2026";
+      const savedCode = result.codigo_qr || result.codigo_validacao || result.id || editId || codigoQR || "CRLV-2026";
+      const updatedPayload: CRLVDocumentProps = {
+        ...payload,
+        codigoQR: savedCode,
+        blurred: false,
+      };
       setCodigoQR(savedCode);
-      setData((prev) => ({ ...prev, codigoQR: savedCode, blurred: false }));
+      setData(updatedPayload);
+      latestDataRef.current = updatedPayload;
       setSaved(true);
       setShowSuccessModal(true);
       toast.success(isEdit ? "Documento atualizado com sucesso!" : "CRLV Emitido com sucesso!");
@@ -650,12 +663,18 @@ export default function CRLVCria() {
   };
 
   const handleDownloadPDF = async () => {
-    if (!docRef.current) return;
     setIsDownloading(true);
     try {
-      await docRef.current.exportAsPdf();
+      const currentPayload = latestDataRef.current || data;
+      const fullPayload: CRLVDocumentProps = {
+        ...currentPayload,
+        codigoQR: codigoQR || currentPayload.codigoQR || "CRLV-2026",
+        blurred: false,
+      };
+      await downloadCRLVPdfDirect(fullPayload);
       toast.success("PDF baixado com sucesso!");
-    } catch {
+    } catch (err) {
+      console.error("[CRLV] Erro ao gerar PDF:", err);
       toast.error("Erro ao gerar PDF.");
     } finally {
       setIsDownloading(false);
@@ -1198,9 +1217,10 @@ export default function CRLVCria() {
 
         {/* MODAL DE EMISSÃO */}
         <EmissionModal
-          docLabel="CRLV Digital"
+          docLabel={editId ? "CRLV Atualizado" : "CRLV Digital"}
           docEmoji="📄"
-          documentPrice={documentPrice}
+          documentPrice={editId ? 0 : documentPrice}
+          isFree={Boolean(editId)}
           userBalance={user?.balance ?? 0}
           showConfirm={showConfirmModal}
           showSuccess={showSuccessModal}
